@@ -8,8 +8,9 @@
     [ (modulesPath + "/installer/scan/not-detected.nix")
     ];
 
-  boot.initrd.availableKernelModules = [ "nvme" "ahci" "xhci_pci" "usb_storage" "usbhid" "sd_mod" ];
-  boot.initrd.kernelModules = [ ];
+  boot.initrd.availableKernelModules = [ "nvme" "ahci" "xhci_pci" "usb_storage" "usbhid" "sd_mod" "zfs" ];
+  boot.initrd.kernelModules = [ "zfs" ];
+  boot.initrd.postDeviceCommands = ''zpool import data -lf;zfs load-key data -L file:///root/zfs.key;zfs mount data/media'';
   boot.kernelModules = [ "kvm-amd" ];
   boot.extraModulePackages = [ ];
 

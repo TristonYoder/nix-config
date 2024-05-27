@@ -3,50 +3,78 @@
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
 { config, pkgs, lib, ... }:
-
 {
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
-#      ./nas.nix
-      ./apps.nix
-#      ./com.carolineyoder.nix
+      ./nas.nix # Nix Config for NAS functionality (Disks, Shares, etc.)
+      ./apps.nix # Non-docker apps
+      ./com.carolineyoder.nix # carolineyoder.com website
+      # ./nextcloud.nix # Nextcloud Stack
+      # ./caddy.nix # Reverse Proxy
+      ./kasm.nix
       # Docker
-#      ./docker/audiobookshelf.nix
+     ./docker/docker.nix # Base Docker Config
+    #  ./docker/portainer.nix # Portainer Edge Agent
+     ./docker/audiobooks.nix # Compose for Audiobook Stack
+     ./docker/media-aq.nix # Compose for Media AQ Stack
+     ./docker/homarr.nix # Compose for Homarr Stack
     ];
 
-  # ZFS
-  boot.supportedFilesystems = [ "zfs" ];
-  # boot.zfs.requestEncryptionCredentials = true;
-  networking.hostId = "aad77407";
-  services.zfs.autoSnapshot.enable = true;
-  services.zfs.autoScrub.enable = true;
+  # Nix Flakes
+  nix = {
+    settings = {
+        experimental-features = [ "nix-command" "flakes" ];
+        warn-dirty = false;
+    };
+  };
 
-#  # Graphics Card
-#  hardware.opengl = {
-#    enable = true;
-#    driSupport = true;
-#    driSupport32Bit = true;
-#  };
-#
-#  services.xserver.videoDrivers = ["nvidia"];
-#
-#  hardware.nvidia = {
-#    modesetting.enable = true;
-#    nvidiaSettings = true;
-#  };
+  # Caddy
+  # modules.caddy.enable = true;
+
+  # Graphics Card
+  hardware.opengl = {
+    enable = true;
+    driSupport = true;
+    driSupport32Bit = true;
+  };
+
+  services.xserver.videoDrivers = ["nvidia"];
+
+  hardware.nvidia = {
+    modesetting.enable = true;
+    nvidiaSettings = true;
+    open = false;
+    package = config.boot.kernelPackages.nvidiaPackages.stable;
+  };
 
 
   # Bootloader
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
-  networking.hostName = "david"; # Define your hostname.
-  # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
+  # # Allow SSH for zfs auth
+  # boot = {
+  #   initrd.network = {
+  #     enable = true;
+  #     ssh = {
+  #       enable = true;
+  #       # To prevent ssh clients from freaking out because a different host key is used,
+  #       # a different port for ssh is useful (assuming the same host has also a regular sshd running)
+  #       port = 2222; 
+  #       # hostKeys paths must be unquoted strings, otherwise you'll run into issues with boot.initrd.secrets
+  #       # the keys are copied to initrd from the path specified; multiple keys can be set
+  #       # you can generate any number of host keys using 
+  #       # `ssh-keygen -t ed25519 -N "" -f /path/to/ssh_host_ed25519_key`
+  #       hostKeys = [ /etc/ssh/ssh_host_rsa_key ];
+  #       # public ssh key used for login
+  #       authorizedKeys = [ "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK5JWm3A5tXTCPq8YTua30QH2+Pa/Mz96QC5KJZKdEsz" ];
+  #     };
+  #   };
+  # };
 
-  # Configure network proxy if necessary
-  # networking.proxy.default = "http://user:password@proxy:port/";
-  # networking.proxy.noProxy = "127.0.0.1,localhost,internal.domain";
+  networking.hostName = "david"; # Define your hostname.
+  networking.domain = "theyoder.family";
 
   # Enable networking
   networking.networkmanager.enable = true;
@@ -114,7 +142,7 @@
   users.users.tristonyoder = {
     isNormalUser = true;
     description = "Triston Yoder";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [ "networkmanager" "wheel" "docker" ];
     packages = with pkgs; [
       firefox
       kate
@@ -130,11 +158,17 @@
   # $ nix search wget
   environment.systemPackages = with pkgs; [
   #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-  #  wget
-  #  audiobookshelf
+    wget
     pkgs.gh
     pkgs.git
+    zsh
+    # pkgs.caddy
   ];
+  # Set zsh as the default shell
+  programs.zsh.enable = true;
+  users.defaultUserShell = pkgs.zsh;
+  # TODO: nixify this: https://github.com/TristonYoder/zsh_powerline_install
+  ## Maybe go with oh-my-posh instead?
 
   # Some programs need SUID wrappers, can be configured further or are
   # started in user sessions.
@@ -164,4 +198,10 @@
   # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
   system.stateVersion = "23.11"; # Did you read the comment?
   system.autoUpgrade.channel = "https://nixos.org/channels/nixos-23.11/";
+  
+  # This will automatically snapshot configuration.nix on every nixos-rebuild, and store it in
+  # /run/current-system/configuration.nix
+  # prior system generations are stored here:
+  # /nix/var/nix/profiles/system-X-link/configuration.nix 
+  system.copySystemConfiguration = true; 
 }

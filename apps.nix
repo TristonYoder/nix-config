@@ -1,4 +1,4 @@
-{ config, pkgs, lib, ... }:
+{ self, config, lib, pkgs, ... }: 
 {
   # Tailscale
   services.tailscale.enable = true;
@@ -26,6 +26,19 @@
     openFirewall = true;
   };
 
+#Workaround for jellyfin hardware transcode
+  systemd.services.jellyfin.serviceConfig = {
+   # DeviceAllow = lib.mkForce [ "char-drm rw" ];
+    DeviceAllow = [ "char-drm rw" "char-nvidia-frontend rw" "char-nvidia-uvm rw" ];
+    PrivateDevices = lib.mkForce false;
+  };
+
+  services.jellyseerr = {
+    enable = true;
+    openFirewall = true;
+    port = 5055;
+  };
+
 # Cloudflare Config
   users.users.cloudflared = {
     group = "cloudflared";
@@ -43,5 +56,4 @@
       Group = "cloudflared";
     };
   };
-
 }

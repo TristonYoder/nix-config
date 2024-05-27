@@ -1,0 +1,4 @@
+# Ignore Secrets
+/secrets
+#ignore nix builds
+**/result
