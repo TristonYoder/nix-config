@@ -49,7 +49,7 @@
       "/:/mnt/host:ro"
     ];
     ports = [
-      "80:3001/tcp"
+      "3001:3001/tcp"
     ];
     log-driver = "journald";
     extraOptions = [
