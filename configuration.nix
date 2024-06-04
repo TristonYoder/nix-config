@@ -9,12 +9,11 @@
       ./hardware-configuration.nix
       ./nas.nix # Nix Config for NAS functionality (Disks, Shares, etc.)
       ./apps.nix # Non-docker apps
-      # ./com.carolineyoder.nix # carolineyoder.com website
       # ./nextcloud.nix # Nextcloud Stack
-      # ./caddy.nix # Reverse Proxy
       ./kasm.nix
       # Docker
      ./docker/caddy.nix # Custom Caddy Image
+     ./docker/com.carolineyoder.nix # carolineyoder.com website
      ./docker/code-server.nix #Code Server
      ./docker/docker.nix # Base Docker Config
     #  ./docker/portainer.nix # Portainer Edge Agent

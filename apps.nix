@@ -39,6 +39,12 @@
     port = 5055;
   };
 
+# Plex Config
+services.plex = {
+  enable = true;
+  openFirewall = true;
+};
+
 # Cloudflare Config
   users.users.cloudflared = {
     group = "cloudflared";
