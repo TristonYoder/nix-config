@@ -28,7 +28,6 @@
     log-driver = "journald";
     extraOptions = [
       "--network-alias=caddy"
-      "--network=web-services"
     ];
   };
   systemd.services."docker-caddy" = {

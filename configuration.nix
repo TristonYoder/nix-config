@@ -21,6 +21,7 @@
      ./docker/media-aq.nix # Compose for Media AQ Stack
      ./docker/homarr.nix # Compose for Homarr Stack
      ./docker/tandoor.nix # Recipie Manager
+     ./docker/watchtower.nix # Docker Auto-Updater
     ];
 
   # Nix Flakes
