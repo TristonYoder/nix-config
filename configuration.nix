@@ -14,6 +14,7 @@
       # Docker
      ./docker/caddy.nix # Custom Caddy Image
      ./docker/com.carolineyoder.nix # carolineyoder.com website
+     ./docker/studio.7andco.nix # 7andco.studio website
      ./docker/code-server.nix #Code Server
      ./docker/docker.nix # Base Docker Config
     #  ./docker/portainer.nix # Portainer Edge Agent
