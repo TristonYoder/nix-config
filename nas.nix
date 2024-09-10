@@ -7,12 +7,7 @@
   services.zfs.autoSnapshot.enable = true;
   services.zfs.autoScrub.enable = true;
 
-  # ZPool Config
-  # boot.inird.secrets."/zfs.key" = /root/zfs.key;
-  # boot.zfs.extraPools = [ "data" ];
-  # fileSystems."/boot".neededForBoot = true;
-
-  # ZFS Load Data 
+  # ZFS Load Data (Loads unencrypted datasets on encrypted root (past choices))
   systemd.services."zfs_load_data" = {
     path = [ pkgs.zfs ];
     serviceConfig = {
@@ -22,11 +17,15 @@
     script = ''
       zpool import data -f || true 
     '';
-    # Equivalant Actions ToDo:
-    # sudo zpool import data -f
-    # sudo zfs load-key data -L file:///root/zfs.key
-    # sudo zfs mount data/media #etc
     wantedBy = [ "docker-compose-media-aq-root.target" "docker.target" ];
+  };
+
+  # Configure SyncThing
+  services.syncthing = {
+      enable = true;
+      user = "tristonyoder";
+      dataDir = "/data/";    # Default folder for new synced folders
+      configure = "/data/docker-appdata/syncthing";   # Folder for Syncthing's settings and keys
   };
 
   # Configure the NFS server
@@ -103,77 +102,4 @@
         };
     };
   };
-
-  # Mounts
-
-  # fileSystems."/data/7andCo" =
-  #   { device = "data/7andCo";
-  #     fsType = "zfs";
-  #   };
-
-  # fileSystems."/data/backups" =
-  #   { device = "data/backups";
-  #     fsType = "zfs";
-  #   };
-
-  # fileSystems."/data/carolineyoder" =
-  #   { device = "data/carolineyoder";
-  #     fsType = "zfs";
-  #   };
-
-  # fileSystems."/data/docker-appdata" =
-  #   { device = "data/docker-appdata";
-  #     fsType = "zfs";
-  #   };
-
-  # fileSystems."/data/dropzone" =
-  #   { device = "data/dropzone";
-  #     fsType = "zfs";
-  #   };
-
-  # fileSystems."/data/media" =
-  #   { device = "data/media";
-  #     fsType = "zfs";
-  #   };
-
-  # fileSystems."/data/nextcloud" =
-  #   { device = "data/nextcloud";
-  #     fsType = "zfs";
-  #   };
-
-  # fileSystems."/data/proxmox" =
-  #   { device = "data/proxmox";
-  #     fsType = "zfs";
-  #   };
-
-  # fileSystems."/data/s3" =
-  #   { device = "data/s3";
-  #     fsType = "zfs";
-  #   };
-
-  # fileSystems."/data/tristonyoder" =
-  #   { device = "data/tristonyoder";
-  #     fsType = "zfs";
-  #   };
-
-  # fileSystems."/data/vm" =
-  #   { device = "data/vm";
-  #     fsType = "zfs";
-  #   };
-
-#   fileSystems."/data" =
-#     { device = "data";
-#       fsType = "zfs";
-#     };
-
-#   fileSystems."/data/web" =
-#     { device = "data/web";
-#       fsType = "zfs";
-#     };
-
-#   fileSystems."/data/web/com-carolineyoder" =
-#     { device = "data/web/com-carolineyoder";
-#       fsType = "zfs";
-#     };
-
 }
