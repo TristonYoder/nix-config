@@ -1,0 +1,175 @@
+version: "3"
+services:
+  gluetun:
+    image: qmcgaw/gluetun
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - VPN_SERVICE_PROVIDER=mullvad
+      - VPN_TYPE=wireguard
+      - WIREGUARD_PRIVATE_KEY=YI61TKW/lwz3C5p3iZUU0yNHNNuFrNKk+35npA1uukc=
+      - WIREGUARD_ADDRESSES=10.70.74.83/32
+      - SERVER_CITIES=Chicago IL
+    ports:
+      - 9091:9091 # Transmission
+      - 9092:8000 # VPN UI
+      - 8112:8112
+      - 6881:6881
+      - 6881:6881/udp
+      - 58846:58846 #optional
+    restart: unless-stopped
+  
+  transmission:
+    image: lscr.io/linuxserver/transmission:latest
+    container_name: transmission
+    network_mode: 'service:gluetun'
+    depends_on:
+      - gluetun
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      # - TRANSMISSION_WEB_HOME= #optional
+      # - USER= #optional
+      # - PASS= #optional
+      # - WHITELIST= #optional
+      # - PEERPORT= #optional
+      # - HOST_WHITELIST= #optional
+    volumes:
+      - '/data/docker-appdata/transmission/config/:/config'
+      - '/data/media/:/data/media:rw'
+      - '/data/media/Downloads/:/downloads:rw'
+    # ports:
+    #   - 9091:9091
+    #   - 51413:51413
+    #   - 51413:51413/udp
+    restart: unless-stopped
+
+  deluge:
+    image: lscr.io/linuxserver/deluge:latest
+    container_name: deluge
+    network_mode: 'service:gluetun'
+    depends_on:
+      - gluetun
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - DELUGE_LOGLEVEL=error #optional
+    volumes:
+      - '/data/docker-appdata/deluge/config/:/config'
+      - '/data/media/:/data/media:rw'
+    # ports:
+    #   - 8112:8112
+    #   - 6881:6881
+    #   - 6881:6881/udp
+    #   - 58846:58846 #optional
+    restart: unless-stopped
+  
+  bazarr:
+    image: 'lscr.io/linuxserver/bazarr:latest'
+    container_name: bazarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Indianapolis
+    volumes:
+      - '/data/docker-appdata/bazarr:/config'
+      - '/data/media/Movies:/movies'
+      - '/data/media/TV:/tv'
+      - '/data/media/Downloads:/data/downloads'
+      - '/data/media/:/data/media'
+    ports:
+      - 6767:6767
+    restart: unless-stopped
+  lidarr:
+    image: 'lscr.io/linuxserver/lidarr:latest'
+    container_name: lidarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Indianapolis
+    volumes:
+      - '/data/docker-appdata/lidar:/config'
+      - '/data/media/Music:/music'
+      - '/data/media/Downloads:/data/downloads'
+      - '/data/media/:/data/media'
+    ports:
+      - 8686:8686
+    restart: unless-stopped
+  prowlarr:
+    image: 'lscr.io/linuxserver/prowlarr:latest'
+    container_name: prowlarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Indianapolis
+    volumes:
+      - '/data/docker-appdata/prowlarr:/config'
+    ports:
+      - 9696:9696
+    restart: unless-stopped
+  radarr:
+    image: ghcr.io/linuxserver/radarr
+    container_name: radarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Indianapolis
+      - UMASK_SET=022
+    volumes:
+      - '/data/docker-appdata/radarr:/config'
+      - '/data/media/Movies:/movies'
+      - '/data/media/Downloads:/data/downloads'
+      - '/data/media/:/data/media'
+    ports:
+      - 7878:7878
+    restart: unless-stopped
+  readarr:
+    image: 'lscr.io/linuxserver/readarr:develop'
+    container_name: readarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Indianapolis
+    volumes:
+      - '/data/docker-appdata/readarr:/config'
+      - '/data/media/Books:/books'
+      - '/data/media/Downloads:/data/downloads'
+      - '/data/media/:/data/media'
+    ports:
+      - 8787:8787
+    restart: unless-stopped
+  sonarr:
+    image: ghcr.io/linuxserver/sonarr
+    container_name: sonarr
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Indianapolis
+      - UMASK_SET=022
+    volumes:
+      - '/data/docker-appdata/sonarr:/config'
+      - '/data/media/TV:/tv'
+      - '/data/media/Downloads:/data/downloads'
+      - '/data/media/:/data/media'
+    ports:
+      - 8989:8989
+    restart: unless-stopped
+  tubesync:
+    image: ghcr.io/meeb/tubesync:latest
+    container_name: tubesync
+    restart: unless-stopped
+    ports:
+      - 4848:4848
+    volumes:
+      - '/data/docker-appdata/tubesync:/config'
+      - '/data/media/youtube:/downloads'
+    environment:
+      - TZ=America/Indianapolis
+      - PUID=1000
+      - PGID=1000
+volumes:
+  tailscale-data:
+    driver: local

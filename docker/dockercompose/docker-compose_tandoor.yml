@@ -1,0 +1,35 @@
+version: '3'
+
+services:
+  db_tandoor:
+    restart: always
+    image: postgres:16-alpine
+    volumes:
+      - /data/docker-appdata/tandoor/postgresql:/var/lib/postgresql/data
+    environment:
+      - SECRET_KEY={a_secret_was_here}
+      - DB_ENGINE=django.db.backends.postgresql
+      - POSTGRES_HOST=db_tandoor
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=djangodb
+      - POSTGRES_PASSWORD={a_secret_was_here}
+      - POSTGRES_DB=djangodb
+  tandoor:
+    image: vabene1111/recipes
+    container_name: tandoor
+    ports:
+      - 6780:8080
+    restart: always
+    volumes:
+      - /data/docker-appdata/tandoor/staticfiles:/opt/recipes/staticfiles
+      - /data/docker-appdata/tandoor/mediafiles:/opt/recipes/mediafiles
+    environment:
+      - SECRET_KEY={a_secret_was_here}
+      - DB_ENGINE=django.db.backends.postgresql
+      - POSTGRES_HOST=db_tandoor
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=djangodb
+      - POSTGRES_PASSWORD={a_secret_was_here}
+      - POSTGRES_DB=djangodb
+    depends_on:
+      - db_tandoor

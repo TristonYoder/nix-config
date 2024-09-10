@@ -1,0 +1,18 @@
+---
+version: "2"
+services:
+  code-server:
+    image: linuxserver/code-server:latest
+    container_name: code-server
+    restart: unless-stopped
+    environment:
+      - TZ=America/Indianapolis # Specify a timezone to use EG Europe/London
+      #- SUDO_PASSWORD=password # If this optional variable is set, user will have sudo access in the code-server terminal with the specified password.
+      - PUID=1000 # for UserID
+      #- PROXY_DOMAIN=code-server.my.domain # If this optional variable is set, this domain will be proxied for subdomain proxying.
+      - PGID=1000 # for GroupID
+      #- PASSWORD=password # Optional web gui password, if not provided, there will be no auth.
+    volumes:
+      - /data/docker-appdata/codeserver/config:/config # Contains all relevant configuration files.
+    ports:
+      - 6443:8443/tcp # Web UI

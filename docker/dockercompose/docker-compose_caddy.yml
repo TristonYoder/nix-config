@@ -1,0 +1,21 @@
+version: "3"
+#networks:
+#  web-services:
+#    external: true
+services:
+  caddy:
+    image: tristonyoder/caddy-custom:latest
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - /data/docker-appdata/caddy/david.theyoder.family/Caddyfile:/etc/caddy/Caddyfile
+      - /data/docker-appdata/caddy/david.theyoder.family/data:/data
+      - /data/docker-appdata/caddy/david.theyoder.family/config:/config
+    environment:
+      - CLOUDFLARE_API_TOKEN=CPDKOaRIzyonjP63zeyGS1PfRdJ2iaXjRDieYMpE
+ #   networks:
+ #     - web-services

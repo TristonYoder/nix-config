@@ -15,7 +15,7 @@
      ./docker/caddy.nix # Custom Caddy Image
      ./docker/com.carolineyoder.nix # carolineyoder.com website
      ./docker/studio.7andco.nix # 7andco.studio website
-     ./docker/code-server.nix #Code Server
+    #  ./docker/code-server.nix #Code Server
      ./docker/docker.nix # Base Docker Config
     #  ./docker/portainer.nix # Portainer Edge Agent
      ./docker/audiobooks.nix # Compose for Audiobook Stack
@@ -23,6 +23,7 @@
      ./docker/homarr.nix # Compose for Homarr Stack
      ./docker/tandoor.nix # Recipie Manager
      ./docker/watchtower.nix # Docker Auto-Updater
+     ./docker/ersatztv.nix # ErsatzTV
     ];
 
   # Nix Flakes
@@ -166,7 +167,9 @@
     pkgs.gh
     pkgs.git
     zsh
+    # pkgs.compose2nix
     # pkgs.caddy
+    pkgs.tvheadend
   ];
   # Set zsh as the default shell
   programs.zsh.enable = true;
