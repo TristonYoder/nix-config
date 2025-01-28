@@ -25,8 +25,11 @@
       enable = true;
       user = "tristonyoder";
       dataDir = "/data/";    # Default folder for new synced folders
-      configure = "/data/docker-appdata/syncthing";   # Folder for Syncthing's settings and keys
+      configDir = "/data/docker-appdata/syncthing";   # Folder for Syncthing's settings and keys
+      guiAddress = "0.0.0.0:8384";
   };
+  networking.firewall.allowedTCPPorts = [ 8384 22000 ];
+  networking.firewall.allowedUDPPorts = [ 22000 21027 ];
 
   # Configure the NFS server
   services.nfs.server = {
@@ -37,8 +40,9 @@
     extraNfsdConfig = '''';
     exports = ''
         /data/docker-appdata    10.150.0.0/16(rw,fsid=1000,no_subtree_check,crossmnt) 100.64.0.0/10(rw,fsid=1000,no_subtree_check,crossmnt)
-        /data/media             10.150.0.0/16(rw,fsid=1,no_subtree_check,crossmnt) 100.64.0.0/10(rw,fsid=1000,no_subtree_check,crossmnt)
-        /data/tristonyoder      10.150.0.0/16(rw,fsid=2,no_subtree_check,crossmnt) 100.64.0.0/10(rw,fsid=0,no_subtree_check,crossmnt)
+        /data/media             10.150.0.0/16(rw,fsid=1000,no_subtree_check,crossmnt) 100.64.0.0/10(rw,fsid=1000,no_subtree_check,crossmnt)
+        /data/tristonyoder      10.150.0.0/16(rw,fsid=1000,no_subtree_check,crossmnt) 100.64.0.0/10(rw,fsid=1000,no_subtree_check,crossmnt)
+        /data/backups           10.150.0.0/16(rw,fsid=1000,no_subtree_check,crossmnt) 100.64.0.0/10(rw,fsid=1000,no_subtree_check,crossmnt)
     '';
   };
 
@@ -48,58 +52,43 @@
     openFirewall = true;
   };
   services.samba = {
-    enable = true;
-    securityType = "user";
-    openFirewall = true;
-    extraConfig = ''
-        workgroup = 7ANDCO
-        server string = david
-        netbios name = david
-        security = user 
-        #use sendfile = yes
-        #max protocol = smb2
-        # note: localhost is the ipv6 localhost ::1
-        hosts allow = 10.150.0.0/16 100.64.0.0/10 127.0.0.1 localhost
-        hosts deny = 0.0.0.0/0
-        guest account = nobody
-        map to guest = bad user
-    '';
-    shares = {
-        # public = {
-        # path = "/mnt/Shares/Public";
-        # browseable = "yes";
-        # "read only" = "no";
-        # "guest ok" = "yes";
-        # "create mask" = "0644";
-        # "directory mask" = "0755";
-        # "force user" = "username";
-        # "force group" = "groupname";
-        # };
-
-        data = {
-        path = "/data";
-        browseable = "yes";
-        # "valid users" = "tristonyoder";
-        "read only" = "no";
-        "guest ok" = "yes";
-        "fruit:aapl" = "yes";
-        "create mask" = "0644";
-        "directory mask" = "0755";
-        "force user" = "tristonyoder";
-        # "force group" = "group";
-        };
-        media = {
-        path = "/data/media";
-        browseable = "yes";
-        # "valid users" = "tristonyoder";
-        "read only" = "no";
-        "guest ok" = "yes";
-        "fruit:aapl" = "yes";
-        "create mask" = "0644";
-        "directory mask" = "0755";
-        "force user" = "tristonyoder";
-        "force group" = "users";
-        };
+  enable = true;
+  shares = {
+    "data" = {
+      path = "/data";
+      writable = true;
+      browseable = true;
+      guestOk = false;
+      validUsers = "tristonyoder";
+    };
+    "media" = {
+      path = "/data/media";
+      writable = false; # Read-only for everyone
+      browseable = true;
+      guestOk = true;   # Allow guest (read-only) access
+    };
+    "tristonyoder" = {
+      path = "/data/tristonyoder";
+      writable = true;
+      browseable = true;
+      guestOk = false;
+      validUsers = "tristonyoder";
+    };
+    "carolineyoder" = {
+      path = "/data/carolineyoder";
+      writable = true;
+      browseable = true;
+      guestOk = false;
+      validUsers = "carolineyoder tristonyoder";
+    };
+    "backups" = {
+      path = "/data/backups";
+      writable = true;
+      browseable = true;
+      guestOk = false;
+      validUsers = "carolineyoder tristonyoder";
     };
   };
+};
+
 }

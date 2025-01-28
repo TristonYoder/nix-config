@@ -23,6 +23,11 @@
     { device = "systemd-1";
       fsType = "autofs";
     };
+  
+  fileSystems."/boot" = {
+  device = "/dev/nvme0n1p2";
+  fsType = "vfat";
+};
 
   swapDevices = [ ];
 

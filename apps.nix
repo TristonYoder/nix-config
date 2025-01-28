@@ -1,5 +1,12 @@
 { self, config, lib, pkgs, ... }: 
 {
+  # Actual Budget
+  services.actual.enable = true;
+  services.actual.settings.port = 1111;
+  services.actual.settings.hostname = "0.0.0.0";
+  services.actual.openFirewall = true;
+
+
   # Tailscale
   services.tailscale.enable = true;
   services.tailscale.useRoutingFeatures = "both";
@@ -14,6 +21,14 @@
   # https://github.com/NixOS/nixpkgs/issues/180175
   systemd.services.NetworkManager-wait-online.enable = lib.mkForce false;
   systemd.services.systemd-networkd-wait-online.enable = lib.mkForce false;
+
+  # Allow Tailscale to act as Router
+  # Kernel-level IP forwarding for the host
+  boot.kernel.sysctl = {
+    "net.ipv4.ip_forward" = 1;
+    "net.ipv6.conf.all.forwarding" = 1;
+  };
+
 
   # Audiobookshelf
   # services.audiobookshelf = {
@@ -39,11 +54,30 @@
     port = 5055;
   };
 
-# Plex Config
-services.plex = {
-  enable = true;
-  openFirewall = true;
-};
+  # NextDNS Dynamic DNS
+  systemd.services = {
+    nextdns-dyndns = {
+      path = [
+        pkgs.curl
+      ];
+      script = "curl https://link-ip.nextdns.io/{a_secret_was_here}/{a_secret_was_here}";
+      startAt = "hourly";
+    };
+  };
+
+# # Plex Config
+# services.plex = {
+#   enable = true;
+#   openFirewall = true;
+# };
+
+  # # Pixelfed
+  # services.pixelfed = {
+  #   enable = true;
+  #   dataDir = "/data/docker-appdata/pixelfed";
+  #   domain = "pixel.theyoder.family";
+
+  # };
 
 # Cloudflare Config
   users.users.cloudflared = {
@@ -61,5 +95,67 @@ services.plex = {
       User = "cloudflared";
       Group = "cloudflared";
     };
+  };
+
+# #Kasm
+#   services.kasmweb = {
+#     enable = true;
+#     listenPort = 8775;
+#     datastorePath = "/data/docker-appdata/kasmweb/";
+#   };
+
+# #Kasm Docker Network Setup
+#   systemd.services.docker-kasm_db_init = {
+#     description = "Initialize Kasm DB Container";
+
+#     # Define dependencies
+#     wants = [ "docker.service" ];
+#     after = [ "docker.service" ];
+
+#     # Explicitly override conflicting options
+#     serviceConfig = {
+#       Restart = lib.mkForce "on-failure";
+#       RestartSec = lib.mkForce "5s";
+#       ExecStartPre = lib.mkForce ''
+#         docker network inspect kasm_default_network >/dev/null 2>&1 || \
+#         docker network create kasm_default_network
+#       '';
+#       ExecStart = lib.mkForce ''
+#         docker run --rm --network kasm_default_network \
+#         --name kasm_db_init \
+#         kasm_base_image:latest db-init-command
+#       '';
+#     };
+#   };
+
+
+
+
+
+# # Headscale
+#   services.headscale = {
+#     enable = true;
+#     port = 4433;
+#     address = "0.0.0.0";
+#    # settings.server_url = "https://vpn.theyoder.family:443";
+#    # settings.tls_key_path = "";
+#    # settings.tls_cert_path = "";
+#   };
+
+  # Immich
+  services.immich = {
+    enable = true;
+    port = 2283;
+    openFirewall = true;
+    host = "0.0.0.0";
+    mediaLocation = "/data/docker-appdata/immich/media";
+    settings.server.externalDomain = "https://photos.theyoder.family";
+  };
+
+  #Postgres
+  services.postgresql = {
+    enable = true;
+    dataDir = "/data/docker-appdata/postgres";
+    enableTCPIP = true;
   };
 }

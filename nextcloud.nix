@@ -25,10 +25,10 @@
     # };
     
     nextcloud = {
-      enable = true;
-      hostName = "nextcloud.theyoder.family";
+      enable = false;
+      hostName = "cloud.7andco.studio";
       # Need to manually increment with every major upgrade.
-      package = pkgs.nextcloud28;
+      package = pkgs.nextcloud30;
       # Let NixOS install and configure the database automatically.
       database.createLocally = true;
       # Let NixOS install and configure Redis caching automatically.
@@ -52,10 +52,12 @@
       };
       config = {
         # overwriteProtocol = "https";
-        defaultPhoneRegion = "US";
         dbtype = "pgsql";
         adminuser = "TristonYoder";
         adminpassFile = "/etc/nixos/secrets/nextcloud/adminpass";
+      };
+      settings = {
+        default_phone_region = "US";
       };
       # Suggested by Nextcloud's health check.
       phpOptions."opcache.interned_strings_buffer" = "16";
@@ -64,6 +66,7 @@
     postgresqlBackup = {
       enable = true;
       startAt = "*-*-* 01:15:00";
+
     };
   };
 

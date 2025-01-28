@@ -88,15 +88,19 @@
     ];
   };
   virtualisation.oci-containers.containers."gluetun" = {
-    image = "qmcgaw/gluetun";
+    image = "qmcgaw/gluetun:latest";
     environment = {
       "SERVER_CITIES" = "Chicago IL";
       "VPN_SERVICE_PROVIDER" = "mullvad";
       "VPN_TYPE" = "wireguard";
       "WIREGUARD_ADDRESSES" = "10.70.74.83/32";
       "WIREGUARD_PRIVATE_KEY" = "YI61TKW/lwz3C5p3iZUU0yNHNNuFrNKk+35npA1uukc=";
+      # "WGINTERFACE" = "tun0";
+      "PUID" = "1000";
+      "PGID" = "1000";
     };
     ports = [
+      "8000:8000/tcp"
       "9091:9091/tcp"
       "9092:8000/tcp"
       "8112:8112/tcp"
@@ -105,6 +109,7 @@
       "58846:58846/tcp"
     ];
     log-driver = "journald";
+    devices = [ "/dev/net/tun" ];
     extraOptions = [
       "--cap-add=NET_ADMIN"
       "--network-alias=gluetun"

@@ -2,18 +2,21 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, lib, ... }:
+{ self, config, pkgs, lib, ... }:
 {
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
       ./nas.nix # Nix Config for NAS functionality (Disks, Shares, etc.)
       ./apps.nix # Non-docker apps
+      ./btc.nix # Nix Bitcoin (https://github.com/fort-nix/nix-bitcoin/)
+#      ./ts-router.nix
       # ./nextcloud.nix # Nextcloud Stack
-      ./kasm.nix
       # Docker
-     ./docker/caddy.nix # Custom Caddy Image
+    #  ./docker/affine.nix # Affine Notes
+    #  ./docker/caddy.nix # Custom Caddy Image
      ./docker/com.carolineyoder.nix # carolineyoder.com website
+     ./docker/photography.carolineelizabeth.nix #carolineelizabeth.photography
      ./docker/studio.7andco.nix # 7andco.studio website
     #  ./docker/code-server.nix #Code Server
      ./docker/docker.nix # Base Docker Config
@@ -21,6 +24,7 @@
      ./docker/audiobooks.nix # Compose for Audiobook Stack
      ./docker/media-aq.nix # Compose for Media AQ Stack
      ./docker/homarr.nix # Compose for Homarr Stack
+    #  ./docker/kasm.nix # Compose for Kasm Stack
      ./docker/tandoor.nix # Recipie Manager
      ./docker/watchtower.nix # Docker Auto-Updater
      ./docker/ersatztv.nix # ErsatzTV
@@ -40,7 +44,6 @@
   # Graphics Card
   hardware.opengl = {
     enable = true;
-    driSupport = true;
     driSupport32Bit = true;
   };
 
@@ -106,14 +109,14 @@
   services.xserver.enable = true;
 
   # Enable the KDE Plasma Desktop Environment.
-  services.xserver.displayManager.sddm.enable = true;
+  services.displayManager.sddm.enable = true;
   services.xserver.desktopManager.plasma5.enable = true;
 
-  # Configure keymap in X11
-  services.xserver = {
-    layout = "us";
-    xkbVariant = "";
-  };
+  # # Configure keymap in X11
+  # services.xserver.xkb = {
+  #   layout = "us";
+  #   Variant = "";
+  # };
   
 #  # RDP
 #  services.xrdp.enable = true;
@@ -124,7 +127,6 @@
   services.printing.enable = true;
 
   # Enable sound with pipewire.
-  sound.enable = true;
   hardware.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
@@ -167,9 +169,9 @@
     pkgs.gh
     pkgs.git
     zsh
-    # pkgs.compose2nix
+    pkgs.compose2nix
     # pkgs.caddy
-    pkgs.tvheadend
+#    pkgs.kasmweb
   ];
   # Set zsh as the default shell
   programs.zsh.enable = true;
