@@ -1,0 +1,1 @@
+compose2nix -runtime docker -inputs docker-compose_planning-poker.yml -output ../planning-poker.nix

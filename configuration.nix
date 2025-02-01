@@ -25,6 +25,7 @@
      ./docker/media-aq.nix # Compose for Media AQ Stack
      ./docker/homarr.nix # Compose for Homarr Stack
     #  ./docker/kasm.nix # Compose for Kasm Stack
+     ./docker/planning-poker.nix # Planning Poker
      ./docker/tandoor.nix # Recipie Manager
      ./docker/watchtower.nix # Docker Auto-Updater
      ./docker/ersatztv.nix # ErsatzTV

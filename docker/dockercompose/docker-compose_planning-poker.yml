@@ -1,0 +1,10 @@
+name: planning-poker
+services:
+  planning-poker:
+    image: axeleroy/self-host-planning-poker:latest
+    ports:
+      - 8234:8000
+    volumes:
+      - planning-poker-data:/data/docker-appdata/planning-poker
+volumes:
+  planning-poker-data: {}
