@@ -1,34 +1,12 @@
 { self, config, lib, pkgs, ... }: 
 {
   # Actual Budget
-  services.actual.enable = true;
-  services.actual.settings.port = 1111;
-  services.actual.settings.hostname = "0.0.0.0";
-  services.actual.openFirewall = true;
-
-
-  # Tailscale
-  services.tailscale.enable = true;
-  services.tailscale.useRoutingFeatures = "both";
-  services.tailscale.extraUpFlags = [
-    "--ssh"
-    "--advertise-routes=10.150.0.0/16"
-    "--advertise-exit-node"
-    "--snat-subnet-routes=false"
-    "--accept-routes=false"
-  ];
-  # Workaround for Wiregaurd Bug
-  # https://github.com/NixOS/nixpkgs/issues/180175
-  systemd.services.NetworkManager-wait-online.enable = lib.mkForce false;
-  systemd.services.systemd-networkd-wait-online.enable = lib.mkForce false;
-
-  # Allow Tailscale to act as Router
-  # Kernel-level IP forwarding for the host
-  boot.kernel.sysctl = {
-    "net.ipv4.ip_forward" = 1;
-    "net.ipv6.conf.all.forwarding" = 1;
+  services.actual = {
+    enable = true;
+    settings.port = 1111;
+    settings.hostname = "0.0.0.0";
+    openFirewall = true;
   };
-
 
   # Audiobookshelf
   # services.audiobookshelf = {
@@ -36,6 +14,25 @@
   #   port = 13378;
   # };
 
+  # Cloudflare Config
+  users.users.cloudflared = {
+    group = "cloudflared";
+    isSystemUser = true;
+  };
+  users.groups.cloudflared = { };
+
+  systemd.services.cloudflared_tunnel = {
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network.target" ];
+    serviceConfig = {
+      ExecStart = "${pkgs.cloudflared}/bin/cloudflared tunnel --no-autoupdate run --token=eyJhIjoiNmU3MmU4ZTBhMzhjMWFlYWY1MjkzYWUzMDdiYTBjYWMiLCJ0IjoiNmM4YWVmY2YtZGQwZC00MTBhLWE3ZGMtYWEzMGMwZWQ4YzVjIiwicyI6Ik5EYzBaalE0TVRrdE9UazJNUzAwWkdRekxXRXhPRGN0WkRNME9EazNPRFppT0dZNCJ9";
+      Restart = "always";
+      User = "cloudflared";
+      Group = "cloudflared";
+    };
+  };
+
+  # Jellyfin
   services.jellyfin = {
     enable = true;
     openFirewall = true;
@@ -65,38 +62,6 @@
     };
   };
 
-# # Plex Config
-# services.plex = {
-#   enable = true;
-#   openFirewall = true;
-# };
-
-  # # Pixelfed
-  # services.pixelfed = {
-  #   enable = true;
-  #   dataDir = "/data/docker-appdata/pixelfed";
-  #   domain = "pixel.theyoder.family";
-
-  # };
-
-# Cloudflare Config
-  users.users.cloudflared = {
-    group = "cloudflared";
-    isSystemUser = true;
-  };
-  users.groups.cloudflared = { };
-
-  systemd.services.cloudflared_tunnel = {
-    wantedBy = [ "multi-user.target" ];
-    after = [ "network.target" ];
-    serviceConfig = {
-      ExecStart = "${pkgs.cloudflared}/bin/cloudflared tunnel --no-autoupdate run --token=eyJhIjoiNmU3MmU4ZTBhMzhjMWFlYWY1MjkzYWUzMDdiYTBjYWMiLCJ0IjoiNmM4YWVmY2YtZGQwZC00MTBhLWE3ZGMtYWEzMGMwZWQ4YzVjIiwicyI6Ik5EYzBaalE0TVRrdE9UazJNUzAwWkdRekxXRXhPRGN0WkRNME9EazNPRFppT0dZNCJ9";
-      Restart = "always";
-      User = "cloudflared";
-      Group = "cloudflared";
-    };
-  };
-
 # #Kasm
 #   services.kasmweb = {
 #     enable = true;
@@ -104,7 +69,7 @@
 #     datastorePath = "/data/docker-appdata/kasmweb/";
 #   };
 
-# #Kasm Docker Network Setup
+# # Kasm Docker Network Setup
 #   systemd.services.docker-kasm_db_init = {
 #     description = "Initialize Kasm DB Container";
 
@@ -128,19 +93,15 @@
 #     };
 #   };
 
-
-
-
-
-# # Headscale
-#   services.headscale = {
-#     enable = true;
-#     port = 4433;
-#     address = "0.0.0.0";
-#    # settings.server_url = "https://vpn.theyoder.family:443";
-#    # settings.tls_key_path = "";
-#    # settings.tls_cert_path = "";
-#   };
+  # # Headscale
+  # services.headscale = {
+  #   enable = true;
+  #   port = 4433;
+  #   address = "0.0.0.0";
+  #  # settings.server_url = "https://vpn.theyoder.family:443";
+  #  # settings.tls_key_path = "";
+  #  # settings.tls_cert_path = "";
+  # };
 
   # Immich
   services.immich = {
@@ -152,11 +113,46 @@
     settings.server.externalDomain = "https://photos.theyoder.family";
   };
 
-  #Postgres
+  # Postgres
   services.postgresql = {
     enable = true;
     dataDir = "/data/docker-appdata/postgres";
     enableTCPIP = true;
+  };
+
+  # # Pixelfed
+  # services.pixelfed = {
+  #   enable = true;
+  #   dataDir = "/data/docker-appdata/pixelfed";
+  #   domain = "pixel.theyoder.family";
+  # };
+
+  # # Plex Config
+  # services.plex = {
+  #   enable = true;
+  #   openFirewall = true;
+  # };
+
+  # Tailscale
+  services.tailscale.enable = true;
+  services.tailscale.useRoutingFeatures = "both";
+  services.tailscale.extraUpFlags = [
+    "--ssh"
+    "--advertise-routes=10.150.0.0/16"
+    "--advertise-exit-node"
+    "--snat-subnet-routes=false"
+    "--accept-routes=false"
+  ];
+  # Workaround for Wiregaurd Bug
+  # https://github.com/NixOS/nixpkgs/issues/180175
+  systemd.services.NetworkManager-wait-online.enable = lib.mkForce false;
+  systemd.services.systemd-networkd-wait-online.enable = lib.mkForce false;
+
+  # Allow Tailscale to act as Router
+  # Kernel-level IP forwarding for the host
+  boot.kernel.sysctl = {
+    "net.ipv4.ip_forward" = 1;
+    "net.ipv6.conf.all.forwarding" = 1;
   };
   
   # VSCode
