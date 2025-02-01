@@ -62,36 +62,36 @@
     };
   };
 
-# #Kasm
-#   services.kasmweb = {
-#     enable = true;
-#     listenPort = 8775;
-#     datastorePath = "/data/docker-appdata/kasmweb/";
-#   };
+  # #Kasm
+  #   services.kasmweb = {
+  #     enable = true;
+  #     listenPort = 8775;
+  #     datastorePath = "/data/docker-appdata/kasmweb/";
+  #   };
 
-# # Kasm Docker Network Setup
-#   systemd.services.docker-kasm_db_init = {
-#     description = "Initialize Kasm DB Container";
+  # # Kasm Docker Network Setup
+  #   systemd.services.docker-kasm_db_init = {
+  #     description = "Initialize Kasm DB Container";
 
-#     # Define dependencies
-#     wants = [ "docker.service" ];
-#     after = [ "docker.service" ];
+  #     # Define dependencies
+  #     wants = [ "docker.service" ];
+  #     after = [ "docker.service" ];
 
-#     # Explicitly override conflicting options
-#     serviceConfig = {
-#       Restart = lib.mkForce "on-failure";
-#       RestartSec = lib.mkForce "5s";
-#       ExecStartPre = lib.mkForce ''
-#         docker network inspect kasm_default_network >/dev/null 2>&1 || \
-#         docker network create kasm_default_network
-#       '';
-#       ExecStart = lib.mkForce ''
-#         docker run --rm --network kasm_default_network \
-#         --name kasm_db_init \
-#         kasm_base_image:latest db-init-command
-#       '';
-#     };
-#   };
+  #     # Explicitly override conflicting options
+  #     serviceConfig = {
+  #       Restart = lib.mkForce "on-failure";
+  #       RestartSec = lib.mkForce "5s";
+  #       ExecStartPre = lib.mkForce ''
+  #         docker network inspect kasm_default_network >/dev/null 2>&1 || \
+  #         docker network create kasm_default_network
+  #       '';
+  #       ExecStart = lib.mkForce ''
+  #         docker run --rm --network kasm_default_network \
+  #         --name kasm_db_init \
+  #         kasm_base_image:latest db-init-command
+  #       '';
+  #     };
+  #   };
 
   # # Headscale
   # services.headscale = {
