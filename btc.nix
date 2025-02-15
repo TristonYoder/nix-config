@@ -5,6 +5,9 @@
 # See ./flakes/flake.nix on how to include nix-bitcoin in a flake-based
 # system configuration.
 
+# NixOS Options Search:
+# https://search.nixos.org/flakes?channel=unstable&sort=relevance&type=options&query=bitcoin
+
 let
   # FIXME:
   # Overwrite `builtins.fetchTarball {}` with the output of
@@ -34,18 +37,62 @@ in
     bitcoind.rpc.address = "0.0.0.0";
     # Allow RPC connections from external addresses
     bitcoind.rpc.allowip = [
-      "10.10.0.0/24" # Allow a subnet
-      "10.50.0.3" # Allow a specific address
+      "10.150.100.0/23" # Allow a subnet
+      "127.0.0.1" # Allow a specific address
       "0.0.0.0/0" # Allow all addresses
       ];
+
+    # HMAC Cheat Sheet: zsh command
+    # python3 -c 'import hashlib, hmac; import os; salt="mysecretsalt"; password="{a_secret_was_here}"; hex_salt = salt.encode().hex(); print(hex_salt + "$" + hmac.new(bytes.fromhex(hex_salt), password.encode(), hashlib.sha256).hexdigest())'
+
+    bitcoind.rpc.users = {
+      cgminer = {
+        name = "cgminer";
+        passwordHMAC = "{a_secret_was_here}${a_secret_was_here}";
+        rpcwhitelist = [
+          "getblocktemplate"
+          "getmininginfo"
+          "getwork"
+          "submitblock"
+          "getrawtransaction"
+          "sendrawtransaction"
+          "createrawtransaction"
+          "getblockchaininfo"
+          "getblockcount"
+          "getmempoolinfo"
+          "gettxout"
+          "getmempoolancestors"
+          "getmempooldescendants"
+          "validateaddress"
+          "signrawtransactionwithkey"
+          "decodepsbt"
+          "fundrawtransaction"
+          "createmultisig"
+          "getinfo"
+          "getnetworkinfo"
+          "uptime"
+          "help"
+          "ping"
+        ];
+      };
+    };
+    
     bitcoind.dataDir = "/data/docker-appdata/bitcoind";
 
     clightning.enable = true;
     clightning.dataDir = "/data/docker-appdata/clightning";
+    clightning-rest.enable = true;
+    clightning.port = 9736;
+    clightning-rest.lndconnect.enable = true;
 
     electrs.enable = true;
     electrs.address = "0.0.0.0";
     electrs.tor.enforce = false;
+
+    # lnd
+    lnd.enable = true;
+    lnd.lndconnect.enable = true;
+
 
     # Example for mempool
     mempool.enable = true;
@@ -80,4 +127,22 @@ in
 
   # Prevent garbage collection of the nix-bitcoin source
   system.extraDependencies = [ nix-bitcoin ];
+
+  # CG Miner
+  services.cgminer = {
+    enable = true;
+    pools = [
+      {
+        pass = "{a_secret_was_here}";
+        url = "http://172.0.0.1:8332";
+        user = "cgminer";
+      }
+      # You can add more pools like this:
+      # {
+      #   password = "another_password";
+      #   url = "http://another.pool.url:port";
+      #   username = "another_username";
+      # }
+    ];
+  };
 }

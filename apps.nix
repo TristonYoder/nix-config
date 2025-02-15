@@ -155,6 +155,11 @@
     "net.ipv6.conf.all.forwarding" = 1;
   };
   
+  # Technitium DNS
+  services.technitium-dns-server = {
+    enable = true;
+    openFirewall = true;
+  };
   # VSCode
   imports = [
     (fetchTarball "https://github.com/nix-community/nixos-vscode-server/tarball/master")

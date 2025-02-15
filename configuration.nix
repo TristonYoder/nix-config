@@ -13,7 +13,7 @@
 #      ./ts-router.nix
       # ./nextcloud.nix # Nextcloud Stack
       # Docker
-    #  ./docker/affine.nix # Affine Notes
+     ./docker/affine.nix # Affine Notes
     #  ./docker/caddy.nix # Custom Caddy Image
      ./docker/com.carolineyoder.nix # carolineyoder.com website
      ./docker/photography.carolineelizabeth.nix #carolineelizabeth.photography

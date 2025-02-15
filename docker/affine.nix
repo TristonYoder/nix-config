@@ -11,21 +11,22 @@
 
   # Containers
   virtualisation.oci-containers.containers."affine_migration_job" = {
-    image = "ghcr.io/toeverything/affine-graphql:latest";
+    image = "ghcr.io/toeverything/affine-graphql:stable";
     environment = {
       "AFFINE_REVISION" = "stable";
-      "CONFIG_LOCATION" = "\"/data/docker-appdata/affine/config\"";
+      "CONFIG_LOCATION" = "/data/docker-appdata/affine/config";
       "DATABASE_URL" = "postgresql://affine:{a_secret_was_here}@postgres:5432/affine";
-      "DB_DATABASE" = "\"affine\"";
-      "DB_DATA_LOCATION" = "\"/data/docker-appdata/affine/postgres/pgdata\"";
-      "DB_PASSWORD" = "\"{a_secret_was_here}\"";
-      "DB_USERNAME" = "\"affine\"";
+      "DB_DATABASE" = "affine";
+      "DB_DATA_LOCATION" = "/data/docker-appdata/affine/postgres/pgdata";
+      "DB_PASSWORD" = "{a_secret_was_here}";
+      "DB_USERNAME" = "affine";
       "PORT" = "3010";
       "REDIS_SERVER_HOST" = "redis";
-      "UPLOAD_LOCATION" = "\"/data/docker-appdata/affine/storage\"";
+      "UPLOAD_LOCATION" = "/data/docker-appdata/affine/storage";
     };
     volumes = [
-      "/data/docker-appdata/affine/storage:/root/.affine/config:rw"
+      "/data/docker-appdata/affine/config:/root/.affine/config:rw"
+      "/data/docker-appdata/affine/storage:/root/.affine/storage:rw"
     ];
     cmd = [ "sh" "-c" "node ./scripts/self-host-predeploy.js" ];
     dependsOn = [
@@ -56,18 +57,18 @@
     ];
   };
   virtualisation.oci-containers.containers."affine_server" = {
-    image = "ghcr.io/toeverything/affine-graphql:latest";
+    image = "ghcr.io/toeverything/affine-graphql:stable";
     environment = {
       "AFFINE_REVISION" = "stable";
-      "CONFIG_LOCATION" = "\"/data/docker-appdata/affine/config\"";
+      "CONFIG_LOCATION" = "/data/docker-appdata/affine/config";
       "DATABASE_URL" = "postgresql://affine:{a_secret_was_here}@postgres:5432/affine";
-      "DB_DATABASE" = "\"affine\"";
-      "DB_DATA_LOCATION" = "\"/data/docker-appdata/affine/postgres/pgdata\"";
-      "DB_PASSWORD" = "\"{a_secret_was_here}\"";
-      "DB_USERNAME" = "\"affine\"";
+      "DB_DATABASE" = "affine";
+      "DB_DATA_LOCATION" = "/data/docker-appdata/affine/postgres/pgdata";
+      "DB_PASSWORD" = "{a_secret_was_here}";
+      "DB_USERNAME" = "affine";
       "PORT" = "3010";
       "REDIS_SERVER_HOST" = "redis";
-      "UPLOAD_LOCATION" = "\"/data/docker-appdata/affine/storage\"";
+      "UPLOAD_LOCATION" = "/data/docker-appdata/affine/storage";
     };
     volumes = [
       "/data/docker-appdata/affine/config:/root/.affine/config:rw"
