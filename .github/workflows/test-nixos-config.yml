@@ -2,9 +2,9 @@ name: Test NixOS Configuration
 
 on:
   push:
-    branches: [ '*' ]
+    branches-ignore: []
   pull_request:
-    branches: [ '*' ]
+    branches: [ main ]
 
 jobs:
   test-configuration:
