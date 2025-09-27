@@ -1,4 +1,4 @@
-{ self, config, lib, pkgs, nixos-vscode-server, ... }: 
+{ self, config, lib, pkgs, ... }: 
 let
   # Cloudflare API Token as an environment variable
   cloudflareApiToken = "mDB6U0PcLl-QtjAlX5gskVgH4UO7_QMo5eLY0POq";
@@ -218,6 +218,7 @@ in
    # protontricks.enable = true;
    # gamescopeSession.enable = true;
     dedicatedServer.openFirewall = true;
+    localNetworkGameTransfers.openFirewall = true;
   };
   
   # Sunshine
@@ -283,7 +284,7 @@ in
 
   # VSCode
   imports = [
-    nixos-vscode-server.nixosModules.default
+    (fetchTarball "https://github.com/nix-community/nixos-vscode-server/tarball/master")
   ];
   services.vscode-server.enable = true;
 
