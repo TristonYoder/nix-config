@@ -21,73 +21,69 @@
       users = [ "github-actions" ];
       commands = [
         {
-          command = "ALL";
+          command = "/run/current-system/sw/bin/nixos-rebuild";
           options = [ "NOPASSWD" ];
         }
-        # {
-        #   command = "/run/current-system/sw/bin/nixos-rebuild";
-        #   options = [ "NOPASSWD" ];
-        # }
-        # {
-        #   command = "/run/current-system/sw/bin/nix";
-        #   options = [ "NOPASSWD" ];
-        # }
-        # {
-        #   command = "/bin/cp";
-        #   options = [ "NOPASSWD" ];
-        # }
-        # {
-        #   command = "/bin/mkdir";
-        #   options = [ "NOPASSWD" ];
-        # }
-        # {
-        #   command = "/bin/chown";
-        #   options = [ "NOPASSWD" ];
-        # }
-        # {
-        #   command = "/bin/chmod";
-        #   options = [ "NOPASSWD" ];
-        # }
-        # {
-        #   command = "/bin/rm";
-        #   options = [ "NOPASSWD" ];
-        # }
-        # {
-        #   command = "/bin/find";
-        #   options = [ "NOPASSWD" ];
-        # }
-        # {
-        #   command = "/bin/xargs";
-        #   options = [ "NOPASSWD" ];
-        # }
-        # {
-        #   command = "/bin/rsync";
-        #   options = [ "NOPASSWD" ];
-        # }
-        # {
-        #   command = "/bin/tee";
-        #   options = [ "NOPASSWD" ];
-        # }
-        # {
-        #   command = "/bin/cat";
-        #   options = [ "NOPASSWD" ];
-        # }
-        # {
-        #   command = "/bin/echo";
-        #   options = [ "NOPASSWD" ];
-        # }
-        # {
-        #   command = "/bin/date";
-        #   options = [ "NOPASSWD" ];
-        # }
-        # {
-        #   command = "/bin/sleep";
-        #   options = [ "NOPASSWD" ];
-        # }
-        # {
-        #   command = "/bin/dig";
-        #   options = [ "NOPASSWD" ];
-        # }
+        {
+          command = "/run/current-system/sw/bin/nix";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/bin/cp";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/bin/mkdir";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/bin/chown";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/bin/chmod";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/bin/rm";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/bin/find";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/bin/xargs";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/bin/rsync";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/bin/tee";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/bin/cat";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/bin/echo";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/bin/date";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/bin/sleep";
+          options = [ "NOPASSWD" ];
+        }
+        {
+          command = "/bin/dig";
+          options = [ "NOPASSWD" ];
+        }
       ];
     }
   ];
