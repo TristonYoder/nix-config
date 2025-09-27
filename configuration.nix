@@ -16,7 +16,6 @@
       # ./nextcloud.nix # Nextcloud Stack
       # Docker
      ./docker/affine.nix # Affine Notes
-    #  ./docker/caddy.nix # Custom Caddy Image
      ./docker/com.carolineyoder.nix # carolineyoder.com website
      ./docker/photography.carolineelizabeth.nix #carolineelizabeth.photography
      ./docker/studio.7andco.nix # 7andco.studio website
