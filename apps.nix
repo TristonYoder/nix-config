@@ -2,6 +2,25 @@
 let
   # Cloudflare API Token as an environment variable
   cloudflareApiToken = "mDB6U0PcLl-QtjAlX5gskVgH4UO7_QMo5eLY0POq";
+  
+  # Helper function to create a virtual host with reverse proxy and TLS
+  createVirtualHost = target: ''
+    reverse_proxy ${target}
+    tls {
+      dns cloudflare {
+        api_token "${cloudflareApiToken}"
+      }
+    }
+  '';
+  
+  # Shared TLS configuration for custom virtual hosts
+  sharedTlsConfig = ''
+    tls {
+      dns cloudflare {
+        api_token "${cloudflareApiToken}"
+      }
+    }
+  '';
 in
 {
   # Actual Budget
@@ -36,146 +55,58 @@ in
 
     virtualHosts = {
       "apps.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:7575
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
-        '';
+        extraConfig = createVirtualHost "http://localhost:7575";
       };
 
       "audiobooks.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:13378
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
-        '';
+        extraConfig = createVirtualHost "http://localhost:13378";
       };
 
       "audiobooksync.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:13379
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
-        '';
+        extraConfig = createVirtualHost "http://localhost:13379";
       };
 
       "btc.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:8997
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
-        '';
+        extraConfig = createVirtualHost "http://localhost:8997";
       };
 
       "budget.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:1111
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
-        '';
+        extraConfig = createVirtualHost "http://localhost:1111";
       };
 
       "carolineyoder.com" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:1128
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
-        '';
+        extraConfig = createVirtualHost "http://localhost:1128";
       };
 
       "carolineelizabeth.photography elizabethallen.photography carolines.photos takemy.photo loveinfocus.photography" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:1996
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
-        '';
+        extraConfig = createVirtualHost "http://localhost:1996";
       };
 
       "chat.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:8065
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
-        '';
+        extraConfig = createVirtualHost "http://localhost:8065";
       };
 
       "david.theyoder.family" = {
         extraConfig = ''
           respond "404" 404
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
+          ${sharedTlsConfig}
         '';
       };
 
       "home.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://10.150.2.117:8123
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
-        '';
+        extraConfig = createVirtualHost "http://10.150.2.117:8123";
       };
 
       "media.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:8096
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
-        '';
+        extraConfig = createVirtualHost "http://localhost:8096";
       };
 
       "mempool.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:8998
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
-        '';
+        extraConfig = createVirtualHost "http://localhost:8998";
       };
 
       "notes.theyoder.family notes.7andco.studio" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:3010
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
-        '';
+        extraConfig = createVirtualHost "http://localhost:3010";
       };
 
       "nextcloud.theyoder.family" = {
@@ -208,14 +139,7 @@ in
       };
 
       "social.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:55001
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
-        '';
+        extraConfig = createVirtualHost "http://localhost:55001";
       };
 
       "photos.theyoder.family" = {
@@ -226,56 +150,24 @@ in
           handle {
             reverse_proxy http://localhost:2283
           }
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
+          ${sharedTlsConfig}
         '';
       };
 
       "share.photos.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:2284
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
-        '';
+        extraConfig = createVirtualHost "http://localhost:2284";
       };
 
       "poker.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:8234
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
-        '';
+        extraConfig = createVirtualHost "http://localhost:8234";
       };
 
       "request.theyoder.family requests.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:5055
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
-        '';
+        extraConfig = createVirtualHost "http://localhost:5055";
       };
 
       "recipies.theyoder.family food.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:6780
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
-        '';
+        extraConfig = createVirtualHost "http://localhost:6780";
       };
 
       "unifi.theyoder.family" = {
@@ -286,23 +178,12 @@ in
               tls_insecure_skip_verify
             }
           }
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
+          ${sharedTlsConfig}
         '';
       };
 
       "vault.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:8222
-          tls {
-            dns cloudflare {
-              api_token "${cloudflareApiToken}"
-            }
-          }
-        '';
+        extraConfig = createVirtualHost "http://localhost:8222";
       };
     };
   };
