@@ -131,6 +131,20 @@ in
     openFirewall = true;
   };
 
+  # Create media group for shared access to /data/media
+  users.groups.media = { };
+
+  # Add Jellyfin user to media group for write access
+  users.users.jellyfin.extraGroups = [ "media" ];
+
+  # Add tristonyoder user to media group (for Docker containers)
+  users.users.tristonyoder.extraGroups = [ "media" ];
+
+  # Set proper permissions on /data/media directory
+  systemd.tmpfiles.rules = [
+    "d /data/media 0775 tristonyoder media -"
+  ];
+
   # Workaround for jellyfin hardware transcode
   systemd.services.jellyfin.serviceConfig = {
     DeviceAllow = [ "char-drm rw" "char-nvidia-frontend rw" "char-nvidia-uvm rw" ];
