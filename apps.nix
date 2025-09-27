@@ -6,11 +6,7 @@ let
   # Helper function to create a virtual host with reverse proxy and TLS
   createVirtualHost = target: ''
     reverse_proxy ${target}
-    tls {
-      dns cloudflare {
-        api_token "${cloudflareApiToken}"
-      }
-    }
+    ${sharedTlsConfig}
   '';
   
   # Shared TLS configuration for custom virtual hosts
