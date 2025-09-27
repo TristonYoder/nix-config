@@ -13,6 +13,12 @@
         experimental-features = [ "nix-command" "flakes" ];
         warn-dirty = false;
     };
+    # Automatic garbage collection
+    gc = {
+      automatic = true;
+      dates = "weekly";
+      options = "--delete-older-than 90d";
+    };
   };
 
   # Caddy
@@ -36,6 +42,7 @@
 
   # Bootloader
   boot.loader.systemd-boot.enable = true;
+  boot.loader.systemd-boot.configurationLimit = 50;  # Keep only last 50 generations
   boot.loader.efi.canTouchEfiVariables = true;
   boot.loader.grub.efiSupport = true;
   boot.loader.grub.splashMode = "normal";
