@@ -1,7 +1,7 @@
 { self, config, lib, pkgs, ... }: 
 let
   # Cloudflare API Token as an environment variable
-  cloudflareApiToken = "mDB6U0PcLl-QtjAlX5gskVgH4UO7_QMo5eLY0POq";
+  cloudflareApiToken = "cloudflare-api-token-goes-here-REDACTED";
 in
 {
   # Actual Budget
@@ -20,193 +20,349 @@ in
 
   # Caddy
   services.caddy = {
-    enable = false;
+    enable = true;
+    # Build Caddy with the Cloudflare DNS plugin using withPlugins
     package = pkgs.caddy.withPlugins {
       plugins = [ "github.com/caddy-dns/cloudflare@v0.2.1" ];
-      hash = "sha256-AcWko5513hO8I0lvbCLqVbM1eWegAhoM0J0qXoWL/vI=";
+      hash = "sha256-Gsuo+ripJSgKSYOM9/yl6Kt/6BFCA6BuTDvPdteinAI=";
     };
     globalConfig = ''
       email triston@7andco.studio
     '';
 
-    # Global options block for the Caddyfile
-    extraConfig = ''
-      # Default TLS configuration using Cloudflare DNS challenge
-      tls {
-        dns cloudflare {
-          api_token "${cloudflareApiToken}"
+    config = ''
+    apps.theyoder.family {
+      reverse_proxy http://localhost:7575 {
+        transport http {
+          versions h1 h2
         }
       }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    audiobooks.theyoder.family {
+      reverse_proxy http://localhost:13378 {
+        transport http {
+          versions h1 h2
+        }
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    audiobooksync.theyoder.family {
+      reverse_proxy http://localhost:13379 {
+        transport http {
+          versions h1 h2
+        }
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    btc.theyoder.family {
+      reverse_proxy http://localhost:8997 {
+        transport http {
+          versions h1 h2
+        }
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    budget.theyoder.family {
+      reverse_proxy http://localhost:1111 {
+        transport http {
+          versions h1 h2
+        }
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    carolineyoder.com {
+      reverse_proxy http://localhost:1128 {
+        transport http {
+          versions h1 h2
+        }
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    carolineelizabeth.photography elizabethallen.photography carolines.photos takemy.photo loveinfocus.photography {
+      reverse_proxy http://localhost:1996 {
+        transport http {
+          versions h1 h2
+        }
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    chat.theyoder.family {
+      reverse_proxy http://localhost:8065 {
+        transport http {
+          versions h1 h2
+        }
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    david.theyoder.family {
+      respond "404" 404
+      handle {
+        abort
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    home.theyoder.family {
+      reverse_proxy http://10.150.2.117:8123 {
+        transport http {
+          versions h1 h2
+        }
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    media.theyoder.family {
+      reverse_proxy http://localhost:8096 {
+        transport http {
+          versions h1 h2
+        }
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    mempool.theyoder.family {
+      reverse_proxy http://localhost:8998 {
+        transport http {
+          versions h1 h2
+        }
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    notes.theyoder.family notes.7andco.studio {
+      reverse_proxy http://localhost:3010 {
+        transport http {
+          versions h1 h2
+        }
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    nextcloud.theyoder.family {
+      tls internal
+
+      root * /var/lib/nextcloud/data
+
+      php_fastcgi unix//run/phpfpm/nextcloud.sock {
+        split .php
+        root /var/lib/nextcloud/data
+        index index.php
+        try_files {path} {path}/ /index.php?{query}
+        env front_controller_active true
+      }
+
+      file_server
+
+      log {
+        output file /var/log/caddy/nextcloud-access.log {
+          roll_size 5MB
+          roll_keep 3
+        }
+      }
+
+      @forbidden {
+        path /.htaccess
+        path /config/*
+        path /data/*
+        path /db_structure/*
+        path /lib/*
+        path /templates/*
+        path /3rdparty/*
+        path /README
+      }
+      respond @forbidden 403
+
+      redir /.well-known/carddav /remote.php/dav 301
+      redir /.well-known/caldav /remote.php/dav 301
+
+      header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+      }
+      encode gzip
+    }
+
+    social.theyoder.family {
+      reverse_proxy http://localhost:55001 {
+        transport http {
+          versions h1 h2
+        }
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    photos.theyoder.family {
+      reverse_proxy http://localhost:2283 {
+        transport http {
+          versions h1 h2
+        }
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    photos.theyoder.family/share {
+      reverse_proxy http://localhost:2284 {
+        transport http {
+          versions h1 h2
+        }
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    share.photos.theyoder.family {
+      reverse_proxy http://localhost:2284 {
+        transport http {
+          versions h1 h2
+        }
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    poker.theyoder.family {
+      reverse_proxy http://localhost:8234 {
+        transport http {
+          versions h1 h2
+        }
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    request.theyoder.family requests.theyoder.family {
+      reverse_proxy http://localhost:5055 {
+        transport http {
+          versions h1 h2
+        }
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    recipies.theyoder.family food.theyoder.family {
+      reverse_proxy http://localhost:6780 {
+        transport http {
+          versions h1 h2
+        }
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    unifi.theyoder.family {
+      reverse_proxy https://10.150.100.1 {
+        transport http {
+          versions h1 h2
+          tls
+          tls_insecure_skip_verify
+        }
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
+
+    vault.theyoder.family {
+      reverse_proxy http://localhost:8222 {
+        transport http {
+          versions h1 h2
+        }
+      }
+      tls {
+        dns cloudflare {
+        api_token "${cloudflareApiToken}"
+        }
+      }
+    }
     '';
-
-    virtualHosts = {
-      "apps.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:7575
-        '';
-      };
-
-      "audiobooks.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:13378
-        '';
-      };
-
-      "audiobooksync.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:13379
-        '';
-      };
-
-      "btc.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:8997
-        '';
-      };
-
-      "budget.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:1111
-        '';
-      };
-
-      "carolineyoder.com" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:1128
-        '';
-      };
-
-      "carolineelizabeth.photography elizabethallen.photography carolines.photos takemy.photo loveinfocus.photography" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:1996
-        '';
-      };
-
-      "chat.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:8065
-        '';
-      };
-
-      "david.theyoder.family" = {
-        extraConfig = ''
-          respond "404" 404
-        '';
-      };
-
-      "home.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://10.150.2.117:8123
-        '';
-      };
-
-      "media.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:8096
-        '';
-      };
-
-      "mempool.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:8998
-        '';
-      };
-
-      "notes.theyoder.family notes.7andco.studio" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:3010
-        '';
-      };
-
-      "nextcloud.theyoder.family" = {
-        # This site-specific block overrides the global TLS settings
-        extraConfig = ''
-          tls internal
-
-          root * /var/lib/nextcloud/data
-          php_fastcgi unix//run/phpfpm/nextcloud.sock
-          file_server
-
-          log {
-            output file /var/log/caddy/nextcloud-access.log {
-              roll_size 5MB
-              roll_keep 3
-            }
-          }
-
-          @forbidden {
-            path /.htaccess /config/* /data/* /db_structure/* /lib/* /templates/* /3rdparty/* /README
-          }
-          respond @forbidden 403
-
-          redir /.well-known/carddav /remote.php/dav 301
-          redir /.well-known/caldav /remote.php/dav 301
-
-          header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-          encode gzip
-        '';
-      };
-
-      "social.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:55001
-        '';
-      };
-
-      "photos.theyoder.family" = {
-        extraConfig = ''
-          handle_path /share* {
-            reverse_proxy http://localhost:2284
-          }
-          handle {
-            reverse_proxy http://localhost:2283
-          }
-        '';
-      };
-
-      "share.photos.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:2284
-        '';
-      };
-
-      "poker.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:8234
-        '';
-      };
-
-      "request.theyoder.family requests.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:5055
-        '';
-      };
-
-      "recipies.theyoder.family food.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:6780
-        '';
-      };
-
-      "unifi.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy https://10.150.100.1 {
-            transport http {
-              tls
-              tls_insecure_skip_verify
-            }
-          }
-        '';
-      };
-
-      "vault.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy http://localhost:8222
-        '';
-      };
-    };
   };
-
+  
   networking.firewall.allowedTCPPorts = [ 80 443 ];
 
   # Cloudflare Config
@@ -246,13 +402,13 @@ in
     port = 5055;
   };
 
-  # # Mastodon
-  # services.mastodon = {
-  #   enable = true;
-  #   localDomain = "social.theyoder.family";
-  #   webPort = 55001;
-  #   streamingProcesses = 2;    
-  # };
+  # Mastodon
+  services.mastodon = {
+    enable = true;
+    localDomain = "social.theyoder.family";
+    webPort = 55001;
+    streamingProcesses = 2;    
+  };
 
 #  # cMatermost
 #  services.mattermost = {
@@ -310,8 +466,7 @@ in
   #   services.kasmweb = {
   #     enable = true;
   #     listenPort = 8775;
-  #     datastorePath = "/data/docker-appdata/kasm/";
-  #     networkSubnet = "172.29.0.0/16";
+  #     datastorePath = "/data/docker-appdata/kasmweb/";
   #   };
 
   # # Kasm Docker Network Setup
@@ -495,5 +650,4 @@ in
     (fetchTarball "https://github.com/nix-community/nixos-vscode-server/tarball/master")
   ];
   services.vscode-server.enable = true;
-
 }

@@ -25,9 +25,10 @@
     };
   
   fileSystems."/boot" = {
-  device = "/dev/nvme0n1p2";
-  fsType = "vfat";
-};
+    device = "UUID=C5BA-E894";
+    fsType = "vfat";
+  };
+
 
   swapDevices = [ ];
 

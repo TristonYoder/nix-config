@@ -2,7 +2,6 @@
 { pkgs, lib, ... }:
 
 {
-  #Enable Docker
   virtualisation = {
     docker = {
       enable = true;
@@ -10,7 +9,14 @@
         enable = true;
         dates = "weekly";
       };
+      daemon.settings = {
+        hosts = [
+          "unix:///var/run/docker.sock"
+          "tcp://0.0.0.0:2375"
+        ];
+      };
     };
+    oci-containers.backend = "docker";
   };
-  virtualisation.oci-containers.backend = "docker";
 }
+

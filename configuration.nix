@@ -7,10 +7,11 @@
   imports =
     [ # Include the results of the hardware scan.
       ./hardware-configuration.nix
+      ./tpdemos.nix
       ./nas.nix # Nix Config for NAS functionality (Disks, Shares, etc.)
       ./apps.nix # Non-docker apps
-      ./btc.nix # Nix Bitcoin (https://github.com/fort-nix/nix-bitcoin/)
-#      ./ts-router.nix
+      # ./btc.nix # Nix Bitcoin (https://github.com/fort-nix/nix-bitcoin/)
+    #  ./ts-router.nix
       # ./nextcloud.nix # Nextcloud Stack
       # Docker
      ./docker/affine.nix # Affine Notes
@@ -111,7 +112,8 @@
 
   # Enable the KDE Plasma Desktop Environment.
   services.displayManager.sddm.enable = true;
-  services.xserver.desktopManager.plasma5.enable = true;
+  # services.xserver.desktopManager.plasma6.enable = true;
+  services.desktopManager.plasma6.enable = true;
 
   # # Configure keymap in X11
   # services.xserver.xkb = {
@@ -119,13 +121,15 @@
   #   Variant = "";
   # };
   
-#  # RDP
-#  services.xrdp.enable = true;
-#  services.xrdp.defaultWindowManager = "startplasma-x11";
-#  services.xrdp.openFirewall = true;
+#  # Enable RDP
+#  services.xrdp = {
+#    enable = true;
+#    defaultWindowManager = "startplasma-x11";
+#    openFirewall = true;
+#  };
 
-  # Enable CUPS to print documents.
-  services.printing.enable = true;
+#  # Enable CUPS to print documents.
+#  services.printing.enable = true;
 
   # Enable sound with pipewire.
   hardware.pulseaudio.enable = false;
@@ -153,7 +157,11 @@
     extraGroups = [ "networkmanager" "wheel" "docker" ];
     packages = with pkgs; [
       firefox
-      kate
+      bitwarden-desktop
+      vscode
+      _1password-gui
+      _1password-cli
+      compose2nix
       # pkgs.audiobookshelf
     #  thunderbird
     ];
@@ -167,13 +175,12 @@
   environment.systemPackages = with pkgs; [
   #  vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     wget
-    pkgs.gh
-    pkgs.git
+    gh
+    git
     zsh
-    pkgs.compose2nix
-    # pkgs.caddy
-#    pkgs.kasmweb
+    quickemu
   ];
+
   # Set zsh as the default shell
   programs.zsh.enable = true;
   users.defaultUserShell = pkgs.zsh;
@@ -194,7 +201,7 @@
   services.openssh.enable = true;
   services.openssh.settings.PasswordAuthentication = true;
   # Open ports in the firewall.
-  networking.firewall.allowedTCPPorts = [ 22 111  2049 4000 4001 4002 20048 8234 ];
+  networking.firewall.allowedTCPPorts = [ 22 111 2049 3389 4000 4001 4002 20048 8234 ];
   networking.firewall.allowPing = true;
   # networking.firewall.allowedUDPPorts = [ ... ];
   # Or disable the firewall altogether.

@@ -11,8 +11,9 @@
 
   # Containers
   virtualisation.oci-containers.containers."affine_migration_job" = {
-    image = "ghcr.io/toeverything/affine-graphql:stable";
+    image = "ghcr.io/toeverything/affine:stable";
     environment = {
+      "AFFINE_INDEXER_ENABLED" = "false";
       "AFFINE_REVISION" = "stable";
       "CONFIG_LOCATION" = "/data/docker-appdata/affine/config";
       "DATABASE_URL" = "postgresql://affine:{a_secret_was_here}@postgres:5432/affine";
@@ -30,8 +31,8 @@
     ];
     cmd = [ "sh" "-c" "node ./scripts/self-host-predeploy.js" ];
     dependsOn = [
-      "postgres"
-      "redis"
+      "affine_postgres"
+      "affine_redis"
     ];
     log-driver = "journald";
     extraOptions = [
@@ -56,60 +57,8 @@
       "docker-compose-affine-root.target"
     ];
   };
-  virtualisation.oci-containers.containers."affine_server" = {
-    image = "ghcr.io/toeverything/affine-graphql:stable";
-    environment = {
-      "AFFINE_REVISION" = "stable";
-      "CONFIG_LOCATION" = "/data/docker-appdata/affine/config";
-      "DATABASE_URL" = "postgresql://affine:{a_secret_was_here}@postgres:5432/affine";
-      "DB_DATABASE" = "affine";
-      "DB_DATA_LOCATION" = "/data/docker-appdata/affine/postgres/pgdata";
-      "DB_PASSWORD" = "{a_secret_was_here}";
-      "DB_USERNAME" = "affine";
-      "PORT" = "3010";
-      "REDIS_SERVER_HOST" = "redis";
-      "UPLOAD_LOCATION" = "/data/docker-appdata/affine/storage";
-    };
-    volumes = [
-      "/data/docker-appdata/affine/config:/root/.affine/config:rw"
-      "/data/docker-appdata/affine/storage:/root/.affine/storage:rw"
-    ];
-    ports = [
-      "3010:3010/tcp"
-    ];
-    dependsOn = [
-      "affine_migration_job"
-      "postgres"
-      "redis"
-    ];
-    log-driver = "journald";
-    extraOptions = [
-      "--network-alias=affine"
-      "--network=affine_default"
-    ];
-  };
-  systemd.services."docker-affine_server" = {
-    serviceConfig = {
-      Restart = lib.mkOverride 90 "always";
-      RestartMaxDelaySec = lib.mkOverride 90 "1m";
-      RestartSec = lib.mkOverride 90 "100ms";
-      RestartSteps = lib.mkOverride 90 9;
-    };
-    after = [
-      "docker-network-affine_default.service"
-    ];
-    requires = [
-      "docker-network-affine_default.service"
-    ];
-    partOf = [
-      "docker-compose-affine-root.target"
-    ];
-    wantedBy = [
-      "docker-compose-affine-root.target"
-    ];
-  };
-  virtualisation.oci-containers.containers."postgres" = {
-    image = "postgres:16";
+  virtualisation.oci-containers.containers."affine_postgres" = {
+    image = "pgvector/pgvector:pg16";
     environment = {
       "POSTGRES_DB" = "affine";
       "POSTGRES_HOST_AUTH_METHOD" = "trust";
@@ -130,7 +79,7 @@
       "--network=affine_default"
     ];
   };
-  systemd.services."docker-postgres" = {
+  systemd.services."docker-affine_postgres" = {
     serviceConfig = {
       Restart = lib.mkOverride 90 "always";
       RestartMaxDelaySec = lib.mkOverride 90 "1m";
@@ -150,7 +99,7 @@
       "docker-compose-affine-root.target"
     ];
   };
-  virtualisation.oci-containers.containers."redis" = {
+  virtualisation.oci-containers.containers."affine_redis" = {
     image = "redis";
     log-driver = "journald";
     extraOptions = [
@@ -162,7 +111,60 @@
       "--network=affine_default"
     ];
   };
-  systemd.services."docker-redis" = {
+  systemd.services."docker-affine_redis" = {
+    serviceConfig = {
+      Restart = lib.mkOverride 90 "always";
+      RestartMaxDelaySec = lib.mkOverride 90 "1m";
+      RestartSec = lib.mkOverride 90 "100ms";
+      RestartSteps = lib.mkOverride 90 9;
+    };
+    after = [
+      "docker-network-affine_default.service"
+    ];
+    requires = [
+      "docker-network-affine_default.service"
+    ];
+    partOf = [
+      "docker-compose-affine-root.target"
+    ];
+    wantedBy = [
+      "docker-compose-affine-root.target"
+    ];
+  };
+  virtualisation.oci-containers.containers."affine_server" = {
+    image = "ghcr.io/toeverything/affine:stable";
+    environment = {
+      "AFFINE_INDEXER_ENABLED" = "false";
+      "AFFINE_REVISION" = "stable";
+      "CONFIG_LOCATION" = "/data/docker-appdata/affine/config";
+      "DATABASE_URL" = "postgresql://affine:{a_secret_was_here}@postgres:5432/affine";
+      "DB_DATABASE" = "affine";
+      "DB_DATA_LOCATION" = "/data/docker-appdata/affine/postgres/pgdata";
+      "DB_PASSWORD" = "{a_secret_was_here}";
+      "DB_USERNAME" = "affine";
+      "PORT" = "3010";
+      "REDIS_SERVER_HOST" = "redis";
+      "UPLOAD_LOCATION" = "/data/docker-appdata/affine/storage";
+    };
+    volumes = [
+      "/data/docker-appdata/affine/config:/root/.affine/config:rw"
+      "/data/docker-appdata/affine/storage:/root/.affine/storage:rw"
+    ];
+    ports = [
+      "3010:3010/tcp"
+    ];
+    dependsOn = [
+      "affine_migration_job"
+      "affine_postgres"
+      "affine_redis"
+    ];
+    log-driver = "journald";
+    extraOptions = [
+      "--network-alias=affine"
+      "--network=affine_default"
+    ];
+  };
+  systemd.services."docker-affine_server" = {
     serviceConfig = {
       Restart = lib.mkOverride 90 "always";
       RestartMaxDelaySec = lib.mkOverride 90 "1m";

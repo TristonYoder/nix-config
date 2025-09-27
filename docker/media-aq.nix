@@ -93,8 +93,8 @@
       "SERVER_CITIES" = "Chicago IL";
       "VPN_SERVICE_PROVIDER" = "mullvad";
       "VPN_TYPE" = "wireguard";
-      "WIREGUARD_ADDRESSES" = "10.70.74.83/32";
-      "WIREGUARD_PRIVATE_KEY" = "YI61TKW/lwz3C5p3iZUU0yNHNNuFrNKk+35npA1uukc=";
+      "WIREGUARD_ADDRESSES" = "10.67.161.5/32";
+      "WIREGUARD_PRIVATE_KEY" = "uPNAxw3oRR4gE5bAgGHQkBQPK11DLZO/uPUlG+8n9lk=";
       # "WGINTERFACE" = "tun0";
       "PUID" = "1000";
       "PGID" = "1000";

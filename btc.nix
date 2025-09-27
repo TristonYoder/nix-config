@@ -81,9 +81,9 @@ in
 
     clightning.enable = true;
     clightning.dataDir = "/data/docker-appdata/clightning";
-    clightning-rest.enable = true;
+#    clightning-rest.enable = true;
     clightning.port = 9736;
-    clightning-rest.lndconnect.enable = true;
+#    clightning-rest.lndconnect.enable = true;
 
     electrs.enable = true;
     electrs.address = "0.0.0.0";
@@ -95,10 +95,10 @@ in
 
 
     # Example for mempool
-    mempool.enable = true;
-    mempool.frontend.enable = true;
-    mempool.frontend.address = "0.0.0.0";
-    mempool.frontend.port = 8998;
+ #   mempool.enable = true;
+ #   mempool.frontend.enable = true;
+ #   mempool.frontend.address = "0.0.0.0";
+ #   mempool.frontend.port = 8998;
 
     # # Ride the Lighting
     # rtl.enable = true;
@@ -128,21 +128,21 @@ in
   # Prevent garbage collection of the nix-bitcoin source
   system.extraDependencies = [ nix-bitcoin ];
 
-  # CG Miner
-  services.cgminer = {
-    enable = true;
-    pools = [
-      {
-        pass = "{a_secret_was_here}";
-        url = "http://172.0.0.1:8332";
-        user = "cgminer";
-      }
-      # You can add more pools like this:
-      # {
-      #   password = "another_password";
-      #   url = "http://another.pool.url:port";
-      #   username = "another_username";
-      # }
-    ];
-  };
+#  # CG Miner
+#  services.cgminer = {
+#    enable = true;
+#    pools = [
+#      {
+#        pass = "{a_secret_was_here}";
+#        url = "http://172.0.0.1:8332";
+#        user = "cgminer";
+#      }
+#      # You can add more pools like this:
+#      # {
+#      #   password = "another_password";
+#      #   url = "http://another.pool.url:port";
+#      #   username = "another_username";
+#      # }
+#    ];
+#  };
 }
