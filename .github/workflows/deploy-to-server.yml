@@ -1,0 +1,89 @@
+name: Deploy to NixOS Server
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy'
+        required: true
+        default: 'main'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Nix
+      uses: cachix/install-nix-action@v23
+      with:
+        nix_path: nixpkgs=channel:nixos-23.11
+
+    - name: Cache Nix dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/nix
+          /nix
+        key: ${{ runner.os }}-nix-${{ hashFiles('**/*.nix') }}
+        restore-keys: |
+          ${{ runner.os }}-nix-
+
+    - name: Test configuration locally
+      run: |
+        nix flake check --show-trace
+        nixos-rebuild dry-run --flake .#david --show-trace
+
+    - name: Setup Tailscale
+      uses: tailscale/github-action@v2
+      with:
+        oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+        oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+        tags: tag:github-actions
+
+    - name: Wait for Tailscale to be ready
+      run: |
+        timeout 60 bash -c 'until tailscale status; do sleep 2; done'
+
+    - name: Get server IP
+      id: server-ip
+      run: |
+        SERVER_IP=$(tailscale status --json | jq -r '.Peer[] | select(.HostName == "${{ secrets.SERVER_HOSTNAME }}") | .TailscaleIPs[0]')
+        echo "server-ip=$SERVER_IP" >> $GITHUB_OUTPUT
+        echo "Server IP: $SERVER_IP"
+
+    - name: Test SSH connection
+      run: |
+        ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ${{ secrets.SERVER_USER }}@${{ steps.server-ip.outputs.server-ip }} "echo 'SSH connection successful'"
+
+    - name: Deploy configuration
+      run: |
+        # Copy configuration to server
+        rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+          . ${{ secrets.SERVER_USER }}@${{ steps.server-ip.outputs.server-ip }}:/tmp/nixos-config/
+        
+        # Deploy on server
+        ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+          ${{ secrets.SERVER_USER }}@${{ steps.server-ip.outputs.server-ip }} \
+          "cd /tmp/nixos-config && sudo nixos-rebuild switch --flake .#david --show-trace"
+
+    - name: Set deployment status
+      if: always()
+      run: |
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "✅ Deployment successful"
+        else
+          echo "❌ Deployment failed"
+        fi
+
+    - name: Cleanup Tailscale
+      if: always()
+      run: |
+        tailscale logout

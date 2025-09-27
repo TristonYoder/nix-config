@@ -11,6 +11,7 @@
       ./nas.nix # Nix Config for NAS functionality (Disks, Shares, etc.)
       ./apps.nix # Non-docker apps
       ./caddy-hosts.nix # Caddy virtual hosts for services without NixOS equivalents
+      ./server-deployment.nix # Auto-deployment configuration for GitHub Actions
       # ./btc.nix # Nix Bitcoin (https://github.com/fort-nix/nix-bitcoin/)
     #  ./ts-router.nix
       # ./nextcloud.nix # Nextcloud Stack

@@ -1,0 +1,49 @@
+name: Test NixOS Configuration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-configuration:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Nix
+      uses: cachix/install-nix-action@v23
+      with:
+        nix_path: nixpkgs=channel:nixos-23.11
+
+    - name: Cache Nix dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cache/nix
+          /nix
+        key: ${{ runner.os }}-nix-${{ hashFiles('**/*.nix') }}
+        restore-keys: |
+          ${{ runner.os }}-nix-
+
+    - name: Test configuration build
+      run: |
+        nix flake check --show-trace
+
+    - name: Test configuration dry-run
+      run: |
+        nixos-rebuild dry-run --flake .#david --show-trace
+
+    - name: Set deployment status
+      if: always()
+      run: |
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "✅ Configuration test passed"
+        else
+          echo "❌ Configuration test failed"
+        fi
