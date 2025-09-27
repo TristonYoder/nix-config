@@ -218,7 +218,6 @@ in
    # protontricks.enable = true;
    # gamescopeSession.enable = true;
     dedicatedServer.openFirewall = true;
-    localNetworkGameTransfers.openFirewall = true;
   };
   
   # Sunshine
