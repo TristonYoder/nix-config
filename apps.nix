@@ -284,7 +284,7 @@ in
 
   # VSCode
   imports = [
-    (fetchTarball "https://github.com/nix-community/nixos-vscode-server/tarball/master")
+    nixos-vscode-server.nixosModules.default
   ];
   services.vscode-server.enable = true;
 

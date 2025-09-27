@@ -4,13 +4,14 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixos-vscode-server.url = "github:nix-community/nixos-vscode-server";
     
     # Optional: Add other flake inputs as needed
     # home-manager.url = "github:nix-community/home-manager";
     # nixos-hardware.url = "github:NixOS/nixos-hardware";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, ... }@inputs:
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixos-vscode-server, ... }@inputs:
     let
       system = "x86_64-linux";
       pkgs = nixpkgs.legacyPackages.${system};
@@ -23,7 +24,7 @@
             ./configuration.nix
             ./server-deployment.nix
           ];
-          specialArgs = { inherit inputs; };
+          specialArgs = { inherit inputs; inherit nixos-vscode-server; };
         };
       };
 
