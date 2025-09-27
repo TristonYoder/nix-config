@@ -30,6 +30,13 @@ jobs:
         SERVER_HOSTNAME="${{ secrets.NIXOS_SERVER_HOSTNAME }}"
         echo "Connecting to server at $SERVER_HOSTNAME"
         
+        # Configure SSH to bypass host key verification
+        mkdir -p ~/.ssh
+        echo "Host $SERVER_HOSTNAME" >> ~/.ssh/config
+        echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+        echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
+        chmod 600 ~/.ssh/config
+        
         # Copy configuration to server
         rsync -avz --delete \
           --exclude='.git' \
@@ -39,7 +46,7 @@ jobs:
           ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME:/tmp/nixos-config-test/
         
         # Test configuration on server
-        ssh -o StrictHostKeyChecking=no ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << 'EOF'
+        ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << 'EOF'
           set -e
           
           # Navigate to test directory
@@ -76,7 +83,7 @@ jobs:
         EOF
         
         # Get test result
-        TEST_RESULT=$(ssh -o StrictHostKeyChecking=no ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME "cat /tmp/nixos-test-result.txt")
+        TEST_RESULT=$(ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME "cat /tmp/nixos-test-result.txt")
         
         if [ "$TEST_RESULT" = "SUCCESS" ]; then
           echo "✅ NixOS configuration test passed!"
