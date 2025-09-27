@@ -19,6 +19,10 @@ let
   '';
 in
 {
+  # =============================================================================
+  # SERVICES - ALPHABETICALLY ORGANIZED
+  # =============================================================================
+
   # Actual Budget
   services.actual = {
     enable = true;
@@ -28,8 +32,8 @@ in
   };
 
   services.caddy.virtualHosts."budget.theyoder.family" = {
-        extraConfig = createVirtualHost "http://localhost:1111";
-      };
+    extraConfig = createVirtualHost "http://localhost:1111";
+  };
 
   # Audiobookshelf
   # services.audiobookshelf = {
@@ -61,7 +65,6 @@ in
     extraConfig = ''
       # Global configuration can go here
     '';
-
   };
 
   networking.firewall.allowedTCPPorts = [ 80 443 ];
@@ -84,23 +87,58 @@ in
     };
   };
 
+  # Immich
+  services.immich = {
+    enable = true;
+    port = 2283;
+    openFirewall = true;
+    host = "0.0.0.0";
+    mediaLocation = "/data/docker-appdata/immich/media";
+    settings.server.externalDomain = "https://photos.theyoder.family";
+  };
+
+  services.caddy.virtualHosts."photos.theyoder.family" = {
+    extraConfig = ''
+      handle_path /share* {
+        reverse_proxy http://localhost:2284
+      }
+      handle {
+        reverse_proxy http://localhost:2283
+      }
+      ${sharedTlsConfig}
+    '';
+  };
+
+  # Immich Public Proxy
+  services.immich-public-proxy = {
+    enable = true;
+    immichUrl = "http://localhost:2283/";
+    openFirewall = true;
+    port = 2284;
+  };
+
+  services.caddy.virtualHosts."share.photos.theyoder.family" = {
+    extraConfig = createVirtualHost "http://localhost:2284";
+  };
+
   # Jellyfin
   services.jellyfin = {
     enable = true;
     openFirewall = true;
   };
 
-  services.caddy.virtualHosts."media.theyoder.family" = {
-    extraConfig = createVirtualHost "http://localhost:8096";
-  };
-
-     # Workaround for jellyfin hardware transcode
+  # Workaround for jellyfin hardware transcode
   systemd.services.jellyfin.serviceConfig = {
-   # DeviceAllow = lib.mkForce [ "char-drm rw" ];
+    # DeviceAllow = lib.mkForce [ "char-drm rw" ];
     DeviceAllow = [ "char-drm rw" "char-nvidia-frontend rw" "char-nvidia-uvm rw" ];
     PrivateDevices = lib.mkForce false;
   };
 
+  services.caddy.virtualHosts."media.theyoder.family" = {
+    extraConfig = createVirtualHost "http://localhost:8096";
+  };
+
+  # Jellyseerr
   services.jellyseerr = {
     enable = true;
     openFirewall = true;
@@ -111,54 +149,50 @@ in
     extraConfig = createVirtualHost "http://localhost:5055";
   };
 
-  # # Mastodon
-  # services.mastodon = {
-  #   enable = true;
-  #   localDomain = "social.theyoder.family";
-  #   webPort = 55001;
-  #   streamingProcesses = 2;    
-  # };
+  # n8n
+  services.n8n = {
+    enable = true;
+    openFirewall = true;
+    webhookUrl = "n8n.7andco.dev";
+    port = 5678;
+    #https://docs.n8n.io/hosting/environment-variables/configuration-methods/
+    settings = {
 
-#  # cMatermost
-#  services.mattermost = {
-#    enable = true;
-#    dataDir = "/data/docker-appdata/mattermost/state";
-#    host = "0.0.0.0";
-#    port = 8065;
-#    siteName = "chat.theyoder.family";
-#    siteUrl = "https://chat.theyoder.family";
-#    database.peerAuth = true;
-#  };
+    };
+  };
 
-  # # Matrix
-  # services.matrix-synapse = {
-  #   enable = true;
-  #   settings.server_name = "theyoder.family";
-  #   settings.public_baseurl = "https://matrix.theyoder.family";
-  #   settings.media_store_path = "/data/docker-appdata/matrix-synapse"
-  #   settings.listeners = [
-  #     {
-  #       bind_addresses = [ "localhost" ];
-	# port = 8448;
-	# tls = false;
-  #      resources = [
-  #         { compress = true; names = ["client" "federation"]; }
-	#   { compress = false; names = [ "federation" ]; }
-  #       ];
-	# type = "http";
-	# x_forwarded = false;
-  #     }
-  #     {
-	# bind_addresses = [ "127.0.0.1" ];
-	# port = 8008;
-	# resources = [ { compress = true; names = [ "client" "federation" ]; }
-	# ];
-	# tls = false;
-	# type = "http";
-	# x_forwarded = true;
-  #     }
-  #   ];
-  # };
+  services.caddy.virtualHosts."n8n.7andco.dev" = {
+    extraConfig = createVirtualHost "http://localhost:5678";
+  };
+
+  # Nextcloud
+  services.caddy.virtualHosts."nextcloud.theyoder.family" = {
+    extraConfig = ''
+      tls internal
+
+      root * /var/lib/nextcloud/data
+      php_fastcgi unix//run/phpfpm/nextcloud.sock
+      file_server
+
+      log {
+        output file /var/log/caddy/nextcloud-access.log {
+          roll_size 5MB
+          roll_keep 3
+        }
+      }
+
+      @forbidden {
+        path /.htaccess /config/* /data/* /db_structure/* /lib/* /templates/* /3rdparty/* /README
+      }
+      respond @forbidden 403
+
+      redir /.well-known/carddav /remote.php/dav 301
+      redir /.well-known/caldav /remote.php/dav 301
+
+      header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+      encode gzip
+    '';
+  };
 
   # NextDNS Dynamic DNS
   systemd.services = {
@@ -170,6 +204,143 @@ in
       startAt = "hourly";
     };
   };
+
+  # Postgres
+  services.postgresql = {
+    enable = true;
+    dataDir = "/data/docker-appdata/postgres";
+    enableTCPIP = true;
+  };
+
+  # Steam
+  programs.steam = {
+    enable = true;
+    remotePlay.openFirewall = true;
+   # protontricks.enable = true;
+   # gamescopeSession.enable = true;
+    dedicatedServer.openFirewall = true;
+    localNetworkGameTransfers.openFirewall = true;
+  };
+  
+  # Sunshine
+  services.sunshine = {
+    enable = true;
+    autoStart = true;
+    capSysAdmin = true;
+    openFirewall = true;  
+  };
+
+  # Tailscale
+  services.tailscale.enable = true;
+  services.tailscale.useRoutingFeatures = "both";
+  services.tailscale.extraUpFlags = [
+    "--ssh"
+    "--advertise-routes=10.150.0.0/16"
+    "--advertise-exit-node"
+    "--snat-subnet-routes=false"
+    "--accept-routes=false"
+  ];
+
+  # Workaround for Tailscale Wiregaurd Bug
+  # https://github.com/NixOS/nixpkgs/issues/180175
+  systemd.services.NetworkManager-wait-online.enable = lib.mkForce false;
+  systemd.services.systemd-networkd-wait-online.enable = lib.mkForce false;
+
+  # Allow Tailscale to act as Router
+  # Kernel-level IP forwarding for the host
+  boot.kernel.sysctl = {
+    "net.ipv4.ip_forward" = 1;
+    "net.ipv6.conf.all.forwarding" = 1;
+  };
+
+  # Technitium DNS
+  services.technitium-dns-server = {
+    enable = true;
+    openFirewall = true;
+  };
+
+  #Vaultwarden
+  services.vaultwarden = {
+    enable = true;
+    backupDir = "/data/docker-appdata/vaultwarden/backups";
+    # https://github.com/dani-garcia/vaultwarden/blob/1.33.2/.env.template
+    config = {
+      ROCKET_ADDRESS = "0.0.0.0";
+      ROCKET_PORT = 8222;
+      DOMAIN = "https://vault.theyoder.family";
+      ENABLE_WEBSOCKET = "true";
+      SIGNUPS_ALLOWED = "false";
+      SIGNUPS_VERIFY = "false";
+      SENDS_ALLOWED = "true";
+      INVITATIONS_ALLOWED = "true";
+      INVITATION_ORG_NAME = "7 & Co. Vaultwarden";
+      ADMIN_TOKEN = "supersecretadmintoken";
+      SIGNUPS_DOMAINS_WHITELIST="7andco.studio, elizabehthallen.photography, theyoder.family";
+    };
+  };
+
+  services.caddy.virtualHosts."vault.theyoder.family" = {
+    extraConfig = createVirtualHost "http://localhost:8222";
+  };
+
+  # VSCode
+  imports = [
+    (fetchTarball "https://github.com/nix-community/nixos-vscode-server/tarball/master")
+  ];
+  services.vscode-server.enable = true;
+
+  # =============================================================================
+  # COMMENTED OUT SERVICES
+  # =============================================================================
+
+  # # Mastodon
+  # services.mastodon = {
+  #   enable = true;
+  #   localDomain = "social.theyoder.family";
+  #   webPort = 55001;
+  #   streamingProcesses = 2;    
+  # };
+
+  # # cMatermost
+  # services.mattermost = {
+  #   enable = true;
+  #   dataDir = "/data/docker-appdata/mattermost/state";
+  #   host = "0.0.0.0";
+  #   port = 8065;
+  #   siteName = "chat.theyoder.family";
+  #   siteUrl = "https://chat.theyoder.family";
+  #   database.peerAuth = true;
+  # };
+
+  # # Matrix
+  # services.matrix-synapse = {
+  #   enable = true;
+  #   settings.server_name = "theyoder.family";
+  #   settings.public_baseurl = "https://matrix.theyoder.family";
+  #   settings.media_store_path = "/data/docker-appdata/matrix-synapse"
+  #   settings.listeners = [
+  #     {
+  #       bind_addresses = [ "localhost" ];
+  # port = 8448;
+  # tls = false;
+  #      resources = [
+  #         { compress = true; names = ["client" "federation"]; }
+  #   { compress = false; names = [ "federation" ]; }
+  #       ];
+  # type = "http";
+  # x_forwarded = false;
+  #     }
+  #     {
+  # bind_addresses = [ "127.0.0.1" ];
+  # port = 8008;
+  # resources = [ { compress = true; names = [ "client" "federation" ]; }
+  # ];
+  # tls = false;
+  # type = "http";
+  # x_forwarded = true;
+  #     }
+  #   ];
+  # };
 
   # #Kasm
   #   services.kasmweb = {
@@ -213,35 +384,6 @@ in
   #  # settings.tls_cert_path = "";
   # };
 
-  # Immich
-  services.immich = {
-    enable = true;
-    port = 2283;
-    openFirewall = true;
-    host = "0.0.0.0";
-    mediaLocation = "/data/docker-appdata/immich/media";
-    settings.server.externalDomain = "https://photos.theyoder.family";
-  };
-
-  # Immich Public Proxy
-  services.immich-public-proxy = {
-    enable = true;
-    immichUrl = "http://localhost:2283/";
-    openFirewall = true;
-    port = 2284;
-  };
-
-  # n8n
-  services.n8n = {
-    enable = true;
-    openFirewall = true;
-    webhookUrl = "n8n.7andco.dev";
-    
-    #https://docs.n8n.io/hosting/environment-variables/configuration-methods/
-    settings = {
-
-    };
-  };
   # # Ollama
   # services.ollama = {
   #   enable = true;
@@ -258,13 +400,6 @@ in
   #   openFirewall=true;
   # };
 
-  # Postgres
-  services.postgresql = {
-    enable = true;
-    dataDir = "/data/docker-appdata/postgres";
-    enableTCPIP = true;
-  };
-
   # # Pixelfed
   # services.pixelfed = {
   #   enable = true;
@@ -278,124 +413,6 @@ in
   #   openFirewall = true;
   # };
 
-  # Tailscale
-  services.tailscale.enable = true;
-  services.tailscale.useRoutingFeatures = "both";
-  services.tailscale.extraUpFlags = [
-    "--ssh"
-    "--advertise-routes=10.150.0.0/16"
-    "--advertise-exit-node"
-    "--snat-subnet-routes=false"
-    "--accept-routes=false"
-  ];
-
-  #Vaultwarden
-  services.vaultwarden = {
-    enable = true;
-    backupDir = "/data/docker-appdata/vaultwarden/backups";
-    # https://github.com/dani-garcia/vaultwarden/blob/1.33.2/.env.template
-    config = {
-      ROCKET_ADDRESS = "0.0.0.0";
-      ROCKET_PORT = 8222;
-      DOMAIN = "https://vault.theyoder.family";
-      ENABLE_WEBSOCKET = "true";
-      SIGNUPS_ALLOWED = "false";
-      SIGNUPS_VERIFY = "false";
-      SENDS_ALLOWED = "true";
-      INVITATIONS_ALLOWED = "true";
-      INVITATION_ORG_NAME = "7 & Co. Vaultwarden";
-      ADMIN_TOKEN = "supersecretadmintoken";
-      SIGNUPS_DOMAINS_WHITELIST="7andco.studio, elizabehthallen.photography, theyoder.family";
-    };
-  };
-
-  services.caddy.virtualHosts."vault.theyoder.family" = {
-    extraConfig = createVirtualHost "http://localhost:8222";
-  };
-
-
-  # Nextcloud
-  services.caddy.virtualHosts."nextcloud.theyoder.family" = {
-    extraConfig = ''
-      tls internal
-
-      root * /var/lib/nextcloud/data
-      php_fastcgi unix//run/phpfpm/nextcloud.sock
-      file_server
-
-      log {
-        output file /var/log/caddy/nextcloud-access.log {
-          roll_size 5MB
-          roll_keep 3
-        }
-      }
-
-      @forbidden {
-        path /.htaccess /config/* /data/* /db_structure/* /lib/* /templates/* /3rdparty/* /README
-      }
-      respond @forbidden 403
-
-      redir /.well-known/carddav /remote.php/dav 301
-      redir /.well-known/caldav /remote.php/dav 301
-
-      header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-      encode gzip
-    '';
-  };
-
-  # Immich Photos
-  services.caddy.virtualHosts."photos.theyoder.family" = {
-    extraConfig = ''
-      handle_path /share* {
-        reverse_proxy http://localhost:2284
-      }
-      handle {
-        reverse_proxy http://localhost:2283
-      }
-      ${sharedTlsConfig}
-    '';
-  };
-
-  services.caddy.virtualHosts."share.photos.theyoder.family" = {
-    extraConfig = createVirtualHost "http://localhost:2284";
-  };
-
-  # Workaround for Wiregaurd Bug
-  # https://github.com/NixOS/nixpkgs/issues/180175
-  systemd.services.NetworkManager-wait-online.enable = lib.mkForce false;
-  systemd.services.systemd-networkd-wait-online.enable = lib.mkForce false;
-
-  # Allow Tailscale to act as Router
-  # Kernel-level IP forwarding for the host
-  boot.kernel.sysctl = {
-    "net.ipv4.ip_forward" = 1;
-    "net.ipv6.conf.all.forwarding" = 1;
-  };
-
-  # Steam
-  programs.steam = {
-    enable = true;
-    remotePlay.openFirewall = true;
-   # protontricks.enable = true;
-   # gamescopeSession.enable = true;
-    dedicatedServer.openFirewall = true;
-    localNetworkGameTransfers.openFirewall = true;
-  };
-  
-  # Sunshine
-  services.sunshine = {
-    enable = true;
-    autoStart = true;
-    capSysAdmin = true;
-    openFirewall = true;  
-  };
-
-  # Technitium DNS
-  services.technitium-dns-server = {
-    enable = true;
-    openFirewall = true;
-  };
-
   # # Uptime Kuma
   # services.uptime-kuma = {
   #   enable = true;
@@ -406,11 +423,5 @@ in
   #     cloudflared-token = "{a_secret_was_here}";
   #     };
   # };
-
-  # VSCode
-  imports = [
-    (fetchTarball "https://github.com/nix-community/nixos-vscode-server/tarball/master")
-  ];
-  services.vscode-server.enable = true;
 
 }
