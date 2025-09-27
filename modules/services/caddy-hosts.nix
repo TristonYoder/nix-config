@@ -1,7 +1,7 @@
-{ self, config, lib, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 let
-  # Cloudflare API Token as an environment variable
+  # Cloudflare API Token - should be moved to secrets management
   cloudflareApiToken = "mDB6U0PcLl-QtjAlX5gskVgH4UO7_QMo5eLY0POq";
   
   # Helper function to create a virtual host with reverse proxy and TLS

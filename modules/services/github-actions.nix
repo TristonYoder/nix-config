@@ -1,6 +1,10 @@
 { config, lib, pkgs, ... }:
 
 {
+  # =============================================================================
+  # GITHUB ACTIONS INTEGRATION - CI/CD Configuration
+  # =============================================================================
+
   # GitHub Actions user for automated NixOS configuration testing and deployment
   users.users.github-actions = {
     isNormalUser = true;
@@ -24,6 +28,7 @@
           command = "ALL";
           options = [ "NOPASSWD" ];
         }
+        # Granular permissions (commented out - using broad ALL for now)
         # {
         #   command = "/run/current-system/sw/bin/nixos-rebuild";
         #   options = [ "NOPASSWD" ];

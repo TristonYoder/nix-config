@@ -1,10 +1,9 @@
-{ config, pkgs, lib, ... }:
+{ config, lib, pkgs, ... }:
 
-  #Wordpress Config
 let
   domain = "localhost";
 
-  # Auxiliary functions
+  # Auxiliary functions for fetching WordPress packages
   fetchPackage = { name, version, hash, isTheme }:
     pkgs.stdenv.mkDerivation rec {
       inherit name version hash;
@@ -47,6 +46,10 @@ let
   # });
 
 in {
+  # =============================================================================
+  # WORDPRESS CONFIGURATION - Content management system
+  # =============================================================================
+
   services = {
     # nginx.virtualHosts.${domain} = {
     #   enableACME = true;
@@ -63,10 +66,9 @@ in {
     };
   };
 
-# PHP Config
-services.phpfpm.pools."wordpress-localhost".phpOptions = ''
-  upload_max_filesize=1G
-  post_max_size=1G
-'';
-
+  # PHP Configuration for WordPress
+  services.phpfpm.pools."wordpress-localhost".phpOptions = ''
+    upload_max_filesize=1G
+    post_max_size=1G
+  '';
 }

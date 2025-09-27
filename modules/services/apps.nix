@@ -1,6 +1,10 @@
-{ self, config, lib, pkgs, ... }: 
+{ config, lib, pkgs, nixpkgs, nixpkgs-unstable, ... }:
+
 let
-  # Cloudflare API Token as an environment variable
+  # Use unstable packages for some services that need newer versions
+  unstable = nixpkgs-unstable.legacyPackages.${pkgs.system};
+  
+  # Cloudflare API Token - should be moved to secrets management
   cloudflareApiToken = "mDB6U0PcLl-QtjAlX5gskVgH4UO7_QMo5eLY0POq";
   
   # Helper function to create a virtual host with reverse proxy and TLS
@@ -35,7 +39,7 @@ in
     extraConfig = createVirtualHost "http://localhost:1111";
   };
 
-  # Audiobookshelf
+  # Audiobookshelf (commented out - using Docker version)
   # services.audiobookshelf = {
   #   enable = true;
   #   port = 13378;
@@ -50,7 +54,7 @@ in
     extraConfig = createVirtualHost "http://localhost:13379";
   };
 
-  # Caddy
+  # Caddy with Cloudflare DNS plugin
   services.caddy = {
     enable = true;
     package = pkgs.caddy.withPlugins {
@@ -69,7 +73,7 @@ in
 
   networking.firewall.allowedTCPPorts = [ 80 443 ];
 
-  # Cloudflare Config
+  # Cloudflare Tunnel Configuration
   users.users.cloudflared = {
     group = "cloudflared";
     isSystemUser = true;
@@ -87,7 +91,7 @@ in
     };
   };
 
-  # Immich
+  # Immich - Photo management
   services.immich = {
     enable = true;
     port = 2283;
@@ -121,7 +125,7 @@ in
     extraConfig = createVirtualHost "http://localhost:2284";
   };
 
-  # Jellyfin
+  # Jellyfin - Media server
   services.jellyfin = {
     enable = true;
     openFirewall = true;
@@ -129,7 +133,6 @@ in
 
   # Workaround for jellyfin hardware transcode
   systemd.services.jellyfin.serviceConfig = {
-    # DeviceAllow = lib.mkForce [ "char-drm rw" ];
     DeviceAllow = [ "char-drm rw" "char-nvidia-frontend rw" "char-nvidia-uvm rw" ];
     PrivateDevices = lib.mkForce false;
   };
@@ -138,7 +141,7 @@ in
     extraConfig = createVirtualHost "http://localhost:8096";
   };
 
-  # Jellyseerr
+  # Jellyseerr - Media requests
   services.jellyseerr = {
     enable = true;
     openFirewall = true;
@@ -149,14 +152,13 @@ in
     extraConfig = createVirtualHost "http://localhost:5055";
   };
 
-  # n8n
+  # n8n - Workflow automation
   services.n8n = {
     enable = true;
     openFirewall = true;
     webhookUrl = "n8n.7andco.dev";
-    #https://docs.n8n.io/hosting/environment-variables/configuration-methods/
     settings = {
-
+      # Additional n8n settings can go here
     };
   };
 
@@ -164,7 +166,7 @@ in
     extraConfig = createVirtualHost "http://localhost:5678";
   };
 
-  # Nextcloud
+  # Nextcloud - File sharing and collaboration
   services.caddy.virtualHosts."nextcloud.theyoder.family" = {
     extraConfig = ''
       tls internal
@@ -196,32 +198,28 @@ in
   # NextDNS Dynamic DNS
   systemd.services = {
     nextdns-dyndns = {
-      path = [
-        pkgs.curl
-      ];
+      path = [ pkgs.curl ];
       script = "curl https://link-ip.nextdns.io/{a_secret_was_here}/{a_secret_was_here}";
       startAt = "hourly";
     };
   };
 
-  # Postgres
+  # PostgreSQL database
   services.postgresql = {
     enable = true;
     dataDir = "/data/docker-appdata/postgres";
     enableTCPIP = true;
   };
 
-  # Steam
+  # Steam gaming platform
   programs.steam = {
     enable = true;
     remotePlay.openFirewall = true;
-   # protontricks.enable = true;
-   # gamescopeSession.enable = true;
     dedicatedServer.openFirewall = true;
     localNetworkGameTransfers.openFirewall = true;
   };
   
-  # Sunshine
+  # Sunshine - Game streaming
   services.sunshine = {
     enable = true;
     autoStart = true;
@@ -229,7 +227,7 @@ in
     openFirewall = true;  
   };
 
-  # Tailscale
+  # Tailscale - VPN and networking
   services.tailscale.enable = true;
   services.tailscale.useRoutingFeatures = "both";
   services.tailscale.extraUpFlags = [
@@ -240,7 +238,7 @@ in
     "--accept-routes=false"
   ];
 
-  # Workaround for Tailscale Wiregaurd Bug
+  # Workaround for Tailscale Wireguard Bug
   # https://github.com/NixOS/nixpkgs/issues/180175
   systemd.services.NetworkManager-wait-online.enable = lib.mkForce false;
   systemd.services.systemd-networkd-wait-online.enable = lib.mkForce false;
@@ -252,13 +250,13 @@ in
     "net.ipv6.conf.all.forwarding" = 1;
   };
 
-  # Technitium DNS
+  # Technitium DNS Server
   services.technitium-dns-server = {
     enable = true;
     openFirewall = true;
   };
 
-  #Vaultwarden
+  # Vaultwarden - Password manager
   services.vaultwarden = {
     enable = true;
     backupDir = "/data/docker-appdata/vaultwarden/backups";
@@ -282,17 +280,14 @@ in
     extraConfig = createVirtualHost "http://localhost:8222";
   };
 
-  # VSCode
-  imports = [
-    (fetchTarball "https://github.com/nix-community/nixos-vscode-server/tarball/master")
-  ];
+  # VSCode Server - Remote development
   services.vscode-server.enable = true;
 
   # =============================================================================
-  # COMMENTED OUT SERVICES
+  # COMMENTED OUT SERVICES - Available for future use
   # =============================================================================
 
-  # # Mastodon
+  # # Mastodon - Social media
   # services.mastodon = {
   #   enable = true;
   #   localDomain = "social.theyoder.family";
@@ -300,7 +295,7 @@ in
   #   streamingProcesses = 2;    
   # };
 
-  # # cMatermost
+  # # Mattermost - Team communication
   # services.mattermost = {
   #   enable = true;
   #   dataDir = "/data/docker-appdata/mattermost/state";
@@ -311,108 +306,59 @@ in
   #   database.peerAuth = true;
   # };
 
-  # # Matrix
+  # # Matrix - Decentralized communication
   # services.matrix-synapse = {
   #   enable = true;
   #   settings.server_name = "theyoder.family";
   #   settings.public_baseurl = "https://matrix.theyoder.family";
-  #   settings.media_store_path = "/data/docker-appdata/matrix-synapse"
-  #   settings.listeners = [
-  #     {
-  #       bind_addresses = [ "localhost" ];
-  # port = 8448;
-  # tls = false;
-  #      resources = [
-  #         { compress = true; names = ["client" "federation"]; }
-  #   { compress = false; names = [ "federation" ]; }
-  #       ];
-  # type = "http";
-  # x_forwarded = false;
-  #     }
-  #     {
-  # bind_addresses = [ "127.0.0.1" ];
-  # port = 8008;
-  # resources = [ { compress = true; names = [ "client" "federation" ]; }
-  # ];
-  # tls = false;
-  # type = "http";
-  # x_forwarded = true;
-  #     }
-  #   ];
+  #   settings.media_store_path = "/data/docker-appdata/matrix-synapse";
+  #   # Additional matrix configuration...
   # };
 
-  # #Kasm
-  #   services.kasmweb = {
-  #     enable = true;
-  #     listenPort = 8775;
-  #     datastorePath = "/data/docker-appdata/kasm/";
-  #     networkSubnet = "172.29.0.0/16";
-  #   };
+  # # Kasm - Browser-based desktops
+  # services.kasmweb = {
+  #   enable = true;
+  #   listenPort = 8775;
+  #   datastorePath = "/data/docker-appdata/kasm/";
+  #   networkSubnet = "172.29.0.0/16";
+  # };
 
-  # # Kasm Docker Network Setup
-  #   systemd.services.docker-kasm_db_init = {
-  #     description = "Initialize Kasm DB Container";
-
-  #     # Define dependencies
-  #     wants = [ "docker.service" ];
-  #     after = [ "docker.service" ];
-
-  #     # Explicitly override conflicting options
-  #     serviceConfig = {
-  #       Restart = lib.mkForce "on-failure";
-  #       RestartSec = lib.mkForce "5s";
-  #       ExecStartPre = lib.mkForce ''
-  #         docker network inspect kasm_default_network >/dev/null 2>&1 || \
-  #         docker network create kasm_default_network
-  #       '';
-  #       ExecStart = lib.mkForce ''
-  #         docker run --rm --network kasm_default_network \
-  #         --name kasm_db_init \
-  #         kasm_base_image:latest db-init-command
-  #       '';
-  #     };
-  #   };
-
-  # # Headscale
+  # # Headscale - Self-hosted Tailscale control server
   # services.headscale = {
   #   enable = true;
   #   port = 4433;
   #   address = "0.0.0.0";
-  #  # settings.server_url = "https://vpn.theyoder.family:443";
-  #  # settings.tls_key_path = "";
-  #  # settings.tls_cert_path = "";
   # };
 
-  # # Ollama
+  # # Ollama - Local AI models
   # services.ollama = {
   #   enable = true;
-  #   # Optional: preload models, see https://ollama.com/library
   #   loadModels = [ "llama4:latest" "deepseek-r1:latest"];
   #   acceleration = "cuda";
   # };
-  # nixpkgs.config.cudaSupport = true;
- 
+
+  # # Open WebUI - AI interface
   # services.open-webui = {
-  #   enable=true;
-  #   port=8182;
-  #   host="0.0.0.0";
-  #   openFirewall=true;
+  #   enable = true;
+  #   port = 8182;
+  #   host = "0.0.0.0";
+  #   openFirewall = true;
   # };
 
-  # # Pixelfed
+  # # Pixelfed - Decentralized social media
   # services.pixelfed = {
   #   enable = true;
   #   dataDir = "/data/docker-appdata/pixelfed";
   #   domain = "pixel.theyoder.family";
   # };
 
-  # # Plex Config
+  # # Plex - Media server
   # services.plex = {
   #   enable = true;
   #   openFirewall = true;
   # };
 
-  # # Uptime Kuma
+  # # Uptime Kuma - Monitoring
   # services.uptime-kuma = {
   #   enable = true;
   #   appriseSupport = true;
@@ -420,7 +366,6 @@ in
   #     PORT = "3002";
   #     HOST = "0.0.0.0";
   #     cloudflared-token = "{a_secret_was_here}";
-  #     };
+  #   };
   # };
-
 }

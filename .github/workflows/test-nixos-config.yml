@@ -1,4 +1,4 @@
-name: Test NixOS Configuration
+name: Test NixOS Flake Configuration
 
 on:
   push:
@@ -24,7 +24,7 @@ jobs:
     - name: Wait for Tailscale connection
       run: sleep 10
       
-    - name: Test NixOS Configuration
+    - name: Test NixOS Flake Configuration
       run: |
         # Connect to server via Tailscale
         SERVER_HOSTNAME="${{ secrets.NIXOS_SERVER_HOSTNAME }}"
@@ -45,34 +45,24 @@ jobs:
           --exclude='nextcloud/admin-pass' \
           ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME:/tmp/nixos-config-test/
         
-        # Test configuration on server
+        # Test flake configuration on server
         ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << 'EOF'
           set -e
           
           # Navigate to test directory
           cd /tmp/nixos-config-test
           
-          # Create backup of current configuration
-          sudo cp /etc/nixos/configuration.nix /etc/nixos/configuration.nix.backup.$(date +%Y%m%d_%H%M%S)
-          
-          # Copy new configuration
-          sudo cp configuration.nix /etc/nixos/configuration.nix
-          
-          # Copy other necessary files
-          for file in apps.nix nas.nix caddy-hosts.nix tpdemos.nix btc.nix nextcloud.nix ts-router.nix github-actions.nix; do
-            if [ -f "$file" ]; then
-              sudo cp "$file" "/etc/nixos/$file"
-            fi
-          done
-          
-          # Copy docker directory if it exists
-          if [ -d "docker" ]; then
-            sudo cp -r docker /etc/nixos/
+          # Test flake syntax first
+          echo "Testing flake syntax..."
+          if ! nix flake check; then
+            echo "❌ Flake syntax check failed!"
+            echo "FAILED" > /tmp/nixos-test-result.txt
+            exit 1
           fi
           
-          # Test the configuration
-          echo "Testing NixOS configuration..."
-          if sudo nixos-rebuild dry-run; then
+          # Test the NixOS configuration using flake
+          echo "Testing NixOS configuration with flake..."
+          if sudo nixos-rebuild dry-run --flake .#david; then
             echo "✅ Configuration test passed!"
             echo "SUCCESS" > /tmp/nixos-test-result.txt
           else

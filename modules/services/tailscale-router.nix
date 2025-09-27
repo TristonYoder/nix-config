@@ -1,6 +1,10 @@
-{ config, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 
 {
+  # =============================================================================
+  # TAILSCALE ROUTER CONTAINER - Network routing and VPN
+  # =============================================================================
+
   # Container configuration
   containers.tailscale-router = {
     autoStart = true;
@@ -52,16 +56,17 @@
         enable = true;
         useRoutingFeatures = "both";
         extraUpFlags = [
-"--ssh"
-"--snat-subnet-routes=false"
-"--accept-routes=true"
-];};
-      # Workaround for Wiregaurd Bug
+          "--ssh"
+          "--snat-subnet-routes=false"
+          "--accept-routes=true"
+        ];
+      };
+      
+      # Workaround for Wireguard Bug
       # https://github.com/NixOS/nixpkgs/issues/180175
-#      systemd.services.NetworkManager-wait-online.enable = lib.mkForce false;
-#      systemd.services.systemd-networkd-wait-online.enable = lib.mkForce false;
+      # systemd.services.NetworkManager-wait-online.enable = lib.mkForce false;
+      # systemd.services.systemd-networkd-wait-online.enable = lib.mkForce false;
 
-    
       # Required system packages
       environment.systemPackages = with pkgs; [
         tailscale
