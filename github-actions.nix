@@ -8,10 +8,10 @@
     home = "/home/github-actions";
     shell = pkgs.bash;
     extraGroups = [ "wheel" ];
-    # SSH keys will be added manually via Tailscale connection
+    # SSH keys for GitHub Actions
     openssh.authorizedKeys.keys = [
       # Add your GitHub Actions public key here
-      # "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... github-actions@your-repo"
+       "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJu9lBREFqV8dhEoTjma/muYKgs6nsjcKW3FVhe+t0Nu github-actions@david-nixos"
     ];
   };
 

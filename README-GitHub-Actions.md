@@ -52,26 +52,26 @@ ssh-keygen -t ed25519 -C "github-actions@david-nixos" -f ~/.ssh/github_actions
 # ~/.ssh/github_actions.pub (public key)
 ```
 
-### Step 3: Add Public Key to Server
+### Step 3: Add Public Key to NixOS Configuration
 
-Copy the **public key** to your server:
+Add the **public key** to your NixOS configuration:
 
-```bash
-# Method 1: Use ssh-copy-id (recommended)
-ssh-copy-id -i ~/.ssh/github_actions.pub github-actions@your-server.ts.net
+1. **Copy the public key content:**
+   ```bash
+   cat ~/.ssh/github_actions.pub
+   ```
 
-# Method 2: Manual copy (if ssh-copy-id doesn't work)
-# First, copy the public key content:
-cat ~/.ssh/github_actions.pub
+2. **Edit `github-actions.nix`** and uncomment/update the SSH key line:
+   ```nix
+   openssh.authorizedKeys.keys = [
+     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... github-actions@david-nixos"
+   ];
+   ```
 
-# Then SSH to your server and add it:
-ssh your-username@your-server.ts.net
-sudo su - github-actions
-mkdir -p ~/.ssh
-echo 'PASTE_THE_PUBLIC_KEY_HERE' >> ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
-chmod 700 ~/.ssh
-```
+3. **Apply the configuration:**
+   ```bash
+   sudo nixos-rebuild switch
+   ```
 
 ### Step 4: Configure GitHub Repository Secrets
 
