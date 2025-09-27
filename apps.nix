@@ -17,6 +17,11 @@ let
       }
     }
   '';
+
+  # Helper function to add a virtual host to Caddy
+  addVirtualHost = domain: config: {
+    services.caddy.virtualHosts."${domain}" = config;
+  };
 in
 {
   # Actual Budget
@@ -54,9 +59,6 @@ in
         extraConfig = createVirtualHost "http://localhost:7575";
       };
 
-      "audiobooks.theyoder.family" = {
-        extraConfig = createVirtualHost "http://localhost:13378";
-      };
 
       "audiobooksync.theyoder.family" = {
         extraConfig = createVirtualHost "http://localhost:13379";
@@ -66,9 +68,6 @@ in
         extraConfig = createVirtualHost "http://localhost:8997";
       };
 
-      "budget.theyoder.family" = {
-        extraConfig = createVirtualHost "http://localhost:1111";
-      };
 
       "carolineyoder.com" = {
         extraConfig = createVirtualHost "http://localhost:1128";
@@ -93,9 +92,6 @@ in
         extraConfig = createVirtualHost "http://10.150.2.117:8123";
       };
 
-      "media.theyoder.family" = {
-        extraConfig = createVirtualHost "http://localhost:8096";
-      };
 
       "mempool.theyoder.family" = {
         extraConfig = createVirtualHost "http://localhost:8998";
@@ -138,21 +134,6 @@ in
         extraConfig = createVirtualHost "http://localhost:55001";
       };
 
-      "photos.theyoder.family" = {
-        extraConfig = ''
-          handle_path /share* {
-            reverse_proxy http://localhost:2284
-          }
-          handle {
-            reverse_proxy http://localhost:2283
-          }
-          ${sharedTlsConfig}
-        '';
-      };
-
-      "share.photos.theyoder.family" = {
-        extraConfig = createVirtualHost "http://localhost:2284";
-      };
 
       "poker.theyoder.family" = {
         extraConfig = createVirtualHost "http://localhost:8234";
@@ -210,6 +191,7 @@ in
     openFirewall = true;
   };
 
+
      # Workaround for jellyfin hardware transcode
   systemd.services.jellyfin.serviceConfig = {
    # DeviceAllow = lib.mkForce [ "char-drm rw" ];
@@ -222,6 +204,7 @@ in
     openFirewall = true;
     port = 5055;
   };
+
 
   # # Mastodon
   # services.mastodon = {
@@ -343,6 +326,7 @@ in
     port = 2284;
   };
 
+
   # n8n
   services.n8n = {
     enable = true;
@@ -420,6 +404,7 @@ in
       SIGNUPS_DOMAINS_WHITELIST="7andco.studio, elizabehthallen.photography, theyoder.family";
     };
   };
+
   # Workaround for Wiregaurd Bug
   # https://github.com/NixOS/nixpkgs/issues/180175
   systemd.services.NetworkManager-wait-online.enable = lib.mkForce false;
@@ -472,5 +457,51 @@ in
     (fetchTarball "https://github.com/nix-community/nixos-vscode-server/tarball/master")
   ];
   services.vscode-server.enable = true;
+
+  # =============================================================================
+  # VIRTUAL HOSTS - Organized by Service
+  # =============================================================================
+  
+  # Budget Service Virtual Host
+  services.caddy.virtualHosts."budget.theyoder.family" = {
+    extraConfig = createVirtualHost "http://localhost:1111";
+  };
+
+  # Audiobookshelf Virtual Host  
+  services.caddy.virtualHosts."audiobooks.theyoder.family" = {
+    extraConfig = createVirtualHost "http://localhost:13378";
+  };
+
+  # Jellyfin Virtual Host
+  services.caddy.virtualHosts."media.theyoder.family" = {
+    extraConfig = createVirtualHost "http://localhost:8096";
+  };
+
+  # Jellyseerr Virtual Host
+  services.caddy.virtualHosts."request.theyoder.family requests.theyoder.family" = {
+    extraConfig = createVirtualHost "http://localhost:5055";
+  };
+
+  # Immich Virtual Hosts
+  services.caddy.virtualHosts."photos.theyoder.family" = {
+    extraConfig = ''
+      handle_path /share* {
+        reverse_proxy http://localhost:2284
+      }
+      handle {
+        reverse_proxy http://localhost:2283
+      }
+      ${sharedTlsConfig}
+    '';
+  };
+
+  services.caddy.virtualHosts."share.photos.theyoder.family" = {
+    extraConfig = createVirtualHost "http://localhost:2284";
+  };
+
+  # Vaultwarden Virtual Host
+  services.caddy.virtualHosts."vault.theyoder.family" = {
+    extraConfig = createVirtualHost "http://localhost:8222";
+  };
 
 }
