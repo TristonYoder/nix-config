@@ -61,7 +61,7 @@ jobs:
           # Create timestamped backup
           BACKUP_NAME="config_$(date +%Y%m%d_%H%M%S)"
           sudo mkdir -p /var/backups/nixos/$BACKUP_NAME
-          sudo cp -r /etc/nixos/* /var/backups/nixos/$BACKUP_NAME/
+          sudo cp -r /etc/nixos/. /var/backups/nixos/$BACKUP_NAME/
           
           # Keep only last 10 backups
           sudo find /var/backups/nixos -maxdepth 1 -type d -name "config_*" | sort | head -n -10 | xargs -r sudo rm -rf
