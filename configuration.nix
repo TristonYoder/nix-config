@@ -1,37 +1,11 @@
 # Edit this configuration file to define what should be installed on
 # your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running ‘nixos-help’).
+# and in the NixOS manual (accessible by running 'nixos-help').
 
-{ self, config, pkgs, lib, ... }:
+{ config, pkgs, lib, nixpkgs, nixpkgs-unstable, nix-bitcoin, ... }:
 {
-  imports =
-    [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
-      ./tpdemos.nix
-      ./nas.nix # Nix Config for NAS functionality (Disks, Shares, etc.)
-      ./apps.nix # Non-docker apps
-      ./caddy-hosts.nix # Caddy virtual hosts for services without NixOS equivalents
-      ./github-actions.nix # GitHub Actions integration for automated deployments
-      # ./btc.nix # Nix Bitcoin (https://github.com/fort-nix/nix-bitcoin/)
-    #  ./ts-router.nix
-      # ./nextcloud.nix # Nextcloud Stack
-      # Docker
-     ./docker/affine.nix # Affine Notes
-     ./docker/com.carolineyoder.nix # carolineyoder.com website
-     ./docker/photography.carolineelizabeth.nix #carolineelizabeth.photography
-     ./docker/studio.7andco.nix # 7andco.studio website
-    #  ./docker/code-server.nix #Code Server
-     ./docker/docker.nix # Base Docker Config
-    #  ./docker/portainer.nix # Portainer Edge Agent
-     ./docker/audiobooks.nix # Compose for Audiobook Stack
-     ./docker/media-aq.nix # Compose for Media AQ Stack
-     ./docker/homarr.nix # Compose for Homarr Stack
-    #  ./docker/kasm.nix # Compose for Kasm Stack
-     ./docker/planning-poker.nix # Planning Poker
-     ./docker/tandoor.nix # Recipie Manager
-     ./docker/watchtower.nix # Docker Auto-Updater
-     ./docker/ersatztv.nix # ErsatzTV
-    ];
+  # Note: Imports are now handled by the flake.nix file
+  # This allows for better modularity and flake-based dependency management
 
   # Nix Flakes
   nix = {
