@@ -22,53 +22,105 @@ GitHub Repository → GitHub Actions → Tailscale → Your NixOS Server
 3. **GitHub Actions** handles all deployment logic
 4. **Backup System** ensures rollback capability
 
-## Setup Instructions
+## Complete Setup Instructions
 
-### 1. Server Preparation
+### Step 1: Apply NixOS Configuration
 
-The GitHub Actions user and permissions are now declared in NixOS configuration. Simply run:
+On your NixOS server, run:
 
 ```bash
-# Apply the NixOS configuration (this creates the github-actions user and permissions)
+# This creates the github-actions user and all necessary permissions
 sudo nixos-rebuild switch
-
-# Add your GitHub Actions public key
-echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... github-actions@your-repo' >> /home/github-actions/.ssh/authorized_keys
-chown github-actions:github-actions /home/github-actions/.ssh/authorized_keys
-chmod 600 /home/github-actions/.ssh/authorized_keys
 ```
 
-### 2. GitHub Repository Secrets
+**What this does:**
+- Creates `github-actions` user
+- Sets up sudo permissions for deployment commands
+- Creates backup directory `/var/backups/nixos`
+- Installs required packages (rsync, dnsutils, git, bash)
 
-Configure the following secrets in your GitHub repository:
+### Step 2: Generate SSH Key Pair
 
-| Secret Name | Description | Example |
-|-------------|-------------|---------|
-| `TAILSCALE_OAUTH_CLIENT_ID` | Tailscale OAuth Client ID | `client_1234567890abcdef` |
-| `TAILSCALE_OAUTH_SECRET` | Tailscale OAuth Secret | `secret_abcdef1234567890` |
-| `NIXOS_SERVER_HOSTNAME` | Your server's Tailscale hostname | `david` |
+On your **local machine** (not the server), generate an SSH key:
+
+```bash
+# Generate SSH key pair
+ssh-keygen -t ed25519 -C "github-actions@david-nixos" -f ~/.ssh/github_actions
+
+# This creates two files:
+# ~/.ssh/github_actions (private key)
+# ~/.ssh/github_actions.pub (public key)
+```
+
+### Step 3: Add Public Key to Server
+
+Copy the **public key** to your server:
+
+```bash
+# Method 1: Use ssh-copy-id (recommended)
+ssh-copy-id -i ~/.ssh/github_actions.pub github-actions@your-server.ts.net
+
+# Method 2: Manual copy (if ssh-copy-id doesn't work)
+# First, copy the public key content:
+cat ~/.ssh/github_actions.pub
+
+# Then SSH to your server and add it:
+ssh your-username@your-server.ts.net
+sudo su - github-actions
+mkdir -p ~/.ssh
+echo 'PASTE_THE_PUBLIC_KEY_HERE' >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+chmod 700 ~/.ssh
+```
+
+### Step 4: Configure GitHub Repository Secrets
+
+In your GitHub repository (`david-nixos`), go to **Settings** → **Secrets and variables** → **Actions** and add these secrets:
+
+| Secret Name | Description | How to Get |
+|-------------|-------------|------------|
+| `TAILSCALE_OAUTH_CLIENT_ID` | Tailscale OAuth Client ID | See Step 5 below |
+| `TAILSCALE_OAUTH_SECRET` | Tailscale OAuth Secret | See Step 5 below |
+| `NIXOS_SERVER_HOSTNAME` | Your server's Tailscale hostname | Your server's hostname (e.g., `david`) |
 | `NIXOS_SERVER_USER` | SSH user for GitHub Actions | `github-actions` |
+| `SSH_PRIVATE_KEY` | SSH private key content | See Step 6 below |
 
-### 3. Tailscale OAuth Setup
+### Step 5: Setup Tailscale OAuth
 
 1. Go to [Tailscale Admin Console](https://login.tailscale.com/admin/settings/oauth)
-2. Create a new OAuth client
-3. Set the redirect URI to: `https://github.com/your-username/your-repo`
-4. Copy the Client ID and Secret to GitHub secrets
+2. Click **Generate OAuth client**
+3. Fill in:
+   - **Client name**: `david-nixos-github-actions`
+   - **Redirect URI**: `https://github.com/your-username/david-nixos`
+4. Click **Generate**
+5. Copy the **Client ID** and **Secret** to your GitHub repository secrets
 
-### 4. SSH Key Setup
+### Step 6: Add SSH Private Key to GitHub
 
-Generate an SSH key pair for GitHub Actions:
+Copy your **private key** content to GitHub:
 
 ```bash
-# Generate SSH key
-ssh-keygen -t ed25519 -C "github-actions@your-repo" -f ~/.ssh/github_actions
+# Display the private key content
+cat ~/.ssh/github_actions
 
-# Copy public key to server
-ssh-copy-id -i ~/.ssh/github_actions.pub github-actions@your-server.ts.net
+# Copy the entire output (including -----BEGIN and -----END lines)
+# Add it to GitHub repository secrets as SSH_PRIVATE_KEY
 ```
 
-Add the private key to GitHub repository secrets as `SSH_PRIVATE_KEY`.
+**Important:** The private key should look like this:
+```
+-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+... (many more lines) ...
+-----END OPENSSH PRIVATE KEY-----
+```
+
+### Step 7: Test the Setup
+
+1. **Push a change** to your repository
+2. **Check GitHub Actions** tab in your repository
+3. **Look for** "Test NixOS Configuration" workflow
+4. **Verify** it connects to your server and runs `nixos-rebuild dry-run`
 
 ## Workflow Details
 
@@ -78,9 +130,9 @@ Add the private key to GitHub repository secrets as `SSH_PRIVATE_KEY`.
 - Push to any branch
 - Pull requests to main
 
-**Process:**
+**What it does:**
 1. Connects to server via Tailscale
-2. Copies configuration files
+2. Copies configuration files to `/tmp/nixos-config-test/`
 3. Runs `nixos-rebuild dry-run`
 4. Reports success/failure status
 
@@ -90,16 +142,16 @@ Add the private key to GitHub repository secrets as `SSH_PRIVATE_KEY`.
 - Push to main branch (after successful tests)
 - Manual trigger
 
-**Process:**
-1. Creates configuration backup
-2. Copies new configuration
-3. Runs final test
-4. Executes `nixos-rebuild switch`
+**What it does:**
+1. Creates backup in `/var/backups/nixos/config_YYYYMMDD_HHMMSS/`
+2. Copies new configuration to `/etc/nixos/`
+3. Runs final test with `nixos-rebuild dry-run`
+4. Deploys with `nixos-rebuild switch`
 5. Reports deployment status
 
 ## Backup System
 
-The system automatically creates backups in `/var/backups/nixos/` with the following structure:
+The system automatically creates backups in `/var/backups/nixos/`:
 
 ```
 /var/backups/nixos/
@@ -113,21 +165,40 @@ The system automatically creates backups in `/var/backups/nixos/` with the follo
 ```
 
 - **Retention**: Keeps last 10 backups automatically
-- **Rollback**: Manual rollback by copying backup files back to `/etc/nixos/`
+- **Location**: `/var/backups/nixos/`
+- **Format**: `config_YYYYMMDD_HHMMSS/`
+
+## Manual Rollback
+
+If deployment fails, you can manually rollback:
+
+```bash
+# SSH to your server
+ssh your-username@your-server.ts.net
+
+# List available backups
+ls -la /var/backups/nixos/
+
+# Copy backup files back to /etc/nixos/
+sudo cp -r /var/backups/nixos/config_20240101_120000/* /etc/nixos/
+
+# Apply the rollback
+sudo nixos-rebuild switch
+```
 
 ## Troubleshooting
 
 ### Common Issues
 
 1. **Tailscale Connection Failed**
-   - Check Tailscale OAuth credentials
-   - Verify server hostname in secrets
+   - Check Tailscale OAuth credentials in GitHub secrets
+   - Verify `NIXOS_SERVER_HOSTNAME` is correct (e.g., `david`)
    - Ensure Tailscale is running on server
 
 2. **SSH Connection Failed**
-   - Verify SSH key is added to authorized_keys
-   - Check user permissions
-   - Test SSH connection manually
+   - Verify SSH key is added to `/home/github-actions/.ssh/authorized_keys`
+   - Check file permissions: `chmod 600 ~/.ssh/authorized_keys`
+   - Test SSH connection: `ssh github-actions@your-server.ts.net`
 
 3. **Configuration Test Failed**
    - Check NixOS configuration syntax
@@ -137,7 +208,7 @@ The system automatically creates backups in `/var/backups/nixos/` with the follo
 4. **Deployment Failed**
    - Check for conflicting services
    - Verify system resources
-   - Use manual rollback by copying backup files
+   - Use manual rollback (see above)
 
 ### Debug Commands
 
@@ -151,9 +222,8 @@ sudo nixos-rebuild dry-run
 # List available backups
 ls -la /var/backups/nixos/
 
-# Manual rollback
-sudo cp -r /var/backups/nixos/config_20240101_120000/* /etc/nixos/
-sudo nixos-rebuild switch
+# Check GitHub Actions logs
+# Go to your repository → Actions tab → Click on failed workflow
 ```
 
 ## Security Considerations
