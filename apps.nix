@@ -1,4 +1,4 @@
-{ self, config, lib, pkgs, ... }: 
+{ self, config, lib, pkgs, nixos-vscode-server, ... }: 
 let
   # Cloudflare API Token as an environment variable
   cloudflareApiToken = "mDB6U0PcLl-QtjAlX5gskVgH4UO7_QMo5eLY0POq";
