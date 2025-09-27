@@ -37,6 +37,7 @@
   # Bootloader
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
+  boot.loader.grub.efiSupport = true;
 
   # # Allow SSH for zfs auth
   # boot = {
