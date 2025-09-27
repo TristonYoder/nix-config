@@ -84,7 +84,7 @@
             
             # External modules
             nixos-vscode-server.nixosModules.default
-            nix-bitcoin.nixosModules.default
+            # nix-bitcoin.nixosModules.default  # Only include when bitcoin.nix is enabled
           ];
           
           specialArgs = {

@@ -191,9 +191,8 @@
   system.stateVersion = "23.11"; # Did you read the comment?
   system.autoUpgrade.channel = "https://nixos.org/channels/nixos-23.11/";
   
-  # This will automatically snapshot configuration.nix on every nixos-rebuild, and store it in
-  # /run/current-system/configuration.nix
-  # prior system generations are stored here:
+  # Note: system.copySystemConfiguration is not supported with flakes
+  # Configuration is managed through the flake system instead
+  # Prior system generations are still stored in:
   # /nix/var/nix/profiles/system-X-link/configuration.nix 
-  system.copySystemConfiguration = true; 
 }

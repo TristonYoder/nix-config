@@ -5,14 +5,14 @@
   # BITCOIN SERVICES - nix-bitcoin integration
   # =============================================================================
 
-  # Import nix-bitcoin modules
-  imports = [
-    "${nix-bitcoin}/modules/modules.nix"
-  ];
+  # Note: nix-bitcoin modules are imported via flake.nix
 
   # Automatically generate all secrets required by services.
   # The secrets are stored in /etc/nix-bitcoin-secrets
   nix-bitcoin.generateSecrets = true;
+  
+  # Set secrets setup method for flake compatibility
+  nix-bitcoin.secretsSetupMethod = "auto";
 
   # Enable Bitcoin services
   services = {
