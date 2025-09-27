@@ -52,6 +52,11 @@ in
     extraConfig = createVirtualHost "http://localhost:8065";
   };
 
+  # ErsatzTV (Docker service)
+  services.caddy.virtualHosts."tv.theyoder.family" = {
+    extraConfig = createVirtualHost "http://localhost:8409";
+  };
+
   # Home Assistant (external service)
   services.caddy.virtualHosts."home.theyoder.family" = {
     extraConfig = createVirtualHost "http://10.150.2.117:8123";
