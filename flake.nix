@@ -60,13 +60,13 @@
             ./modules/services/nas.nix
             ./modules/services/caddy-hosts.nix
             ./modules/services/github-actions.nix
-            ./modules/services/nextcloud.nix
             
             # Optional services (commented out by default)
             # ./modules/services/bitcoin.nix
             # ./modules/services/wordpress.nix
             # ./modules/services/tailscale-router.nix
             # ./modules/services/demos.nix
+            # ./modules/services/nextcloud.nix
             
             # Docker services (unchanged)
             ./docker/affine.nix
