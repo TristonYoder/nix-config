@@ -17,11 +17,6 @@ let
       }
     }
   '';
-
-  # Helper function to add a virtual host to Caddy
-  addVirtualHost = domain: config: {
-    services.caddy.virtualHosts."${domain}" = config;
-  };
 in
 {
   # Actual Budget
@@ -32,11 +27,24 @@ in
     openFirewall = true;
   };
 
+  services.caddy.virtualHosts."budget.theyoder.family" = {
+        extraConfig = createVirtualHost "http://localhost:1111";
+      };
+
   # Audiobookshelf
   # services.audiobookshelf = {
   #   enable = true;
   #   port = 13378;
   # };
+
+  services.caddy.virtualHosts."audiobooks.theyoder.family" = {
+    extraConfig = createVirtualHost "http://localhost:13378";
+  };
+
+  # Audiobooksync
+  services.caddy.virtualHosts."audiobooksync.theyoder.family" = {
+    extraConfig = createVirtualHost "http://localhost:13379";
+  };
 
   # Caddy
   services.caddy = {
@@ -54,115 +62,6 @@ in
       # Global configuration can go here
     '';
 
-    virtualHosts = {
-      "apps.theyoder.family" = {
-        extraConfig = createVirtualHost "http://localhost:7575";
-      };
-
-
-      "audiobooksync.theyoder.family" = {
-        extraConfig = createVirtualHost "http://localhost:13379";
-      };
-
-      "btc.theyoder.family" = {
-        extraConfig = createVirtualHost "http://localhost:8997";
-      };
-
-
-      "carolineyoder.com" = {
-        extraConfig = createVirtualHost "http://localhost:1128";
-      };
-
-      "carolineelizabeth.photography elizabethallen.photography carolines.photos takemy.photo loveinfocus.photography" = {
-        extraConfig = createVirtualHost "http://localhost:1996";
-      };
-
-      "chat.theyoder.family" = {
-        extraConfig = createVirtualHost "http://localhost:8065";
-      };
-
-      "david.theyoder.family" = {
-        extraConfig = ''
-          respond "404" 404
-          ${sharedTlsConfig}
-        '';
-      };
-
-      "home.theyoder.family" = {
-        extraConfig = createVirtualHost "http://10.150.2.117:8123";
-      };
-
-
-      "mempool.theyoder.family" = {
-        extraConfig = createVirtualHost "http://localhost:8998";
-      };
-
-      "notes.theyoder.family notes.7andco.studio" = {
-        extraConfig = createVirtualHost "http://localhost:3010";
-      };
-
-      "nextcloud.theyoder.family" = {
-        # This site-specific block overrides the global TLS settings
-        extraConfig = ''
-          tls internal
-
-          root * /var/lib/nextcloud/data
-          php_fastcgi unix//run/phpfpm/nextcloud.sock
-          file_server
-
-          log {
-            output file /var/log/caddy/nextcloud-access.log {
-              roll_size 5MB
-              roll_keep 3
-            }
-          }
-
-          @forbidden {
-            path /.htaccess /config/* /data/* /db_structure/* /lib/* /templates/* /3rdparty/* /README
-          }
-          respond @forbidden 403
-
-          redir /.well-known/carddav /remote.php/dav 301
-          redir /.well-known/caldav /remote.php/dav 301
-
-          header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-          encode gzip
-        '';
-      };
-
-      "social.theyoder.family" = {
-        extraConfig = createVirtualHost "http://localhost:55001";
-      };
-
-
-      "poker.theyoder.family" = {
-        extraConfig = createVirtualHost "http://localhost:8234";
-      };
-
-      "request.theyoder.family requests.theyoder.family" = {
-        extraConfig = createVirtualHost "http://localhost:5055";
-      };
-
-      "recipies.theyoder.family food.theyoder.family" = {
-        extraConfig = createVirtualHost "http://localhost:6780";
-      };
-
-      "unifi.theyoder.family" = {
-        extraConfig = ''
-          reverse_proxy https://10.150.100.1 {
-            transport http {
-              tls
-              tls_insecure_skip_verify
-            }
-          }
-          ${sharedTlsConfig}
-        '';
-      };
-
-      "vault.theyoder.family" = {
-        extraConfig = createVirtualHost "http://localhost:8222";
-      };
-    };
   };
 
   networking.firewall.allowedTCPPorts = [ 80 443 ];
@@ -191,6 +90,9 @@ in
     openFirewall = true;
   };
 
+  services.caddy.virtualHosts."media.theyoder.family" = {
+    extraConfig = createVirtualHost "http://localhost:8096";
+  };
 
      # Workaround for jellyfin hardware transcode
   systemd.services.jellyfin.serviceConfig = {
@@ -205,6 +107,9 @@ in
     port = 5055;
   };
 
+  services.caddy.virtualHosts."request.theyoder.family requests.theyoder.family" = {
+    extraConfig = createVirtualHost "http://localhost:5055";
+  };
 
   # # Mastodon
   # services.mastodon = {
@@ -326,7 +231,6 @@ in
     port = 2284;
   };
 
-
   # n8n
   services.n8n = {
     enable = true;
@@ -405,6 +309,57 @@ in
     };
   };
 
+  services.caddy.virtualHosts."vault.theyoder.family" = {
+    extraConfig = createVirtualHost "http://localhost:8222";
+  };
+
+
+  # Nextcloud
+  services.caddy.virtualHosts."nextcloud.theyoder.family" = {
+    extraConfig = ''
+      tls internal
+
+      root * /var/lib/nextcloud/data
+      php_fastcgi unix//run/phpfpm/nextcloud.sock
+      file_server
+
+      log {
+        output file /var/log/caddy/nextcloud-access.log {
+          roll_size 5MB
+          roll_keep 3
+        }
+      }
+
+      @forbidden {
+        path /.htaccess /config/* /data/* /db_structure/* /lib/* /templates/* /3rdparty/* /README
+      }
+      respond @forbidden 403
+
+      redir /.well-known/carddav /remote.php/dav 301
+      redir /.well-known/caldav /remote.php/dav 301
+
+      header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+      encode gzip
+    '';
+  };
+
+  # Immich Photos
+  services.caddy.virtualHosts."photos.theyoder.family" = {
+    extraConfig = ''
+      handle_path /share* {
+        reverse_proxy http://localhost:2284
+      }
+      handle {
+        reverse_proxy http://localhost:2283
+      }
+      ${sharedTlsConfig}
+    '';
+  };
+
+  services.caddy.virtualHosts."share.photos.theyoder.family" = {
+    extraConfig = createVirtualHost "http://localhost:2284";
+  };
+
   # Workaround for Wiregaurd Bug
   # https://github.com/NixOS/nixpkgs/issues/180175
   systemd.services.NetworkManager-wait-online.enable = lib.mkForce false;
@@ -457,51 +412,5 @@ in
     (fetchTarball "https://github.com/nix-community/nixos-vscode-server/tarball/master")
   ];
   services.vscode-server.enable = true;
-
-  # =============================================================================
-  # VIRTUAL HOSTS - Organized by Service
-  # =============================================================================
-  
-  # Budget Service Virtual Host
-  services.caddy.virtualHosts."budget.theyoder.family" = {
-    extraConfig = createVirtualHost "http://localhost:1111";
-  };
-
-  # Audiobookshelf Virtual Host  
-  services.caddy.virtualHosts."audiobooks.theyoder.family" = {
-    extraConfig = createVirtualHost "http://localhost:13378";
-  };
-
-  # Jellyfin Virtual Host
-  services.caddy.virtualHosts."media.theyoder.family" = {
-    extraConfig = createVirtualHost "http://localhost:8096";
-  };
-
-  # Jellyseerr Virtual Host
-  services.caddy.virtualHosts."request.theyoder.family requests.theyoder.family" = {
-    extraConfig = createVirtualHost "http://localhost:5055";
-  };
-
-  # Immich Virtual Hosts
-  services.caddy.virtualHosts."photos.theyoder.family" = {
-    extraConfig = ''
-      handle_path /share* {
-        reverse_proxy http://localhost:2284
-      }
-      handle {
-        reverse_proxy http://localhost:2283
-      }
-      ${sharedTlsConfig}
-    '';
-  };
-
-  services.caddy.virtualHosts."share.photos.theyoder.family" = {
-    extraConfig = createVirtualHost "http://localhost:2284";
-  };
-
-  # Vaultwarden Virtual Host
-  services.caddy.virtualHosts."vault.theyoder.family" = {
-    extraConfig = createVirtualHost "http://localhost:8222";
-  };
 
 }
