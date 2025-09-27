@@ -1,0 +1,115 @@
+name: Deploy NixOS Configuration
+
+on:
+  push:
+    branches: [ main ]
+  workflow_run:
+    workflows: ["Test NixOS Configuration"]
+    types: [ completed ]
+    branches: [ main ]
+
+jobs:
+  deploy-configuration:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' || github.event.workflow_run.conclusion == 'success'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Tailscale
+      uses: tailscale/github-action@v2
+      with:
+        oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+        oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+        tags: tag:github-actions
+        
+    - name: Wait for Tailscale connection
+      run: sleep 10
+      
+    - name: Deploy NixOS Configuration
+      run: |
+        # Connect to server via Tailscale
+        SERVER_IP=$(dig +short ${{ secrets.NIXOS_SERVER_HOSTNAME }}.ts.net)
+        echo "Connecting to server at $SERVER_IP"
+        
+        # Copy configuration to server
+        rsync -avz --delete \
+          --exclude='.git' \
+          --exclude='.github' \
+          --exclude='*.save' \
+          --exclude='nextcloud/admin-pass' \
+          ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_IP:/tmp/nixos-config-deploy/
+        
+        # Deploy configuration on server
+        ssh -o StrictHostKeyChecking=no ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_IP << 'EOF'
+          set -e
+          
+          # Navigate to deploy directory
+          cd /tmp/nixos-config-deploy
+          
+          # Create backup directory if it doesn't exist
+          sudo mkdir -p /var/backups/nixos
+          
+          # Create timestamped backup
+          BACKUP_NAME="config_$(date +%Y%m%d_%H%M%S)"
+          sudo mkdir -p /var/backups/nixos/$BACKUP_NAME
+          sudo cp -r /etc/nixos/* /var/backups/nixos/$BACKUP_NAME/
+          
+          # Keep only last 10 backups
+          sudo find /var/backups/nixos -maxdepth 1 -type d -name "config_*" | sort | head -n -10 | xargs -r sudo rm -rf
+          
+          # Copy new configuration
+          sudo cp configuration.nix /etc/nixos/configuration.nix
+          
+          # Copy other necessary files
+          for file in apps.nix nas.nix caddy-hosts.nix tpdemos.nix btc.nix nextcloud.nix ts-router.nix github-actions.nix; do
+            if [ -f "$file" ]; then
+              sudo cp "$file" "/etc/nixos/$file"
+            fi
+          done
+          
+          # Copy docker directory if it exists
+          if [ -d "docker" ]; then
+            sudo cp -r docker /etc/nixos/
+          fi
+          
+          # Final test before deployment
+          echo "Running final configuration test..."
+          if ! sudo nixos-rebuild dry-run; then
+            echo "❌ Final configuration test failed! Aborting deployment."
+            exit 1
+          fi
+          
+          # Deploy the configuration
+          echo "Deploying NixOS configuration..."
+          if sudo nixos-rebuild switch; then
+            echo "✅ NixOS configuration deployed successfully!"
+            echo "SUCCESS" > /tmp/nixos-deploy-result.txt
+          else
+            echo "❌ NixOS configuration deployment failed!"
+            echo "FAILED" > /tmp/nixos-deploy-result.txt
+            exit 1
+          fi
+        EOF
+        
+        # Get deployment result
+        DEPLOY_RESULT=$(ssh -o StrictHostKeyChecking=no ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_IP "cat /tmp/nixos-deploy-result.txt")
+        
+        if [ "$DEPLOY_RESULT" = "SUCCESS" ]; then
+          echo "✅ NixOS configuration deployed successfully!"
+        else
+          echo "❌ NixOS configuration deployment failed!"
+          exit 1
+        fi
+        
+    - name: Create GitHub Deployment
+      if: success()
+      run: |
+        echo "✅ NixOS configuration successfully deployed to production"
+        
+    - name: Notify on failure
+      if: failure()
+      run: |
+        echo "❌ NixOS configuration deployment failed"
+        echo "Check the server logs for more details"

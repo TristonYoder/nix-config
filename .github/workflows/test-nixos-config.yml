@@ -1,0 +1,95 @@
+name: Test NixOS Configuration
+
+on:
+  push:
+    branches: [ main, develop, feature/*, bugfix/* ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-configuration:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Tailscale
+      uses: tailscale/github-action@v2
+      with:
+        oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+        oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+        tags: tag:github-actions
+        
+    - name: Wait for Tailscale connection
+      run: sleep 10
+      
+    - name: Test NixOS Configuration
+      run: |
+        # Connect to server via Tailscale
+        SERVER_IP=$(dig +short ${{ secrets.NIXOS_SERVER_HOSTNAME }}.ts.net)
+        echo "Connecting to server at $SERVER_IP"
+        
+        # Copy configuration to server
+        rsync -avz --delete \
+          --exclude='.git' \
+          --exclude='.github' \
+          --exclude='*.save' \
+          --exclude='nextcloud/admin-pass' \
+          ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_IP:/tmp/nixos-config-test/
+        
+        # Test configuration on server
+        ssh -o StrictHostKeyChecking=no ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_IP << 'EOF'
+          set -e
+          
+          # Navigate to test directory
+          cd /tmp/nixos-config-test
+          
+          # Create backup of current configuration
+          sudo cp /etc/nixos/configuration.nix /etc/nixos/configuration.nix.backup.$(date +%Y%m%d_%H%M%S)
+          
+          # Copy new configuration
+          sudo cp configuration.nix /etc/nixos/configuration.nix
+          
+          # Copy other necessary files
+          for file in apps.nix nas.nix caddy-hosts.nix tpdemos.nix btc.nix nextcloud.nix ts-router.nix github-actions.nix; do
+            if [ -f "$file" ]; then
+              sudo cp "$file" "/etc/nixos/$file"
+            fi
+          done
+          
+          # Copy docker directory if it exists
+          if [ -d "docker" ]; then
+            sudo cp -r docker /etc/nixos/
+          fi
+          
+          # Test the configuration
+          echo "Testing NixOS configuration..."
+          if sudo nixos-rebuild dry-run; then
+            echo "✅ Configuration test passed!"
+            echo "SUCCESS" > /tmp/nixos-test-result.txt
+          else
+            echo "❌ Configuration test failed!"
+            echo "FAILED" > /tmp/nixos-test-result.txt
+            exit 1
+          fi
+        EOF
+        
+        # Get test result
+        TEST_RESULT=$(ssh -o StrictHostKeyChecking=no ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_IP "cat /tmp/nixos-test-result.txt")
+        
+        if [ "$TEST_RESULT" = "SUCCESS" ]; then
+          echo "✅ NixOS configuration test passed!"
+        else
+          echo "❌ NixOS configuration test failed!"
+          exit 1
+        fi
+        
+    - name: Set GitHub status
+      if: always()
+      run: |
+        if [ "${{ job.status }}" = "success" ]; then
+          echo "✅ NixOS configuration test passed"
+        else
+          echo "❌ NixOS configuration test failed"
+        fi
