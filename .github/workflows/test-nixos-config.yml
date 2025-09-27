@@ -2,7 +2,7 @@ name: Test NixOS Configuration
 
 on:
   push:
-    branches: [ main, develop, feature/*, bugfix/* ]
+    branches-ignore: []
   pull_request:
     branches: [ main ]
 
