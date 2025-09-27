@@ -53,7 +53,7 @@
   };
   services.samba = {
   enable = true;
-  shares = {
+  settings = {
     "data" = {
       path = "/data";
       writable = true;
