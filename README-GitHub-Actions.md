@@ -85,7 +85,23 @@ In your GitHub repository (`david-nixos`), go to **Settings** → **Secrets and 
 | `NIXOS_SERVER_USER` | SSH user for GitHub Actions | `github-actions` |
 | `SSH_PRIVATE_KEY` | SSH private key content | See Step 6 below |
 
-### Step 5: Setup Tailscale OAuth
+### Step 5: Setup Tailscale ACL Policy
+
+First, you need to define the `tag:github-actions` tag in your Tailscale ACL policy:
+
+1. Go to [Tailscale Admin Console](https://login.tailscale.com/admin/acls)
+2. Edit your ACL policy file and add the tag definition:
+   ```json
+   {
+     "tagOwners": {
+       "tag:github-actions": ["your-email@example.com"]
+     }
+   }
+   ```
+3. Replace `your-email@example.com` with your actual Tailscale account email
+4. Save the ACL policy
+
+### Step 6: Setup Tailscale OAuth
 
 1. Go to [Tailscale Admin Console](https://login.tailscale.com/admin/settings/oauth)
 2. Click **Generate OAuth client**
@@ -95,7 +111,7 @@ In your GitHub repository (`david-nixos`), go to **Settings** → **Secrets and 
 4. Click **Generate**
 5. Copy the **Client ID** and **Secret** to your GitHub repository secrets
 
-### Step 6: Add SSH Private Key to GitHub
+### Step 7: Add SSH Private Key to GitHub
 
 Copy your **private key** content to GitHub:
 
@@ -115,7 +131,7 @@ b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
 -----END OPENSSH PRIVATE KEY-----
 ```
 
-### Step 7: Test the Setup
+### Step 8: Test the Setup
 
 1. **Push a change** to your repository
 2. **Check GitHub Actions** tab in your repository

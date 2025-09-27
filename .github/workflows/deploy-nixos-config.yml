@@ -30,8 +30,8 @@ jobs:
     - name: Deploy NixOS Configuration
       run: |
         # Connect to server via Tailscale
-        SERVER_IP=$(dig +short ${{ secrets.NIXOS_SERVER_HOSTNAME }}.ts.net)
-        echo "Connecting to server at $SERVER_IP"
+        SERVER_HOSTNAME="${{ secrets.NIXOS_SERVER_HOSTNAME }}"
+        echo "Connecting to server at $SERVER_HOSTNAME"
         
         # Copy configuration to server
         rsync -avz --delete \
@@ -39,10 +39,10 @@ jobs:
           --exclude='.github' \
           --exclude='*.save' \
           --exclude='nextcloud/admin-pass' \
-          ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_IP:/tmp/nixos-config-deploy/
+          ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME:/tmp/nixos-config-deploy/
         
         # Deploy configuration on server
-        ssh -o StrictHostKeyChecking=no ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_IP << 'EOF'
+        ssh -o StrictHostKeyChecking=no ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << 'EOF'
           set -e
           
           # Navigate to deploy directory
@@ -94,7 +94,7 @@ jobs:
         EOF
         
         # Get deployment result
-        DEPLOY_RESULT=$(ssh -o StrictHostKeyChecking=no ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_IP "cat /tmp/nixos-deploy-result.txt")
+        DEPLOY_RESULT=$(ssh -o StrictHostKeyChecking=no ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME "cat /tmp/nixos-deploy-result.txt")
         
         if [ "$DEPLOY_RESULT" = "SUCCESS" ]; then
           echo "✅ NixOS configuration deployed successfully!"

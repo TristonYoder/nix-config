@@ -27,8 +27,8 @@ jobs:
     - name: Test NixOS Configuration
       run: |
         # Connect to server via Tailscale
-        SERVER_IP=$(dig +short ${{ secrets.NIXOS_SERVER_HOSTNAME }}.ts.net)
-        echo "Connecting to server at $SERVER_IP"
+        SERVER_HOSTNAME="${{ secrets.NIXOS_SERVER_HOSTNAME }}"
+        echo "Connecting to server at $SERVER_HOSTNAME"
         
         # Copy configuration to server
         rsync -avz --delete \
@@ -36,10 +36,10 @@ jobs:
           --exclude='.github' \
           --exclude='*.save' \
           --exclude='nextcloud/admin-pass' \
-          ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_IP:/tmp/nixos-config-test/
+          ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME:/tmp/nixos-config-test/
         
         # Test configuration on server
-        ssh -o StrictHostKeyChecking=no ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_IP << 'EOF'
+        ssh -o StrictHostKeyChecking=no ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << 'EOF'
           set -e
           
           # Navigate to test directory
@@ -76,7 +76,7 @@ jobs:
         EOF
         
         # Get test result
-        TEST_RESULT=$(ssh -o StrictHostKeyChecking=no ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_IP "cat /tmp/nixos-test-result.txt")
+        TEST_RESULT=$(ssh -o StrictHostKeyChecking=no ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME "cat /tmp/nixos-test-result.txt")
         
         if [ "$TEST_RESULT" = "SUCCESS" ]; then
           echo "✅ NixOS configuration test passed!"
