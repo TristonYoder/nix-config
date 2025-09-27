@@ -2,9 +2,9 @@ name: Test NixOS Configuration
 
 on:
   push:
-    branches: [ main, develop, feature/*, bugfix/* ]
+    branches: [ '*' ]
   pull_request:
-    branches: [ main ]
+    branches: [ '*' ]
 
 jobs:
   test-configuration:
