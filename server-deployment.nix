@@ -15,7 +15,7 @@
         set -euo pipefail
         
         # Configuration
-        REPO_URL="https://github.com/${{ secrets.GITHUB_REPO_OWNER }}/${{ secrets.GITHUB_REPO_NAME }}.git"
+        REPO_URL="''${REPO_URL:-https://github.com/TristonYoder/david-nixos.git}"
         DEPLOY_DIR="/tmp/nixos-config"
         BACKUP_DIR="/var/lib/nixos-backups"
         
