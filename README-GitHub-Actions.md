@@ -100,7 +100,7 @@ You need to configure your Tailscale ACL policy to allow SSH access from GitHub 
        {
          "action": "accept",
          "src": ["tag:github-actions"],
-         "dst": ["*:22"]
+         "dst": ["autogroup:members"]
        }
      ]
    }
@@ -110,8 +110,43 @@ You need to configure your Tailscale ACL policy to allow SSH access from GitHub 
 
 **What this does:**
 - **Defines the tag** - `tag:github-actions` is now allowed
-- **Allows SSH access** - GitHub Actions can connect to port 22 (SSH) on any device
+- **Allows SSH access** - GitHub Actions can connect to all members of your tailnet via SSH (port 22)
 - **Sets ownership** - Your email can assign this tag
+
+### Step 5.1: Configure SSH Access on Server
+
+You also need to configure SSH access on your server to allow the `github-actions` user:
+
+1. **SSH into your server:**
+   ```bash
+   ssh your-username@your-server.ts.net
+   ```
+
+2. **Configure Tailscale SSH access:**
+   ```bash
+   sudo tailscale ssh --config
+   ```
+
+3. **Add SSH configuration for github-actions user:**
+   ```json
+   {
+     "action": "accept",
+     "src": ["tag:github-actions"],
+     "dst": ["autogroup:members"],
+     "users": ["github-actions"]
+   }
+   ```
+
+4. **Apply the SSH configuration:**
+   ```bash
+   sudo tailscale ssh --config > /etc/tailscale/ssh.json
+   sudo systemctl restart tailscaled
+   ```
+
+**What this does:**
+- **Allows SSH access** from `tag:github-actions` to any member
+- **Restricts to specific user** - Only `github-actions` user can connect
+- **Configures Tailscale SSH** to permit the connection
 
 ### Step 6: Setup Tailscale OAuth
 
