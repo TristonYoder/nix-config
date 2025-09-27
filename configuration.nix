@@ -41,9 +41,9 @@
   boot.loader.grub.splashMode = "normal";
   # boot.loader.grub.splashImage = 
   boot.loader.grub.backgroundColor = "#8275b4";
-  boot.loader.grub.theme = "${pkgs.libsForQt5.breeze-grub}/grub/themes/breeze"
+  boot.loader.grub.theme = "${pkgs.libsForQt5.breeze-grub}/grub/themes/breeze";
   boot.loader.grub.extraEntriesBeforeNixOS = true;
-  
+
 
 
   # # Allow SSH for zfs auth
