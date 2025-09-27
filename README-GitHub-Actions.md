@@ -87,19 +87,31 @@ In your GitHub repository (`david-nixos`), go to **Settings** → **Secrets and 
 
 ### Step 5: Setup Tailscale ACL Policy
 
-First, you need to define the `tag:github-actions` tag in your Tailscale ACL policy:
+You need to configure your Tailscale ACL policy to allow SSH access from GitHub Actions:
 
 1. Go to [Tailscale Admin Console](https://login.tailscale.com/admin/acls)
-2. Edit your ACL policy file and add the tag definition:
+2. Edit your ACL policy file and add the following configuration:
    ```json
    {
      "tagOwners": {
        "tag:github-actions": ["your-email@example.com"]
-     }
+     },
+     "acls": [
+       {
+         "action": "accept",
+         "src": ["tag:github-actions"],
+         "dst": ["*:22"]
+       }
+     ]
    }
    ```
 3. Replace `your-email@example.com` with your actual Tailscale account email
 4. Save the ACL policy
+
+**What this does:**
+- **Defines the tag** - `tag:github-actions` is now allowed
+- **Allows SSH access** - GitHub Actions can connect to port 22 (SSH) on any device
+- **Sets ownership** - Your email can assign this tag
 
 ### Step 6: Setup Tailscale OAuth
 
