@@ -154,7 +154,6 @@ in
     enable = true;
     openFirewall = true;
     webhookUrl = "n8n.7andco.dev";
-    port = 5678;
     #https://docs.n8n.io/hosting/environment-variables/configuration-methods/
     settings = {
 
