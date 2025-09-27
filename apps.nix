@@ -20,7 +20,7 @@ in
 
   # Caddy
   services.caddy = {
-    enable = false;
+    enable = true;
     package = pkgs.caddy.withPlugins {
       plugins = [ "github.com/caddy-dns/cloudflare@v0.2.1" ];
       hash = "sha256-AcWko5513hO8I0lvbCLqVbM1eWegAhoM0J0qXoWL/vI=";
@@ -31,90 +31,150 @@ in
 
     # Global options block for the Caddyfile
     extraConfig = ''
-      # Default TLS configuration using Cloudflare DNS challenge
-      tls {
-        dns cloudflare {
-          api_token "${cloudflareApiToken}"
-        }
-      }
+      # Global configuration can go here
     '';
 
     virtualHosts = {
       "apps.theyoder.family" = {
         extraConfig = ''
           reverse_proxy http://localhost:7575
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
 
       "audiobooks.theyoder.family" = {
         extraConfig = ''
           reverse_proxy http://localhost:13378
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
 
       "audiobooksync.theyoder.family" = {
         extraConfig = ''
           reverse_proxy http://localhost:13379
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
 
       "btc.theyoder.family" = {
         extraConfig = ''
           reverse_proxy http://localhost:8997
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
 
       "budget.theyoder.family" = {
         extraConfig = ''
           reverse_proxy http://localhost:1111
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
 
       "carolineyoder.com" = {
         extraConfig = ''
           reverse_proxy http://localhost:1128
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
 
       "carolineelizabeth.photography elizabethallen.photography carolines.photos takemy.photo loveinfocus.photography" = {
         extraConfig = ''
           reverse_proxy http://localhost:1996
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
 
       "chat.theyoder.family" = {
         extraConfig = ''
           reverse_proxy http://localhost:8065
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
 
       "david.theyoder.family" = {
         extraConfig = ''
           respond "404" 404
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
 
       "home.theyoder.family" = {
         extraConfig = ''
           reverse_proxy http://10.150.2.117:8123
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
 
       "media.theyoder.family" = {
         extraConfig = ''
           reverse_proxy http://localhost:8096
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
 
       "mempool.theyoder.family" = {
         extraConfig = ''
           reverse_proxy http://localhost:8998
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
 
       "notes.theyoder.family notes.7andco.studio" = {
         extraConfig = ''
           reverse_proxy http://localhost:3010
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
 
@@ -150,6 +210,11 @@ in
       "social.theyoder.family" = {
         extraConfig = ''
           reverse_proxy http://localhost:55001
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
 
@@ -161,30 +226,55 @@ in
           handle {
             reverse_proxy http://localhost:2283
           }
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
 
       "share.photos.theyoder.family" = {
         extraConfig = ''
           reverse_proxy http://localhost:2284
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
 
       "poker.theyoder.family" = {
         extraConfig = ''
           reverse_proxy http://localhost:8234
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
 
       "request.theyoder.family requests.theyoder.family" = {
         extraConfig = ''
           reverse_proxy http://localhost:5055
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
 
       "recipies.theyoder.family food.theyoder.family" = {
         extraConfig = ''
           reverse_proxy http://localhost:6780
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
 
@@ -196,12 +286,22 @@ in
               tls_insecure_skip_verify
             }
           }
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
 
       "vault.theyoder.family" = {
         extraConfig = ''
           reverse_proxy http://localhost:8222
+          tls {
+            dns cloudflare {
+              api_token "${cloudflareApiToken}"
+            }
+          }
         '';
       };
     };
