@@ -268,7 +268,13 @@ sudo nixos-rebuild switch
    - Verify all required files are present
    - Check GitHub Actions logs for detailed error information
 
-4. **Deployment Failed**
+4. **Sudo Password Required**
+   - Ensure `sudo nixos-rebuild switch` has been run to apply the configuration
+   - Verify the `github-actions` user exists: `id github-actions`
+   - Check sudo permissions: `sudo -l -U github-actions`
+   - If permissions are missing, run `sudo nixos-rebuild switch` again
+
+5. **Deployment Failed**
    - Check for conflicting services
    - Verify system resources
    - Use manual rollback (see above)
