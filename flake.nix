@@ -77,6 +77,7 @@
             ./docker/audiobooks.nix
             ./docker/media-aq.nix
             ./docker/homarr.nix
+            ./docker/outline.nix
             ./docker/planning-poker.nix
             ./docker/tandoor.nix
             ./docker/watchtower.nix
