@@ -2,3 +2,4 @@
 /secrets
 #ignore nix builds
 **/result
+*/.DS_Store

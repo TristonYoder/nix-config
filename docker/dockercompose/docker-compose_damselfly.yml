@@ -1,0 +1,12 @@
+version: "3"
+name: damselfly
+services:
+  damselfly: 
+        image: webreaper/damselfly
+        ports:
+            - 6363:6363/tcp
+        volumes:
+            - /data/docker-appdata/damselfly/config:/config
+            - /data/docker-appdata/damselfly/thumbs:/thumbs
+            - /data/7andCo/Photography/shoots:/pictures 
+        restart: unless-stopped
