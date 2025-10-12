@@ -9,6 +9,7 @@
     # External modules
     nix-bitcoin.url = "github:fort-nix/nix-bitcoin/v0.0.117";
     nixos-vscode-server.url = "github:nix-community/nixos-vscode-server";
+    agenix.url = "github:ryantm/agenix";
     
     # Optional: Home Manager for user configurations
     # home-manager.url = "github:nix-community/home-manager";
@@ -17,7 +18,7 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, nix-bitcoin, nixos-vscode-server, flake-utils, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, nix-bitcoin, nixos-vscode-server, agenix, flake-utils, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -32,6 +33,7 @@
             nix
             docker
             compose2nix
+            agenix.packages.${system}.default
           ];
         };
 
@@ -55,36 +57,33 @@
             ./configuration.nix
             ./hardware-configuration.nix
             
-            # Service modules
-            ./modules/services/apps.nix
-            ./modules/services/nas.nix
-            ./modules/services/caddy-hosts.nix
-            ./modules/services/github-actions.nix
+            # Custom modules (hardware, system, services)
+            ./modules
             
-            # Optional services (commented out by default)
-            # ./modules/services/bitcoin.nix
-            # ./modules/services/wordpress.nix
-            # ./modules/services/tailscale-router.nix
-            # ./modules/services/demos.nix
-            # ./modules/services/nextcloud.nix
-            
-            # Docker services (unchanged)
-            ./docker/affine.nix
-            ./docker/com.carolineyoder.nix
-            ./docker/photography.carolineelizabeth.nix
-            ./docker/studio.7andco.nix
+            # Docker services (organized by category)
             ./docker/docker.nix
-            ./docker/audiobooks.nix
-            ./docker/media-aq.nix
-            ./docker/homarr.nix
-            ./docker/outline.nix
-            ./docker/planning-poker.nix
-            ./docker/tandoor.nix
             ./docker/watchtower.nix
-            ./docker/ersatztv.nix
+            
+            # Media services
+            ./docker/media/audiobooks.nix
+            ./docker/media/media-aq.nix
+            ./docker/media/ersatztv.nix
+            
+            # Website services
+            ./docker/websites/com.carolineyoder.nix
+            ./docker/websites/photography.carolineelizabeth.nix
+            ./docker/websites/studio.7andco.nix
+            
+            # Productivity services
+            ./docker/productivity/affine.nix
+            ./docker/productivity/homarr.nix
+            ./docker/productivity/outline.nix
+            ./docker/productivity/planning-poker.nix
+            ./docker/productivity/tandoor.nix
             
             # External modules
             nixos-vscode-server.nixosModules.default
+            agenix.nixosModules.default
             # nix-bitcoin.nixosModules.default  # Only include when bitcoin.nix is enabled
           ];
           
