@@ -1,11 +1,7 @@
 let
   # SSH host key for the david machine
-  # This should be the age public key derived from /etc/ssh/ssh_host_ed25519_key.pub
-  # To get this key on the server, run:
-  #   ssh-keyscan david.theyoder.family | ssh-to-age
-  # or:
-  #   nix-shell -p ssh-to-age --run 'cat /etc/ssh/ssh_host_ed25519_key.pub | ssh-to-age'
-  david = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPlaceholderKeyReplaceMeWithActualHostKey";
+  # Generated with: nix-shell -p ssh-to-age --run 'cat /etc/ssh/ssh_host_ed25519_key.pub | ssh-to-age'
+  david = "age19my5vpmrvl5u9ug4frpdmuuemjhdgemgqjm6xunknmfjf6efvdxs232kym";
   
   # Add admin user keys here (for managing secrets from your machine)
   # Get your key with: ssh-add -L | ssh-to-age
