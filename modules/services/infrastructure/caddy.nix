@@ -37,6 +37,11 @@ in
       '';
     };
 
+    # Load Cloudflare API token from agenix secret as environment variable
+    systemd.services.caddy.serviceConfig = {
+      EnvironmentFile = config.age.secrets.cloudflare-api-token.path;
+    };
+
     # Open firewall ports for HTTP and HTTPS
     networking.firewall.allowedTCPPorts = [ 80 443 ];
   };

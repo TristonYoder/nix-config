@@ -7,9 +7,7 @@ let
   # Caddy virtual host configuration with Cloudflare DNS TLS
   sharedTlsConfig = ''
     tls {
-      dns cloudflare {
-        api_token "${builtins.readFile config.age.secrets.cloudflare-api-token.path}"
-      }
+      dns cloudflare {$CLOUDFLARE_API_TOKEN}
     }
   '';
 in
