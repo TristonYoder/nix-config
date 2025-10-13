@@ -28,11 +28,13 @@ in
     curl
     ffmpeg
     zsh
-    mas  # Mac App Store CLI
     
     # Optional: 1Password CLI
     _1password-cli
-  ];
+  ] ++ (if isDarwin then [
+    # macOS-only packages
+    mas  # Mac App Store CLI
+  ] else []);
   
   # Common environment variables
   home.sessionVariables = {
@@ -127,7 +129,7 @@ in
       custom = "$HOME/.oh-my-zsh/custom";
     };
     
-    initExtra = ''
+    initContent = ''
       # Powerlevel10k instant prompt
       if [[ -r "''${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh" ]]; then
         source "''${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh"
