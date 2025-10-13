@@ -4,16 +4,11 @@ with lib;
 let
   cfg = config.modules.services.media.jellyseerr;
   
-  # Helper function for Caddy virtual host with Cloudflare TLS
-  cloudflareApiToken = 
-    if config.age.secrets ? cloudflare-api-token
-    then builtins.readFile config.age.secrets.cloudflare-api-token.path
-    else "mDB6U0PcLl-QtjAlX5gskVgH4UO7_QMo5eLY0POq";  # Fallback during migration
-  
+  # Caddy virtual host configuration with Cloudflare DNS TLS
   sharedTlsConfig = ''
     tls {
       dns cloudflare {
-        api_token "${cloudflareApiToken}"
+        api_token "${builtins.readFile config.age.secrets.cloudflare-api-token.path}"
       }
     }
   '';

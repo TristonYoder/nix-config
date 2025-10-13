@@ -5,6 +5,7 @@
     ./hardware
     ./system
     ./services
+    ./secrets.nix
   ];
 }
 
