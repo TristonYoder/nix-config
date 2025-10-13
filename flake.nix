@@ -112,6 +112,7 @@
             {
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
+              home-manager.backupFileExtension = "backup";
               home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
             }
           ];
@@ -150,6 +151,7 @@
             {
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
+              home-manager.backupFileExtension = "backup";
               home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
             }
           ];
@@ -188,6 +190,7 @@
             {
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
+              home-manager.backupFileExtension = "backup";
               home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
             }
           ];
