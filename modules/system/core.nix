@@ -87,7 +87,10 @@ in
       enableDefaultPackages = true;
       packages = with pkgs; [
         # Nerd Fonts with icons and glyphs for Powerlevel10k
-        (nerdfonts.override { fonts = [ "Meslo" "FiraCode" "JetBrainsMono" "Hack" ]; })
+        nerd-fonts.meslo-lg
+        nerd-fonts.fira-code
+        nerd-fonts.jetbrains-mono
+        nerd-fonts.hack
         
         # Additional fonts for better terminal experience
         noto-fonts
