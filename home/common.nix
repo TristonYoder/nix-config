@@ -8,13 +8,8 @@ let
   isDarwin = pkgs.stdenv.isDarwin;
 in
 {
-  # Allow unfree packages
-  nixpkgs.config.allowUnfree = true;
-  
-  # Allow insecure packages (needed for some Electron-based apps)
-  nixpkgs.config.permittedInsecurePackages = [
-    "electron-35.7.5"
-  ];
+  # Note: nixpkgs.config options are set globally via home-manager.useGlobalPkgs
+  # Do not set nixpkgs.config here to avoid conflicts
   
   # Shared packages across all platforms
   home.packages = with pkgs; [
