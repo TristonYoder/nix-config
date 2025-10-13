@@ -24,37 +24,39 @@
     # DAVID-SPECIFIC SECRETS
     # -------------------------------------------------------------------------
     
-    vaultwarden-admin-token = {
-      file = ../secrets/vaultwarden-admin-token.age;
-      owner = "vaultwarden";
-      group = "vaultwarden";
-      mode = "0400";
-    };
+    # TODO: Create these secrets when ready
+    # vaultwarden-admin-token = {
+    #   file = ../secrets/vaultwarden-admin-token.age;
+    #   owner = "vaultwarden";
+    #   group = "vaultwarden";
+    #   mode = "0400";
+    # };
     
-    postgres-affine-password = {
-      file = ../secrets/postgres-affine-password.age;
-      owner = "postgres";
-      group = "postgres";
-      mode = "0400";
-    };
+    # postgres-affine-password = {
+    #   file = ../secrets/postgres-affine-password.age;
+    #   owner = "postgres";
+    #   group = "postgres";
+    #   mode = "0400";
+    # };
     
     # -------------------------------------------------------------------------
     # PITS-SPECIFIC SECRETS
     # -------------------------------------------------------------------------
     
-    tailscale-authkey-pits = {
-      file = ../secrets/tailscale-authkey-pits.age;
-      owner = "root";
-      group = "root";
-      mode = "0400";
-    };
+    # TODO: Create these secrets when ready
+    # tailscale-authkey-pits = {
+    #   file = ../secrets/tailscale-authkey-pits.age;
+    #   owner = "root";
+    #   group = "root";
+    #   mode = "0400";
+    # };
     
-    cloudflared-token = {
-      file = ../secrets/cloudflared-token.age;
-      owner = "cloudflared";
-      group = "cloudflared";
-      mode = "0400";
-    };
+    # cloudflared-token = {
+    #   file = ../secrets/cloudflared-token.age;
+    #   owner = "cloudflared";
+    #   group = "cloudflared";
+    #   mode = "0400";
+    # };
   };
 }
 
