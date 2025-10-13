@@ -2,6 +2,12 @@
 
 Encrypted secrets using [agenix](https://github.com/ryantm/agenix). All `.age` files are safe to commit.
 
+## How It Works
+
+- **Encryption**: Uses PUBLIC keys (from `secrets.nix`) - no private key needed
+- **Decryption**: Servers automatically use their SSH host private key (`/etc/ssh/ssh_host_ed25519_key`)
+- **Admin keys**: Only needed on your local machine for managing/editing secrets
+
 ## Adding a Secret
 
 ### 1. Encrypt the secret value
@@ -67,17 +73,23 @@ nix develop --command agenix -r  # Rekeys all secrets
 
 ## Admin Keys
 
-To manage secrets from your local machine, add your SSH key:
+Admin keys are for **local secret management only** (editing, encrypting). Servers use their own host keys for decryption.
 
 ```bash
-# Get your key in age format
+# Create a dedicated key (recommended)
+ssh-keygen -t ed25519 -f ~/.ssh/agenix -N ""
+cat ~/.ssh/agenix.pub | ssh-to-age
+
+# Or use your existing personal key
 cat ~/.ssh/id_ed25519.pub | ssh-to-age
 
 # Add to adminKeys list in secrets.nix
 adminKeys = [
-  "age1xxxxxxxxx..."  # Your key
+  "age1xxxxxxxxx..."  # Your key (stays on your local machine only)
 ];
 ```
+
+**Note:** Admin keys are NOT copied to servers. Servers automatically decrypt using `/etc/ssh/ssh_host_ed25519_key`.
 
 ## Current Secrets
 
