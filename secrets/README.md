@@ -15,7 +15,11 @@ Encrypted secrets using [agenix](https://github.com/ryantm/agenix). All `.age` f
 ```bash
 cd secrets
 
-# Encrypt with age (specify which hosts can decrypt)
+# For environment file format (KEY=value - for systemd EnvironmentFile)
+echo -n "MY_SECRET=secret-value" | nix-shell -p age --run \
+  "age -r age19my5... -r age1jja99... -o my-secret.age"
+
+# Or for raw value (if service reads file directly)
 echo -n "secret-value" | nix-shell -p age --run \
   "age -r age19my5... -r age1jja99... -o my-secret.age"
 ```
@@ -31,13 +35,21 @@ age.secrets.my-secret = {
 };
 ```
 
-### 3. Reference it in your service module
+### 3. Use it in your service
 
 ```nix
+# Option A: Service reads file directly
 services.myservice = {
   passwordFile = config.age.secrets.my-secret.path;
-  # Or inline: "${builtins.readFile config.age.secrets.my-secret.path}"
 };
+
+# Option B: Load as systemd environment variable
+systemd.services.myservice.serviceConfig = {
+  EnvironmentFile = config.age.secrets.my-secret.path;
+};
+# Then reference in config: {$MY_SECRET}
+
+# ❌ DON'T use builtins.readFile - secret doesn't exist at eval time!
 ```
 
 ## Adding a Host
