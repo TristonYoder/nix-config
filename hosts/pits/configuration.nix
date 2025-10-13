@@ -1,6 +1,6 @@
 # Configuration for pits - Pi in the Sky
 # Edge server with public IP serving as entry point for services
-# Lightweight NixOS configuration optimized for Raspberry Pi or similar hardware
+# Lightweight NixOS configuration optimized for cloud VPS (AWS, GCloud, Vultr, etc.)
 
 { config, pkgs, lib, ... }:
 {

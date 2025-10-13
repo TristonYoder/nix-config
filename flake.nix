@@ -162,10 +162,10 @@
         };
         
         # -----------------------------------------------------------------------------
-        # pits - Pi in the Sky - Edge Server (aarch64-linux or x86_64-linux)
+        # pits - Pi in the Sky - Edge Server (Cloud VPS)
         # -----------------------------------------------------------------------------
         pits = nixpkgs.lib.nixosSystem {
-          system = "aarch64-linux";  # Raspberry Pi (change to x86_64-linux if not ARM)
+          system = "x86_64-linux";  # Cloud VPS (change to aarch64-linux for ARM)
           
           modules = [
             # Common configuration
