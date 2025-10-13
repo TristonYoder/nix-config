@@ -1,5 +1,11 @@
-# Ignore Secrets
-/secrets
+# Ignore Secrets (but allow .age encrypted files and secrets.nix)
+/secrets/*
+!/secrets/*.age
+!/secrets/secrets.nix
+!/secrets/README.md
 #ignore nix builds
 **/result
 */.DS_Store
+
+# Old backup files from refactoring
+*.old

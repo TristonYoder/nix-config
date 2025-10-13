@@ -5,11 +5,50 @@ on:
     workflows: ["Test NixOS Flake Configuration"]
     types: [ completed ]
     branches: [ main ]
+  workflow_dispatch:  # Allow manual trigger with custom inputs
+    inputs:
+      hosts:
+        description: 'Comma-separated list of hosts to deploy (e.g., david,pits or "all")'
+        required: false
+        default: 'all'
 
 jobs:
-  deploy-configuration:
+  # Determine which hosts to deploy
+  prepare-deployment:
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    outputs:
+      hosts: ${{ steps.set-hosts.outputs.hosts }}
+    
+    steps:
+    - name: Determine deployment hosts
+      id: set-hosts
+      run: |
+        # Define all available NixOS hosts
+        ALL_HOSTS='["david", "pits"]'  # tristons-desk excluded from auto-deployment
+        
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          INPUT_HOSTS="${{ github.event.inputs.hosts }}"
+          if [ "$INPUT_HOSTS" = "all" ]; then
+            echo "hosts=$ALL_HOSTS" >> $GITHUB_OUTPUT
+          else
+            # Convert comma-separated list to JSON array
+            HOSTS_JSON=$(echo "$INPUT_HOSTS" | jq -R -s -c 'split(",") | map(select(length > 0) | gsub("^\\s+|\\s+$";""))')
+            echo "hosts=$HOSTS_JSON" >> $GITHUB_OUTPUT
+          fi
+        else
+          # Automatic deployment after successful test - deploy to all hosts
+          echo "hosts=$ALL_HOSTS" >> $GITHUB_OUTPUT
+        fi
+
+  # Deploy to all specified hosts in parallel
+  deploy-configurations:
+    runs-on: ubuntu-latest
+    needs: prepare-deployment
+    strategy:
+      matrix:
+        host: ${{ fromJson(needs.prepare-deployment.outputs.hosts) }}
+      fail-fast: false  # Continue deploying to other hosts even if one fails
     
     steps:
     - name: Checkout code
@@ -25,18 +64,22 @@ jobs:
     - name: Wait for Tailscale connection
       run: sleep 10
       
-    - name: Deploy NixOS Flake Configuration
+    - name: Deploy to ${{ matrix.host }}
       run: |
         # Connect to server via Tailscale
-        SERVER_HOSTNAME="${{ secrets.NIXOS_SERVER_HOSTNAME }}"
-        echo "Connecting to server at $SERVER_HOSTNAME"
+        SERVER_HOSTNAME="${{ matrix.host }}"
+        echo "Deploying configuration to ${{ matrix.host }} at $SERVER_HOSTNAME"
         
         # Configure SSH to bypass host key verification
         mkdir -p ~/.ssh
-        echo "Host $SERVER_HOSTNAME" >> ~/.ssh/config
+        echo "Host *" >> ~/.ssh/config
         echo "  StrictHostKeyChecking no" >> ~/.ssh/config
         echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
         chmod 600 ~/.ssh/config
+        
+        # Setup SSH key
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
         
         # Copy configuration to server
         rsync -avz --delete \
@@ -44,73 +87,82 @@ jobs:
           --exclude='.github' \
           --exclude='*.save' \
           --exclude='nextcloud/admin-pass' \
-          ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME:/tmp/nixos-config-deploy/
+          ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME:/tmp/nixos-config-deploy-${{ matrix.host }}/
         
         # Deploy flake configuration on server
-        ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << 'EOF'
+        ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << EOF
           set -e
           
           # Navigate to deploy directory
-          cd /tmp/nixos-config-deploy
+          cd /tmp/nixos-config-deploy-${{ matrix.host }}
           
           # Create backup directory if it doesn't exist
           sudo mkdir -p /var/backups/nixos
           
           # Create timestamped backup of current flake configuration
           BACKUP_NAME="flake_config_$(date +%Y%m%d_%H%M%S)"
-          sudo mkdir -p /var/backups/nixos/$BACKUP_NAME
+          sudo mkdir -p /var/backups/nixos/\$BACKUP_NAME
           
           # Backup current flake configuration if it exists
           if [ -d "/etc/nixos" ]; then
-            sudo cp -r /etc/nixos/. /var/backups/nixos/$BACKUP_NAME/ 2>/dev/null || true
+            sudo cp -r /etc/nixos/. /var/backups/nixos/\$BACKUP_NAME/ 2>/dev/null || true
           fi
           
           # Keep only last 10 backups
           sudo find /var/backups/nixos -maxdepth 1 -type d -name "flake_config_*" | sort | head -n -10 | xargs -r sudo rm -rf
           
-          # Test flake syntax first
-          echo "Testing flake syntax..."
-          if ! nix flake check; then
-            echo "❌ Flake syntax check failed! Aborting deployment."
-            exit 1
-          fi
-          
           # Final test before deployment using flake
-          echo "Running final configuration test with flake..."
-          if ! sudo nixos-rebuild dry-run --flake .#david; then
-            echo "❌ Final configuration test failed! Aborting deployment."
+          echo "Running final configuration test for ${{ matrix.host }}..."
+          if ! sudo nixos-rebuild dry-run --flake .#${{ matrix.host }}; then
+            echo "❌ Final configuration test failed for ${{ matrix.host }}! Aborting deployment."
             exit 1
           fi
           
           # Deploy the configuration using flake
-          echo "Deploying NixOS configuration with flake..."
-          if sudo nixos-rebuild switch --flake .#david; then
-            echo "✅ NixOS configuration deployed successfully!"
-            echo "SUCCESS" > /tmp/nixos-deploy-result.txt
+          echo "Deploying NixOS configuration for ${{ matrix.host }}..."
+          if sudo nixos-rebuild switch --flake .#${{ matrix.host }}; then
+            echo "✅ NixOS configuration deployed successfully to ${{ matrix.host }}!"
+            echo "SUCCESS" > /tmp/nixos-deploy-result-${{ matrix.host }}.txt
           else
-            echo "❌ NixOS configuration deployment failed!"
-            echo "FAILED" > /tmp/nixos-deploy-result.txt
+            echo "❌ NixOS configuration deployment failed for ${{ matrix.host }}!"
+            echo "FAILED" > /tmp/nixos-deploy-result-${{ matrix.host }}.txt
             exit 1
           fi
         EOF
         
         # Get deployment result
-        DEPLOY_RESULT=$(ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME "cat /tmp/nixos-deploy-result.txt")
+        DEPLOY_RESULT=$(ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME "cat /tmp/nixos-deploy-result-${{ matrix.host }}.txt")
         
         if [ "$DEPLOY_RESULT" = "SUCCESS" ]; then
-          echo "✅ NixOS configuration deployed successfully!"
+          echo "✅ NixOS configuration deployed successfully to ${{ matrix.host }}!"
         else
-          echo "❌ NixOS configuration deployment failed!"
+          echo "❌ NixOS configuration deployment failed for ${{ matrix.host }}!"
           exit 1
         fi
         
-    - name: Create GitHub Deployment
+    - name: Create GitHub Deployment Record
       if: success()
       run: |
-        echo "✅ NixOS configuration successfully deployed to production"
+        echo "✅ NixOS configuration successfully deployed to ${{ matrix.host }}"
         
     - name: Notify on failure
       if: failure()
       run: |
-        echo "❌ NixOS configuration deployment failed"
+        echo "❌ NixOS configuration deployment failed for ${{ matrix.host }}"
         echo "Check the server logs for more details"
+        
+  # Summary job to report overall deployment status
+  deployment-summary:
+    runs-on: ubuntu-latest
+    needs: deploy-configurations
+    if: always()
+    
+    steps:
+    - name: Check deployment status
+      run: |
+        if [ "${{ needs.deploy-configurations.result }}" = "success" ]; then
+          echo "✅ All NixOS configurations deployed successfully!"
+        else
+          echo "⚠️  Some deployments may have failed. Check individual job logs."
+          exit 1
+        fi
