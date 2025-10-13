@@ -108,10 +108,12 @@ sudo nixos-generate-config --show-hardware-config
 
 ## 📚 Documentation
 
-- Full guide: `MULTI-HOST-SETUP.md`
-- Implementation details: `IMPLEMENTATION-SUMMARY.md`
-- Module system: `MODULAR-STRUCTURE.md`
-- Secrets: `secrets/README.md`
+- **[Main README](README.md)** - Complete overview and features
+- **[Hosts](hosts/README.md)** - Multi-host setup guide
+- **[Modules](modules/README.md)** - Module system and services
+- **[Home Manager](home/README.md)** - User environment configuration
+- **[GitHub Actions](.github/workflows/README.md)** - CI/CD automation
+- **[Secrets](secrets/README.md)** - Secret management
 
 ## 🎯 Shell Aliases (configured)
 
@@ -129,6 +131,13 @@ hms              # Quick darwin rebuild
 3. **Rollback**: NixOS/nix-darwin support rollbacks if something breaks
 4. **Flake lock**: Commit `flake.lock` to track exact versions
 
+## 🔗 Quick Links
+
+- **Add a new host:** See [hosts/README.md](hosts/README.md)
+- **Enable a service:** See [modules/README.md](modules/README.md)
+- **Setup CI/CD:** See [.github/workflows/README.md](.github/workflows/README.md)
+- **Manage secrets:** See [secrets/README.md](secrets/README.md)
+
 ---
-**Need help?** Check `MULTI-HOST-SETUP.md` for detailed information.
+**Need detailed help?** Check the [main README](README.md) or directory-specific READMEs.
 
