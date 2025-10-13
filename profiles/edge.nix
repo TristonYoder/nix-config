@@ -42,6 +42,9 @@
   # Minimal development tools for remote management
   modules.services.development.vscode-server.enable = lib.mkDefault true;
   
+  # GitHub Actions for automated deployment
+  modules.services.development.github-actions.enable = lib.mkDefault true;
+  
   # =============================================================================
   # STORAGE (Optional)
   # =============================================================================
