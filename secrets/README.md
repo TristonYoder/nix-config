@@ -1,76 +1,99 @@
-# Secrets Management with agenix
+# Secrets Management
 
-This directory contains encrypted secrets for the NixOS configuration using [agenix](https://github.com/ryantm/agenix).
+Encrypted secrets using [agenix](https://github.com/ryantm/agenix). All `.age` files are safe to commit.
 
-## Setup
+## Adding a Secret
 
-### On the Server (First Time)
-
-1. Get the server's SSH host key in age format:
-```bash
-nix-shell -p ssh-to-age --run 'cat /etc/ssh/ssh_host_ed25519_key.pub | ssh-to-age'
-```
-
-2. Replace the placeholder key in `secrets.nix` with the actual host key.
-
-### On Your Local Machine
-
-1. Get your SSH key in age format:
-```bash
-ssh-add -L | ssh-to-age
-```
-
-2. Add your key to the `adminKeys` list in `secrets.nix`.
-
-## Managing Secrets
-
-### Creating/Editing Secrets
-
-Use the `agenix` CLI tool to edit secrets (automatically encrypts/decrypts):
+### 1. Encrypt the secret value
 
 ```bash
-# Enter the dev shell to get agenix CLI
-nix develop
+cd secrets
 
-# Edit a secret (creates if doesn't exist)
-agenix -e cloudflare-api-token.age
-
-# Rekey all secrets (after adding/removing keys in secrets.nix)
-agenix -r
+# Encrypt with age (specify which hosts can decrypt)
+echo -n "secret-value" | nix-shell -p age --run \
+  "age -r age19my5... -r age1jja99... -o my-secret.age"
 ```
 
-### Using Secrets in NixOS Config
-
-In your NixOS modules:
+### 2. Declare it in `modules/secrets.nix`
 
 ```nix
-{ config, ... }:
-{
-  age.secrets.cloudflare-api-token = {
-    file = ../secrets/cloudflare-api-token.age;
-    owner = "caddy";
-    group = "caddy";
-  };
+age.secrets.my-secret = {
+  file = ../secrets/my-secret.age;
+  owner = "service-user";  # Which user should own it
+  group = "service-group";
+  mode = "0400";
+};
+```
+
+### 3. Reference it in your service module
+
+```nix
+services.myservice = {
+  passwordFile = config.age.secrets.my-secret.path;
+  # Or inline: "${builtins.readFile config.age.secrets.my-secret.path}"
+};
+```
+
+## Adding a Host
+
+### 1. Get the host's public key
+
+```bash
+# On the new host
+ssh newhost "cat /etc/ssh/ssh_host_ed25519_key.pub" | nix-shell -p ssh-to-age --run "ssh-to-age"
+```
+
+### 2. Add to `secrets.nix`
+
+```nix
+let
+  newhost = "age1xxxxxxxxx...";  # Public key from step 1
   
-  # Reference the secret in your config
-  services.caddy = {
-    # Use: config.age.secrets.cloudflare-api-token.path
-  };
+  newhostKeys = [ newhost ] ++ adminKeys;
+in
+{
+  "my-secret.age".publicKeys = newhostKeys;  # Now newhost can decrypt this
 }
+```
+
+### 3. Rekey secrets (if needed)
+
+If the secret already exists and you're adding a new host:
+
+```bash
+cd secrets
+nix develop --command agenix -r  # Rekeys all secrets
+```
+
+## Admin Keys
+
+To manage secrets from your local machine, add your SSH key:
+
+```bash
+# Get your key in age format
+cat ~/.ssh/id_ed25519.pub | ssh-to-age
+
+# Add to adminKeys list in secrets.nix
+adminKeys = [
+  "age1xxxxxxxxx..."  # Your key
+];
 ```
 
 ## Current Secrets
 
-- `cloudflare-api-token.age` - Cloudflare DNS API token for Caddy ACME DNS-01 challenge
-- `cloudflared-token.age` - Cloudflare tunnel token
-- `vaultwarden-admin-token.age` - Vaultwarden admin authentication token
-- `postgres-affine-password.age` - PostgreSQL password for Affine database
+| Secret | Hosts | Used By |
+|--------|-------|---------|
+| `cloudflare-api-token.age` | david, pits | Caddy (DNS-01) |
+| `vaultwarden-admin-token.age` | david | Vaultwarden |
+| `postgres-affine-password.age` | david | PostgreSQL |
+| `tailscale-authkey-pits.age` | pits | Tailscale |
+| `cloudflared-token.age` | pits | Cloudflared |
 
-## Security Notes
+## Key Reference
 
-- Secrets are encrypted using age encryption
-- Only the server's SSH host key and authorized admin keys can decrypt
-- The `.age` files are safe to commit to git
-- Never commit unencrypted secrets or the private keys
-- The `secrets.nix` file (public keys only) is safe to commit
+```nix
+# See secrets.nix for current keys
+david = "age19my5vpmrvl5u9ug4frpdmuuemjhdgemgqjm6xunknmfjf6efvdxs232kym";
+pits  = "age1jja99mf5qfczutr574nve8vhpt7azm8aq4ukqqrstdn0agud23nscazh6r";
+```
 
