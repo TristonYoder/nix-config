@@ -46,16 +46,29 @@ nix run github:nix-community/nixos-anywhere -- --flake .#pits root@<VPS_IP>
 
 Or use the [NixOS Infect](https://github.com/elitak/nixos-infect) script on the running server.
 
-## Part 2: Initial Access
+## Part 2: Initial Access and Bootstrap
 
-### Step 1: SSH into the VPS
+### Step 1: Access the VPS Console
+
+Most cloud providers offer console access (VNC/serial console) in their dashboard. Use this for initial setup if SSH isn't enabled.
+
+**Via console**, run this bootstrap command to enable SSH and prepare for deployment:
 
 ```bash
-# Initial SSH (use password or key from VPS provider)
+# Single bootstrap command (run via console access)
+sudo systemctl enable --now sshd && \
+sudo passwd root && \
+echo "SSH is now enabled. Set root password above, then SSH in from your machine."
+```
+
+### Step 2: SSH into the VPS
+
+```bash
+# From your local machine
 ssh root@<VPS_PUBLIC_IP>
 ```
 
-### Step 2: Set Up SSH Keys (if not already configured)
+### Step 3: Set Up SSH Keys (Recommended)
 
 ```bash
 # On your local machine, copy your SSH key
@@ -69,15 +82,27 @@ ssh root@<VPS_PUBLIC_IP>
 
 ### Method 1: Clone and Build on the Server (Recommended for First Install)
 
+**Single Command Bootstrap** (run this on the VPS after SSH is enabled):
+
+```bash
+# Complete bootstrap - clones repo, generates config, and deploys
+nix-shell -p git --run "\
+  git clone https://github.com/TristonYoder/david-nixos.git /tmp/nixos-config && \
+  cd /tmp/nixos-config && \
+  sudo nixos-generate-config --show-hardware-config > hosts/pits/hardware-configuration.nix && \
+  sudo mv /tmp/nixos-config /etc/nixos && \
+  cd /etc/nixos && \
+  sudo nixos-rebuild switch --flake .#pits"
+```
+
+**Or step-by-step**:
+
 ```bash
 # SSH into the VPS
 ssh root@<VPS_PUBLIC_IP>
 
-# Install git temporarily
-nix-shell -p git
-
-# Clone your repository
-git clone https://github.com/TristonYoder/david-nixos.git /etc/nixos
+# Clone repo using temporary git (not installed in base NixOS)
+nix-shell -p git --run "git clone https://github.com/TristonYoder/david-nixos.git /etc/nixos"
 cd /etc/nixos
 
 # Generate hardware configuration
@@ -86,16 +111,10 @@ sudo nixos-generate-config --show-hardware-config > hosts/pits/hardware-configur
 # Review the hardware config
 cat hosts/pits/hardware-configuration.nix
 
-# Edit the pits configuration for your specific setup
-nano hosts/pits/configuration.nix
+# Optional: Edit configuration for your specific setup
+# nano hosts/pits/configuration.nix
 
-# Configure your public IP (if static)
-# networking.interfaces.ens3.ipv4.addresses = [{
-#   address = "YOUR_PUBLIC_IP";
-#   prefixLength = 24;
-# }];
-
-# Build and switch to the new configuration
+# Build and switch (git will be permanently available after this)
 sudo nixos-rebuild switch --flake .#pits
 
 # Reboot to ensure everything works
@@ -325,7 +344,7 @@ journalctl -f
 ### Update Configuration
 
 ```bash
-# Pull latest changes
+# Pull latest changes (git is now in your system packages after first rebuild)
 cd /etc/nixos
 git pull
 
@@ -411,7 +430,7 @@ du -sh /nix/store
 # Rebuild system
 sudo nixos-rebuild switch --flake /etc/nixos#pits
 
-# Update from git
+# Update from git (git is available after first rebuild)
 cd /etc/nixos && git pull && sudo nixos-rebuild switch --flake .#pits
 
 # Check services
