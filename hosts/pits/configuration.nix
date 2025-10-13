@@ -124,9 +124,7 @@
     enable = true;
     settings = {
       PermitRootLogin = "no";
-      # For initial setup, password authentication is enabled (from core.nix)
-      # After SSH keys are configured, uncomment below to disable password auth:
-      # PasswordAuthentication = lib.mkForce false;
+      PasswordAuthentication = false;  # Secure from day 1 - SSH keys configured in users.nix
       KbdInteractiveAuthentication = false;
     };
     # Consider changing to non-standard port

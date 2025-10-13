@@ -39,6 +39,14 @@ in
         ];
         description = "Packages for main user";
       };
+      
+      sshKeys = mkOption {
+        type = types.listOf types.str;
+        default = [
+          "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK5JWm3A5tXTCPq8YTua30QH2+Pa/Mz96QC5KJZKdEsz"
+        ];
+        description = "SSH public keys for main user";
+      };
     };
   };
 
@@ -48,6 +56,7 @@ in
       description = cfg.mainUser.description;
       extraGroups = cfg.mainUser.extraGroups;
       packages = cfg.mainUser.packages;
+      openssh.authorizedKeys.keys = cfg.mainUser.sshKeys;
     };
   };
 }

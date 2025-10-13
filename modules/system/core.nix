@@ -84,7 +84,7 @@ in
 
     # OpenSSH
     services.openssh.enable = true;
-    services.openssh.settings.PasswordAuthentication = lib.mkDefault true;
+    services.openssh.settings.PasswordAuthentication = lib.mkDefault false;
   };
 }
 
