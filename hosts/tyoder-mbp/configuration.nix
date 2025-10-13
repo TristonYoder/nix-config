@@ -12,7 +12,7 @@
   
   networking.hostName = "tyoder-mbp";
   networking.localHostName = "tyoder-mbp";
-  networking.computerName = "Tyoder's MacBook Pro";
+  networking.computerName = "Triston Yoder's MacBook Pro";
 
   # =============================================================================
   # NIX-DARWIN SYSTEM SETTINGS

@@ -12,6 +12,7 @@ This repository now supports multiple hosts across NixOS and macOS (Darwin) plat
 ├── profiles/                   # Role-based configuration profiles
 │   ├── server.nix              # Server role (all services enabled)
 │   ├── desktop.nix             # Desktop role (minimal, workstation-focused)
+│   ├── edge.nix                # Edge server role (public-facing, minimal)
 │   └── darwin.nix              # macOS role (system preferences)
 │
 ├── hosts/                      # Per-host configurations
@@ -19,6 +20,9 @@ This repository now supports multiple hosts across NixOS and macOS (Darwin) plat
 │   │   ├── configuration.nix
 │   │   └── hardware-configuration.nix
 │   ├── tristons-desk/          # Desktop workstation
+│   │   ├── configuration.nix
+│   │   └── hardware-configuration.nix
+│   ├── pits/                   # Pi in the Sky (edge server)
 │   │   ├── configuration.nix
 │   │   └── hardware-configuration.nix
 │   └── tyoder-mbp/             # macOS MacBook Pro
@@ -55,6 +59,14 @@ This repository now supports multiple hosts across NixOS and macOS (Darwin) plat
 - **Services**: Minimal (core, desktop, development tools)
 - **User**: tristonyoder
 - **Location**: `hosts/tristons-desk/`
+
+#### `pits` (aarch64-linux)
+- **Role**: Edge Server (Pi in the Sky)
+- **Profile**: `profiles/edge.nix`
+- **Services**: Caddy, Tailscale (public-facing minimal)
+- **User**: tristonyoder
+- **Location**: `hosts/pits/`
+- **Hardware**: Raspberry Pi (or other ARM/x86 edge device)
 
 ### macOS (Darwin) Hosts
 
@@ -127,6 +139,15 @@ Shared across all hosts:
 - Development tools (vscode-server)
 - Tailscale for VPN access
 - Minimal service footprint
+
+**Edge Profile** (`profiles/edge.nix`):
+- Core system modules (headless)
+- Caddy reverse proxy
+- Tailscale VPN
+- vscode-server for remote management
+- Optimized for low-resource devices (Raspberry Pi)
+- Aggressive garbage collection
+- Reduced journal size
 
 **Darwin Profile** (`profiles/darwin.nix`):
 - macOS system configuration

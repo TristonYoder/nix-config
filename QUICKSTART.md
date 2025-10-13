@@ -49,6 +49,7 @@ darwin-rebuild build --flake .
 |----------|------|---------|------|
 | `david` | NixOS Server | server | tristonyoder |
 | `tristons-desk` | NixOS Desktop | desktop | tristonyoder |
+| `pits` | NixOS Edge (Pi) | edge | tristonyoder |
 | `tyoder-mbp` | macOS | darwin | tyoder |
 
 ## 🔧 Common Tasks

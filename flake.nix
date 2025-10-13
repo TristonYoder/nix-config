@@ -158,6 +158,44 @@
             inherit nixpkgs nixpkgs-unstable;
           };
         };
+        
+        # -----------------------------------------------------------------------------
+        # pits - Pi in the Sky - Edge Server (aarch64-linux or x86_64-linux)
+        # -----------------------------------------------------------------------------
+        pits = nixpkgs.lib.nixosSystem {
+          system = "aarch64-linux";  # Raspberry Pi (change to x86_64-linux if not ARM)
+          
+          modules = [
+            # Common configuration
+            ./common.nix
+            
+            # Edge profile
+            ./profiles/edge.nix
+            
+            # Host-specific configuration
+            ./hosts/pits/configuration.nix
+            ./hosts/pits/hardware-configuration.nix
+            
+            # Custom modules (hardware, system, services)
+            ./modules
+            
+            # External modules
+            nixos-vscode-server.nixosModules.default
+            agenix.nixosModules.default
+            
+            # Home Manager
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
+            }
+          ];
+          
+          specialArgs = {
+            inherit nixpkgs nixpkgs-unstable;
+          };
+        };
       };
       
       # =============================================================================

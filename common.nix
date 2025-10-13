@@ -23,7 +23,7 @@
     gc = {
       automatic = true;
       dates = "weekly";
-      options = "--delete-older-than 30d";
+      options = "--delete-older-than 60d";
     };
   };
   
@@ -34,7 +34,7 @@
   # LOCALE & TIME (can be overridden per-host)
   # =============================================================================
   
-  time.timeZone = lib.mkDefault "America/New_York";
+  time.timeZone = lib.mkDefault "America/Indiana/Indianapolis";
   
   i18n = {
     defaultLocale = lib.mkDefault "en_US.UTF-8";
@@ -58,7 +58,7 @@
   environment.systemPackages = with pkgs; [
     # Essential tools
     git
-    vim
+    nano
     wget
     curl
     htop

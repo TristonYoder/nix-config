@@ -18,6 +18,7 @@
 |------|------|---------|----------|
 | **david** | NixOS Server | Server | Infrastructure, Media, Productivity, Storage |
 | **tristons-desk** | NixOS Desktop | Desktop | Minimal workstation setup |
+| **pits** | NixOS Edge (Pi) | Edge | Caddy, Tailscale (public-facing) |
 | **tyoder-mbp** | macOS (M1) | Darwin | Development tools, GUI apps via Homebrew |
 
 ## 🚀 Quick Start
@@ -45,10 +46,12 @@ darwin-rebuild switch --flake .
 ├── profiles/              # Role-based configurations
 │   ├── server.nix
 │   ├── desktop.nix
+│   ├── edge.nix
 │   └── darwin.nix
 ├── hosts/                 # Per-host configurations
 │   ├── david/
 │   ├── tristons-desk/
+│   ├── pits/
 │   └── tyoder-mbp/
 ├── home/                  # Home Manager configurations
 │   ├── common.nix         # Shared user settings
@@ -150,6 +153,13 @@ mas.apps = [
 ✅ Tailscale VPN  
 ✅ Minimal service footprint  
 
+### NixOS Edge Server (pits)
+✅ Caddy reverse proxy  
+✅ Tailscale VPN  
+✅ Optimized for Raspberry Pi  
+✅ Public-facing edge node  
+✅ Minimal resource footprint  
+
 ### macOS (tyoder-mbp)
 ✅ Homebrew package management  
 ✅ Mac App Store integration  
@@ -187,7 +197,7 @@ When making changes:
 ## 🎉 Status
 
 ✅ **Multi-host configuration active**  
-✅ **3 hosts configured** (david, tristons-desk, tyoder-mbp)  
+✅ **4 hosts configured** (david, tristons-desk, pits, tyoder-mbp)  
 ✅ **Home Manager integrated**  
 ✅ **Auto-detection enabled**  
 ✅ **Documentation complete**  
