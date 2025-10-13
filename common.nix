@@ -19,12 +19,7 @@
       trusted-users = [ "root" "@wheel" ];
     };
     
-    # Automatic garbage collection
-    gc = {
-      automatic = true;
-      dates = "weekly";
-      options = "--delete-older-than 60d";
-    };
+    # Note: Automatic garbage collection is configured in modules/system/core.nix
   };
   
   # Allow unfree packages globally
