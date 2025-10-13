@@ -5,7 +5,7 @@ This guide shows how to convert docker-compose.yml files to NixOS modules using 
 ## Navigation
 
 ```bash
-cd /home/tristonyoder/Projects/david-nixos/docker/dockercompose
+cd ~/Projects/david-nixos/docker/dockercompose
 ```
 
 ## Directory Structure
