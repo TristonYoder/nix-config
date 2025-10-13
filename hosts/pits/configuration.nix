@@ -15,6 +15,14 @@
   networking.hostName = "pits";
   networking.domain = lib.mkDefault "theyoder.family";
   system.stateVersion = "25.05";
+  
+  # =============================================================================
+  # HARDWARE OVERRIDES
+  # =============================================================================
+  
+  # Disable the boot module - VPS uses legacy BIOS, not EFI
+  # Bootloader config is in hardware-configuration.nix (GRUB on /dev/sda)
+  modules.hardware.boot.enable = lib.mkForce false;
 
   # =============================================================================
   # NETWORK CONFIGURATION
