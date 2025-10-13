@@ -13,7 +13,7 @@
 
   # Bootloader - Legacy BIOS boot (no EFI)
   boot.loader.grub.enable = true;
-  boot.loader.grub.device = "/dev/sda";  # Install GRUB to MBR
+  boot.loader.grub.device = "/dev/vda";  # Install GRUB to MBR (virtio disk)
 
   fileSystems."/" =
     { device = "/dev/disk/by-uuid/3f869947-fb3b-4a97-ac96-1533ee67892d";
