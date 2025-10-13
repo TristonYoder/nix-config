@@ -2,8 +2,17 @@
 
 This repository includes automated testing and deployment of NixOS configurations using GitHub Actions and Tailscale.
 
+## ⚡ Multi-Host Support
+
+**NEW:** This setup now supports **multiple NixOS hosts** with parallel testing and deployment!
+
+👉 **See [README-GitHub-Actions-MultiHost.md](README-GitHub-Actions-MultiHost.md) for complete multi-host documentation**
+
 ## Features
 
+- ✅ **Multi-Host Deployment**: Deploy to multiple NixOS hosts in parallel
+- ✅ **Parallel Testing**: Test all configurations simultaneously  
+- ✅ **Selective Deployment**: Deploy to all or specific hosts manually
 - ✅ **Automated Testing**: Test NixOS configurations on every push and pull request
 - ✅ **Branch Testing**: Test all branches (main, develop, feature/*, bugfix/*)
 - ✅ **Automatic Deployment**: Deploy to production when main branch tests pass
@@ -13,14 +22,26 @@ This repository includes automated testing and deployment of NixOS configuration
 
 ## Architecture
 
+### Single Host (Legacy)
 ```
 GitHub Repository → GitHub Actions → Tailscale → Your NixOS Server
 ```
 
+### Multi-Host (Current)
+```
+                                     ┌─→ david (main server)
+                                     │
+GitHub Repository → GitHub Actions → Tailscale → pits (edge VPS)
+                                     │
+                                     └─→ tristons-desk (desktop)
+```
+
 1. **GitHub Actions** triggers on code changes
-2. **Tailscale** provides secure connection to your server
-3. **GitHub Actions** handles all deployment logic
-4. **Backup System** ensures rollback capability
+2. **Tailscale** provides secure connection to all servers
+3. **GitHub Actions** handles all deployment logic in parallel
+4. **Backup System** ensures rollback capability on each host
+
+📚 **For multi-host setup details, see [README-GitHub-Actions-MultiHost.md](README-GitHub-Actions-MultiHost.md)**
 
 ## Complete Setup Instructions
 

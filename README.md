@@ -5,6 +5,7 @@
 ## 🌟 Features
 
 - **Multi-Host Support**: Manage NixOS and macOS machines from a single repository
+- **Automated Multi-Host Deployment**: GitHub Actions deploys to all hosts in parallel after successful tests
 - **Hostname Auto-Detection**: No need to specify host in rebuild commands
 - **Home Manager Integration**: Unified user environment across all platforms
 - **Profile-Based**: Role-based configurations (server, desktop, darwin)
@@ -73,7 +74,9 @@ darwin-rebuild switch --flake .
 - **[MODULAR-STRUCTURE.md](MODULAR-STRUCTURE.md)** - Module system documentation
 - **[secrets/README.md](secrets/README.md)** - Secret management guide
 - **[README-FLAKE.md](README-FLAKE.md)** - Original flake documentation
-- **[README-GitHub-Actions.md](README-GitHub-Actions.md)** - CI/CD setup
+- **[README-GitHub-Actions.md](README-GitHub-Actions.md)** - CI/CD setup (single-host)
+- **[README-GitHub-Actions-MultiHost.md](README-GitHub-Actions-MultiHost.md)** - ⚡ **NEW**: Multi-host automated deployment
+- **[MULTI-HOST-DEPLOYMENT.md](MULTI-HOST-DEPLOYMENT.md)** - Quick reference for multi-host deployments
 
 ## 🛠️ Common Commands
 

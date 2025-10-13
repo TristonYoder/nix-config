@@ -7,8 +7,39 @@ on:
     branches: [ main ]
 
 jobs:
-  test-configuration:
+  # First, check flake syntax locally (fast fail)
+  check-flake-syntax:
     runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install Nix
+      uses: cachix/install-nix-action@v27
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+    
+    - name: Check flake syntax
+      run: |
+        echo "Testing flake syntax..."
+        nix flake check --all-systems
+        echo "✅ Flake syntax check passed!"
+
+  # Test all NixOS configurations
+  test-configurations:
+    runs-on: ubuntu-latest
+    needs: check-flake-syntax
+    strategy:
+      matrix:
+        host: 
+          - name: david
+            hostname: david
+          - name: pits
+            hostname: pits
+          # - name: tristons-desk
+            # hostname: tristons-desk
+      fail-fast: false  # Continue testing other hosts even if one fails
     
     steps:
     - name: Checkout code
@@ -24,18 +55,22 @@ jobs:
     - name: Wait for Tailscale connection
       run: sleep 10
       
-    - name: Test NixOS Flake Configuration
+    - name: Test ${{ matrix.host.name }} Configuration
       run: |
         # Connect to server via Tailscale
-        SERVER_HOSTNAME="${{ secrets.NIXOS_SERVER_HOSTNAME }}"
-        echo "Connecting to server at $SERVER_HOSTNAME"
+        SERVER_HOSTNAME="${{ matrix.host.hostname }}"
+        echo "Testing configuration for ${{ matrix.host.name }} on $SERVER_HOSTNAME"
         
         # Configure SSH to bypass host key verification
         mkdir -p ~/.ssh
-        echo "Host $SERVER_HOSTNAME" >> ~/.ssh/config
+        echo "Host *" >> ~/.ssh/config
         echo "  StrictHostKeyChecking no" >> ~/.ssh/config
         echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
         chmod 600 ~/.ssh/config
+        
+        # Setup SSH key
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
         
         # Copy configuration to server
         rsync -avz --delete \
@@ -43,42 +78,34 @@ jobs:
           --exclude='.github' \
           --exclude='*.save' \
           --exclude='nextcloud/admin-pass' \
-          ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME:/tmp/nixos-config-test/
+          ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME:/tmp/nixos-config-test-${{ matrix.host.name }}/
         
-        # Test flake configuration on server
-        ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << 'EOF'
+        # Test configuration on server
+        ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << EOF
           set -e
           
           # Navigate to test directory
-          cd /tmp/nixos-config-test
-          
-          # Test flake syntax first
-          echo "Testing flake syntax..."
-          if ! nix flake check; then
-            echo "❌ Flake syntax check failed!"
-            echo "FAILED" > /tmp/nixos-test-result.txt
-            exit 1
-          fi
+          cd /tmp/nixos-config-test-${{ matrix.host.name }}
           
           # Test the NixOS configuration using flake
-          echo "Testing NixOS configuration with flake..."
-          if sudo nixos-rebuild dry-run --flake .#david; then
-            echo "✅ Configuration test passed!"
-            echo "SUCCESS" > /tmp/nixos-test-result.txt
+          echo "Testing NixOS configuration for ${{ matrix.host.name }}..."
+          if sudo nixos-rebuild dry-run --flake .#${{ matrix.host.name }}; then
+            echo "✅ Configuration test passed for ${{ matrix.host.name }}!"
+            echo "SUCCESS" > /tmp/nixos-test-result-${{ matrix.host.name }}.txt
           else
-            echo "❌ Configuration test failed!"
-            echo "FAILED" > /tmp/nixos-test-result.txt
+            echo "❌ Configuration test failed for ${{ matrix.host.name }}!"
+            echo "FAILED" > /tmp/nixos-test-result-${{ matrix.host.name }}.txt
             exit 1
           fi
         EOF
         
         # Get test result
-        TEST_RESULT=$(ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME "cat /tmp/nixos-test-result.txt")
+        TEST_RESULT=$(ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME "cat /tmp/nixos-test-result-${{ matrix.host.name }}.txt")
         
         if [ "$TEST_RESULT" = "SUCCESS" ]; then
-          echo "✅ NixOS configuration test passed!"
+          echo "✅ NixOS configuration test passed for ${{ matrix.host.name }}!"
         else
-          echo "❌ NixOS configuration test failed!"
+          echo "❌ NixOS configuration test failed for ${{ matrix.host.name }}!"
           exit 1
         fi
         
@@ -86,7 +113,7 @@ jobs:
       if: always()
       run: |
         if [ "${{ job.status }}" = "success" ]; then
-          echo "✅ NixOS configuration test passed"
+          echo "✅ ${{ matrix.host.name }} configuration test passed"
         else
-          echo "❌ NixOS configuration test failed"
+          echo "❌ ${{ matrix.host.name }} configuration test failed"
         fi
