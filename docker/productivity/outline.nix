@@ -129,7 +129,7 @@
     ];
   };
   virtualisation.oci-containers.containers."outline-postgres" = {
-    image = "postgres";
+    image = "postgres:16-alpine";
     environment = {
       "AWS_ACCESS_KEY_ID" = "get_a_key_from_aws";
       "AWS_REGION" = "xx-xxxx-x";
@@ -247,7 +247,7 @@
     ];
   };
   virtualisation.oci-containers.containers."outline-redis" = {
-    image = "redis";
+    image = "redis:7.2-alpine";
     environment = {
       "AWS_ACCESS_KEY_ID" = "get_a_key_from_aws";
       "AWS_REGION" = "xx-xxxx-x";

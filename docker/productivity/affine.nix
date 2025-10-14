@@ -100,7 +100,7 @@
     ];
   };
   virtualisation.oci-containers.containers."affine_redis" = {
-    image = "redis";
+    image = "redis:7.2-alpine";
     log-driver = "journald";
     extraOptions = [
       "--health-cmd=[\"redis-cli\", \"--raw\", \"incr\", \"ping\"]"

@@ -16,7 +16,7 @@ services:
     restart: always
 
   redis:
-    image: redis
+    image: redis:7.2-alpine
     env_file: ./docker.env
     expose:
       - "6379"
@@ -31,7 +31,7 @@ services:
     restart: unless-stopped
 
   postgres:
-    image: postgres
+    image: postgres:16-alpine
     env_file: ./docker.env
     expose:
       - "5432"
