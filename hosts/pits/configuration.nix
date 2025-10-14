@@ -99,6 +99,10 @@
         header Access-Control-Allow-Origin *
         respond `{"m.homeserver":{"base_url":"https://matrix.theyoder.family"}}` 200
       }
+      # Serve a simple hello world at the root
+      handle / {
+        respond "Hello from theyoder.family! 👋" 200
+      }
       # Add other routes for theyoder.family here as needed
       respond 404
       import cloudflare_tls
