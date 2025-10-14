@@ -13,7 +13,7 @@ Internet → pits (Caddy) → Tailscale → david (Matrix Synapse)
     (+ .well-known delegation from theyoder.family)
 ```
 
-- **Matrix Server**: david:8008 (client-server and federation)
+- **Matrix Server**: david:8009 (client-server and federation)
 - **Reverse Proxy**: pits (Caddy with Cloudflare DNS)
 - **Public URL**: https://matrix.theyoder.family
 - **User Domain**: @username:theyoder.family
@@ -62,7 +62,7 @@ ping david
 From pits, test that Matrix is accessible:
 
 ```bash
-curl http://david:8008/_matrix/client/versions
+curl http://david:8009/_matrix/client/versions
 ```
 
 Should return JSON with Matrix versions.
@@ -75,7 +75,7 @@ On david:
 # Create your first user (admin)
 sudo -u matrix-synapse register_new_matrix_user \
   -c /var/lib/matrix-synapse/homeserver.yaml \
-  http://localhost:8008
+  http://localhost:8009
 
 # Follow the interactive prompts:
 # - Username: your_username
@@ -132,7 +132,7 @@ ssh david
 # Create a new user
 sudo -u matrix-synapse register_new_matrix_user \
   -c /var/lib/matrix-synapse/homeserver.yaml \
-  http://localhost:8008
+  http://localhost:8009
 ```
 
 ## Monitoring
@@ -184,7 +184,7 @@ ping david
 tailscale status | grep david
 
 # Test Matrix port
-curl http://david:8008/_matrix/client/versions
+curl http://david:8009/_matrix/client/versions
 ```
 
 ### Federation not working

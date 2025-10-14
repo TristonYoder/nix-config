@@ -76,8 +76,8 @@
   # Matrix Synapse - Reverse proxy to david
   services.caddy.virtualHosts."matrix.theyoder.family" = {
     extraConfig = ''
-      reverse_proxy /_matrix/* http://david:8008
-      reverse_proxy /_synapse/client/* http://david:8008
+      reverse_proxy /_matrix/* http://david:8009
+      reverse_proxy /_synapse/client/* http://david:8009
       tls {
         dns cloudflare {$CLOUDFLARE_API_TOKEN}
       }
