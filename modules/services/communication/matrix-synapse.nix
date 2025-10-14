@@ -3,13 +3,6 @@
 with lib;
 let
   cfg = config.modules.services.communication.matrix-synapse;
-  
-  # Caddy virtual host configuration with Cloudflare DNS TLS
-  sharedTlsConfig = ''
-    tls {
-      dns cloudflare {$CLOUDFLARE_API_TOKEN}
-    }
-  '';
 in
 {
   options.modules.services.communication.matrix-synapse = {
@@ -224,7 +217,7 @@ in
       extraConfig = ''
         reverse_proxy /_matrix/* http://localhost:${toString cfg.clientPort}
         reverse_proxy /_synapse/client/* http://localhost:${toString cfg.clientPort}
-        ${sharedTlsConfig}
+        import cloudflare_tls
       '';
     };
     
@@ -243,7 +236,7 @@ in
         }
         # Add other routes for ${cfg.serverName} here as needed
         respond 404
-        ${sharedTlsConfig}
+        import cloudflare_tls
       '';
     };
   };

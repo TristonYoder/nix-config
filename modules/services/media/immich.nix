@@ -3,13 +3,6 @@
 with lib;
 let
   cfg = config.modules.services.media.immich;
-  
-  # Caddy virtual host configuration with Cloudflare DNS TLS
-  sharedTlsConfig = ''
-    tls {
-      dns cloudflare {$CLOUDFLARE_API_TOKEN}
-    }
-  '';
 in
 {
   options.modules.services.media.immich = {
@@ -74,14 +67,14 @@ in
         handle {
           reverse_proxy http://localhost:${toString cfg.port}
         }
-        ${sharedTlsConfig}
+        import cloudflare_tls
       '';
     };
 
     services.caddy.virtualHosts.${cfg.publicProxyDomain} = mkIf config.modules.services.infrastructure.caddy.enable {
       extraConfig = ''
         reverse_proxy http://localhost:${toString cfg.publicProxyPort}
-        ${sharedTlsConfig}
+        import cloudflare_tls
       '';
     };
   };

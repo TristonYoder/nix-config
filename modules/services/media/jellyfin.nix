@@ -3,13 +3,6 @@
 with lib;
 let
   cfg = config.modules.services.media.jellyfin;
-  
-  # Caddy virtual host configuration with Cloudflare DNS TLS
-  sharedTlsConfig = ''
-    tls {
-      dns cloudflare {$CLOUDFLARE_API_TOKEN}
-    }
-  '';
 in
 {
   options.modules.services.media.jellyfin = {
@@ -65,7 +58,7 @@ in
     services.caddy.virtualHosts.${cfg.domain} = mkIf config.modules.services.infrastructure.caddy.enable {
       extraConfig = ''
         reverse_proxy http://localhost:8096
-        ${sharedTlsConfig}
+        import cloudflare_tls
       '';
     };
   };

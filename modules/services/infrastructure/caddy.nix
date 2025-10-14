@@ -31,6 +31,13 @@ in
       };
       globalConfig = ''
         email ${cfg.email}
+        
+        # Cloudflare TLS snippet for reuse across virtual hosts
+        (cloudflare_tls) {
+          tls {
+            dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+          }
+        }
       '';
       extraConfig = ''
         # Global configuration can go here

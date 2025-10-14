@@ -3,13 +3,6 @@
 with lib;
 let
   cfg = config.modules.services.productivity.n8n;
-  
-  # Caddy virtual host configuration with Cloudflare DNS TLS
-  sharedTlsConfig = ''
-    tls {
-      dns cloudflare {$CLOUDFLARE_API_TOKEN}
-    }
-  '';
 in
 {
   options.modules.services.productivity.n8n = {
@@ -43,7 +36,7 @@ in
     services.caddy.virtualHosts.${cfg.domain} = mkIf config.modules.services.infrastructure.caddy.enable {
       extraConfig = ''
         reverse_proxy http://localhost:5678
-        ${sharedTlsConfig}
+        import cloudflare_tls
       '';
     };
   };
