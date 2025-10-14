@@ -160,6 +160,7 @@ adminKeys = [
 | Secret | Hosts | Used By |
 |--------|-------|---------|
 | `cloudflare-api-token.age` | david, pits | Caddy (DNS-01) |
+| `matrix-registration-secret.age` | david | Matrix Synapse |
 | `vaultwarden-admin-token.age` | david | Vaultwarden |
 | `postgres-affine-password.age` | david | PostgreSQL |
 | `tailscale-authkey-pits.age` | pits | Tailscale |
@@ -178,41 +179,144 @@ admin = "age1m32sa7vq84004w6spg5tp7vzmszecxpp0da6z6dj8fxs70y34flshd46jq";
 
 ### Error: "age: error: no identity matched any of the recipients"
 
-This error during `nixos-rebuild` means the server cannot decrypt the secret. Common causes:
+This error during `nixos-rebuild` means the server cannot decrypt the secret. **This is the most common agenix error.**
 
-**1. Secret encrypted with wrong recipients**
-- Verify the host's age public key matches `secrets.nix`:
-  ```bash
-  ssh hostname "cat /etc/ssh/ssh_host_ed25519_key.pub" | nix-shell -p ssh-to-age --run "ssh-to-age"
-  ```
-- If the key changed, update `secrets.nix` and re-encrypt all secrets
+#### Quick Diagnosis
 
-**2. Secret encrypted incorrectly**
-- Must use `-R` with SSH public keys, NOT `-r` with age keys
-- Check the file header: should show `-> ssh-ed25519`, not `-> X25519`
-- Example:
-  ```bash
-  # Create SSH recipients file
-  ssh tristonyoder@david "cat /etc/ssh/ssh_host_ed25519_key.pub" > /tmp/recipients.txt
-  cat ~/.ssh/agenix.pub >> /tmp/recipients.txt
-  
-  # Encrypt with SSH keys
-  echo "SECRET=value" > /tmp/plain.txt
-  nix-shell -p age --run "age --encrypt -R /tmp/recipients.txt -o secret.age /tmp/plain.txt"
-  rm /tmp/plain.txt /tmp/recipients.txt
-  
-  # Verify: should see "-> ssh-ed25519" not "-> X25519"
-  head secret.age
-  ```
-
-**3. Verify decryption manually**
-Test on the actual server:
 ```bash
-# On the server
-sudo bash -c 'cat /etc/ssh/ssh_host_ed25519_key | nix-shell -p ssh-to-age --run "ssh-to-age -private-key" > /tmp/key.txt && nix-shell -p age --run "age --decrypt -i /tmp/key.txt /path/to/secret.age" && rm /tmp/key.txt'
+# Step 1: Check the secret file format
+head yourfile.age
+
+# Should see "-> ssh-ed25519" (CORRECT):
+#   age-encryption.org/v1
+#   -> ssh-ed25519 QfFraw ...
+#   -> ssh-ed25519 G/hviA ...
+
+# If you see "-> X25519" (WRONG):
+#   age-encryption.org/v1
+#   -> X25519 ...
+#   -> X25519 ...
+# This is your problem! See "Wrong Encryption Method" below.
+
+# Step 2: Use the verify script
+cd secrets
+./encrypt-secret.sh -v yourfile.age
 ```
 
-If manual decryption works but `nixos-rebuild` fails, ensure `modules/secrets.nix` has:
+#### Common Causes
+
+**1. Wrong Encryption Method (Most Common)**
+
+**Problem:** Secret was encrypted with age recipient keys (`-r age1...`) instead of SSH public keys (`-R ssh-pub-keys-file`).
+
+**Symptoms:**
+- File shows `-> X25519` recipients
+- Works on your local machine but fails on servers
+- Error: "no identity matched any of the recipients"
+
+**Why this happens:**
+- Age supports two types of encryption:
+  - **X25519 (age keys)**: `age --encrypt -r age1abc...` - Creates X25519 recipients
+  - **SSH keys**: `age --encrypt -R ssh-keys-file` - Creates ssh-ed25519 recipients
+- Agenix requires SSH key encryption so servers can decrypt using `/etc/ssh/ssh_host_ed25519_key`
+- If you use age keys from `secrets.nix` directly, you get X25519 (wrong!)
+
+**Fix:**
+```bash
+cd secrets
+
+# 1. Decrypt the secret (if you can)
+nix-shell -p age --run "age --decrypt -i ~/.ssh/agenix yourfile.age" > /tmp/plain.txt
+
+# 2. Re-encrypt with SSH public keys using the script
+./encrypt-secret.sh -n yourfile.age -f /tmp/plain.txt
+
+# 3. Verify it's correct
+./encrypt-secret.sh -v yourfile.age
+
+# 4. Clean up
+rm /tmp/plain.txt
+
+# 5. Commit and deploy
+git add yourfile.age
+git commit -m "fix: Re-encrypt with SSH public keys"
+```
+
+**2. Secret Encrypted for Wrong Hosts**
+
+**Problem:** The server's SSH host key isn't in the recipient list.
+
+**Diagnosis:**
+```bash
+# Get server's age key
+ssh hostname "cat /etc/ssh/ssh_host_ed25519_key.pub" | nix-shell -p ssh-to-age --run "ssh-to-age"
+
+# Compare with secrets.nix
+grep "hostname =" secrets/secrets.nix
+```
+
+**Fix:** If keys don't match, update `secrets.nix` and re-encrypt:
+```bash
+cd secrets
+./encrypt-secret.sh -n yourfile.age -h all -f /tmp/plain.txt
+```
+
+**3. Server SSH Key Changed**
+
+**Problem:** Server was reinstalled or SSH keys regenerated.
+
+**Symptoms:**
+- Secrets that used to work now fail
+- SSH host key doesn't match `secrets.nix`
+
+**Fix:**
+```bash
+# 1. Get new host key
+ssh hostname "cat /etc/ssh/ssh_host_ed25519_key.pub" | nix-shell -p ssh-to-age --run "ssh-to-age"
+
+# 2. Update secrets.nix with new key
+vim secrets/secrets.nix
+
+# 3. Re-encrypt ALL secrets for that host
+# (decrypt each one, then re-encrypt with updated keys)
+```
+
+**4. File Corrupted or Contaminated**
+
+**Problem:** nix-shell warnings or other text mixed into the `.age` file.
+
+**Symptoms:**
+- Error: "failed to read header: parsing age header: unexpected intro"
+- File doesn't start with `age-encryption.org/v1`
+
+**Example of corrupted file:**
+```
+warning: ignoring the client-specified setting 'keep-derivations'
+warning: ignoring the client-specified setting 'keep-outputs'
+age-encryption.org/v1
+...
+```
+
+**Fix:** The script now redirects stderr to prevent this (`2>/dev/null`). Re-encrypt the secret.
+
+#### Manual Verification
+
+Test decryption on the actual server:
+
+```bash
+# On the server (requires sudo)
+ssh hostname
+
+# Convert SSH private key to age format and test decrypt
+sudo bash -c 'cat /etc/ssh/ssh_host_ed25519_key | \
+  nix-shell -p ssh-to-age --run "ssh-to-age -private-key" > /tmp/age-key.txt && \
+  nix-shell -p age --run "age --decrypt -i /tmp/age-key.txt /path/to/secret.age" && \
+  rm /tmp/age-key.txt'
+```
+
+If manual decryption works but `nixos-rebuild` fails:
+
+1. Check `modules/secrets.nix` has correct identityPaths:
 ```nix
 age.identityPaths = [
   "/etc/ssh/ssh_host_ed25519_key"
@@ -220,18 +324,37 @@ age.identityPaths = [
 ];
 ```
 
+2. Verify secret file is in the nix store:
+```bash
+# The path will be in the error message
+ls -l /nix/store/...-yourfile.age
+head /nix/store/...-yourfile.age  # Check format
+```
+
+3. If nix store has old version, rebuild:
+```bash
+# Pull latest changes
+git pull
+
+# Rebuild (this updates nix store)
+sudo nixos-rebuild switch
+```
+
 ## Helper Scripts Reference
 
 ### encrypt-secret.sh
 
-Encrypts secrets using the correct method for agenix compatibility.
+Encrypts secrets using the correct method for agenix compatibility (SSH public keys with `-R` flag).
 
 **Features:**
-- Automatically includes all required recipients (david, pits, admin)
+- Automatically fetches SSH public keys from servers
+- Uses SSH public key encryption (`-R` flag) for agenix compatibility
+- Validates encryption format (checks for ssh-ed25519 recipients)
 - Validates environment variable format
 - Interactive or command-line input
 - Shows preview before encryption
 - Provides next steps after encryption
+- **NEW:** Verify mode to check existing secrets
 
 **Examples:**
 ```bash
@@ -249,7 +372,17 @@ Encrypts secrets using the correct method for agenix compatibility.
 
 # Environment variable format
 ./encrypt-secret.sh -n token.age -e -s "API_KEY=abc123"
+
+# Verify an existing secret has correct format
+./encrypt-secret.sh -v cloudflare-api-token.age
 ```
+
+**What it checks:**
+- ✓ Fetches actual SSH host keys from servers
+- ✓ Uses `-R` flag for SSH public key encryption
+- ✓ Suppresses stderr to prevent file contamination
+- ✓ Verifies result has `ssh-ed25519` recipients (not `X25519`)
+- ✓ Warns if encryption format is wrong
 
 ### decrypt-secret.sh
 
