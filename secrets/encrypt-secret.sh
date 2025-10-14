@@ -12,10 +12,11 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Host and admin keys (from secrets.nix)
-DAVID_KEY="age19my5vpmrvl5u9ug4frpdmuuemjhdgemgqjm6xunknmfjf6efvdxs232kym"
-PITS_KEY="age1jja99mf5qfczutr574nve8vhpt7azm8aq4ukqqrstdn0agud23nscazh6r"
-ADMIN_KEY="age1m32sa7vq84004w6spg5tp7vzmszecxpp0da6z6dj8fxs70y34flshd46jq"
+# SSH public keys for encryption (NOT age keys - agenix needs SSH format)
+# These are fetched dynamically from the servers
+DAVID_HOST="david"
+PITS_HOST="pits"
+ADMIN_SSH_KEY="$HOME/.ssh/agenix.pub"
 
 # Usage information
 usage() {
@@ -114,23 +115,30 @@ if [ ! -f "secrets.nix" ]; then
     fi
 fi
 
-# Build recipient list
-RECIPIENTS=()
+# Build SSH public key recipients file
+RECIPIENTS_FILE=$(mktemp)
+trap "rm -f $RECIPIENTS_FILE" EXIT
+
+echo -e "${BLUE}Fetching SSH public keys...${NC}"
+
 if [[ "$HOSTS" == "all" ]]; then
-    RECIPIENTS+=("-r" "$DAVID_KEY" "-r" "$PITS_KEY" "-r" "$ADMIN_KEY")
     echo -e "${BLUE}Recipients:${NC} david, pits, admin"
+    ssh tristonyoder@$DAVID_HOST "cat /etc/ssh/ssh_host_ed25519_key.pub" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Failed to fetch david SSH key${NC}"; exit 1; }
+    ssh tristonyoder@$PITS_HOST "cat /etc/ssh/ssh_host_ed25519_key.pub" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Failed to fetch pits SSH key${NC}"; exit 1; }
+    cat "$ADMIN_SSH_KEY" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Admin SSH key not found at $ADMIN_SSH_KEY${NC}"; exit 1; }
 else
+    echo -e "${BLUE}Recipients:${NC} $HOSTS"
     IFS=',' read -ra HOST_LIST <<< "$HOSTS"
     for host in "${HOST_LIST[@]}"; do
         case $host in
             david)
-                RECIPIENTS+=("-r" "$DAVID_KEY")
+                ssh tristonyoder@$DAVID_HOST "cat /etc/ssh/ssh_host_ed25519_key.pub" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Failed to fetch david SSH key${NC}"; exit 1; }
                 ;;
             pits)
-                RECIPIENTS+=("-r" "$PITS_KEY")
+                ssh tristonyoder@$PITS_HOST "cat /etc/ssh/ssh_host_ed25519_key.pub" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Failed to fetch pits SSH key${NC}"; exit 1; }
                 ;;
             admin)
-                RECIPIENTS+=("-r" "$ADMIN_KEY")
+                cat "$ADMIN_SSH_KEY" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Admin SSH key not found at $ADMIN_SSH_KEY${NC}"; exit 1; }
                 ;;
             *)
                 echo -e "${RED}Error: Unknown host '$host'. Valid: david, pits, admin, all${NC}"
@@ -138,8 +146,9 @@ else
                 ;;
         esac
     done
-    echo -e "${BLUE}Recipients:${NC} $HOSTS"
 fi
+
+echo -e "${GREEN}✓ Fetched SSH public keys${NC}"
 
 # Get the secret content
 TEMP_FILE=$(mktemp)
@@ -199,9 +208,9 @@ if [[ $REPLY =~ ^[Nn]$ ]]; then
     exit 0
 fi
 
-# Encrypt the secret
-echo -e "${BLUE}Encrypting...${NC}"
-if nix-shell -p age --run "age --encrypt ${RECIPIENTS[*]} -o \"$OUTPUT_FILE\" \"$TEMP_FILE\""; then
+# Encrypt the secret using SSH public keys (-R flag)
+echo -e "${BLUE}Encrypting with SSH public keys...${NC}"
+if nix-shell -p age --run "age --encrypt -R \"$RECIPIENTS_FILE\" -o \"$OUTPUT_FILE\" \"$TEMP_FILE\""; then
     echo -e "${GREEN}✓ Successfully encrypted to: $OUTPUT_FILE${NC}"
     
     # Show file info
@@ -209,8 +218,8 @@ if nix-shell -p age --run "age --encrypt ${RECIPIENTS[*]} -o \"$OUTPUT_FILE\" \"
     echo -e "${BLUE}File size:${NC} $FILE_SIZE"
     
     # Count recipients
-    RECIPIENT_COUNT=$(grep -c "-> X25519" "$OUTPUT_FILE" || true)
-    echo -e "${BLUE}Recipients:${NC} $RECIPIENT_COUNT"
+    RECIPIENT_COUNT=$(grep -c "-> ssh-ed25519" "$OUTPUT_FILE" || true)
+    echo -e "${BLUE}SSH Recipients:${NC} $RECIPIENT_COUNT"
     
     echo ""
     echo -e "${GREEN}Next steps:${NC}"
