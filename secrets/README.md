@@ -2,6 +2,21 @@
 
 Encrypted secrets using [agenix](https://github.com/ryantm/agenix). All `.age` files are safe to commit.
 
+## Quick Start
+
+**Helper Scripts (Recommended):**
+```bash
+# Encrypt a new secret
+./encrypt-secret.sh -n my-secret.age -e
+
+# Decrypt/view a secret
+./decrypt-secret.sh cloudflare-api-token.age
+
+# See all options
+./encrypt-secret.sh --help
+./decrypt-secret.sh --help
+```
+
 ## How It Works
 
 - **Encryption**: Uses PUBLIC keys (from `secrets.nix`) - no private key needed
@@ -200,5 +215,57 @@ age.identityPaths = [
   "/etc/ssh/ssh_host_ed25519_key"
   "/etc/ssh/ssh_host_rsa_key"
 ];
+```
+
+## Helper Scripts Reference
+
+### encrypt-secret.sh
+
+Encrypts secrets using the correct method for agenix compatibility.
+
+**Features:**
+- Automatically includes all required recipients (david, pits, admin)
+- Validates environment variable format
+- Interactive or command-line input
+- Shows preview before encryption
+- Provides next steps after encryption
+
+**Examples:**
+```bash
+# Interactive mode (recommended)
+./encrypt-secret.sh -n api-token.age -e
+
+# From command line
+./encrypt-secret.sh -n db-password.age -s "mypassword123"
+
+# From file
+./encrypt-secret.sh -n cert.age -f /path/to/certificate.pem
+
+# Only specific hosts
+./encrypt-secret.sh -n david-only.age -h david -s "secret"
+
+# Environment variable format
+./encrypt-secret.sh -n token.age -e -s "API_KEY=abc123"
+```
+
+### decrypt-secret.sh
+
+Decrypts secrets for viewing/editing using your admin key.
+
+**Features:**
+- Automatic SSH-to-age key conversion
+- Output to stdout or file
+- Clear error messages
+
+**Examples:**
+```bash
+# View secret
+./decrypt-secret.sh cloudflare-api-token.age
+
+# Save to file
+./decrypt-secret.sh -o /tmp/secret.txt my-secret.age
+
+# Use different admin key
+./decrypt-secret.sh -i ~/.ssh/id_ed25519 my-secret.age
 ```
 

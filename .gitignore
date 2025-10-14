@@ -3,6 +3,7 @@
 !/secrets/*.age
 !/secrets/secrets.nix
 !/secrets/README.md
+!/secrets/*.sh
 #ignore nix builds
 **/result
 */.DS_Store
