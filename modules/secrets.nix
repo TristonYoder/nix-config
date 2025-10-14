@@ -14,13 +14,12 @@
     "/etc/ssh/ssh_host_rsa_key"
   ];
   
-  # Specify which age implementation to use (rage is the Rust implementation)
-  age.ageBin = "${pkgs.rage}/bin/rage";
+  # Use the Go implementation of age (has better SSH key support than rage)
+  age.ageBin = "${pkgs.age}/bin/age";
   
-  # Ensure age/rage is available system-wide
+  # Ensure age is available system-wide
   environment.systemPackages = with pkgs; [
     age
-    rage
   ];
   
   age.secrets = {
