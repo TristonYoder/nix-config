@@ -99,6 +99,9 @@
       }
       # Add other routes for theyoder.family here as needed
       respond 404
+      tls {
+        dns cloudflare {$CLOUDFLARE_API_TOKEN}
+      }
     '';
   };
   
