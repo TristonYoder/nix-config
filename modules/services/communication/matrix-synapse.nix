@@ -67,7 +67,9 @@ in
         listeners = [
           {
             # Client-server and federation API
-            # Binds to all interfaces to allow Tailscale connections from reverse proxy
+            # Binds to all interfaces for Tailscale access from pits reverse proxy
+            # Security: Port is NOT opened in firewall (see networking.firewall section below)
+            # Only accessible via Tailscale network or localhost
             port = cfg.clientPort;
             bind_addresses = [ "0.0.0.0" "::" ];
             type = "http";
@@ -181,11 +183,17 @@ in
           # Check collation
           COLLATION=$(psql -d matrix-synapse -t -c "SELECT datcollate FROM pg_database WHERE datname='matrix-synapse';" | xargs)
           if [ "$COLLATION" != "C" ]; then
-            echo "WARNING: Database exists but has wrong collation: $COLLATION"
-            echo "Dropping and recreating database..."
-            psql -c "DROP DATABASE \"matrix-synapse\";"
-            psql -c "CREATE DATABASE \"matrix-synapse\" LC_COLLATE='C' LC_CTYPE='C' TEMPLATE=template0 OWNER \"matrix-synapse\";"
-            echo "Database recreated with correct collation"
+            echo "ERROR: Database exists but has wrong collation: $COLLATION (expected C)"
+            echo "Matrix Synapse requires LC_COLLATE=C and LC_CTYPE=C for proper operation."
+            echo ""
+            echo "To fix this manually:"
+            echo "  1. Backup your database: sudo -u postgres pg_dump matrix-synapse > matrix-backup.sql"
+            echo "  2. Drop the database: sudo -u postgres psql -c 'DROP DATABASE \"matrix-synapse\";'"
+            echo "  3. Recreate with correct collation: sudo -u postgres psql -c 'CREATE DATABASE \"matrix-synapse\" LC_COLLATE=\"C\" LC_CTYPE=\"C\" TEMPLATE=template0 OWNER \"matrix-synapse\";'"
+            echo "  4. Restore your data: sudo -u postgres psql matrix-synapse < matrix-backup.sql"
+            echo ""
+            echo "WARNING: This will prevent Matrix Synapse from starting."
+            exit 1
           fi
         fi
       '';
