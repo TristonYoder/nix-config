@@ -154,13 +154,44 @@ in
 
     # PostgreSQL database setup
     services.postgresql = {
-      ensureDatabases = [ "matrix-synapse" ];
       ensureUsers = [
         {
           name = "matrix-synapse";
-          ensureDBOwnership = true;
         }
       ];
+    };
+
+    # Create database with correct collation for Matrix Synapse
+    # Matrix requires LC_COLLATE=C for proper operation
+    systemd.services.matrix-synapse-init-db = {
+      description = "Initialize Matrix Synapse database with correct collation";
+      before = [ "matrix-synapse.service" ];
+      after = [ "postgresql.service" ];
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        User = "postgres";
+        RemainAfterExit = true;
+      };
+      script = ''
+        # Check if database exists
+        if ! psql -lqt | cut -d \| -f 1 | grep -qw matrix-synapse; then
+          echo "Creating matrix-synapse database with C collation..."
+          psql -c "CREATE DATABASE \"matrix-synapse\" LC_COLLATE='C' LC_CTYPE='C' TEMPLATE=template0 OWNER \"matrix-synapse\";"
+          echo "Database created successfully"
+        else
+          echo "Database already exists"
+          # Check collation
+          COLLATION=$(psql -d matrix-synapse -t -c "SELECT datcollate FROM pg_database WHERE datname='matrix-synapse';" | xargs)
+          if [ "$COLLATION" != "C" ]; then
+            echo "WARNING: Database exists but has wrong collation: $COLLATION"
+            echo "Dropping and recreating database..."
+            psql -c "DROP DATABASE \"matrix-synapse\";"
+            psql -c "CREATE DATABASE \"matrix-synapse\" LC_COLLATE='C' LC_CTYPE='C' TEMPLATE=template0 OWNER \"matrix-synapse\";"
+            echo "Database recreated with correct collation"
+          fi
+        fi
+      '';
     };
 
     # Firewall configuration - allow access from Tailscale only
