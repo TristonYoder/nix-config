@@ -88,16 +88,14 @@
   services.caddy.virtualHosts."theyoder.family" = {
     extraConfig = ''
       handle /.well-known/matrix/server {
-        respond `{"m.server": "matrix.theyoder.family:443"}` 200 {
-          header Content-Type application/json
-          header Access-Control-Allow-Origin *
-        }
+        header Content-Type application/json
+        header Access-Control-Allow-Origin *
+        respond `{"m.server": "matrix.theyoder.family:443"}` 200
       }
       handle /.well-known/matrix/client {
-        respond `{"m.homeserver":{"base_url":"https://matrix.theyoder.family"}}` 200 {
-          header Content-Type application/json
-          header Access-Control-Allow-Origin *
-        }
+        header Content-Type application/json
+        header Access-Control-Allow-Origin *
+        respond `{"m.homeserver":{"base_url":"https://matrix.theyoder.family"}}` 200
       }
       # Add other routes for theyoder.family here as needed
       respond 404
