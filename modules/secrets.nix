@@ -1,4 +1,4 @@
-{ config, lib, ... }:
+{ config, lib, pkgs, ... }:
 
 {
   # =============================================================================
@@ -12,6 +12,15 @@
   age.identityPaths = [
     "/etc/ssh/ssh_host_ed25519_key"
     "/etc/ssh/ssh_host_rsa_key"
+  ];
+  
+  # Specify which age implementation to use (rage is the Rust implementation)
+  age.ageBin = "${pkgs.rage}/bin/rage";
+  
+  # Ensure age/rage is available system-wide
+  environment.systemPackages = with pkgs; [
+    age
+    rage
   ];
   
   age.secrets = {
