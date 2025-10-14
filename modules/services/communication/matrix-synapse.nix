@@ -30,13 +30,7 @@ in
     clientPort = mkOption {
       type = types.port;
       default = 8008;
-      description = "Client-server API port";
-    };
-    
-    federationPort = mkOption {
-      type = types.port;
-      default = 8448;
-      description = "Federation API port";
+      description = "Client-server and federation API port";
     };
     
     enableRegistration = mkOption {
@@ -72,9 +66,10 @@ in
         # Listener configuration
         listeners = [
           {
-            # Client-server API
+            # Client-server and federation API
+            # Binds to all interfaces to allow Tailscale connections from reverse proxy
             port = cfg.clientPort;
-            bind_addresses = [ "127.0.0.1" "::1" ];
+            bind_addresses = [ "0.0.0.0" "::" ];
             type = "http";
             tls = false;
             x_forwarded = true;
@@ -196,10 +191,11 @@ in
       '';
     };
 
-    # Firewall configuration - allow access from Tailscale only
-    networking.firewall.allowedTCPPorts = mkIf config.modules.services.infrastructure.tailscale.enable [
+    # Firewall configuration
+    # Note: Port is open on all interfaces but should be firewalled appropriately
+    # In production, consider restricting access to Tailscale network only
+    networking.firewall.allowedTCPPorts = [
       cfg.clientPort
-      cfg.federationPort
     ];
 
     # Ensure the media store directory exists

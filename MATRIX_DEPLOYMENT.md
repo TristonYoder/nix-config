@@ -13,7 +13,7 @@ Internet → pits (Caddy) → Tailscale → david (Matrix Synapse)
     (+ .well-known delegation from theyoder.family)
 ```
 
-- **Matrix Server**: david:8008 (client-server), david:8448 (federation)
+- **Matrix Server**: david:8008 (client-server and federation)
 - **Reverse Proxy**: pits (Caddy with Cloudflare DNS)
 - **Public URL**: https://matrix.theyoder.family
 - **User Domain**: @username:theyoder.family

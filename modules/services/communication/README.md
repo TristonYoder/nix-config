@@ -82,8 +82,7 @@ This secret is used by the `register_new_matrix_user` command to create new acco
 
 ### Ports
 
-- **8008**: Client-server API (localhost only, proxied via Caddy)
-- **8448**: Federation API (localhost only, proxied via Caddy on pits)
+- **8008**: Client-server and federation API (accessible over Tailscale, proxied via Caddy on pits)
 
 ### Database
 
@@ -106,8 +105,7 @@ The module provides several options (see `matrix-synapse.nix`):
 
 - `serverName`: The domain for user IDs (default: `theyoder.family`)
 - `publicBaseUrl`: Public URL for the homeserver (default: `https://matrix.theyoder.family`)
-- `clientPort`: Client-server API port (default: `8008`)
-- `federationPort`: Federation API port (default: `8448`)
+- `clientPort`: Client-server and federation API port (default: `8008`)
 - `enableRegistration`: Allow open registration (default: `false`)
 - `enableUrlPreviews`: Enable URL preview generation (default: `true`)
 
