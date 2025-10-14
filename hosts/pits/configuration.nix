@@ -83,31 +83,8 @@
     '';
   };
   
-  # Matrix Well-Known Delegation - Serve on main domain
-  # NOTE: .family is a real TLD, causing Cloudflare DNS plugin to incorrectly
-  # detect the zone as "family." instead of "theyoder.family"
-  # This is a known limitation - certificates may need to be obtained manually
-  services.caddy.virtualHosts."theyoder.family" = {
-    extraConfig = ''
-      handle /.well-known/matrix/server {
-        header Content-Type application/json
-        header Access-Control-Allow-Origin *
-        respond `{"m.server": "matrix.theyoder.family:443"}` 200
-      }
-      handle /.well-known/matrix/client {
-        header Content-Type application/json
-        header Access-Control-Allow-Origin *
-        respond `{"m.homeserver":{"base_url":"https://matrix.theyoder.family"}}` 200
-      }
-      # Serve a simple hello world at the root
-      handle / {
-        respond "Hello from theyoder.family! 👋" 200
-      }
-      # Add other routes for theyoder.family here as needed
-      respond 404
-      import cloudflare_tls
-    '';
-  };
+  # Matrix Well-Known Delegation for theyoder.family is handled by Cloudflare Tunnel
+  # configured in Cloudflare dashboard to route /.well-known/matrix/* to david
   
   # =============================================================================
   # TAILSCALE CONFIGURATION
