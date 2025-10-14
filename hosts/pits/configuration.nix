@@ -79,7 +79,7 @@
       reverse_proxy /_matrix/* http://david:8448
       reverse_proxy /_synapse/client/* http://david:8448
       tls {
-        dns cloudflare {$CLOUDFLARE_API_TOKEN}
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
       }
     '';
   };
@@ -100,7 +100,7 @@
       # Add other routes for theyoder.family here as needed
       respond 404
       tls {
-        dns cloudflare {$CLOUDFLARE_API_TOKEN}
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
       }
     '';
   };
