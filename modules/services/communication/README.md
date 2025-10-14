@@ -38,7 +38,7 @@ After deploying to david, create your first user:
 ssh david
 
 # Create admin user (interactive prompt)
-register_new_matrix_user -c /var/lib/matrix-synapse/homeserver.yaml http://localhost:8009
+register_new_matrix_user -c /var/lib/matrix-synapse/homeserver.yaml http://localhost:8448
 
 # Follow prompts to create username, password, and grant admin privileges
 ```
@@ -82,7 +82,7 @@ This secret is used by the `register_new_matrix_user` command to create new acco
 
 ### Ports
 
-- **8009**: Client-server and federation API (accessible over Tailscale, proxied via Caddy on pits)
+- **8448**: Client-server and federation API (accessible over Tailscale, proxied via Caddy on pits)
 
 ### Database
 
@@ -105,7 +105,7 @@ The module provides several options (see `matrix-synapse.nix`):
 
 - `serverName`: The domain for user IDs (default: `theyoder.family`)
 - `publicBaseUrl`: Public URL for the homeserver (default: `https://matrix.theyoder.family`)
-- `clientPort`: Client-server and federation API port (default: `8009`)
+- `clientPort`: Client-server and federation API port (default: `8448`)
 - `enableRegistration`: Allow open registration (default: `false`)
 - `enableUrlPreviews`: Enable URL preview generation (default: `true`)
 

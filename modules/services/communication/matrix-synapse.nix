@@ -29,7 +29,7 @@ in
     
     clientPort = mkOption {
       type = types.port;
-      default = 8009;
+      default = 8448;
       description = "Client-server and federation API port";
     };
     
