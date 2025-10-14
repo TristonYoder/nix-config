@@ -70,8 +70,9 @@ in
             # Binds to all interfaces for Tailscale access from pits reverse proxy
             # Security: Port is NOT opened in firewall (see networking.firewall section below)
             # Only accessible via Tailscale network or localhost
+            # Note: Binding to :: (IPv6) also handles IPv4 on most systems (dual-stack)
             port = cfg.clientPort;
-            bind_addresses = [ "0.0.0.0" "::" ];
+            bind_addresses = [ "::" ];
             type = "http";
             tls = false;
             x_forwarded = true;
