@@ -98,7 +98,7 @@
             # Productivity services
             ./docker/productivity/affine.nix
             ./docker/productivity/homarr.nix
-            ./docker/productivity/outline.nix
+            # ./docker/productivity/outline.nix
             ./docker/productivity/planning-poker.nix
             ./docker/productivity/tandoor.nix
             
