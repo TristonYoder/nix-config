@@ -31,16 +31,15 @@ in
       };
       globalConfig = ''
         email ${cfg.email}
-        
+      '';
+      extraConfig = ''
         # Cloudflare TLS snippet for reuse across virtual hosts
+        # Note: Snippets must be defined at top level, outside global config block
         (cloudflare_tls) {
           tls {
             dns cloudflare {env.CLOUDFLARE_API_TOKEN}
           }
         }
-      '';
-      extraConfig = ''
-        # Global configuration can go here
       '';
     };
 
