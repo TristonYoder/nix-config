@@ -167,7 +167,9 @@ in
       description = "Initialize Matrix Synapse database with correct collation";
       before = [ "matrix-synapse.service" ];
       after = [ "postgresql.service" ];
+      requires = [ "postgresql.service" ];
       wantedBy = [ "multi-user.target" ];
+      path = [ config.services.postgresql.package ];
       serviceConfig = {
         Type = "oneshot";
         User = "postgres";
