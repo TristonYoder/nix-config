@@ -75,11 +75,13 @@
   # Note: cloudflare_tls snippet is defined globally in the Caddy module
   
   # Matrix Synapse - Reverse proxy to david
+  # Note: Using automatic HTTPS with HTTP-01 challenge instead of DNS-01
+  # because Cloudflare DNS plugin fails with .family TLD zone detection
   services.caddy.virtualHosts."matrix.theyoder.family" = {
     extraConfig = ''
       reverse_proxy /_matrix/* http://david:8448
       reverse_proxy /_synapse/client/* http://david:8448
-      import cloudflare_tls
+      # No TLS config - let Caddy use default HTTP-01 challenge
     '';
   };
   
