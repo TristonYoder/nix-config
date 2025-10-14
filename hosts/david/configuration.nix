@@ -35,4 +35,29 @@
       startAt = "hourly";
     };
   };
+  
+  # =============================================================================
+  # CADDY CONFIGURATION - LAN/Internal Access
+  # =============================================================================
+  
+  # Matrix Well-Known Delegation - Serve on main domain for internal LAN access
+  services.caddy.virtualHosts."theyoder.family" = {
+    extraConfig = ''
+      handle /.well-known/matrix/server {
+        header Content-Type application/json
+        header Access-Control-Allow-Origin *
+        respond `{"m.server": "matrix.theyoder.family:443"}` 200
+      }
+      handle /.well-known/matrix/client {
+        header Content-Type application/json
+        header Access-Control-Allow-Origin *
+        respond `{"m.homeserver":{"base_url":"https://matrix.theyoder.family"}}` 200
+      }
+      # Add other routes for theyoder.family here as needed
+      respond 404
+      tls {
+        dns cloudflare {$CLOUDFLARE_API_TOKEN}
+      }
+    '';
+  };
 }
