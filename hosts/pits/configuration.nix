@@ -73,14 +73,21 @@
   # Caddy is enabled by the edge profile
   # Add custom Caddy configuration here or in the Caddy module
   
+  # Define Cloudflare TLS snippet for reuse across virtual hosts
+  services.caddy.globalConfig = ''
+    (cloudflare_tls) {
+      tls {
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+      }
+    }
+  '';
+  
   # Matrix Synapse - Reverse proxy to david
   services.caddy.virtualHosts."matrix.theyoder.family" = {
     extraConfig = ''
       reverse_proxy /_matrix/* http://david:8448
       reverse_proxy /_synapse/client/* http://david:8448
-      tls {
-        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
-      }
+      import cloudflare_tls
     '';
   };
   
@@ -102,9 +109,7 @@
       }
       # Add other routes for theyoder.family here as needed
       respond 404
-      tls {
-        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
-      }
+      import cloudflare_tls
     '';
   };
   
