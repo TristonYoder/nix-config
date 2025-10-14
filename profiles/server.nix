@@ -48,6 +48,12 @@
   modules.services.productivity.actual.enable = lib.mkDefault true;
 
   # =============================================================================
+  # COMMUNICATION SERVICES
+  # =============================================================================
+  
+  modules.services.communication.matrix-synapse.enable = lib.mkDefault true;
+
+  # =============================================================================
   # STORAGE SERVICES
   # =============================================================================
   

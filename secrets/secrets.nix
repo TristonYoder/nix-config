@@ -47,6 +47,9 @@ in
   # DAVID-SPECIFIC SECRETS
   # =============================================================================
   
+  # Matrix Synapse registration shared secret (only on david)
+  "matrix-registration-secret.age".publicKeys = davidKeys;
+  
   # Vaultwarden admin token (only on david)
   "vaultwarden-admin-token.age".publicKeys = davidKeys;
   

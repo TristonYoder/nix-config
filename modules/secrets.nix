@@ -39,6 +39,13 @@
     # DAVID-SPECIFIC SECRETS
     # -------------------------------------------------------------------------
     
+    matrix-registration-secret = {
+      file = ../secrets/matrix-registration-secret.age;
+      owner = "matrix-synapse";
+      group = "matrix-synapse";
+      mode = "0400";
+    };
+    
     # TODO: Create these secrets when ready
     # vaultwarden-admin-token = {
     #   file = ../secrets/vaultwarden-admin-token.age;
