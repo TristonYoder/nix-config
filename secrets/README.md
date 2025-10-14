@@ -27,38 +27,32 @@ Encrypted secrets using [agenix](https://github.com/ryantm/agenix). All `.age` f
 
 ### 1. Encrypt the secret value
 
-**Important:** Use `age --encrypt` with a file input for reliable encryption that agenix can decrypt during system activation.
+**Important:** Use `age --encrypt` with **SSH public keys** (`-R` flag) for agenix compatibility.
 
 ```bash
 cd secrets
 
-# For environment file format (KEY=value - for systemd EnvironmentFile)
+# Step 1: Create a recipients file with SSH public keys
+ssh tristonyoder@david "cat /etc/ssh/ssh_host_ed25519_key.pub" > /tmp/recipients.txt
+ssh tristonyoder@pits "cat /etc/ssh/ssh_host_ed25519_key.pub" >> /tmp/recipients.txt
+cat ~/.ssh/agenix.pub >> /tmp/recipients.txt
+
+# Step 2: Encrypt with SSH public keys using -R flag
 echo "MY_SECRET=secret-value" > /tmp/secret-plain.txt
 nix-shell -p age --run \
-  "age --encrypt \
-    -r age19my5vpmrvl5u9ug4frpdmuuemjhdgemgqjm6xunknmfjf6efvdxs232kym \
-    -r age1jja99mf5qfczutr574nve8vhpt7azm8aq4ukqqrstdn0agud23nscazh6r \
-    -r age1m32sa7vq84004w6spg5tp7vzmszecxpp0da6z6dj8fxs70y34flshd46jq \
-    -o my-secret.age /tmp/secret-plain.txt"
-rm /tmp/secret-plain.txt
+  "age --encrypt -R /tmp/recipients.txt -o my-secret.age /tmp/secret-plain.txt"
 
-# Or for raw value (if service reads file directly)
-echo "secret-value" > /tmp/secret-plain.txt
-nix-shell -p age --run \
-  "age --encrypt \
-    -r age19my5vpmrvl5u9ug4frpdmuuemjhdgemgqjm6xunknmfjf6efvdxs232kym \
-    -r age1jja99mf5qfczutr574nve8vhpt7azm8aq4ukqqrstdn0agud23nscazh6r \
-    -r age1m32sa7vq84004w6spg5tp7vzmszecxpp0da6z6dj8fxs70y34flshd46jq \
-    -o my-secret.age /tmp/secret-plain.txt"
-rm /tmp/secret-plain.txt
+# Step 3: Clean up
+rm /tmp/secret-plain.txt /tmp/recipients.txt
 ```
 
-**Recipient Keys:**
-- `age19my5...` = david server
-- `age1jja99...` = pits server  
-- `age1m32sa...` = admin key (for local management)
+**Critical:** Must use `-R` (capital R) with SSH public keys, NOT `-r` with age keys!
 
-Add/remove `-r` flags based on which hosts need access to the secret.
+**Why:** 
+- `-r age1...` creates X25519 recipients (won't work with agenix)
+- `-R ssh-pub-keys-file` creates ssh-ed25519 recipients (works with agenix)
+
+The encrypted file must have `-> ssh-ed25519` recipients, not `-> X25519`.
 
 ### 2. Declare it in `modules/secrets.nix`
 
@@ -118,21 +112,21 @@ If the secret already exists and you're adding a new host, you'll need to re-enc
 ```bash
 cd secrets
 
-# Decrypt with your admin key
-cat ~/.ssh/agenix | nix-shell -p ssh-to-age --run "ssh-to-age -private-key" > /tmp/admin-key.txt
-nix-shell -p age --run "age --decrypt -i /tmp/admin-key.txt my-secret.age" > /tmp/secret-plain.txt
+# Decrypt with your admin SSH key
+nix-shell -p age --run "age --decrypt -i ~/.ssh/agenix my-secret.age" > /tmp/secret-plain.txt
 
-# Re-encrypt with all recipients including the new host
+# Create SSH recipients file with all hosts including the new one
+ssh tristonyoder@david "cat /etc/ssh/ssh_host_ed25519_key.pub" > /tmp/recipients.txt
+ssh tristonyoder@pits "cat /etc/ssh/ssh_host_ed25519_key.pub" >> /tmp/recipients.txt
+ssh tristonyoder@newhost "cat /etc/ssh/ssh_host_ed25519_key.pub" >> /tmp/recipients.txt
+cat ~/.ssh/agenix.pub >> /tmp/recipients.txt
+
+# Re-encrypt with SSH public keys (-R flag)
 nix-shell -p age --run \
-  "age --encrypt \
-    -r age19my5vpmrvl5u9ug4frpdmuuemjhdgemgqjm6xunknmfjf6efvdxs232kym \
-    -r age1jja99mf5qfczutr574nve8vhpt7azm8aq4ukqqrstdn0agud23nscazh6r \
-    -r age1m32sa7vq84004w6spg5tp7vzmszecxpp0da6z6dj8fxs70y34flshd46jq \
-    -r age1newhost... \
-    -o my-secret.age /tmp/secret-plain.txt"
+  "age --encrypt -R /tmp/recipients.txt -o my-secret.age /tmp/secret-plain.txt"
 
 # Clean up
-rm /tmp/admin-key.txt /tmp/secret-plain.txt
+rm /tmp/secret-plain.txt /tmp/recipients.txt
 ```
 
 **Option B: Use agenix rekey (if you have access to decrypt)**
@@ -194,12 +188,21 @@ This error during `nixos-rebuild` means the server cannot decrypt the secret. Co
 - If the key changed, update `secrets.nix` and re-encrypt all secrets
 
 **2. Secret encrypted incorrectly**
-- Re-encrypt using `age --encrypt` with file input (NOT stdin with echo/pipe)
+- Must use `-R` with SSH public keys, NOT `-r` with age keys
+- Check the file header: should show `-> ssh-ed25519`, not `-> X25519`
 - Example:
   ```bash
+  # Create SSH recipients file
+  ssh tristonyoder@david "cat /etc/ssh/ssh_host_ed25519_key.pub" > /tmp/recipients.txt
+  cat ~/.ssh/agenix.pub >> /tmp/recipients.txt
+  
+  # Encrypt with SSH keys
   echo "SECRET=value" > /tmp/plain.txt
-  nix-shell -p age --run "age --encrypt -r <key1> -r <key2> -o secret.age /tmp/plain.txt"
-  rm /tmp/plain.txt
+  nix-shell -p age --run "age --encrypt -R /tmp/recipients.txt -o secret.age /tmp/plain.txt"
+  rm /tmp/plain.txt /tmp/recipients.txt
+  
+  # Verify: should see "-> ssh-ed25519" not "-> X25519"
+  head secret.age
   ```
 
 **3. Verify decryption manually**
