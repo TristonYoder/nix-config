@@ -12,17 +12,38 @@ Encrypted secrets using [agenix](https://github.com/ryantm/agenix). All `.age` f
 
 ### 1. Encrypt the secret value
 
+**Important:** Use `age --encrypt` with a file input for reliable encryption that agenix can decrypt during system activation.
+
 ```bash
 cd secrets
 
 # For environment file format (KEY=value - for systemd EnvironmentFile)
-echo -n "MY_SECRET=secret-value" | nix-shell -p age --run \
-  "age -r age19my5... -r age1jja99... -o my-secret.age"
+echo "MY_SECRET=secret-value" > /tmp/secret-plain.txt
+nix-shell -p age --run \
+  "age --encrypt \
+    -r age19my5vpmrvl5u9ug4frpdmuuemjhdgemgqjm6xunknmfjf6efvdxs232kym \
+    -r age1jja99mf5qfczutr574nve8vhpt7azm8aq4ukqqrstdn0agud23nscazh6r \
+    -r age1m32sa7vq84004w6spg5tp7vzmszecxpp0da6z6dj8fxs70y34flshd46jq \
+    -o my-secret.age /tmp/secret-plain.txt"
+rm /tmp/secret-plain.txt
 
 # Or for raw value (if service reads file directly)
-echo -n "secret-value" | nix-shell -p age --run \
-  "age -r age19my5... -r age1jja99... -o my-secret.age"
+echo "secret-value" > /tmp/secret-plain.txt
+nix-shell -p age --run \
+  "age --encrypt \
+    -r age19my5vpmrvl5u9ug4frpdmuuemjhdgemgqjm6xunknmfjf6efvdxs232kym \
+    -r age1jja99mf5qfczutr574nve8vhpt7azm8aq4ukqqrstdn0agud23nscazh6r \
+    -r age1m32sa7vq84004w6spg5tp7vzmszecxpp0da6z6dj8fxs70y34flshd46jq \
+    -o my-secret.age /tmp/secret-plain.txt"
+rm /tmp/secret-plain.txt
 ```
+
+**Recipient Keys:**
+- `age19my5...` = david server
+- `age1jja99...` = pits server  
+- `age1m32sa...` = admin key (for local management)
+
+Add/remove `-r` flags based on which hosts need access to the secret.
 
 ### 2. Declare it in `modules/secrets.nix`
 
@@ -76,11 +97,33 @@ in
 
 ### 3. Rekey secrets (if needed)
 
-If the secret already exists and you're adding a new host:
+If the secret already exists and you're adding a new host, you'll need to re-encrypt it with the new recipient.
 
+**Option A: Re-encrypt manually (recommended for reliability)**
 ```bash
 cd secrets
-nix develop --command agenix -r  # Rekeys all secrets
+
+# Decrypt with your admin key
+cat ~/.ssh/agenix | nix-shell -p ssh-to-age --run "ssh-to-age -private-key" > /tmp/admin-key.txt
+nix-shell -p age --run "age --decrypt -i /tmp/admin-key.txt my-secret.age" > /tmp/secret-plain.txt
+
+# Re-encrypt with all recipients including the new host
+nix-shell -p age --run \
+  "age --encrypt \
+    -r age19my5vpmrvl5u9ug4frpdmuuemjhdgemgqjm6xunknmfjf6efvdxs232kym \
+    -r age1jja99mf5qfczutr574nve8vhpt7azm8aq4ukqqrstdn0agud23nscazh6r \
+    -r age1m32sa7vq84004w6spg5tp7vzmszecxpp0da6z6dj8fxs70y34flshd46jq \
+    -r age1newhost... \
+    -o my-secret.age /tmp/secret-plain.txt"
+
+# Clean up
+rm /tmp/admin-key.txt /tmp/secret-plain.txt
+```
+
+**Option B: Use agenix rekey (if you have access to decrypt)**
+```bash
+cd secrets
+nix develop --command agenix -r -i ~/.ssh/agenix
 ```
 
 ## Admin Keys
@@ -119,5 +162,43 @@ adminKeys = [
 # See secrets.nix for current keys
 david = "age19my5vpmrvl5u9ug4frpdmuuemjhdgemgqjm6xunknmfjf6efvdxs232kym";
 pits  = "age1jja99mf5qfczutr574nve8vhpt7azm8aq4ukqqrstdn0agud23nscazh6r";
+admin = "age1m32sa7vq84004w6spg5tp7vzmszecxpp0da6z6dj8fxs70y34flshd46jq";
+```
+
+## Troubleshooting
+
+### Error: "age: error: no identity matched any of the recipients"
+
+This error during `nixos-rebuild` means the server cannot decrypt the secret. Common causes:
+
+**1. Secret encrypted with wrong recipients**
+- Verify the host's age public key matches `secrets.nix`:
+  ```bash
+  ssh hostname "cat /etc/ssh/ssh_host_ed25519_key.pub" | nix-shell -p ssh-to-age --run "ssh-to-age"
+  ```
+- If the key changed, update `secrets.nix` and re-encrypt all secrets
+
+**2. Secret encrypted incorrectly**
+- Re-encrypt using `age --encrypt` with file input (NOT stdin with echo/pipe)
+- Example:
+  ```bash
+  echo "SECRET=value" > /tmp/plain.txt
+  nix-shell -p age --run "age --encrypt -r <key1> -r <key2> -o secret.age /tmp/plain.txt"
+  rm /tmp/plain.txt
+  ```
+
+**3. Verify decryption manually**
+Test on the actual server:
+```bash
+# On the server
+sudo bash -c 'cat /etc/ssh/ssh_host_ed25519_key | nix-shell -p ssh-to-age --run "ssh-to-age -private-key" > /tmp/key.txt && nix-shell -p age --run "age --decrypt -i /tmp/key.txt /path/to/secret.age" && rm /tmp/key.txt'
+```
+
+If manual decryption works but `nixos-rebuild` fails, ensure `modules/secrets.nix` has:
+```nix
+age.identityPaths = [
+  "/etc/ssh/ssh_host_ed25519_key"
+  "/etc/ssh/ssh_host_rsa_key"
+];
 ```
 
