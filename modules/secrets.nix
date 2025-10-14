@@ -8,6 +8,12 @@
   # The actual encrypted files are in /secrets/*.age
   # Decrypted secrets are available at runtime in /run/agenix/
   
+  # Explicitly configure age identity paths for decryption
+  age.identityPaths = [
+    "/etc/ssh/ssh_host_ed25519_key"
+    "/etc/ssh/ssh_host_rsa_key"
+  ];
+  
   age.secrets = {
     # -------------------------------------------------------------------------
     # SHARED SECRETS - Used by multiple services/servers
