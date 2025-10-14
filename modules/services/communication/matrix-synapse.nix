@@ -200,11 +200,16 @@ in
     };
 
     # Firewall configuration
-    # Note: Port is open on all interfaces but should be firewalled appropriately
-    # In production, consider restricting access to Tailscale network only
-    networking.firewall.allowedTCPPorts = [
-      cfg.clientPort
-    ];
+    # Port is NOT opened in firewall - only accessible via localhost and Tailscale
+    # Access from pits reverse proxy happens over Tailscale network
+    # No firewall rule needed as Tailscale manages its own firewall rules
+    
+    # Add restart delays to prevent rapid restart loops and socket conflicts
+    systemd.services.matrix-synapse.serviceConfig = {
+      RestartSec = "10s";  # Wait 10 seconds before restarting
+      StartLimitBurst = 3;  # Only allow 3 restarts
+      StartLimitIntervalSec = "5min";  # Within a 5 minute window
+    };
 
     # Ensure the media store directory exists
     systemd.tmpfiles.rules = [
