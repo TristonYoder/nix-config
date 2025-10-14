@@ -14,12 +14,13 @@
     "/etc/ssh/ssh_host_rsa_key"
   ];
   
-  # Use the Go implementation of age (has better SSH key support than rage)
-  age.ageBin = "${pkgs.age}/bin/age";
+  # Note: Not specifying ageBin to let agenix use its default implementation
+  # which has proper SSH key handling built-in
   
-  # Ensure age is available system-wide
+  # Ensure age and ssh-to-age are available system-wide
   environment.systemPackages = with pkgs; [
     age
+    ssh-to-age
   ];
   
   age.secrets = {
