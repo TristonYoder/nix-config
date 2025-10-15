@@ -23,6 +23,13 @@
   # All module enables are set in ../../profiles/server.nix
   # You can override any profile settings here if needed for this specific host
   
+  # GroupMe Bridge - Whitelist user for provisioning
+  modules.services.communication.mautrix-groupme = {
+    provisioningWhitelist = [
+      "@triston:theyoder.family"
+    ];
+  };
+  
   # =============================================================================
   # ADDITIONAL SERVICES
   # =============================================================================

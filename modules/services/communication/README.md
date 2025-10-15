@@ -126,3 +126,122 @@ The module provides several options (see `matrix-synapse.nix`):
 - Verify registration secret exists: `ls -l /run/agenix/matrix-registration-secret`
 - Check homeserver config: `cat /var/lib/matrix-synapse/homeserver.yaml`
 
+## Mautrix-GroupMe Bridge
+
+The mautrix-groupme bridge enables puppeting (two-way bridging) between Matrix and GroupMe, allowing you to manage your GroupMe conversations from Matrix.
+
+### Architecture
+
+- **Service**: Runs as a native systemd service on the same host as Matrix Synapse
+- **Configuration**: Fully declarative - managed via NixOS options
+- **Bridge Bot**: `@groupmebot:theyoder.family`
+- **Repository**: [beeper/groupme](https://github.com/beeper/groupme)
+- **Port**: 29318 (default)
+- **Technology**: Modern Go-based mautrix bridge
+
+### Quick Setup
+
+The bridge is **fully automatic**! Just enable it and deploy:
+
+```nix
+# Already enabled in profiles/server.nix by default
+modules.services.communication.mautrix-groupme.enable = true;
+```
+
+Deploy:
+```bash
+sudo nixos-rebuild switch
+```
+
+The module will:
+- ✅ Build the bridge from source
+- ✅ Generate configuration automatically
+- ✅ Create registration file
+- ✅ Register with Matrix Synapse
+- ✅ Start the bridge service
+
+### Configuration Options
+
+Customize the bridge via NixOS options:
+
+```nix
+modules.services.communication.mautrix-groupme = {
+  enable = true;
+  
+  # Add users who can use the bridge
+  provisioningWhitelist = [
+    "@youruser:theyoder.family"
+  ];
+  
+  # Custom port (default: 29318)
+  port = 29318;
+  
+  # Custom homeserver URL (auto-detected from Synapse config)
+  homeserverUrl = "http://localhost:8448";
+};
+```
+
+All configuration is declarative - just edit your NixOS config and rebuild!
+
+### Using the Bridge
+
+#### 1. Start a Conversation with the Bot
+
+In your Matrix client (Element, etc.), start a DM with: `@groupmebot:theyoder.family`
+
+#### 2. Link Your GroupMe Account
+
+Send the command:
+```
+login
+```
+
+The bot will guide you through the authentication process for linking your GroupMe account.
+
+#### 3. Access Your GroupMe Chats
+
+After logging in, your GroupMe conversations will automatically appear as Matrix rooms. You can also use commands:
+
+**List available commands:**
+```
+help
+```
+
+**Logout:**
+```
+logout
+```
+
+### Bridged Conversations
+
+- GroupMe chats automatically bridge to Matrix rooms
+- Messages sent in Matrix will appear in GroupMe and vice versa
+- The bridge supports two-way puppeting
+- Media files are bridged between platforms
+
+### Logs
+
+View bridge logs:
+
+```bash
+journalctl -u mautrix-groupme -f
+```
+
+### Troubleshooting
+
+**Bridge bot not responding:**
+- Check bridge is running: `systemctl status mautrix-groupme`
+- Check Matrix Synapse loaded the registration: `grep groupme /var/lib/matrix-synapse/homeserver.yaml`
+- Verify bridge logs: `journalctl -u mautrix-groupme -n 100`
+
+**Can't login to GroupMe:**
+- Check the bridge logs for authentication errors
+- Ensure you're following the bot's login instructions exactly
+- Verify the bridge can reach GroupMe's servers
+
+**Messages not syncing:**
+- Check GroupMe API status
+- Verify bridge is running and not crashed
+- Check bridge logs for errors
+- Try logging out and back in
+

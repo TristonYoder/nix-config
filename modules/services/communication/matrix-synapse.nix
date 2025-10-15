@@ -37,6 +37,12 @@ in
       default = true;
       description = "Enable URL preview generation";
     };
+    
+    appServiceConfigFiles = mkOption {
+      type = types.listOf types.path;
+      default = [];
+      description = "List of application service (bridge) registration files";
+    };
   };
 
   config = mkIf cfg.enable {
@@ -113,6 +119,9 @@ in
         
         # Security settings
         suppress_key_server_warning = true;
+        
+        # Application services (bridges)
+        app_service_config_files = cfg.appServiceConfigFiles;
         
         # Media store
         media_store_path = "/var/lib/matrix-synapse/media";
