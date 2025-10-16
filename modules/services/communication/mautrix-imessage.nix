@@ -100,7 +100,7 @@ let
              else "@you:example.com";
       
       username_template = "imessage_{{.}}";
-      displayname_template = "{{.DisplayName}}";
+      displayname_template = "{{.}}";
       
       permissions = lib.listToAttrs (map (user: {
         name = user;
@@ -112,6 +112,9 @@ let
       send_error_notices = true;
       max_handle_seconds = 0;
       sync_direct_chat_list = false;
+      
+      # Periodically resync chat and contact info (updates display names)
+      periodic_sync = true;
       
       # Provisioning API
       provisioning = {
