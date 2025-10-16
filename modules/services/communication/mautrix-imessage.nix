@@ -228,16 +228,15 @@ in
       isSystemUser = true;
       group = "mautrix-imessage";
       home = dataDir;
-      createHome = true;
+      createHome = false;  # Let tmpfiles create the directory with correct permissions
     };
     
     users.groups.mautrix-imessage = {};
 
     # Create data directory (755 so matrix-synapse can read registration file)
-    # Note: Use 'Z' to recursively set permissions even if directory already exists
+    # Directory must be world-readable/executable for matrix-synapse to access files inside
     systemd.tmpfiles.rules = [
       "d ${dataDir} 0755 mautrix-imessage mautrix-imessage -"
-      "Z ${dataDir} 0755 mautrix-imessage mautrix-imessage -"
     ];
 
     # mautrix-imessage systemd service
