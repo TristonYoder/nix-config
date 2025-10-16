@@ -4,6 +4,7 @@
   imports = [
     ./matrix-synapse.nix
     ./mautrix-groupme.nix
+    ./mautrix-imessage.nix
   ];
 }
 

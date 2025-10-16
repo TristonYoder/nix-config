@@ -245,3 +245,150 @@ journalctl -u mautrix-groupme -f
 - Check bridge logs for errors
 - Try logging out and back in
 
+## Mautrix-iMessage Bridge (BlueBubbles)
+
+The mautrix-imessage bridge enables two-way bridging between Matrix and iMessage using a BlueBubbles server, allowing you to manage your iMessage conversations from Matrix.
+
+### Prerequisites
+
+Before enabling this bridge, you need:
+
+1. **BlueBubbles Server** running on a Mac or iOS device
+   - Download from: https://bluebubbles.app/
+   - Configure and start the server
+   - Note the server URL and password
+   - Ensure the server is accessible from your NixOS machine (Tailscale recommended)
+
+2. **Matrix Synapse** enabled (automatically checked by the module)
+
+### Setup
+
+#### 1. Encrypt BlueBubbles Password
+
+Use agenix to securely store your BlueBubbles password:
+
+```bash
+cd secrets
+./encrypt-secret.sh -n bluebubbles-password.age -e
+# Enter your BlueBubbles server password when prompted
+```
+
+Commit the encrypted secret:
+```bash
+git add bluebubbles-password.age
+git commit -m "Add encrypted BlueBubbles password"
+```
+
+#### 2. Enable the Bridge
+
+Add to your NixOS configuration:
+
+```nix
+modules.services.communication.mautrix-imessage = {
+  enable = true;
+  
+  # BlueBubbles server connection
+  blueBubblesUrl = "http://macservices:1234";  # Your BlueBubbles server URL
+  
+  # Password automatically loaded from /run/agenix/bluebubbles-password
+  
+  # Add users who can use the bridge
+  provisioningWhitelist = [
+    "@youruser:theyoder.family"
+  ];
+};
+```
+
+#### 3. Deploy
+
+```bash
+sudo nixos-rebuild switch
+```
+
+#### 4. Link Your iMessage Account
+
+In your Matrix client (Element, etc.):
+1. Start a DM with: `@imessagebot:theyoder.family`
+2. Send: `login`
+3. Your iMessage chats will sync to Matrix
+
+### Configuration Options
+
+```nix
+modules.services.communication.mautrix-imessage = {
+  enable = true;
+  
+  # BlueBubbles connection (required)
+  blueBubblesUrl = "http://192.168.1.100:1234";
+  
+  # Users allowed to use the bridge
+  provisioningWhitelist = [
+    "@user1:theyoder.family"
+    "@user2:theyoder.family"
+  ];
+  
+  # Optional: Custom port (default: 29319)
+  port = 29319;
+  
+  # Optional: Use custom password file
+  # blueBubblesPasswordFile = "/path/to/password/file";
+};
+```
+
+### Daily Use
+
+**Available commands** (send to `@imessagebot:theyoder.family`):
+- `help` - List available commands
+- `sync` - Force sync conversations
+- `logout` - Disconnect from BlueBubbles
+- `login` - Reconnect to BlueBubbles
+
+### Features
+
+- Two-way message synchronization
+- Media files (photos, videos, etc.)
+- Read receipts and typing indicators
+- Group chats
+- Reactions and replies (with Private API enabled)
+
+### BlueBubbles Server Setup
+
+For best results:
+
+1. **Network**: Use Tailscale to securely connect to your BlueBubbles server
+2. **Private API**: Enable for full functionality (requires SIP disabled on macOS)
+3. **Testing**: Verify connectivity with `curl http://your-bluebubbles-url:1234/api/v1/ping`
+
+### Logs
+
+```bash
+# View bridge logs
+journalctl -u mautrix-imessage -f
+
+# Check service status
+systemctl status mautrix-imessage
+```
+
+### Troubleshooting
+
+**Bridge bot not responding:**
+- Check service: `systemctl status mautrix-imessage`
+- Check Matrix registration: `grep imessage /var/lib/matrix-synapse/homeserver.yaml`
+- View logs: `journalctl -u mautrix-imessage -n 100`
+
+**Can't connect to BlueBubbles:**
+- Test connectivity: `curl http://your-bluebubbles-url:1234/api/v1/ping`
+- Verify password: `ls -l /run/agenix/bluebubbles-password`
+- Check firewall rules between servers
+- Verify BlueBubbles server is running
+
+**Messages not syncing:**
+- Check BlueBubbles server status
+- View bridge logs for errors
+- Try logging out and back in
+- Restart BlueBubbles server
+
+**Missing features:**
+- Enable Private API in BlueBubbles settings
+- Update BlueBubbles to latest version
+

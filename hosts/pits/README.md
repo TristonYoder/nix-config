@@ -4,288 +4,183 @@ Edge server configuration for public-facing services.
 
 ## Overview
 
-**pits** (Pi in the Sky) is a lightweight edge server designed to run on a Raspberry Pi or similar hardware with a public IP address. It serves as an entry point for services, running Caddy for reverse proxy and Tailscale for secure communication with the main infrastructure.
-
-## Specifications
-
-- **Hostname**: pits
-- **Profile**: edge (`profiles/edge.nix`)
-- **Architecture**: aarch64-linux (Raspberry Pi) - configurable in `flake.nix`
-- **User**: tristonyoder
-- **Services**: Caddy, Tailscale, vscode-server
-
-## Purpose
-
-This host acts as:
+**pits** is a lightweight edge server designed to run on a Raspberry Pi, VPS, or similar hardware with a public IP address. It serves as:
 - **Public-facing edge node** with direct internet access
 - **Reverse proxy** using Caddy to forward requests to internal services
 - **VPN gateway** via Tailscale to securely connect to the main network
 - **Lightweight entry point** optimized for minimal resource usage
 
-## Installation
+## Specifications
 
-### 1. Prepare the Raspberry Pi
+- **Hostname**: pits
+- **Profile**: edge (`profiles/edge.nix`)
+- **Architecture**: aarch64-linux (Raspberry Pi) or x86_64-linux (VPS) - configurable in `flake.nix`
+- **User**: tristonyoder
+- **Services**: Caddy, Tailscale, vscode-server
+- **Resource Requirements**: 1GB+ RAM, 20GB+ disk
+
+## Quick Setup
+
+### Option 1: Single Command Bootstrap (VPS)
+
+For a fresh NixOS VPS:
+
+```bash
+# Enable SSH first (via VPS console)
+sudo systemctl enable --now sshd && sudo passwd root
+
+# Then from your local machine
+ssh root@<VPS_IP> 'nix-shell -p git --run "git clone https://github.com/TristonYoder/david-nixos.git /tmp/nixos-config && cd /tmp/nixos-config && sudo nixos-generate-config --show-hardware-config > hosts/pits/hardware-configuration.nix && sudo mv /tmp/nixos-config /etc/nixos && cd /etc/nixos && sudo nixos-rebuild switch --flake .#pits"'
+```
+
+### Option 2: Remote Deployment
+
+```bash
+# Get hardware config from VPS
+ssh root@<VPS_IP> nixos-generate-config --show-hardware-config > hosts/pits/hardware-configuration.nix
+
+# Commit it
+git add hosts/pits/hardware-configuration.nix
+git commit -m "Add pits hardware config"
+
+# Deploy (builds locally, faster)
+nixos-rebuild switch --flake .#pits \
+  --target-host root@<VPS_IP> \
+  --build-host localhost
+```
+
+### Option 3: Raspberry Pi Installation
 
 1. Download NixOS ARM image: https://nixos.org/download.html#nixos-iso
-2. Flash to SD card using balenaEtcher or `dd`
-3. Boot the Raspberry Pi
-4. Set up networking (WiFi or Ethernet)
+2. Flash to SD card
+3. Boot and enable SSH
+4. Deploy using Option 2 above
 
-### 2. Initial NixOS Setup
+## Post-Setup Configuration
 
-```bash
-# On the Raspberry Pi
-sudo nixos-generate-config
-```
-
-### 3. Copy Hardware Configuration
-
-Copy the generated `/etc/nixos/hardware-configuration.nix` to this directory:
+### Configure Tailscale
 
 ```bash
-# From your local machine (replace with actual Pi IP)
-scp root@pits-ip:/etc/nixos/hardware-configuration.nix hosts/pits/
+ssh root@<VPS_IP>
+sudo tailscale up
 ```
 
-Or manually copy the content and replace the placeholder in `hosts/pits/hardware-configuration.nix`.
-
-### 4. Configure Network
-
-Edit `hosts/pits/configuration.nix` and set up your network:
-
-**For DHCP (recommended for testing):**
-```nix
-networking.useDHCP = true;
-```
-
-**For static IP (recommended for production):**
-```nix
-networking.interfaces.eth0.ipv4.addresses = [{
-  address = "YOUR_PUBLIC_IP";
-  prefixLength = 24;
-}];
-networking.defaultGateway = "YOUR_GATEWAY";
-networking.nameservers = [ "1.1.1.1" "8.8.8.8" ];
-```
-
-### 5. Set Up Secrets
-
-Create Tailscale auth key secret:
-
-```bash
-# From development machine in the repo
-nix develop
-agenix -e secrets/tailscale-authkey-pits.age
-# Add the Tailscale auth key
-```
-
-Update `secrets/secrets.nix` to include pits SSH key.
-
-### 6. Deploy
-
-**Initial deployment from the Pi itself:**
-```bash
-# Clone the repository on the Pi
-git clone <your-repo-url> /etc/nixos/david-nixos
-cd /etc/nixos/david-nixos
-
-# Build and switch
-sudo nixos-rebuild switch --flake .#pits
-```
-
-**Or deploy remotely:**
-```bash
-# From your local machine
-nixos-rebuild switch --flake .#pits --target-host root@pits-ip --build-host localhost
-```
-
-## Configuration Details
-
-### Enabled Services
-
-- ✅ **Caddy** - Reverse proxy and web server
-- ✅ **Tailscale** - VPN for secure networking
-- ✅ **vscode-server** - Remote development access
-- ✅ **OpenSSH** - Remote management (hardened)
-
-### Optimizations
-
-The edge profile includes optimizations for low-resource devices:
-
-- **Reduced journal size**: 50MB system, 25MB runtime
-- **Aggressive garbage collection**: Daily, keeps 7 days
-- **Auto store optimization**: Enabled
-- **zram swap**: Enabled (50% of RAM)
-- **Headless**: No desktop environment
-
-### Firewall
-
-Open ports by default:
-- **22** - SSH (consider changing to non-standard port)
-- **80** - HTTP (Caddy)
-- **443** - HTTPS (Caddy)
-
-## Usage Examples
-
-### Add a Reverse Proxy
+### Add Reverse Proxies
 
 Edit `hosts/pits/configuration.nix`:
 
 ```nix
-services.caddy.virtualHosts."service.example.com" = {
+services.caddy.virtualHosts."app.example.com" = {
   extraConfig = ''
-    reverse_proxy http://internal-server.tailscale:8080
+    reverse_proxy http://david:8080  # Via Tailscale
   '';
 };
 ```
 
-### Enable Cloudflare Tunnel
-
-```nix
-modules.services.infrastructure.cloudflared.enable = true;
+Rebuild:
+```bash
+sudo nixos-rebuild switch --flake .#pits
 ```
 
-### Monitor Resources
+### Point DNS to Server
+
+In your DNS provider, add A records:
+```
+A    app.example.com    <VPS_IP>
+```
+
+Caddy automatically handles HTTPS certificates.
+
+## Daily Operations
+
+### Update System
 
 ```bash
-# SSH into pits
-ssh tristonyoder@pits
+ssh tristonyoder@<VPS_IP>
+cd /etc/nixos
+git pull
+sudo nixos-rebuild switch --flake .#pits
+```
 
-# Check resource usage
-htop
-iotop
+### Monitor Services
 
-# Check service status
-systemctl status caddy
-systemctl status tailscaled
+```bash
+# Check status
+systemctl status caddy tailscaled
 
 # View logs
 journalctl -u caddy -f
 journalctl -u tailscaled -f
+
+# Resource usage
+htop
 ```
 
-## Security Considerations
-
-As a public-facing server, security is critical:
-
-1. **SSH Hardening**
-   - Disable password authentication ✅ (already configured)
-   - Disable root login ✅ (already configured)
-   - Consider changing SSH port from 22
-
-2. **Firewall**
-   - Only open necessary ports
-   - Use fail2ban or similar for brute force protection
-   - Consider rate limiting in Caddy
-
-3. **Updates**
-   - Enable automatic security updates
-   - Monitor for security advisories
-   - Keep system updated regularly
-
-4. **Monitoring**
-   - Set up alerts for unusual activity
-   - Monitor resource usage
-   - Track Caddy access logs
-
-5. **Secrets**
-   - All secrets encrypted with agenix
-   - Never commit plaintext credentials
-   - Rotate secrets regularly
-
-## Maintenance
-
-### Update the System
+### Clean Up Disk Space
 
 ```bash
-# On pits
-cd /etc/nixos/david-nixos
-git pull
-sudo nixos-rebuild switch --flake .#pits
+sudo nix-collect-garbage -d
 ```
 
-### Check Logs
+## Configuration
 
-```bash
-# System logs
-journalctl -xe
+### Enabled Services
 
-# Specific service
-journalctl -u caddy -f
-journalctl -u tailscaled -f
-```
+- ✅ Caddy (reverse proxy)
+- ✅ Tailscale (VPN)
+- ✅ vscode-server (remote development)
+- ✅ OpenSSH (hardened)
 
-### Rebuild After Changes
+### Firewall
 
-```bash
-# From local machine
-git commit -am "Update pits configuration"
-git push
-ssh tristonyoder@pits
-cd /etc/nixos/david-nixos
-git pull
-sudo nixos-rebuild switch --flake .#pits
-```
+Open ports: 22 (SSH), 80 (HTTP), 443 (HTTPS)
+
+### Optimizations
+
+The edge profile includes:
+- Reduced journal size (50MB system, 25MB runtime)
+- Aggressive garbage collection (daily, keeps 7 days)
+- zram swap (50% of RAM)
+- No desktop environment
 
 ## Troubleshooting
 
-### Can't Connect via SSH
+**Can't SSH:**
+- Check VPS console in provider dashboard
+- Verify firewall: `iptables -L`
+- Check SSH: `systemctl status sshd`
 
-- Check if the Pi is booting (LED activity)
-- Verify network connection
-- Check firewall rules
-- Try connecting via serial console
+**Caddy certificate issues:**
+- Verify DNS: `dig app.example.com +short`
+- Check logs: `journalctl -u caddy -f`
+- Ensure ports 80/443 are open
 
-### Caddy Not Starting
+**Can't reach internal services:**
+- Check Tailscale: `tailscale status`
+- Test connectivity: `tailscale ping david`
+- Verify service is running internally
 
+**Out of disk space:**
 ```bash
-systemctl status caddy
-journalctl -u caddy -xe
-# Check configuration
-caddy validate --config /etc/caddy/Caddyfile
+sudo nix-collect-garbage -d
+sudo nix-store --optimize
 ```
 
-### Out of Disk Space
+## VPS Providers
 
-```bash
-# Clean up old generations
-nix-collect-garbage -d
+**Recommended specs**: 1-2 CPU cores, 2GB RAM, 25GB disk (~$5-15/month)
 
-# Check disk usage
-df -h
-du -sh /nix/store
-```
+- **Hetzner Cloud**: €3.79/mo (best value)
+- **Vultr**: $5/mo
+- **DigitalOcean**: $6/mo
+- **Linode**: $5/mo
 
-### Performance Issues
+## Architecture
 
-- Check available RAM: `free -h`
-- Monitor CPU: `htop`
-- Consider reducing journal size further
-- Disable unnecessary services
+Default: `aarch64-linux` (Raspberry Pi)
 
-## Architecture Options
-
-If not using a Raspberry Pi, update `flake.nix`:
-
+For x86_64 VPS, edit `flake.nix`:
 ```nix
-# For x86_64 (Intel/AMD)
-pits = nixpkgs.lib.nixosSystem {
-  system = "x86_64-linux";  # Change from aarch64-linux
-  # ... rest of config
-};
+system = "x86_64-linux";  # Change from aarch64-linux
 ```
-
-## Resources
-
-- [NixOS on ARM](https://nixos.wiki/wiki/NixOS_on_ARM)
-- [Caddy Documentation](https://caddyserver.com/docs/)
-- [Tailscale Setup](https://tailscale.com/kb/)
-- [Raspberry Pi 4](https://www.raspberrypi.com/products/raspberry-pi-4-model-b/)
-
----
-
-**Status**: Ready for deployment  
-**Last Updated**: October 13, 2025  
-**Profile**: edge  
-**Auto-detection**: Enabled (hostname: pits)
 

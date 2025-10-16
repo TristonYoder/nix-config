@@ -59,7 +59,7 @@ let
       bot = {
         username = "groupmebot";
         displayname = "GroupMe Bridge Bot";
-        avatar = "mxc://maunium.net/ygtkteZsXnGJLJHRchUwYWak";
+        avatar = "";  # Leave empty to use default icon instead of wrong maunium.net icon
       };
       
       # Explicitly set sender_localpart to match bot username
@@ -154,8 +154,10 @@ in
     systemd.services.mautrix-groupme = {
       description = "Mautrix-GroupMe, a Matrix-GroupMe puppeting bridge";
       wantedBy = [ "multi-user.target" ];
-      wants = [ "matrix-synapse.service" "network-online.target" ];
-      after = [ "matrix-synapse.service" "network-online.target" ];
+      wants = [ "network-online.target" ];
+      after = [ "network-online.target" ];
+      before = [ "matrix-synapse.service" ];  # Ensure registration file exists before Matrix starts
+      requiredBy = [ "matrix-synapse.service" ];  # Matrix Synapse requires this service
 
       preStart = ''
         # Copy config file

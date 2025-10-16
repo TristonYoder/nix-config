@@ -30,6 +30,14 @@
     ];
   };
   
+  # iMessage Bridge - BlueBubbles configuration
+  modules.services.communication.mautrix-imessage = {
+    blueBubblesUrl = "http://macservices:1234";
+    provisioningWhitelist = [
+      "@triston:theyoder.family"
+    ];
+  };
+  
   # =============================================================================
   # ADDITIONAL SERVICES
   # =============================================================================

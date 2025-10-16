@@ -50,6 +50,11 @@ in
   # Matrix Synapse registration shared secret (only on david)
   "matrix-registration-secret.age".publicKeys = davidKeys;
   
+  # BlueBubbles server password for mautrix-imessage bridge (only on david)
+  # Note: Secret is declared in the module itself (modules/services/communication/mautrix-imessage.nix)
+  # to avoid user creation ordering issues
+  "bluebubbles-password.age".publicKeys = davidKeys;
+  
   # Vaultwarden admin token (only on david)
   "vaultwarden-admin-token.age".publicKeys = davidKeys;
   

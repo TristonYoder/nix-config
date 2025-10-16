@@ -1,1 +1,0 @@
-cd /etc/nixos/docker/dockercompose/affine;compose2nix -runtime docker -inputs docker-compose_affine.yml -output ../../affine.nix --env_files=.env
