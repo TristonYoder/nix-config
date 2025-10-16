@@ -231,8 +231,10 @@ in
     users.groups.mautrix-imessage = {};
 
     # Create data directory (755 so matrix-synapse can read registration file)
+    # Note: Use 'Z' to recursively set permissions even if directory already exists
     systemd.tmpfiles.rules = [
       "d ${dataDir} 0755 mautrix-imessage mautrix-imessage -"
+      "Z ${dataDir} 0755 mautrix-imessage mautrix-imessage -"
     ];
 
     # mautrix-imessage systemd service
@@ -281,14 +283,14 @@ in
           ${dataDir}/config.yaml > ${dataDir}/config.yaml.tmp
         mv ${dataDir}/config.yaml.tmp ${dataDir}/config.yaml
         
-        # Make registration file readable by matrix-synapse
-        chmod 644 ${registrationFile}
+        # Fix ownership first
+        chown -R mautrix-imessage:mautrix-imessage ${dataDir}
         
-        # Make directory world-executable so matrix-synapse can traverse to the file
+        # Make directory world-readable and executable so matrix-synapse can traverse to the file
         chmod 755 ${dataDir}
         
-        # Fix ownership
-        chown -R mautrix-imessage:mautrix-imessage ${dataDir}
+        # Make registration file readable by matrix-synapse
+        chmod 644 ${registrationFile}
       '';
 
       serviceConfig = {
