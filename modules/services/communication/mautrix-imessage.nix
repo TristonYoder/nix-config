@@ -116,6 +116,9 @@ let
       # Periodically resync chat and contact info (updates display names)
       periodic_sync = true;
       
+      # Always set explicit room names for DMs (show just the contact, not the bridge bot)
+      private_chat_portal_meta = "always";
+      
       # Provisioning API
       provisioning = {
         prefix = "/_matrix/provision";
