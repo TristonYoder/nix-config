@@ -100,7 +100,7 @@ in
         MAX_ALBUM_LENGTH = "10";
         
         # Registration
-        OPEN_REGISTRATION = false;  # Set to true if you want open registration
+        OPEN_REGISTRATION = true;
         ENFORCE_EMAIL_VERIFICATION = true;
         
         # Logging
