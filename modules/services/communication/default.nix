@@ -5,6 +5,8 @@
     ./matrix-synapse.nix
     ./mautrix-groupme.nix
     ./mautrix-imessage.nix
+    ./pixelfed.nix
+    ./wellknown.nix
   ];
 }
 

@@ -46,6 +46,13 @@
   modules.services.development.github-actions.enable = lib.mkDefault true;
   
   # =============================================================================
+  # COMMUNICATION SERVICES (Federation Discovery)
+  # =============================================================================
+  
+  # Well-known delegation for federation (Matrix, Pixelfed, etc.)
+  modules.services.communication.wellknown.enable = lib.mkDefault true;
+  
+  # =============================================================================
   # STORAGE (Optional)
   # =============================================================================
   

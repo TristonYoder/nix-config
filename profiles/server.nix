@@ -54,6 +54,8 @@
   modules.services.communication.matrix-synapse.enable = lib.mkDefault true;
   modules.services.communication.mautrix-groupme.enable = lib.mkDefault true;
   modules.services.communication.mautrix-imessage.enable = lib.mkDefault true;
+  modules.services.communication.pixelfed.enable = lib.mkDefault true;
+  modules.services.communication.wellknown.enable = lib.mkDefault true;
 
   # =============================================================================
   # STORAGE SERVICES

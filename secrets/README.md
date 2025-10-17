@@ -6,6 +6,11 @@ Encrypted secrets using [agenix](https://github.com/ryantm/agenix). All `.age` f
 
 **Helper Scripts (Recommended):**
 ```bash
+cd secrets
+
+# On macOS/Darwin: Add nix to PATH first
+export PATH="/nix/var/nix/profiles/default/bin:$PATH"
+
 # Encrypt a new secret
 ./encrypt-secret.sh -n my-secret.age -e
 
@@ -31,6 +36,9 @@ Encrypted secrets using [agenix](https://github.com/ryantm/agenix). All `.age` f
 
 ```bash
 cd secrets
+
+# On macOS/Darwin: Add nix to PATH first
+export PATH="/nix/var/nix/profiles/default/bin:$PATH"
 
 # Step 1: Create a recipients file with SSH public keys
 ssh tristonyoder@david "cat /etc/ssh/ssh_host_ed25519_key.pub" > /tmp/recipients.txt
@@ -112,6 +120,9 @@ If the secret already exists and you're adding a new host, you'll need to re-enc
 ```bash
 cd secrets
 
+# On macOS/Darwin: Add nix to PATH first
+export PATH="/nix/var/nix/profiles/default/bin:$PATH"
+
 # Decrypt with your admin SSH key
 nix-shell -p age --run "age --decrypt -i ~/.ssh/agenix my-secret.age" > /tmp/secret-plain.txt
 
@@ -161,6 +172,8 @@ adminKeys = [
 |--------|-------|---------|
 | `cloudflare-api-token.age` | david, pits | Caddy (DNS-01) |
 | `matrix-registration-secret.age` | david | Matrix Synapse |
+| `pixelfed-env.age` | david | Pixelfed |
+| `bluebubbles-password.age` | david | mautrix-imessage bridge |
 | `vaultwarden-admin-token.age` | david | Vaultwarden |
 | `postgres-affine-password.age` | david | PostgreSQL |
 | `tailscale-authkey-pits.age` | pits | Tailscale |
@@ -225,6 +238,9 @@ cd secrets
 ```bash
 cd secrets
 
+# On macOS/Darwin: Add nix to PATH first
+export PATH="/nix/var/nix/profiles/default/bin:$PATH"
+
 # 1. Decrypt the secret (if you can)
 nix-shell -p age --run "age --decrypt -i ~/.ssh/agenix yourfile.age" > /tmp/plain.txt
 
@@ -258,6 +274,10 @@ grep "hostname =" secrets/secrets.nix
 **Fix:** If keys don't match, update `secrets.nix` and re-encrypt:
 ```bash
 cd secrets
+
+# On macOS/Darwin: Add nix to PATH first
+export PATH="/nix/var/nix/profiles/default/bin:$PATH"
+
 ./encrypt-secret.sh -n yourfile.age -h all -f /tmp/plain.txt
 ```
 
@@ -358,6 +378,11 @@ Encrypts secrets using the correct method for agenix compatibility (SSH public k
 
 **Examples:**
 ```bash
+cd secrets
+
+# On macOS/Darwin: Add nix to PATH first
+export PATH="/nix/var/nix/profiles/default/bin:$PATH"
+
 # Interactive mode (recommended)
 ./encrypt-secret.sh -n api-token.age -e
 
@@ -395,6 +420,11 @@ Decrypts secrets for viewing/editing using your admin key.
 
 **Examples:**
 ```bash
+cd secrets
+
+# On macOS/Darwin: Add nix to PATH first
+export PATH="/nix/var/nix/profiles/default/bin:$PATH"
+
 # View secret
 ./decrypt-secret.sh cloudflare-api-token.age
 

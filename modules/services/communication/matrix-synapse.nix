@@ -230,25 +230,6 @@ in
       '';
     };
     
-    # Matrix Well-Known Delegation - Serve on base domain for LAN/internal access
-    # Note: TLS is handled by Cloudflare Tunnel for public access (due to .family TLD issue)
-    # Automatic HTTPS is explicitly disabled since Cloudflare Tunnel terminates SSL
-    services.caddy.virtualHosts."http://${cfg.serverName}" = mkIf config.modules.services.infrastructure.caddy.enable {
-      extraConfig = ''
-        handle /.well-known/matrix/server {
-          header Content-Type application/json
-          header Access-Control-Allow-Origin *
-          respond `{"m.server": "matrix.${cfg.serverName}:443"}` 200
-        }
-        handle /.well-known/matrix/client {
-          header Content-Type application/json
-          header Access-Control-Allow-Origin *
-          respond `{"m.homeserver":{"base_url":"https://matrix.${cfg.serverName}"}}` 200
-        }
-        # Add other routes for ${cfg.serverName} here as needed
-        respond 404
-      '';
-    };
   };
 }
 

@@ -2,6 +2,183 @@
 
 This directory contains NixOS modules for communication and collaboration services.
 
+## Pixelfed
+
+Pixelfed is a federated photo-sharing platform, part of the ActivityPub network (Fediverse). It provides an Instagram-like experience with decentralized federation.
+
+### Architecture
+
+- **Server**: Runs on `david` (main server)
+- **Reverse Proxy**: Served via Caddy on `pits` (edge server)
+- **Public URL**: `https://pixelfed.theyoder.family`
+- **Federation Domain**: `@username@theyoder.family` (via .well-known delegation)
+- **Database**: MySQL (auto-created)
+- **Port**: 8085 (nginx)
+
+### Configuration
+
+The Pixelfed service is enabled in `profiles/server.nix`:
+
+```nix
+modules.services.communication.pixelfed.enable = lib.mkDefault true;
+```
+
+### Key Features
+
+- **MySQL Backend**: Automatically created and configured
+- **Redis Caching**: Unix socket for performance
+- **ActivityPub Federation**: Connect with Mastodon, Pixelfed, and other Fediverse instances
+- **Closed Registration**: Admin-only user creation by default
+- **Email Verification**: Required (can be bypassed manually via CLI)
+- **Data Location**: `/data/docker-appdata/pixelfed`
+
+### Post-Deployment Setup
+
+After deploying to david, create your first admin user:
+
+```bash
+# SSH into david
+ssh david
+
+# Create a user account
+sudo -u pixelfed pixelfed-manage user:create
+
+# Follow the prompts for username, email, password
+
+# Manually verify email (since email isn't configured yet)
+sudo -u pixelfed pixelfed-manage user:verify your-username
+
+# Make yourself an admin
+sudo -u pixelfed pixelfed-manage user:admin your-username
+```
+
+Now visit `https://pixelfed.theyoder.family` and log in!
+
+### Secrets
+
+The Pixelfed APP_KEY is managed via agenix:
+
+```bash
+# The secret was already created during setup
+# To view it:
+cd secrets
+export PATH="/nix/var/nix/profiles/default/bin:$PATH"
+nix-shell -p age --run "age --decrypt -i ~/.ssh/agenix pixelfed-env.age"
+```
+
+### Available Commands
+
+```bash
+# List all available artisan commands
+sudo -u pixelfed pixelfed-manage list
+
+# User management
+sudo -u pixelfed pixelfed-manage user:create    # Create user
+sudo -u pixelfed pixelfed-manage user:verify    # Verify email
+sudo -u pixelfed pixelfed-manage user:admin     # Grant admin
+sudo -u pixelfed pixelfed-manage user:delete    # Delete user
+
+# Instance management
+sudo -u pixelfed pixelfed-manage instance:actor # Create instance actor
+sudo -u pixelfed pixelfed-manage import:cities  # Import location data
+
+# Cache management
+sudo -u pixelfed pixelfed-manage cache:clear    # Clear cache
+sudo -u pixelfed pixelfed-manage config:cache   # Cache config
+```
+
+### Services
+
+Pixelfed runs several systemd services:
+
+```bash
+# Main queue worker (background jobs)
+systemctl status pixelfed-horizon.service
+
+# PHP-FPM (web requests)
+systemctl status phpfpm-pixelfed.service
+
+# Nginx (web server)
+systemctl status nginx.service
+
+# MySQL (database)
+systemctl status mysql.service
+
+# Redis (caching/queues)
+systemctl status redis-pixelfed.service
+
+# Cron jobs (scheduled tasks)
+systemctl status pixelfed-cron.timer
+```
+
+### Logs
+
+```bash
+# View Horizon queue worker logs
+journalctl -u pixelfed-horizon -f
+
+# View PHP-FPM logs
+journalctl -u phpfpm-pixelfed -f
+
+# View nginx access/error logs
+journalctl -u nginx -f
+```
+
+### Well-Known Delegation
+
+Federation discovery is handled by the centralized `wellknown.nix` module, which serves endpoints on both david and PITS. Your federated identity is `@username@theyoder.family` even though the web interface is at `pixelfed.theyoder.family`.
+
+### Troubleshooting
+
+**Can't access Pixelfed:**
+- Check nginx is running: `systemctl status nginx`
+- Check PHP-FPM is running: `systemctl status phpfpm-pixelfed`
+- Test locally: `curl -I http://localhost:8085`
+- Check PITS can reach david: `curl -I http://david:8085` (from PITS)
+
+**Federation not working:**
+- Test federation: Visit https://fediverse.party/en/pixelfed/ to find other Pixelfed instances to federate with
+- Check well-known endpoints: `curl https://theyoder.family/.well-known/webfinger?resource=acct:username@theyoder.family`
+- Verify ActivityPub is enabled in settings
+
+**Database issues:**
+- Check MySQL: `systemctl status mysql`
+- View tables: `sudo -u mysql mysql pixelfed -e 'SHOW TABLES;'`
+
+## Well-Known Federation Discovery
+
+The `wellknown.nix` module centralizes federation discovery for all federated services (Matrix, Pixelfed, etc.).
+
+### How It Works
+
+The module automatically configures `.well-known` endpoints on the root domain (`theyoder.family`) differently based on the server:
+
+- **Host Server (david)**: Serves `http://theyoder.family` internally, proxies to local services
+- **Edge Servers (PITS)**: Serves `https://theyoder.family` publicly, proxies to david via Tailscale
+
+### Supported Services
+
+- **Matrix**: `/.well-known/matrix/server` and `/.well-known/matrix/client` (served directly)
+- **Pixelfed**: `/.well-known/webfinger`, `/.well-known/host-meta`, `/.well-known/nodeinfo` (proxied to nginx:8085)
+
+### Configuration
+
+Enabled in both server and edge profiles:
+
+```nix
+modules.services.communication.wellknown.enable = lib.mkDefault true;
+```
+
+### Testing
+
+```bash
+# Test Matrix discovery
+curl https://theyoder.family/.well-known/matrix/server
+
+# Test Pixelfed discovery
+curl https://theyoder.family/.well-known/webfinger?resource=acct:username@theyoder.family
+```
+
 ## Matrix Synapse
 
 Matrix Synapse is a homeserver implementation for the Matrix protocol, enabling self-hosted instant messaging, VoIP, and collaboration.

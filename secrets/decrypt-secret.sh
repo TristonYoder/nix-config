@@ -95,21 +95,11 @@ if [ ! -f "$ADMIN_KEY_FILE" ]; then
     exit 1
 fi
 
-# Convert SSH key to age format
-TEMP_KEY=$(mktemp)
-trap "rm -f $TEMP_KEY" EXIT
-
-echo -e "${BLUE}Converting SSH key to age format...${NC}"
-if ! cat "$ADMIN_KEY_FILE" | nix-shell -p ssh-to-age --run "ssh-to-age -private-key" > "$TEMP_KEY" 2>/dev/null; then
-    echo -e "${RED}Error: Failed to convert SSH key to age format${NC}"
-    echo -e "${YELLOW}Make sure $ADMIN_KEY_FILE is a valid SSH private key${NC}"
-    exit 1
-fi
-
 # Decrypt the secret
+# Note: age can read SSH private keys directly, no conversion needed
 echo -e "${BLUE}Decrypting $SECRET_FILE...${NC}"
 if [ -n "$OUTPUT_FILE" ]; then
-    if nix-shell -p age --run "age --decrypt -i \"$TEMP_KEY\" \"$SECRET_FILE\"" > "$OUTPUT_FILE" 2>/dev/null; then
+    if nix-shell -p age --run "age --decrypt -i \"$ADMIN_KEY_FILE\" \"$SECRET_FILE\"" > "$OUTPUT_FILE" 2>/dev/null; then
         echo -e "${GREEN}✓ Successfully decrypted to: $OUTPUT_FILE${NC}"
     else
         echo -e "${RED}✗ Decryption failed${NC}"
@@ -120,7 +110,7 @@ if [ -n "$OUTPUT_FILE" ]; then
         exit 1
     fi
 else
-    if ! nix-shell -p age --run "age --decrypt -i \"$TEMP_KEY\" \"$SECRET_FILE\"" 2>/dev/null; then
+    if ! nix-shell -p age --run "age --decrypt -i \"$ADMIN_KEY_FILE\" \"$SECRET_FILE\"" 2>/dev/null; then
         echo -e "${RED}✗ Decryption failed${NC}"
         echo -e "${YELLOW}Possible reasons:${NC}"
         echo "  - Your admin key is not listed as a recipient"

@@ -50,6 +50,9 @@ in
   # Matrix Synapse registration shared secret (only on david)
   "matrix-registration-secret.age".publicKeys = davidKeys;
   
+  # Pixelfed environment secrets (only on david)
+  "pixelfed-env.age".publicKeys = davidKeys;
+  
   # BlueBubbles server password for mautrix-imessage bridge (only on david)
   # Note: Secret is declared in the module itself (modules/services/communication/mautrix-imessage.nix)
   # to avoid user creation ordering issues
