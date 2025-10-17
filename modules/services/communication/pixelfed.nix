@@ -10,13 +10,13 @@ in
     
     domain = mkOption {
       type = types.str;
-      default = "pixelfed.theyoder.family";
+      default = "loveinfocus.photos";
       description = "Domain where Pixelfed web interface is accessible";
     };
     
     federationDomain = mkOption {
       type = types.str;
-      default = "theyoder.family";
+      default = "loveinfocus.photos";
       description = "Root domain for federation identity (APP_URL)";
     };
     
@@ -90,7 +90,7 @@ in
         # Instance Configuration  
         INSTANCE_DESCRIPTION = "Pixelfed";
         INSTANCE_PUBLIC_HASHTAGS = true;
-        INSTANCE_CONTACT_EMAIL = "admin@theyoder.family";
+        INSTANCE_CONTACT_EMAIL = "admin@loveinfocus.photos";
         INSTANCE_PUBLIC_LOCAL_TIMELINE = true;
         
         # Media Configuration

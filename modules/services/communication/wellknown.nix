@@ -59,7 +59,7 @@ in
         # Default handler - redirect to Pixelfed or 404
         handle {
           ${if pixelfedCfg.enable || !isHostServer then ''
-          redir https://pixelfed.${cfg.domain}{uri}
+          redir https://${pixelfedCfg.domain}{uri}
           '' else ''
           respond 404
           ''}

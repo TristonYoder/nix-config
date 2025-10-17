@@ -86,12 +86,9 @@
   };
   
   # Pixelfed - Reverse proxy to david's nginx
-  # Note: Using automatic HTTPS with HTTP-01 challenge instead of DNS-01
-  # because Cloudflare DNS plugin fails with .family TLD zone detection
-  services.caddy.virtualHosts."pixelfed.theyoder.family" = {
+  services.caddy.virtualHosts."loveinfocus.photos" = {
     extraConfig = ''
       reverse_proxy http://david:8085
-      # No TLS config - let Caddy use default HTTP-01 challenge
     '';
   };
   
