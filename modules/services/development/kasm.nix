@@ -34,7 +34,7 @@ in
     
     networkSubnet = mkOption {
       type = types.str;
-      default = "172.25.0.0/16";
+      default = "172.32.0.0/16";
       description = "Docker network subnet for Kasm containers";
     };
     
