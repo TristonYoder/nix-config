@@ -72,5 +72,6 @@
   
   modules.services.development.vscode-server.enable = lib.mkDefault true;
   modules.services.development.github-actions.enable = lib.mkDefault true;
+  modules.services.development.kasm.enable = lib.mkDefault true;
 }
 
