@@ -138,28 +138,20 @@ in
       datastorePath = cfg.datastorePath;
       networkSubnet = cfg.networkSubnet;
       
-      # Use agenix secrets if enabled, otherwise use provided passwords
-      defaultAdminPassword = 
-        if cfg.useAgenixSecrets
-        then builtins.readFile config.age.secrets.kasm-admin-password.path
-        else cfg.adminPassword;
+      # Use agenix secret file paths if enabled, otherwise use provided passwords
+      defaultAdminPassword = mkIf (!cfg.useAgenixSecrets) cfg.adminPassword;
+      defaultAdminPasswordFile = mkIf cfg.useAgenixSecrets config.age.secrets.kasm-admin-password.path;
       
-      defaultUserPassword = 
-        if cfg.useAgenixSecrets
-        then builtins.readFile config.age.secrets.kasm-user-password.path
-        else cfg.userPassword;
+      defaultUserPassword = mkIf (!cfg.useAgenixSecrets) cfg.userPassword;
+      defaultUserPasswordFile = mkIf cfg.useAgenixSecrets config.age.secrets.kasm-user-password.path;
       
-      redisPassword = 
-        if cfg.useAgenixSecrets
-        then builtins.readFile config.age.secrets.kasm-redis-password.path
-        else cfg.redisPassword;
+      redisPassword = mkIf (!cfg.useAgenixSecrets) cfg.redisPassword;
+      redisPasswordFile = mkIf cfg.useAgenixSecrets config.age.secrets.kasm-redis-password.path;
       
       postgres = {
         user = cfg.postgres.user;
-        password = 
-          if cfg.useAgenixSecrets
-          then builtins.readFile config.age.secrets.kasm-postgres-password.path
-          else cfg.postgres.password;
+        password = mkIf (!cfg.useAgenixSecrets) cfg.postgres.password;
+        passwordFile = mkIf cfg.useAgenixSecrets config.age.secrets.kasm-postgres-password.path;
       };
       
       # SSL configuration (optional)
