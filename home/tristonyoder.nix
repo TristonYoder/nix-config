@@ -19,6 +19,7 @@
   home.packages = with pkgs; [
     # NixOS-specific tools
     # Add any Linux-specific packages here
+    element-desktop
   ];
   
   # =============================================================================
