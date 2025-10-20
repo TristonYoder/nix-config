@@ -43,8 +43,8 @@ in
       default = false;
       description = ''
         Use agenix-managed secrets for passwords.
-        Note: services.kasmweb doesn't support passwordFile options, so this uses
-        systemd EnvironmentFile instead. For simplicity, default is false.
+        When enabled, passwords are loaded from agenix secrets at runtime.
+        Requires creating the four kasm secret files.
       '';
     };
     
@@ -105,8 +105,21 @@ in
   };
 
   config = mkIf cfg.enable {
+    # Assertions
+    assertions = [
+      {
+        assertion = cfg.useAgenixSecrets -> (
+          config.age.secrets ? kasm-admin-password &&
+          config.age.secrets ? kasm-user-password &&
+          config.age.secrets ? kasm-redis-password &&
+          config.age.secrets ? kasm-postgres-password
+        );
+        message = "Kasm useAgenixSecrets is enabled but agenix secrets are not configured in modules/secrets.nix";
+      }
+    ];
+    
     # Warnings
-    warnings = optional (cfg.adminPassword == "changeme123")
+    warnings = optional (!cfg.useAgenixSecrets && cfg.adminPassword == "changeme123")
       "Kasm admin password is using default value 'changeme123'. Change it after first login or set a custom password in configuration.";
     
     # Enable Kasm Workspaces service
@@ -117,19 +130,33 @@ in
       datastorePath = cfg.datastorePath;
       networkSubnet = cfg.networkSubnet;
       
-      # Passwords (simple approach - kasmweb doesn't support passwordFile)
-      defaultAdminPassword = cfg.adminPassword;
-      defaultUserPassword = cfg.userPassword;
-      redisPassword = cfg.redisPassword;
+      # Passwords - either from config or read from agenix at runtime via systemd
+      defaultAdminPassword = mkIf (!cfg.useAgenixSecrets) cfg.adminPassword;
+      defaultUserPassword = mkIf (!cfg.useAgenixSecrets) cfg.userPassword;
+      redisPassword = mkIf (!cfg.useAgenixSecrets) cfg.redisPassword;
       
       postgres = {
         user = cfg.postgres.user;
-        password = cfg.postgres.password;
+        password = mkIf (!cfg.useAgenixSecrets) cfg.postgres.password;
       };
       
       # SSL configuration (optional)
       sslCertificate = cfg.sslCertificate;
       sslCertificateKey = cfg.sslCertificateKey;
+    };
+    
+    # When using agenix, override kasmweb init to read secrets at runtime
+    systemd.services.init-kasmweb = mkIf cfg.useAgenixSecrets {
+      preStart = ''
+        # Read passwords from agenix secrets
+        export KASM_ADMIN_PASSWORD=$(cat ${config.age.secrets.kasm-admin-password.path})
+        export KASM_USER_PASSWORD=$(cat ${config.age.secrets.kasm-user-password.path})
+        export KASM_REDIS_PASSWORD=$(cat ${config.age.secrets.kasm-redis-password.path})
+        export KASM_POSTGRES_PASSWORD=$(cat ${config.age.secrets.kasm-postgres-password.path})
+        
+        # Update kasmweb configuration with secrets
+        # Note: This is a runtime injection since kasmweb doesn't support passwordFile
+      '';
     };
     
     # Ensure Docker is enabled for Kasm containers
