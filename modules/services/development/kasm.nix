@@ -38,15 +38,6 @@ in
       description = "Docker network subnet for Kasm containers";
     };
     
-    useAgenixSecrets = mkOption {
-      type = types.bool;
-      default = false;
-      description = ''
-        Use agenix-managed secrets for passwords.
-        When enabled, passwords are loaded from agenix secrets at runtime.
-        Requires creating the four kasm secret files.
-      '';
-    };
     
     adminPassword = mkOption {
       type = types.str;
@@ -105,21 +96,8 @@ in
   };
 
   config = mkIf cfg.enable {
-    # Assertions
-    assertions = [
-      {
-        assertion = cfg.useAgenixSecrets -> (
-          config.age.secrets ? kasm-admin-password &&
-          config.age.secrets ? kasm-user-password &&
-          config.age.secrets ? kasm-redis-password &&
-          config.age.secrets ? kasm-postgres-password
-        );
-        message = "Kasm useAgenixSecrets is enabled but agenix secrets are not configured in modules/secrets.nix";
-      }
-    ];
-    
     # Warnings
-    warnings = optional (!cfg.useAgenixSecrets && cfg.adminPassword == "changeme123")
+    warnings = optional (cfg.adminPassword == "changeme123")
       "Kasm admin password is using default value 'changeme123'. Change it after first login or set a custom password in configuration.";
     
     # Enable Kasm Workspaces service
@@ -130,29 +108,19 @@ in
       datastorePath = cfg.datastorePath;
       networkSubnet = cfg.networkSubnet;
       
-      # Passwords - either from config or read from agenix at runtime via systemd
-      defaultAdminPassword = mkIf (!cfg.useAgenixSecrets) cfg.adminPassword;
-      defaultUserPassword = mkIf (!cfg.useAgenixSecrets) cfg.userPassword;
-      redisPassword = mkIf (!cfg.useAgenixSecrets) cfg.redisPassword;
+      # Passwords - configured via module options
+      defaultAdminPassword = cfg.adminPassword;
+      defaultUserPassword = cfg.userPassword;
+      redisPassword = cfg.redisPassword;
       
       postgres = {
         user = cfg.postgres.user;
-        password = mkIf (!cfg.useAgenixSecrets) cfg.postgres.password;
+        password = cfg.postgres.password;
       };
       
       # SSL configuration (optional)
       sslCertificate = cfg.sslCertificate;
       sslCertificateKey = cfg.sslCertificateKey;
-    };
-    
-    # When using agenix, passwords are read from secret files
-    # The secrets must be declared in modules/secrets.nix and created in secrets/
-    # Passwords are read at activation time from /run/agenix/
-    services.kasmweb = mkIf cfg.useAgenixSecrets {
-      defaultAdminPassword = builtins.readFile config.age.secrets.kasm-admin-password.path;
-      defaultUserPassword = builtins.readFile config.age.secrets.kasm-user-password.path;
-      redisPassword = builtins.readFile config.age.secrets.kasm-redis-password.path;
-      postgres.password = builtins.readFile config.age.secrets.kasm-postgres-password.path;
     };
     
     # Ensure Docker is enabled for Kasm containers
