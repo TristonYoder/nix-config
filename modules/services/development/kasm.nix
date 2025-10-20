@@ -145,18 +145,14 @@ in
       sslCertificateKey = cfg.sslCertificateKey;
     };
     
-    # When using agenix, override kasmweb init to read secrets at runtime
-    systemd.services.init-kasmweb = mkIf cfg.useAgenixSecrets {
-      preStart = ''
-        # Read passwords from agenix secrets
-        export KASM_ADMIN_PASSWORD=$(cat ${config.age.secrets.kasm-admin-password.path})
-        export KASM_USER_PASSWORD=$(cat ${config.age.secrets.kasm-user-password.path})
-        export KASM_REDIS_PASSWORD=$(cat ${config.age.secrets.kasm-redis-password.path})
-        export KASM_POSTGRES_PASSWORD=$(cat ${config.age.secrets.kasm-postgres-password.path})
-        
-        # Update kasmweb configuration with secrets
-        # Note: This is a runtime injection since kasmweb doesn't support passwordFile
-      '';
+    # When using agenix, passwords are read from secret files
+    # The secrets must be declared in modules/secrets.nix and created in secrets/
+    # Passwords are read at activation time from /run/agenix/
+    services.kasmweb = mkIf cfg.useAgenixSecrets {
+      defaultAdminPassword = builtins.readFile config.age.secrets.kasm-admin-password.path;
+      defaultUserPassword = builtins.readFile config.age.secrets.kasm-user-password.path;
+      redisPassword = builtins.readFile config.age.secrets.kasm-redis-password.path;
+      postgres.password = builtins.readFile config.age.secrets.kasm-postgres-password.path;
     };
     
     # Ensure Docker is enabled for Kasm containers
