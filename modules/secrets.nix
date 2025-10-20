@@ -47,35 +47,6 @@ with lib;
       mode = "0400";
     };
     
-    # Kasm Workspaces secrets
-    kasm-admin-password = {
-      file = ../secrets/kasm-admin-password.age;
-      owner = "root";
-      group = "root";
-      mode = "0400";
-    };
-    
-    kasm-user-password = {
-      file = ../secrets/kasm-user-password.age;
-      owner = "root";
-      group = "root";
-      mode = "0400";
-    };
-    
-    kasm-redis-password = {
-      file = ../secrets/kasm-redis-password.age;
-      owner = "root";
-      group = "root";
-      mode = "0400";
-    };
-    
-    kasm-postgres-password = {
-      file = ../secrets/kasm-postgres-password.age;
-      owner = "root";
-      group = "root";
-      mode = "0400";
-    };
-    
     # TODO: Create these secrets when ready
     # vaultwarden-admin-token = {
     #   file = ../secrets/vaultwarden-admin-token.age;

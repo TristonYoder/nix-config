@@ -64,12 +64,6 @@ in
   # PostgreSQL password for Affine (only on david)
   "postgres-affine-password.age".publicKeys = davidKeys;
   
-  # Kasm Workspaces passwords (only on david)
-  "kasm-admin-password.age".publicKeys = davidKeys;
-  "kasm-user-password.age".publicKeys = davidKeys;
-  "kasm-redis-password.age".publicKeys = davidKeys;
-  "kasm-postgres-password.age".publicKeys = davidKeys;
-  
   # =============================================================================
   # PITS-SPECIFIC SECRETS
   # =============================================================================
