@@ -4,6 +4,7 @@
   imports = [
     ./vscode-server.nix
     ./github-actions.nix
+    ./kasm.nix
   ];
 }
 

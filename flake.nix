@@ -12,10 +12,10 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     
-    # nix-darwin for macOS
+    # nix-darwin for macOS (use nixpkgs-unstable for darwin)
     nix-darwin = {
       url = "github:LnL7/nix-darwin";
-      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
     
     # External modules
