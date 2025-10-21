@@ -29,26 +29,10 @@
   # LOCALE & TIME (can be overridden per-host)
   # =============================================================================
   
+  # Time zone (works on both NixOS and Darwin)
   time.timeZone = lib.mkDefault "America/Indiana/Indianapolis";
-} 
-// lib.optionalAttrs pkgs.hostPlatform.isLinux {
-  # i18n settings (NixOS only)
-  i18n = {
-    defaultLocale = lib.mkDefault "en_US.UTF-8";
-    extraLocaleSettings = {
-      LC_ADDRESS = lib.mkDefault "en_US.UTF-8";
-      LC_IDENTIFICATION = lib.mkDefault "en_US.UTF-8";
-      LC_MEASUREMENT = lib.mkDefault "en_US.UTF-8";
-      LC_MONETARY = lib.mkDefault "en_US.UTF-8";
-      LC_NAME = lib.mkDefault "en_US.UTF-8";
-      LC_NUMERIC = lib.mkDefault "en_US.UTF-8";
-      LC_PAPER = lib.mkDefault "en_US.UTF-8";
-      LC_TELEPHONE = lib.mkDefault "en_US.UTF-8";
-      LC_TIME = lib.mkDefault "en_US.UTF-8";
-    };
-  };
-}
-// {
+  
+  # Note: i18n settings are NixOS-only and should be set in server.nix/desktop.nix/edge.nix
   
   # =============================================================================
   # COMMON PACKAGES
@@ -70,10 +54,8 @@
     # Network tools
     dig
     nmap
-  ] ++ lib.optionals pkgs.hostPlatform.isLinux [
-    # Linux-only system utilities
-    pciutils
-    usbutils
+    
+    # Note: Linux-only utilities (pciutils, usbutils) are in profiles/server.nix
   ];
   
   # =============================================================================
@@ -87,13 +69,7 @@
     # Enable git
     git.enable = true;
   };
-}
-// lib.optionalAttrs pkgs.hostPlatform.isLinux {
-  # =============================================================================
-  # SECURITY (NixOS only)
-  # =============================================================================
   
-  # Enable sudo (macOS has sudo by default)
-  security.sudo.enable = lib.mkDefault true;
+  # Note: security.sudo is NixOS-only and is configured in modules/system/core.nix
 }
 
