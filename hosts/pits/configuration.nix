@@ -60,8 +60,7 @@
   # All module enables are set in ../../profiles/edge.nix
   # You can override or add specific services here
   
-  # Example: Enable Cloudflare tunnel if using Cloudflare
-  # modules.services.infrastructure.cloudflared.enable = true;
+  # Cloudflare Tunnel configuration is set in ../../profiles/edge.nix
   
   # Example: Enable Syncthing for edge data sync
   # modules.services.storage.syncthing.enable = true;

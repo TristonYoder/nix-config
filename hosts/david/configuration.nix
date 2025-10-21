@@ -46,7 +46,7 @@
   systemd.services = {
     nextdns-dyndns = {
       path = [ pkgs.curl ];
-      script = "curl https://link-ip.nextdns.io/{a_secret_was_here}/{a_secret_was_here}";
+      script = "curl $(cat ${config.age.secrets.nextdns-link.path})";
       startAt = "hourly";
     };
   };

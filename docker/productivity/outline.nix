@@ -1,5 +1,5 @@
 # Auto-generated using compose2nix v0.3.2.
-{ pkgs, lib, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   # Runtime
@@ -12,6 +12,10 @@
   # Containers
   virtualisation.oci-containers.containers."outline-outline" = {
     image = "docker.getoutline.com/outlinewiki/outline:latest";
+    environmentFiles = [
+      config.age.secrets.outline-secrets.path
+      config.age.secrets.outline-google-secret.path
+    ];
     environment = {
       "AWS_ACCESS_KEY_ID" = "get_a_key_from_aws";
       "AWS_REGION" = "xx-xxxx-x";
@@ -50,7 +54,7 @@
       "GITHUB_CLIENT_SECRET" = "";
       "GITHUB_WEBHOOK_SECRET" = "";
       "GOOGLE_CLIENT_ID" = "723733122143-vsmk4qbabsrkqsh46ocg8nt6u80l9d2c.apps.googleusercontent.com";
-      "GOOGLE_CLIENT_SECRET" = "{a_secret_was_here}";
+      # GOOGLE_CLIENT_SECRET loaded from secret file
       "IFRAMELY_API_KEY" = "";
       "IFRAMELY_URL" = "";
       "LINEAR_CLIENT_ID" = "";
@@ -72,7 +76,7 @@
       "RATE_LIMITER_ENABLED" = "true";
       "RATE_LIMITER_REQUESTS" = "1000";
       "REDIS_URL" = "redis://redis:6379";
-      "SECRET_KEY" = "{a_secret_was_here}";
+      # SECRET_KEY loaded from secret file
       "SENTRY_DSN" = "";
       "SENTRY_TUNNEL" = "";
       "SLACK_APP_ID" = "";
@@ -87,7 +91,7 @@
       "SSL_CERT" = "";
       "SSL_KEY" = "";
       "URL" = "https://outline.tpdemo.theyoder.family/";
-      "UTILS_SECRET" = "{a_secret_was_here}";
+      # UTILS_SECRET loaded from secret file
       "WEB_CONCURRENCY" = "1";
     };
     volumes = [
@@ -168,7 +172,7 @@
       "GITHUB_CLIENT_SECRET" = "";
       "GITHUB_WEBHOOK_SECRET" = "";
       "GOOGLE_CLIENT_ID" = "723733122143-vsmk4qbabsrkqsh46ocg8nt6u80l9d2c.apps.googleusercontent.com";
-      "GOOGLE_CLIENT_SECRET" = "{a_secret_was_here}";
+      # GOOGLE_CLIENT_SECRET loaded from secret file
       "IFRAMELY_API_KEY" = "";
       "IFRAMELY_URL" = "";
       "LINEAR_CLIENT_ID" = "";
@@ -193,7 +197,7 @@
       "RATE_LIMITER_ENABLED" = "true";
       "RATE_LIMITER_REQUESTS" = "1000";
       "REDIS_URL" = "redis://redis:6379";
-      "SECRET_KEY" = "{a_secret_was_here}";
+      # SECRET_KEY loaded from secret file
       "SENTRY_DSN" = "";
       "SENTRY_TUNNEL" = "";
       "SLACK_APP_ID" = "";
@@ -208,7 +212,7 @@
       "SSL_CERT" = "";
       "SSL_KEY" = "";
       "URL" = "https://outline.tpdemo.theyoder.family/";
-      "UTILS_SECRET" = "{a_secret_was_here}";
+      # UTILS_SECRET loaded from secret file
       "WEB_CONCURRENCY" = "1";
     };
     volumes = [
@@ -286,7 +290,7 @@
       "GITHUB_CLIENT_SECRET" = "";
       "GITHUB_WEBHOOK_SECRET" = "";
       "GOOGLE_CLIENT_ID" = "723733122143-vsmk4qbabsrkqsh46ocg8nt6u80l9d2c.apps.googleusercontent.com";
-      "GOOGLE_CLIENT_SECRET" = "{a_secret_was_here}";
+      # GOOGLE_CLIENT_SECRET loaded from secret file
       "IFRAMELY_API_KEY" = "";
       "IFRAMELY_URL" = "";
       "LINEAR_CLIENT_ID" = "";
@@ -308,7 +312,7 @@
       "RATE_LIMITER_ENABLED" = "true";
       "RATE_LIMITER_REQUESTS" = "1000";
       "REDIS_URL" = "redis://redis:6379";
-      "SECRET_KEY" = "{a_secret_was_here}";
+      # SECRET_KEY loaded from secret file
       "SENTRY_DSN" = "";
       "SENTRY_TUNNEL" = "";
       "SLACK_APP_ID" = "";
@@ -323,7 +327,7 @@
       "SSL_CERT" = "";
       "SSL_KEY" = "";
       "URL" = "https://outline.tpdemo.theyoder.family/";
-      "UTILS_SECRET" = "{a_secret_was_here}";
+      # UTILS_SECRET loaded from secret file
       "WEB_CONCURRENCY" = "1";
     };
     volumes = [

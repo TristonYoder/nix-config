@@ -64,14 +64,41 @@ in
   # PostgreSQL password for Affine (only on david)
   "postgres-affine-password.age".publicKeys = davidKeys;
   
+  # Google OAuth Secret for Outline
+  "outline-google-secret.age".publicKeys = davidKeys;
+  
+  # Affine Database Password
+  "affine-db-password.age".publicKeys = davidKeys;
+  
+  # Tandoor Secrets
+  "tandoor-secrets.age".publicKeys = davidKeys;
+  
+  # Docmost Secrets
+  "docmost-secrets.age".publicKeys = davidKeys;
+  
+  # WordPress Secrets (all 3 sites)
+  "wordpress-studio-secrets.age".publicKeys = davidKeys;
+  "wordpress-photography-secrets.age".publicKeys = davidKeys;
+  "wordpress-carolineyoder-secrets.age".publicKeys = davidKeys;
+  
+  # Outline Application Secrets
+  "outline-secrets.age".publicKeys = davidKeys;
+  
+  # NextDNS Dynamic DNS Link
+  "nextdns-link.age".publicKeys = davidKeys;
+  
+  # =============================================================================
+  # SHARED SECRETS (Both Servers)
+  # =============================================================================
+  
+  # Cloudflare tunnel token - shared by both david and pits for redundancy
+  "cloudflared-token-current.age".publicKeys = allServers;
+  
   # =============================================================================
   # PITS-SPECIFIC SECRETS
   # =============================================================================
   
   # Tailscale auth key for pits edge server
   "tailscale-authkey-pits.age".publicKeys = pitsKeys;
-  
-  # Cloudflare tunnel token for pits
-  "cloudflared-token.age".publicKeys = pitsKeys;
 }
 

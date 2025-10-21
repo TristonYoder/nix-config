@@ -1,5 +1,5 @@
 # Auto-generated using compose2nix v0.1.9.
-{ pkgs, lib, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   # Runtime
@@ -12,14 +12,17 @@
   # Containers
   virtualisation.oci-containers.containers."tandoor" = {
     image = "vabene1111/recipes";
+    environmentFiles = [
+      config.age.secrets.tandoor-secrets.path
+    ];
     environment = {
       DB_ENGINE = "django.db.backends.postgresql";
       POSTGRES_DB = "djangodb";
       POSTGRES_HOST = "db_tandoor";
-      POSTGRES_PASSWORD = "{a_secret_was_here}";
+      # POSTGRES_PASSWORD loaded from secret file
       POSTGRES_PORT = "5432";
       POSTGRES_USER = "djangodb";
-      SECRET_KEY = "{a_secret_was_here}";
+      # SECRET_KEY loaded from secret file
     };
     volumes = [
       "/data/docker-appdata/tandoor/mediafiles:/opt/recipes/mediafiles:rw"
@@ -59,14 +62,17 @@
   };
   virtualisation.oci-containers.containers."tandoor-db_tandoor" = {
     image = "postgres:16-alpine";
+    environmentFiles = [
+      config.age.secrets.tandoor-secrets.path
+    ];
     environment = {
       DB_ENGINE = "django.db.backends.postgresql";
       POSTGRES_DB = "djangodb";
       POSTGRES_HOST = "db_tandoor";
-      POSTGRES_PASSWORD = "{a_secret_was_here}";
+      # POSTGRES_PASSWORD loaded from secret file
       POSTGRES_PORT = "5432";
       POSTGRES_USER = "djangodb";
-      SECRET_KEY = "{a_secret_was_here}";
+      # SECRET_KEY loaded from secret file
     };
     volumes = [
       "/data/docker-appdata/tandoor/postgresql:/var/lib/postgresql/data:rw"

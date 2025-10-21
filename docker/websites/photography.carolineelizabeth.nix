@@ -1,5 +1,5 @@
 # Auto-generated using compose2nix v0.2.0-pre.
-{ pkgs, lib, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   # Runtime
@@ -12,10 +12,13 @@
   # Containers
   virtualisation.oci-containers.containers."photography_carolineelizabeth-db" = {
     image = "mysql:5.7";
+    environmentFiles = [
+      config.age.secrets.wordpress-photography-mysql.path
+    ];
     environment = {
       MYSQL_DATABASE = "wordpress";
-      MYSQL_PASSWORD = "{a_secret_was_here}";
-      MYSQL_ROOT_PASSWORD = "{a_secret_was_here}";
+      # MYSQL_PASSWORD loaded from secret file
+      # MYSQL_ROOT_PASSWORD loaded from secret file
       MYSQL_USER = "wordpress";
     };
     volumes = [
@@ -49,9 +52,12 @@
   };
   virtualisation.oci-containers.containers."photography_carolineelizabeth-wordpress" = {
     image = "wordpress:latest";
+    environmentFiles = [
+      config.age.secrets.wordpress-photography-wp.path
+    ];
     environment = {
       WORDPRESS_DB_HOST = "db:3306";
-      WORDPRESS_DB_PASSWORD = "{a_secret_was_here}";
+      # WORDPRESS_DB_PASSWORD loaded from secret file
       WORDPRESS_DB_USER = "wordpress";
     };
     volumes = [

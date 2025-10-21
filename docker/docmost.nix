@@ -1,5 +1,5 @@
 # Auto-generated using compose2nix v0.3.1.
-{ pkgs, lib, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   # Runtime
@@ -12,9 +12,12 @@
   # Containers
   virtualisation.oci-containers.containers."docmost-db" = {
     image = "postgres:16-alpine";
+    environmentFiles = [
+      config.age.secrets.docmost-secrets.path
+    ];
     environment = {
       "POSTGRES_DB" = "docmost";
-      "POSTGRES_PASSWORD" = "{a_secret_was_here}";
+      # POSTGRES_PASSWORD loaded from secret file
       "POSTGRES_USER" = "docmost";
     };
     volumes = [
@@ -50,8 +53,11 @@
   };
   virtualisation.oci-containers.containers."docmost-docmost" = {
     image = "docmost/docmost:latest";
+    environmentFiles = [
+      config.age.secrets.docmost-secrets.path
+    ];
     environment = {
-      "APP_SECRET" = "{a_secret_was_here}";
+      # APP_SECRET loaded from secret file
       "APP_URL" = "http://david:6590";
       "DATABASE_URL" = "postgresql://docmost:{a_secret_was_here}@db:5432/docmost?schema=public";
       "REDIS_URL" = "redis://redis:6379";

@@ -1,5 +1,5 @@
 # Auto-generated using compose2nix v0.3.1.
-{ pkgs, lib, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   # Runtime
@@ -12,6 +12,9 @@
   # Containers
   virtualisation.oci-containers.containers."affine_migration_job" = {
     image = "ghcr.io/toeverything/affine:stable";
+    environmentFiles = [
+      config.age.secrets.affine-db-password.path
+    ];
     environment = {
       "AFFINE_INDEXER_ENABLED" = "false";
       "AFFINE_REVISION" = "stable";
@@ -19,7 +22,7 @@
       "DATABASE_URL" = "postgresql://affine:{a_secret_was_here}@postgres:5432/affine";
       "DB_DATABASE" = "affine";
       "DB_DATA_LOCATION" = "/data/docker-appdata/affine/postgres/pgdata";
-      "DB_PASSWORD" = "{a_secret_was_here}";
+      # DB_PASSWORD loaded from secret file
       "DB_USERNAME" = "affine";
       "PORT" = "3010";
       "REDIS_SERVER_HOST" = "redis";
@@ -59,11 +62,14 @@
   };
   virtualisation.oci-containers.containers."affine_postgres" = {
     image = "pgvector/pgvector:pg16";
+    environmentFiles = [
+      config.age.secrets.affine-postgres-password.path
+    ];
     environment = {
       "POSTGRES_DB" = "affine";
       "POSTGRES_HOST_AUTH_METHOD" = "trust";
       "POSTGRES_INITDB_ARGS" = "--data-checksums";
-      "POSTGRES_PASSWORD" = "{a_secret_was_here}";
+      # POSTGRES_PASSWORD loaded from secret file (as DB_PASSWORD)
       "POSTGRES_USER" = "affine";
     };
     volumes = [
@@ -133,6 +139,9 @@
   };
   virtualisation.oci-containers.containers."affine_server" = {
     image = "ghcr.io/toeverything/affine:stable";
+    environmentFiles = [
+      config.age.secrets.affine-db-password.path
+    ];
     environment = {
       "AFFINE_INDEXER_ENABLED" = "false";
       "AFFINE_REVISION" = "stable";
@@ -140,7 +149,7 @@
       "DATABASE_URL" = "postgresql://affine:{a_secret_was_here}@postgres:5432/affine";
       "DB_DATABASE" = "affine";
       "DB_DATA_LOCATION" = "/data/docker-appdata/affine/postgres/pgdata";
-      "DB_PASSWORD" = "{a_secret_was_here}";
+      # DB_PASSWORD loaded from secret file
       "DB_USERNAME" = "affine";
       "PORT" = "3010";
       "REDIS_SERVER_HOST" = "redis";
