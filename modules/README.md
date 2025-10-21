@@ -2,40 +2,41 @@
 
 Custom NixOS modules for managing system configuration with a modular, type-safe approach.
 
-## Structure
+## Table of Contents
 
-```
-modules/
-├── default.nix          # Imports all module categories
-├── hardware/            # Hardware-specific modules
-├── system/              # System-level configuration
-└── services/            # Service modules
-    ├── infrastructure/  # Core infrastructure (Caddy, PostgreSQL, Tailscale)
-    ├── media/           # Media services (Jellyfin, Immich, Jellyseerr)
-    ├── productivity/    # Productivity tools (Vaultwarden, n8n, Actual)
-    ├── storage/         # Storage services (ZFS, NFS, Samba, Syncthing)
-    └── development/     # Development tools (vscode-server, GitHub Actions)
-```
+- [Overview](#overview)
+- [Usage](#usage)
+  - [Enable a Service](#enable-a-service)
+  - [Customize Options](#customize-options)
+  - [Check Available Options](#check-available-options)
+- [Module Categories](#module-categories)
+- [Creating New Modules](#creating-new-modules)
+- [Benefits](#benefits)
 
-## Module System
+## Overview
 
 Each module provides:
-- **Enable option:** Simple on/off toggle
-- **Configuration options:** Customizable settings with defaults
-- **Type safety:** NixOS validates all options
-- **Documentation:** Self-documenting through option descriptions
-- **Dependencies:** Conditional service configuration
+- **Enable option** - Simple on/off toggle
+- **Configuration options** - Customizable settings with defaults
+- **Type safety** - NixOS validates all options
+- **Documentation** - Self-documenting through option descriptions
+- **Auto-integration** - Optional Caddy reverse proxy configuration
 
 ## Usage
 
 ### Enable a Service
 
-In your host configuration:
+In your host configuration (`hosts/<hostname>/configuration.nix`):
 
 ```nix
 {
   modules.services.media.jellyfin.enable = true;
 }
+```
+
+Rebuild to apply:
+```bash
+sudo nixos-rebuild switch --flake .
 ```
 
 ### Customize Options
@@ -54,26 +55,30 @@ In your host configuration:
 ### Check Available Options
 
 ```bash
+# View all options for a module
 nixos-option modules.services.media.immich
+
+# Or read the module source
+cat modules/services/media/immich.nix
 ```
 
 ## Module Categories
 
 ### Hardware (`hardware/`)
 
-- **nvidia.nix** - NVIDIA GPU configuration
+- **nvidia.nix** - NVIDIA GPU configuration with CUDA support
 - **boot.nix** - Bootloader and GRUB theming
 
 ### System (`system/`)
 
-- **core.nix** - Nix settings, locale, timezone, packages
+- **core.nix** - Nix settings, locale, timezone, base packages
 - **networking.nix** - Network and firewall configuration
 - **users.nix** - User account management
 - **desktop.nix** - KDE Plasma 6 desktop environment
 
 ### Infrastructure (`services/infrastructure/`)
 
-- **caddy.nix** - Reverse proxy with Cloudflare DNS
+- **caddy.nix** - Reverse proxy with Cloudflare DNS integration
 - **cloudflared.nix** - Cloudflare tunnel
 - **postgresql.nix** - Database server
 - **tailscale.nix** - VPN with routing features
@@ -101,63 +106,29 @@ nixos-option modules.services.media.immich
 
 ### Development (`services/development/`)
 
-- **vscode-server.nix** - Remote development
-- **github-actions.nix** - CI/CD integration
+- **vscode-server.nix** - Remote development with VS Code
+- **github-actions.nix** - CI/CD integration for automated deployments
+- **kasm.nix** - Browser-based development environments
 
-## Creating a New Module
+### Communication (`services/communication/`)
 
-1. Create the module file in the appropriate category
-2. Follow the module template pattern:
+- **matrix-synapse.nix** - Matrix homeserver
+- **pixelfed.nix** - Federated photo sharing
+- **mautrix-imessage.nix** - iMessage bridge for Matrix
+- **mautrix-groupme.nix** - GroupMe bridge for Matrix
+- **wellknown.nix** - Federation configuration
 
-```nix
-{ config, lib, pkgs, ... }:
+## Creating New Modules
 
-with lib;
-let
-  cfg = config.modules.services.category.servicename;
-in
-{
-  options.modules.services.category.servicename = {
-    enable = mkEnableOption "Service Description";
-    
-    domain = mkOption {
-      type = types.str;
-      default = "service.domain.com";
-      description = "Domain for service";
-    };
-  };
+### 1. Create Module File
 
-  config = mkIf cfg.enable {
-    # Service configuration
-    services.servicename.enable = true;
-    
-    # Optional: Caddy reverse proxy integration
-    services.caddy.virtualHosts.${cfg.domain} = 
-      mkIf config.modules.services.infrastructure.caddy.enable {
-        extraConfig = ''
-          reverse_proxy http://localhost:port
-        '';
-      };
-  };
-}
+Create your module in the appropriate category directory:
+
+```bash
+vim modules/services/category/servicename.nix
 ```
 
-3. Import the module in the category's `default.nix`
-4. Enable it in your host configuration
-
-## Benefits
-
-| Aspect | Before | After |
-|--------|--------|-------|
-| **Main Config** | 214 lines, mixed concerns | ~100 lines, just enable flags |
-| **Service Files** | 386-line monolith | ~50 lines per module |
-| **Discoverability** | Search large files | Navigate by category |
-| **Toggling Services** | Comment/uncomment blocks | Single enable flag |
-| **Type Safety** | Basic Nix validation | Full NixOS option system |
-
-## Module Template
-
-When creating a new module, follow this pattern:
+### 2. Follow Template Pattern
 
 ```nix
 { config, lib, pkgs, ... }:
@@ -187,7 +158,7 @@ in
     # Service configuration
     services.servicename = {
       enable = true;
-      # ... service config
+      # ... service-specific settings
     };
     
     # Optional: Caddy reverse proxy integration
@@ -204,23 +175,54 @@ in
 }
 ```
 
-## Common Tasks
+### 3. Import in Category Default
 
-### Enable/Disable Services
-
-In your host configuration:
+Add to `modules/services/category/default.nix`:
 
 ```nix
 {
-  # Enable with defaults
-  modules.services.media.jellyfin.enable = true;
-  
-  # Disable
-  modules.services.media.jellyfin.enable = false;
+  imports = [
+    ./servicename.nix
+    # ... other modules
+  ];
 }
 ```
 
-### Customize Service Options
+### 4. Enable in Host Configuration
+
+```nix
+{
+  modules.services.category.servicename.enable = true;
+}
+```
+
+### 5. Test and Deploy
+
+```bash
+# Validate syntax
+nix flake check
+
+# Build without applying
+sudo nixos-rebuild build --flake .
+
+# Test without making bootable
+sudo nixos-rebuild test --flake .
+
+# Apply changes
+sudo nixos-rebuild switch --flake .
+```
+
+## Common Patterns
+
+### Enable with Defaults
+
+```nix
+{
+  modules.services.media.jellyfin.enable = true;
+}
+```
+
+### Enable with Custom Settings
 
 ```nix
 {
@@ -233,77 +235,66 @@ In your host configuration:
 }
 ```
 
-### Check Available Options
+### Conditional Configuration
 
-```bash
-nixos-option modules.services.media.immich
+```nix
+{
+  modules.services.media.jellyfin = {
+    enable = true;
+    # Caddy integration happens automatically if Caddy is enabled
+  };
+  
+  modules.services.infrastructure.caddy.enable = true;
+}
 ```
 
-### Rebuild After Changes
+### Override Profile Defaults
 
-```bash
-# Test the configuration
-sudo nixos-rebuild test --flake .
-
-# Apply and make bootable
-sudo nixos-rebuild switch --flake .
-
-# Just build without applying
-sudo nixos-rebuild build --flake .
+```nix
+{
+  imports = [ ../../profiles/server.nix ];
+  
+  # Server profile enables many services
+  # Disable specific ones you don't want
+  modules.services.media.jellyseerr.enable = false;
+}
 ```
 
 ## Troubleshooting
 
 ### Service Not Starting
 
-1. Check if enabled in configuration
-2. Check module dependencies (e.g., Caddy needs to be enabled for reverse proxy)
+1. Check if enabled: `grep -r "servicename.enable" hosts/`
+2. Check module dependencies (e.g., Caddy needed for reverse proxy)
 3. View service logs: `journalctl -u servicename -f`
+4. Check service status: `systemctl status servicename`
 
 ### Module Errors
 
-1. Check syntax: `nix flake check`
+1. Validate syntax: `nix flake check`
 2. Build without applying: `nixos-rebuild build --flake .`
-3. Review error messages - they point to the specific module
+3. Review error messages - they point to the specific module and line
+
+### Port Conflicts
+
+```bash
+# Check if port is in use
+sudo ss -tulpn | grep PORT
+
+# Update port in module options
+modules.services.category.servicename.port = 8081;
+```
 
 ### Secrets Not Decrypting
 
 1. Ensure SSH host key is correct in `secrets/secrets.nix`
-2. Verify secret file exists and has correct permissions
-3. Check agenix configuration in the service module
+2. Verify secret file exists: `ls secrets/`
+3. Check agenix configuration: `cat modules/secrets.nix`
+4. Test decryption: `nix develop --command agenix -d secrets/secretname.age`
 
-## Module Benefits
+## Additional Resources
 
-| Aspect | Before Refactoring | After Refactoring |
-|--------|-------------------|-------------------|
-| **Main Config** | 214 lines, mixed concerns | ~100 lines, just enable flags |
-| **Service Files** | 386-line monolith | ~50 lines per module |
-| **Discoverability** | Search large files | Navigate by category |
-| **Toggling Services** | Comment/uncomment blocks | Single enable flag |
-| **Type Safety** | Basic Nix validation | Full NixOS option system |
-| **Documentation** | External docs needed | Self-documenting options |
-
-## Migration Notes
-
-Old configuration files have been renamed with `.old` extension:
-- `modules/services/apps.nix.old` - Original monolithic config
-- `modules/services/nas.nix.old` - Migrated to storage modules
-- `modules/services/caddy-hosts.nix.old` - Integrated into service modules
-- `modules/services/github-actions.nix.old` - Moved to development/
-
-These can be safely deleted once verified.
-
-## Documentation
-
-- [Host Configurations](../hosts/README.md) - Per-host setup guide
-- [Profiles](../profiles/README.md) - Role-based configuration profiles
-- [Docker Services](../docker/README.md) - Container management
+- [Main README](../README.md) - Repository overview
+- [Host Configurations](../hosts/README.md) - Per-host setup
+- [Profiles](../profiles/README.md) - Role-based configurations
 - [NixOS Module System](https://nixos.org/manual/nixos/stable/#sec-writing-modules) - Official docs
-
----
-
-**Modules:** 40+ custom modules  
-**Categories:** 8 (hardware, system, infrastructure, media, productivity, storage, development)  
-**Type Safety:** Full NixOS option validation  
-**Status:** Active and maintained
-

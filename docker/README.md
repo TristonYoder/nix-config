@@ -2,31 +2,24 @@
 
 Docker Compose services managed with `compose2nix` for declarative container configuration.
 
-## Structure
+## Table of Contents
 
-```
-docker/
-├── docker.nix           # Core Docker daemon configuration
-├── watchtower.nix       # Automatic container updates
-├── media/               # Media-related containers
-│   ├── audiobooks.nix
-│   ├── ersatztv.nix
-│   └── media-aq.nix
-├── productivity/        # Productivity applications
-│   ├── affine.nix
-│   ├── homarr.nix
-│   ├── outline.nix
-│   ├── planning-poker.nix
-│   └── tandoor.nix
-└── websites/            # Website containers
-    ├── com.carolineyoder.nix
-    ├── photography.carolineelizabeth.nix
-    └── studio.7andco.nix
-```
+- [Overview](#overview)
+- [Usage](#usage)
+- [Available Services](#available-services)
+- [Managing Containers](#managing-containers)
+- [Converting Compose Files](#converting-docker-compose-files)
+- [Troubleshooting](#troubleshooting)
 
 ## Overview
 
-These services are managed using NixOS's declarative container support via `compose2nix`, which converts Docker Compose files into NixOS configuration.
+Docker services are managed using NixOS's declarative container support via `compose2nix`, which converts Docker Compose files into NixOS configuration.
+
+**Benefits:**
+- Declarative container management
+- Integration with NixOS module system
+- Automatic startup and service management
+- Version controlled configuration
 
 ## Usage
 
@@ -56,70 +49,117 @@ Each Docker service file provides enable options:
 
 ```nix
 {
+  # Enable the container
   virtualisation.arion.projects.homarr.enable = true;
 }
 ```
 
-## Core Services
+Rebuild to apply:
+```bash
+sudo nixos-rebuild switch --flake .
+```
 
-### docker.nix
+## Available Services
 
-Core Docker daemon configuration:
-- Docker package installation
-- Storage driver configuration
-- Network settings
+### Core Services
+
+#### docker.nix
+- Docker daemon configuration
+- Storage driver settings
+- Network configuration
 - User permissions
 
-### watchtower.nix
-
-Automatic container updates:
+#### watchtower.nix
+- Automatic container updates
 - Monitors running containers
 - Pulls latest images
-- Restarts containers with updates
-- Configurable schedule
+- Configurable update schedule
 
-## Media Services
+### Media Services
 
-### audiobooks.nix
-Self-hosted audiobook server with web player.
+- **audiobooks.nix** - Self-hosted audiobook server
+- **ersatztv.nix** - Custom TV channels from your media
+- **media-aq.nix** - Media acquisition and management automation
 
-### ersatztv.nix
-Create custom TV channels from your media.
+### Productivity Services
 
-### media-aq.nix
-Media acquisition and management automation.
+- **affine.nix** - Knowledge base (open source Notion alternative)
+- **homarr.nix** - Homepage dashboard for services
+- **outline.nix** - Team knowledge base with real-time collaboration
+- **planning-poker.nix** - Agile estimation tool
+- **tandoor.nix** - Recipe manager and meal planner
 
-## Productivity Services
+### Website Services
 
-### affine.nix
-Knowledge base and project management (open source Notion alternative).
+- **com.carolineyoder.nix** - Caroline Yoder's website
+- **photography.carolineelizabeth.nix** - Photography portfolio
+- **studio.7andco.nix** - Studio 7andco website
 
-### homarr.nix
-Homepage dashboard for services and applications.
+## Managing Containers
 
-### outline.nix
-Team knowledge base with real-time collaboration.
+### View Running Containers
 
-### planning-poker.nix
-Agile estimation and planning tool.
+```bash
+# List all containers
+docker ps
 
-### tandoor.nix
-Recipe manager and meal planner.
+# List all (including stopped)
+docker ps -a
+```
 
-## Website Services
+### View Logs
 
-### com.carolineyoder.nix
-Caroline Yoder's website container.
+```bash
+# Follow logs
+docker logs -f container_name
 
-### photography.carolineelizabeth.nix
-Photography portfolio website.
+# Last 100 lines
+docker logs --tail 100 container_name
 
-### studio.7andco.nix
-Studio 7andco website.
+# Via systemd
+journalctl -u arion-servicename -f
+```
+
+### Restart a Service
+
+```bash
+# Via systemctl (NixOS-managed, recommended)
+sudo systemctl restart arion-homarr
+
+# Or via Docker directly
+docker restart container_name
+```
+
+### Update Containers
+
+Watchtower handles automatic updates, but you can manually update:
+
+```bash
+# Pull latest images
+docker compose pull
+
+# Recreate containers
+docker compose up -d
+
+# Or rebuild from NixOS
+sudo nixos-rebuild switch --flake .
+```
+
+### Check Container Status
+
+```bash
+# Via systemctl
+systemctl status arion-servicename
+
+# Via Docker
+docker inspect container_name
+```
 
 ## Converting Docker Compose Files
 
-To regenerate a service from a Docker Compose file:
+Original Docker Compose files are kept in `docker/dockercompose/` for reference.
+
+### Regenerate Service from Compose File
 
 ```bash
 cd docker/dockercompose
@@ -130,117 +170,148 @@ compose2nix \
   -output=../category/service.nix
 ```
 
-## Docker Compose Files
+### Add New Docker Service
 
-Original Docker Compose files are kept in `docker/dockercompose/` for reference and regeneration:
-
-```
-dockercompose/
-├── docker-compose_bookstack.yml
-├── docker-compose_caddy.yml
-├── docker-compose_homarr.yml
-├── docker-compose_tandoor.yml
-└── ...
-```
+1. Create or obtain Docker Compose file
+2. Place in `docker/dockercompose/`
+3. Convert to Nix with `compose2nix`
+4. Import in host configuration
+5. Enable the service
 
 ## Service Discovery
 
-Services are typically accessed through:
-- **Direct ports:** Configured in each service file
-- **Caddy reverse proxy:** Set up in NixOS module configuration
-- **Tailscale network:** For secure remote access
+Services are accessed through:
 
-## Managing Containers
+- **Direct ports** - Configured in each service file
+- **Caddy reverse proxy** - Set up in NixOS module configuration
+- **Tailscale network** - For secure remote access
 
-### View Running Containers
-
-```bash
-docker ps
-```
-
-### View Logs
-
-```bash
-docker logs -f container_name
-```
-
-### Restart a Service
-
-```bash
-# Via systemctl (NixOS-managed)
-sudo systemctl restart arion-homarr
-
-# Or via Docker
-docker restart container_name
-```
-
-### Update Containers
-
-Watchtower handles automatic updates, but you can manually update:
-
-```bash
-docker compose pull
-docker compose up -d
+Example Caddy integration:
+```nix
+services.caddy.virtualHosts."homarr.example.com" = {
+  extraConfig = ''
+    reverse_proxy http://localhost:7575
+  '';
+};
 ```
 
 ## Data Persistence
 
-Container data is typically stored in:
+Container data is stored in:
+
 - `/var/lib/docker/volumes/` - Docker-managed volumes
 - `/data/` - Custom mount points (defined per service)
+
+**Backup important data regularly!**
 
 ## Networking
 
 Most containers use:
-- **Bridge network:** Default Docker network
-- **Custom networks:** Defined in compose files
-- **Host network:** For services requiring host network access
 
-## Security Considerations
+- **Bridge network** - Default Docker network
+- **Custom networks** - Defined in compose files for service isolation
+- **Host network** - For services requiring host network access
 
-1. **Secrets:** Use NixOS secret management (agenix) for sensitive data
-2. **Updates:** Watchtower keeps containers updated
-3. **Isolation:** Containers run in isolated environments
-4. **Firewall:** NixOS firewall controls external access
+## Security
+
+1. **Secrets** - Use NixOS secret management (agenix) for sensitive data
+2. **Updates** - Watchtower keeps containers updated automatically
+3. **Isolation** - Containers run in isolated environments
+4. **Firewall** - NixOS firewall controls external access
+5. **User mapping** - Configure UID/GID mapping for proper permissions
 
 ## Troubleshooting
 
 ### Container Won't Start
 
 ```bash
-# Check logs
+# Check systemd logs
 journalctl -u arion-servicename -xe
 
 # Check Docker logs
 docker logs container_name
 
-# Verify configuration
+# Verify compose configuration
 docker compose config
+
+# Check for errors in the generated Nix file
+cat docker/category/service.nix
 ```
 
 ### Port Conflicts
 
-Check if port is already in use:
-
 ```bash
+# Check if port is already in use
 sudo ss -tulpn | grep PORT
+
+# Update port in service configuration
+# Edit the .nix file or original compose file and regenerate
 ```
 
-### Volume Permissions
-
-Ensure correct permissions on mounted volumes:
+### Volume Permission Issues
 
 ```bash
+# Check volume permissions
+ls -la /var/lib/docker/volumes/volume_name/_data
+
+# Fix permissions (adjust UID/GID as needed)
 sudo chown -R 1000:1000 /data/service
+
+# Some containers need specific UIDs
+# Check service documentation
 ```
 
-## Resources
+### Image Pull Failures
+
+```bash
+# Pull manually to see error
+docker pull image:tag
+
+# Check Docker Hub rate limits
+docker pull --help
+
+# Try different registry
+# Edit compose file to use different source
+```
+
+### Container Networking Issues
+
+```bash
+# Inspect container network
+docker network ls
+docker network inspect network_name
+
+# Check if container can reach other services
+docker exec container_name ping other_service
+
+# Restart Docker networking
+sudo systemctl restart docker
+```
+
+## Why Docker Services?
+
+These Docker services complement NixOS-native services in `modules/services/`. Use Docker for:
+
+- Services not yet available in Nixpkgs
+- Complex multi-container applications
+- Services that update frequently
+- Third-party applications without Nix packaging
+
+Use NixOS modules for:
+- Services with good Nix support
+- Better integration with system configuration
+- More declarative configuration
+
+## Additional Resources
 
 - [compose2nix](https://github.com/aksiksi/compose2nix) - Docker Compose to Nix converter
 - [Docker Documentation](https://docs.docker.com/)
 - [NixOS Containers](https://nixos.wiki/wiki/Docker)
+- [Arion](https://docs.hercules-ci.com/arion/) - Docker Compose via Nix
+- [Main README](../README.md) - Repository overview
 
 ---
 
-**Note:** These Docker services complement the NixOS-native services defined in `modules/services/`. Use Docker for services not yet available in Nixpkgs.
-
+**Services:** 10+ Docker services  
+**Categories:** Core, Media, Productivity, Websites  
+**Auto-Updates:** ✅ Via Watchtower

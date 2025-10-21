@@ -2,69 +2,50 @@
 
 Per-host NixOS and macOS configurations managed through this flake.
 
+## Table of Contents
+
+- [Configured Hosts](#configured-hosts)
+- [Quick Commands](#quick-commands)
+- [Adding a New Host](#adding-a-new-host)
+- [Configuration Patterns](#configuration-patterns)
+- [Host-Specific Overrides](#host-specific-overrides)
+- [Troubleshooting](#troubleshooting)
+
 ## Configured Hosts
 
 ### NixOS Hosts
 
 #### david (Main Server)
-- **System:** x86_64-linux
 - **Profile:** [server](../profiles/server.nix)
+- **Architecture:** x86_64-linux
 - **User:** tristonyoder
-- **Location:** `hosts/david/`
+- **Auto-Deploy:** ✅ GitHub Actions enabled
 - **Services:** Full stack (infrastructure, media, productivity, storage, development)
 
-**Features:**
-- All infrastructure services
-- Media server (Jellyfin, Immich)
-- Productivity tools (Vaultwarden, n8n, Actual)
-- Storage services (ZFS, NFS, Samba, Syncthing)
-- Automated GitHub Actions deployment ✅
-
 #### pits (Edge Server / Pi in the Sky)
-- **System:** aarch64-linux (Raspberry Pi compatible)
 - **Profile:** [edge](../profiles/edge.nix)
+- **Architecture:** aarch64-linux (Raspberry Pi compatible)
 - **User:** tristonyoder
-- **Location:** `hosts/pits/`
-- **Services:** Minimal (Caddy, Tailscale)
-
-**Features:**
-- Public-facing reverse proxy
-- Optimized for low-resource devices
-- Aggressive resource optimizations
-- Automated GitHub Actions deployment ✅
-
-**Documentation:**
-- [Setup Guide](pits/README.md)
-- [Installation Guide](pits/INSTALLATION.md)
-- [Bootstrap Guide](pits/BOOTSTRAP.md)
+- **Auto-Deploy:** ✅ GitHub Actions enabled
+- **Services:** Minimal (Caddy reverse proxy, Tailscale VPN)
+- **Purpose:** Public-facing reverse proxy optimized for low-resource devices
+- **Documentation:** [pits/README.md](pits/README.md)
 
 #### tristons-desk (Desktop Workstation)
-- **System:** x86_64-linux
 - **Profile:** [desktop](../profiles/desktop.nix)
+- **Architecture:** x86_64-linux
 - **User:** tristonyoder
-- **Location:** `hosts/tristons-desk/`
+- **Auto-Deploy:** ✅ GitHub Actions enabled
 - **Services:** Minimal desktop (KDE Plasma, development tools)
-
-**Features:**
-- KDE Plasma 6 desktop environment
-- Development tools (vscode-server)
-- Tailscale VPN
-- Automated GitHub Actions deployment ✅
 
 ### macOS Hosts
 
 #### tyoder-mbp (MacBook Pro)
-- **System:** aarch64-darwin (Apple Silicon M1)
 - **Profile:** [darwin](../profiles/darwin.nix)
+- **Architecture:** aarch64-darwin (Apple Silicon M1)
 - **User:** tyoder
-- **Location:** `hosts/tyoder-mbp/`
-- **Services:** Homebrew, Mac App Store, development tools
-
-**Features:**
-- Declarative macOS system preferences
-- Homebrew cask management
-- Mac App Store app management
-- Shell environment (zsh, Oh My Zsh, Powerlevel10k)
+- **Auto-Deploy:** ➖ Manual only
+- **Features:** Declarative macOS system preferences, Homebrew, Mac App Store
 
 ## Quick Commands
 
@@ -73,10 +54,10 @@ Per-host NixOS and macOS configurations managed through this flake.
 Systems automatically detect their hostname:
 
 ```bash
-# On any NixOS host (auto-detects)
+# On any NixOS host
 sudo nixos-rebuild switch --flake .
 
-# On macOS (auto-detects)
+# On macOS
 darwin-rebuild switch --flake .
 ```
 
@@ -92,17 +73,17 @@ sudo nixos-rebuild switch --flake .#tristons-desk
 darwin-rebuild switch --flake .#tyoder-mbp
 ```
 
-### Test Before Applying
+### Testing
 
 ```bash
-# Test without applying
+# Test without applying (activates but not bootable)
 sudo nixos-rebuild test --flake .#hostname
 
 # Build without activating
 sudo nixos-rebuild build --flake .#hostname
 darwin-rebuild build --flake .#hostname
 
-# Dry run
+# Dry run (show what would change)
 sudo nixos-rebuild dry-run --flake .#hostname
 ```
 
@@ -114,16 +95,15 @@ sudo nixos-rebuild dry-run --flake .#hostname
 mkdir -p hosts/new-hostname
 ```
 
-### 2. Create Configuration
+### 2. Create Configuration File
 
 Create `hosts/new-hostname/configuration.nix`:
 
 ```nix
 { config, pkgs, lib, ... }:
-
 {
   networking.hostName = "new-hostname";
-  system.stateVersion = "25.05";  # NixOS version
+  system.stateVersion = "25.05";  # Current NixOS version
   
   # Import appropriate profile
   imports = [
@@ -143,7 +123,7 @@ On the target NixOS machine:
 sudo nixos-generate-config --show-hardware-config > hardware-configuration.nix
 ```
 
-Copy to `hosts/new-hostname/hardware-configuration.nix`
+Copy to `hosts/new-hostname/hardware-configuration.nix` in your repo.
 
 ### 4. Add to flake.nix
 
@@ -154,7 +134,7 @@ nixosConfigurations.new-hostname = nixpkgs.lib.nixosSystem {
   system = "x86_64-linux";  # or aarch64-linux
   modules = [
     ./common.nix
-    ./profiles/server.nix  # Choose profile
+    ./profiles/server.nix  # Choose appropriate profile
     ./hosts/new-hostname/configuration.nix
     ./hosts/new-hostname/hardware-configuration.nix
     ./modules
@@ -190,54 +170,29 @@ darwinConfigurations.new-hostname = nix-darwin.lib.darwinSystem {
 ### 5. Build and Deploy
 
 ```bash
-# Build locally
+# Validate
+nix flake check
+
+# Build locally first
 nix build .#nixosConfigurations.new-hostname.config.system.build.toplevel
 
-# Or deploy directly
+# Deploy
 sudo nixos-rebuild switch --flake .#new-hostname
 ```
 
-### 6. Add to GitHub Actions (Optional)
+### 6. Enable GitHub Actions (Optional)
 
-To enable automated testing and deployment:
+For automated deployment:
 
-1. Edit `.github/workflows/test-nixos-config.yml`:
-   ```yaml
-   matrix:
-     host: 
-       - name: new-hostname
-         hostname: new-hostname
-   ```
-
-2. Edit `.github/workflows/deploy-nixos-config.yml`:
-   ```yaml
-   ALL_HOSTS='["david", "pits", "tristons-desk", "new-hostname"]'
-   ```
-
-3. On the host, enable GitHub Actions module:
+1. On the host, enable the module:
    ```nix
    modules.services.development.github-actions.enable = true;
    ```
 
-See [../.github/workflows/README.md](../.github/workflows/README.md) for complete CI/CD setup.
+2. Add to `.github/workflows/test-nixos-config.yml` matrix
+3. Add to `.github/workflows/deploy-nixos-config.yml` host list
 
-## Host Configuration Structure
-
-Each host directory should contain:
-
-```
-hosts/hostname/
-├── configuration.nix           # Host-specific configuration
-└── hardware-configuration.nix  # Hardware settings (NixOS only)
-```
-
-Optional documentation:
-```
-hosts/hostname/
-├── README.md                   # Host-specific documentation
-├── INSTALLATION.md             # Installation guide
-└── BOOTSTRAP.md                # Quick setup guide
-```
+See [../.github/workflows/](../.github/workflows/) for CI/CD details.
 
 ## Configuration Patterns
 
@@ -287,7 +242,7 @@ hosts/hostname/
   networking.hostName = "laptop";
   
   # Darwin profile provides system defaults
-  # Apps managed via Home Manager
+  # Apps managed via Home Manager (see home/tyoder.nix)
 }
 ```
 
@@ -312,7 +267,14 @@ Override profile defaults in host configuration:
   environment.systemPackages = with pkgs; [
     vim
     htop
+    custom-package
   ];
+  
+  # Host-specific networking
+  networking.interfaces.eth0.ipv4.addresses = [{
+    address = "192.168.1.100";
+    prefixLength = 24;
+  }];
 }
 ```
 
@@ -323,6 +285,9 @@ Override profile defaults in host configuration:
 ```bash
 # Regenerate on the actual machine
 sudo nixos-generate-config --show-hardware-config
+
+# Copy to repo
+scp root@hostname:/etc/nixos/hardware-configuration.nix hosts/hostname/
 ```
 
 ### Hostname Mismatch
@@ -337,6 +302,10 @@ hostname
 networking.hostName = "actual-hostname";
 ```
 
+If they don't match, either:
+1. Change `networking.hostName` in config
+2. Or change system hostname: `sudo hostnamectl set-hostname new-name`
+
 ### Build Failures
 
 ```bash
@@ -346,30 +315,41 @@ nix flake check
 # Build without applying
 sudo nixos-rebuild build --flake .#hostname
 
-# Check for detailed errors
+# Show detailed errors with trace
 sudo nixos-rebuild switch --flake .#hostname --show-trace
+```
+
+### Remote Deployment Issues
+
+```bash
+# Build locally, deploy to remote
+nixos-rebuild switch --flake .#hostname \
+  --target-host user@hostname \
+  --build-host localhost
+
+# Check SSH access
+ssh user@hostname "echo success"
 ```
 
 ### macOS System Defaults Not Applying
 
 ```bash
-# Some settings require logout
+# Some settings require logout/restart
 killall Dock && killall Finder
 
-# Or full logout/restart
+# Or full logout
+# Log out and back in
 ```
 
-## Resources
+## Additional Resources
 
+- [Main README](../README.md) - Repository overview
 - [Profiles](../profiles/README.md) - Available configuration profiles
 - [Modules](../modules/README.md) - System modules and services
 - [Home Manager](../home/README.md) - User environment configuration
-- [GitHub Actions](../.github/workflows/README.md) - Automated deployment
-- [Main README](../README.md) - Repository overview
 
 ---
 
 **Managed Hosts:** 4 (david, pits, tristons-desk, tyoder-mbp)  
 **Auto-Deploy:** 3 NixOS hosts via GitHub Actions  
-**Last Updated:** October 13, 2025
-
+**Platforms:** NixOS (x86_64, aarch64) + macOS (aarch64)

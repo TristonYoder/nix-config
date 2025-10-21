@@ -12,7 +12,7 @@ let
   # ADMIN KEYS - Keys for managing secrets from local machines
   # =============================================================================
   # Option 1: Use a dedicated agenix key (recommended)
-  # ssh-keygen -t ed25519 -f ~/.ssh/agenix -C "agenix-secrets@david-nixos" -N ""
+  # ssh-keygen -t ed25519 -f ~/.ssh/agenix -C "agenix-secrets@nix-config" -N ""
   # cat ~/.ssh/agenix.pub | ssh-to-age
   #
   # Option 2: Use your personal SSH key

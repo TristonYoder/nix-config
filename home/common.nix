@@ -103,9 +103,9 @@ in
       weather = "curl -s wttr.in";
       
       # Nix rebuild aliases
-      rebuild = "sudo nixos-rebuild switch --flake ~/Projects/david-nixos";
-      rebuild-darwin = "darwin-rebuild switch --flake ~/Projects/david-nixos";
-      rebuild-home = "home-manager switch --flake ~/Projects/david-nixos";
+      rebuild = "sudo nixos-rebuild switch --flake ~/Projects/nix-config";
+      rebuild-darwin = "darwin-rebuild switch --flake ~/Projects/nix-config";
+      rebuild-home = "home-manager switch --flake ~/Projects/nix-config";
     };
     
     oh-my-zsh = {

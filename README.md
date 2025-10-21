@@ -6,27 +6,39 @@
 [![Flakes](https://img.shields.io/badge/Nix-Flakes-green.svg)](https://nixos.wiki/wiki/Flakes)
 [![macOS](https://img.shields.io/badge/macOS-nix--darwin-blueviolet.svg)](https://github.com/LnL7/nix-darwin)
 
-## ✨ Features
+[![Test](https://github.com/TristonYoder/nix-config/actions/workflows/test-nixos-config.yml/badge.svg)](https://github.com/TristonYoder/nix-config/actions/workflows/test-nixos-config.yml)
+[![Deploy](https://github.com/TristonYoder/nix-config/actions/workflows/deploy-nixos-config.yml/badge.svg)](https://github.com/TristonYoder/nix-config/actions/workflows/deploy-nixos-config.yml)
 
-- **🖥️ Multi-Platform** - NixOS and macOS from a single repository
-- **🚀 Automated Deployment** - GitHub Actions CI/CD for all hosts
-- **🔄 Parallel Updates** - Deploy to all machines simultaneously
-- **🏠 Home Manager** - Unified user environment across all platforms
-- **📦 Modular Services** - 40+ custom modules with type-safe options
-- **🔐 Secret Management** - Encrypted secrets with agenix
-- **🎯 Profile-Based** - Role-specific configurations (server/desktop/edge/darwin)
-- **⚡ Auto-Detection** - Hostname-based configuration selection
+## Table of Contents
 
-## 📊 Managed Hosts
+- [Managed Hosts](#managed-hosts)
+- [Quick Start](#quick-start)
+  - [NixOS](#nixos-hosts)
+  - [macOS](#macos)
+  - [Common Commands](#common-commands)
+- [Configuration](#configuration)
+  - [Enable Services](#enable-a-service)
+  - [Add Packages](#add-packages)
+  - [Customize Options](#customize-options)
+- [Architecture](#architecture)
+  - [Profiles](#profiles)
+  - [Modules](#modules)
+  - [Hosts](#hosts)
+  - [Home Manager](#home-manager)
+- [Documentation](#documentation)
+- [Automation](#automated-deployment)
+- [Examples](#configuration-examples)
 
-| Host | Type | Profile | Auto-Deploy | Services |
-|------|------|---------|-------------|----------|
-| **david** | NixOS Server | Server | ✅ | Infrastructure, Media, Productivity, Storage |
-| **pits** | NixOS Edge (Pi) | Edge | ✅ | Caddy, Tailscale, minimal footprint |
-| **tristons-desk** | NixOS Desktop | Desktop | ✅ | KDE Plasma, development tools |
-| **tyoder-mbp** | macOS (M1) | Darwin | ➖ | Homebrew, Mac App Store, dev tools |
+## Managed Hosts
 
-## 🚀 Quick Start
+| Host | Type | Profile | Auto-Deploy | Purpose |
+|------|------|---------|-------------|---------|
+| **david** | NixOS Server | Server | ✅ | Full infrastructure stack |
+| **pits** | NixOS Edge (Pi) | Edge | ✅ | Public-facing reverse proxy |
+| **tristons-desk** | NixOS Desktop | Desktop | ✅ | Development workstation |
+| **tyoder-mbp** | macOS (M1) | Darwin | ➖ | Personal laptop |
+
+## Quick Start
 
 ### NixOS Hosts
 
@@ -34,83 +46,72 @@
 # Auto-detects hostname
 sudo nixos-rebuild switch --flake .
 
-# Or specify host explicitly
+# Or specify explicitly
 sudo nixos-rebuild switch --flake .#david
+
+# Test before applying
+sudo nixos-rebuild test --flake .
+
+# Build without activating
+sudo nixos-rebuild build --flake .
 ```
 
 ### macOS
 
 ```bash
 # First time (install nix-darwin)
-nix run nix-darwin -- switch --flake ~/Projects/david-nixos
+nix run nix-darwin -- switch --flake ~/Projects/nix-config
 
 # Subsequent rebuilds
 darwin-rebuild switch --flake .
+
+# Test build
+darwin-rebuild build --flake .
 ```
 
-## 📁 Repository Structure
-
-```
-.
-├── flake.nix              # Main flake with all host configurations
-├── common.nix             # Shared settings across all hosts
-│
-├── hosts/                 # Per-host configurations
-│   ├── david/             # Main server
-│   ├── pits/              # Edge server (Raspberry Pi)
-│   ├── tristons-desk/     # Desktop workstation
-│   └── tyoder-mbp/        # macOS laptop
-│
-├── profiles/              # Role-based configurations
-│   ├── server.nix         # Full server stack
-│   ├── desktop.nix        # Minimal desktop
-│   ├── edge.nix           # Optimized for low resources
-│   └── darwin.nix         # macOS system configuration
-│
-├── modules/               # Custom NixOS modules
-│   ├── hardware/          # GPU, bootloader
-│   ├── system/            # Core, networking, users, desktop
-│   └── services/          # Infrastructure, media, productivity, storage, development
-│
-├── home/                  # Home Manager configurations
-│   ├── common.nix         # Shared user settings
-│   ├── tyoder.nix         # macOS user (Homebrew, MAS)
-│   └── tristonyoder.nix   # NixOS user
-│
-├── docker/                # Docker Compose services (via compose2nix)
-├── secrets/               # Encrypted secrets (agenix)
-└── docs/                  # Detailed documentation
-```
-
-## 🛠️ Common Tasks
-
-### Update System
+### Common Commands
 
 ```bash
 # Update flake inputs
 nix flake update
 
-# Rebuild system
-sudo nixos-rebuild switch --flake .  # NixOS
-darwin-rebuild switch --flake .      # macOS
+# Validate configuration
+nix flake check
+
+# Enter dev shell (includes agenix, compose2nix)
+nix develop
+
+# View flake outputs
+nix flake show
 ```
+
+### Shell Aliases
+
+The configuration includes helpful aliases:
+
+```bash
+rebuild          # NixOS rebuild with auto-detection
+rebuild-darwin   # macOS rebuild  
+rebuild-home     # Home Manager only
+hms              # Quick darwin rebuild shortcut
+```
+
+## Configuration
 
 ### Enable a Service
 
-Edit `hosts/<hostname>/configuration.nix`:
+Edit your host's `configuration.nix`:
 
 ```nix
 {
   # Enable with defaults
   modules.services.media.jellyfin.enable = true;
-  
-  # Or customize
-  modules.services.media.immich = {
-    enable = true;
-    domain = "photos.example.com";
-    port = 2283;
-  };
 }
+```
+
+Then rebuild:
+```bash
+sudo nixos-rebuild switch --flake .
 ```
 
 ### Add Packages
@@ -119,41 +120,140 @@ Edit `home/<username>.nix`:
 
 ```nix
 {
+  # Nix packages
   home.packages = with pkgs; [
     neofetch
     htop
+    ripgrep
   ];
   
-  # macOS apps
-  homebrew.casks = [ "firefox" ];
-  mas.apps = [{ id = "441258766"; name = "Magnet"; }];
+  # macOS apps (tyoder.nix only)
+  homebrew.casks = [ "firefox" "visual-studio-code" ];
+  
+  mas.apps = [
+    { id = "441258766"; name = "Magnet"; }
+  ];
 }
 ```
 
-### Check Configuration
+### Customize Options
 
-```bash
-# Validate flake
-nix flake check
-
-# Test without applying
-sudo nixos-rebuild test --flake .
-darwin-rebuild build --flake .
+```nix
+{
+  modules.services.media.immich = {
+    enable = true;
+    domain = "photos.example.com";
+    port = 2283;
+    mediaLocation = "/data/photos";
+  };
+}
 ```
 
-### Development Shells
+### Check Available Options
 
 ```bash
-# Enter development shell (includes agenix, git, gh, compose2nix)
-nix develop
+# View service options
+nixos-option modules.services.media.immich
 
-# Bitcoin development shell
-nix develop .#bitcoin
+# Or browse in the module file
+cat modules/services/media/immich.nix
 ```
 
-## 🤖 Automated Deployment
+## Architecture
 
-Pushing to the `main` branch automatically:
+### Profiles
+
+Role-based configurations in `profiles/`:
+
+- **server.nix** - Full-featured server (infrastructure, media, productivity, storage)
+- **desktop.nix** - Minimal workstation (KDE Plasma, dev tools)
+- **edge.nix** - Lightweight proxy (Caddy, Tailscale, optimized for Pi)
+- **darwin.nix** - macOS system configuration
+
+**Usage:**
+```nix
+{
+  imports = [ ../../profiles/server.nix ];
+  
+  # Override specific settings
+  modules.services.media.jellyfin.enable = false;
+}
+```
+
+See [profiles/README.md](profiles/README.md) for details.
+
+### Modules
+
+Custom NixOS modules organized by category in `modules/`:
+
+**Categories:**
+- `hardware/` - GPU, bootloader
+- `system/` - Core settings, networking, users, desktop
+- `services/infrastructure/` - Caddy, PostgreSQL, Tailscale
+- `services/media/` - Jellyfin, Immich, Jellyseerr
+- `services/productivity/` - Vaultwarden, n8n, Actual
+- `services/storage/` - ZFS, NFS, Samba, Syncthing
+- `services/development/` - vscode-server, GitHub Actions
+
+**Benefits:**
+- ✅ Single enable flag to activate services
+- ✅ Type-safe configuration options
+- ✅ Self-documenting through option descriptions
+- ✅ Automatic Caddy reverse proxy integration
+
+See [modules/README.md](modules/README.md) for usage and creation guide.
+
+### Hosts
+
+Per-host configurations in `hosts/<hostname>/`:
+
+Each host contains:
+- `configuration.nix` - Host-specific settings
+- `hardware-configuration.nix` - Hardware config (NixOS only)
+
+Hosts automatically import:
+- Common settings (`common.nix`)
+- Profile (server/desktop/edge/darwin)
+- All modules
+- Home Manager integration
+
+See [hosts/README.md](hosts/README.md) for adding new hosts.
+
+### Home Manager
+
+User environment configurations in `home/`:
+
+- `common.nix` - Shared settings (git, zsh, ssh, packages)
+- `tyoder.nix` - macOS user (Homebrew, Mac App Store, system defaults)
+- `tristonyoder.nix` - NixOS user
+
+**Integrated into system rebuilds** - no separate home-manager command needed.
+
+See [home/README.md](home/README.md) for customization.
+
+## Documentation
+
+### Configuration Guides
+- [modules/README.md](modules/README.md) - Module system and available services
+- [profiles/README.md](profiles/README.md) - Role-based configuration profiles
+- [hosts/README.md](hosts/README.md) - Per-host setup and adding new hosts
+- [home/README.md](home/README.md) - User environment configuration
+
+### Operations
+- [secrets/README.md](secrets/README.md) - Secret management with agenix
+- [docker/README.md](docker/README.md) - Docker Compose services
+- [hosts/pits/README.md](hosts/pits/README.md) - Edge server setup
+
+### Resources
+- [NixOS Manual](https://nixos.org/manual/nixos/stable/)
+- [Nix Flakes](https://nixos.wiki/wiki/Flakes)
+- [nix-darwin](https://github.com/LnL7/nix-darwin)
+- [Home Manager](https://nix-community.github.io/home-manager/)
+- [agenix](https://github.com/ryantm/agenix)
+
+## Automated Deployment
+
+Pushing to `main` automatically:
 
 1. ✅ Validates flake syntax
 2. ✅ Tests all NixOS configurations in parallel
@@ -167,125 +267,106 @@ git push origin main
 # GitHub Actions handles the rest!
 ```
 
-**Manual deployment to specific hosts:**
-
+**Manual deployment:**
 1. GitHub → Actions → "Deploy NixOS Flake Configuration"
 2. Run workflow → Enter hosts: `david,pits` or `all`
 
-See [.github/workflows/README.md](.github/workflows/README.md) for complete CI/CD guide.
+**Requirements:**
+- Hosts must have `modules.services.development.github-actions.enable = true`
+- SSH keys configured for GitHub Actions user
 
-## 📚 Documentation
+## Configuration Examples
 
-### Getting Started
-- **[QUICKSTART.md](QUICKSTART.md)** - Essential commands and quick reference
-- **[Hosts](hosts/README.md)** - Complete multi-host setup guide
-
-### Configuration
-- **[Modules](modules/README.md)** - Module system, available services, and usage
-- **[Profiles](profiles/README.md)** - Role-based configuration profiles  
-- **[Home Manager](home/README.md)** - User environment configuration
-- **[Docker Services](docker/README.md)** - Container management
-
-### Automation & Security
-- **[GitHub Actions](.github/workflows/README.md)** - Automated CI/CD testing and deployment
-- **[Secret Management](secrets/README.md)** - agenix encrypted secrets
-
-### Host-Specific Guides
-- **[pits (Edge Server)](hosts/pits/README.md)** - Setup and configuration
-- **[pits Installation](hosts/pits/INSTALLATION.md)** - Detailed installation guide  
-- **[pits Bootstrap](hosts/pits/BOOTSTRAP.md)** - Quick bootstrap process
-
-## 💡 Configuration Examples
-
-### NixOS Server (david)
-
-Full-featured server with all services:
+### Full-Featured Server
 
 ```nix
+{ config, pkgs, lib, ... }:
 {
+  networking.hostName = "david";
+  system.stateVersion = "25.05";
+  
   imports = [ ../../profiles/server.nix ];
   
-  networking.hostName = "david";
-  
-  # All services enabled by server profile
+  # Server profile enables all services
   # Customize as needed:
   modules.services.media.immich.domain = "photos.theyoder.family";
+  modules.services.productivity.vaultwarden.domain = "vault.theyoder.family";
 }
 ```
 
-### Edge Server (pits)
-
-Lightweight public-facing proxy:
+### Lightweight Edge Server
 
 ```nix
+{ config, pkgs, lib, ... }:
 {
+  networking.hostName = "pits";
+  system.stateVersion = "25.05";
+  
   imports = [ ../../profiles/edge.nix ];
   
-  networking.hostName = "pits";
-  
+  # Edge profile provides Caddy + Tailscale
   # Optimized for Raspberry Pi
-  # Caddy + Tailscale enabled by edge profile
+  
+  # Add reverse proxies
+  services.caddy.virtualHosts."app.example.com" = {
+    extraConfig = ''
+      reverse_proxy http://david:8080
+    '';
+  };
 }
 ```
 
-### Desktop (tristons-desk)
-
-Minimal workstation setup:
+### Desktop Workstation
 
 ```nix
+{ config, pkgs, lib, ... }:
 {
+  networking.hostName = "tristons-desk";
+  system.stateVersion = "25.05";
+  
   imports = [ ../../profiles/desktop.nix ];
   
-  networking.hostName = "tristons-desk";
-  
-  # KDE Plasma + basic tools enabled by desktop profile
-  # Add extra services as needed
+  # Desktop profile provides KDE + basics
+  # Add development tools
   modules.services.development.vscode-server.enable = true;
 }
 ```
 
-### macOS (tyoder-mbp)
-
-Native macOS configuration:
+### macOS Laptop
 
 ```nix
+{ config, pkgs, lib, ... }:
 {
+  networking.hostName = "tyoder-mbp";
+  system.stateVersion = 5;
+  
   imports = [ ../../profiles/darwin.nix ];
   
-  networking.hostName = "tyoder-mbp";
-  
-  # System defaults configured by darwin profile
-  # Apps managed via Home Manager (homebrew/MAS)
+  # Darwin profile configures system defaults
+  # Apps managed via Home Manager (home/tyoder.nix)
 }
 ```
 
-## 🔐 Security
+## Common Tasks
 
-- **Secrets:** Encrypted with agenix (age encryption)
-- **SSH:** Key-based authentication only
-- **Firewall:** Configured per host
-- **Updates:** Automated via GitHub Actions
-- **Backups:** Created before each deployment
+### Update System
 
-## 🎯 Module System Benefits
+```bash
+# Update flake inputs
+nix flake update
 
-| Before | After |
-|--------|-------|
-| 214-line monolithic config | ~100 lines of enable flags |
-| 386-line apps.nix | ~50 lines per service module |
-| Hard to find services | Navigate by category |
-| Comment/uncomment blocks | Single enable toggle |
-| Basic validation | Full type-safe options |
-
-## 🔧 Adding Components
+# Rebuild
+sudo nixos-rebuild switch --flake .  # NixOS
+darwin-rebuild switch --flake .      # macOS
+```
 
 ### Add a New Host
 
 1. Create `hosts/new-host/configuration.nix`
 2. Generate hardware config (NixOS): `nixos-generate-config`
 3. Add to `flake.nix` in `nixosConfigurations` or `darwinConfigurations`
-4. Choose appropriate profile
-5. Rebuild: `sudo nixos-rebuild switch --flake .`
+4. Choose appropriate profile (server/desktop/edge/darwin)
+5. Rebuild: `sudo nixos-rebuild switch --flake .#new-host`
 
 See [hosts/README.md](hosts/README.md) for detailed instructions.
 
@@ -298,90 +379,81 @@ See [hosts/README.md](hosts/README.md) for detailed instructions.
 
 See [modules/README.md](modules/README.md) for module creation guide.
 
-## 📦 What's Included
+### Manage Secrets
 
-<details>
-<summary><b>NixOS Server (david)</b> - Full infrastructure stack</summary>
+```bash
+cd secrets
 
-**Infrastructure:**
-- Caddy reverse proxy with Cloudflare DNS
-- PostgreSQL database
-- Tailscale VPN
-- Technitium DNS server
+# On macOS: Add nix to PATH first
+export PATH="/nix/var/nix/profiles/default/bin:$PATH"
 
-**Media:**
-- Jellyfin media server with hardware transcoding
-- Immich photo management with public sharing
-- Jellyseerr media request management
-- Sunshine game streaming
+# Encrypt new secret
+./encrypt-secret.sh -n my-secret.age -e
 
-**Productivity:**
-- Vaultwarden password manager
-- n8n workflow automation
-- Actual budget application
+# View secret
+./decrypt-secret.sh cloudflare-api-token.age
+```
 
-**Storage:**
-- ZFS filesystem
-- NFS server
-- Samba/CIFS file sharing
-- Syncthing synchronization
+See [secrets/README.md](secrets/README.md) for complete guide.
 
-**Development:**
-- vscode-server for remote development
-- GitHub Actions runner integration
-</details>
+## Troubleshooting
 
-<details>
-<summary><b>NixOS Edge (pits)</b> - Optimized lightweight proxy</summary>
+### Build Failures
 
-- Caddy reverse proxy
-- Tailscale VPN
-- vscode-server
-- Aggressive resource optimizations
-- Designed for Raspberry Pi
-</details>
+```bash
+# Check flake syntax
+nix flake check
 
-<details>
-<summary><b>NixOS Desktop (tristons-desk)</b> - Minimal workstation</summary>
+# Build without applying
+sudo nixos-rebuild build --flake .
 
-- KDE Plasma 6 desktop
-- Development tools
-- Tailscale VPN
-- vscode-server
-- Minimal service footprint
-</details>
+# Show detailed errors
+sudo nixos-rebuild switch --flake . --show-trace
+```
 
-<details>
-<summary><b>macOS (tyoder-mbp)</b> - Native macOS experience</summary>
+### macOS Settings Not Applying
 
-- Declarative system preferences
-- Homebrew package management
-- Mac App Store integration
-- Zsh with Oh My Zsh & Powerlevel10k
-- Touch ID for sudo
-- Git, development tools
-</details>
+```bash
+# Refresh desktop services
+killall Dock && killall Finder
 
-## 🤝 Contributing
+# Or log out and back in
+```
 
-This is a personal configuration, but feel free to use it as reference!
+### Service Not Starting
 
-When making changes:
-1. Test on feature branch first
-2. Validate: `nix flake check`
-3. Test build: `nixos-rebuild build --flake .`
-4. Document significant changes
-5. Update relevant README files
+```bash
+# Check if enabled in configuration
+grep -r "servicename.enable" hosts/
 
-## 📞 Resources
+# View service logs
+journalctl -u servicename -f
 
-- [NixOS Manual](https://nixos.org/manual/nixos/stable/)
-- [Nix Flakes](https://nixos.wiki/wiki/Flakes)
-- [nix-darwin](https://github.com/LnL7/nix-darwin)
-- [Home Manager](https://nix-community.github.io/home-manager/)
-- [agenix](https://github.com/ryantm/agenix)
+# Check service status
+systemctl status servicename
+```
 
-## 📊 Status
+### Rollback Changes
+
+```bash
+# NixOS - select previous generation at boot
+# Or list generations:
+sudo nix-env --list-generations --profile /nix/var/nix/profiles/system
+
+# Switch to previous generation
+sudo nix-env --rollback --profile /nix/var/nix/profiles/system
+sudo /nix/var/nix/profiles/system/bin/switch-to-configuration switch
+```
+
+## Security
+
+- **Secrets:** Encrypted with agenix (age encryption)
+- **SSH:** Key-based authentication only, root login disabled on edge servers
+- **Firewall:** Configured per host with explicit port allowances
+- **Updates:** Automated via GitHub Actions with pre-deployment backups
+- **Isolation:** Docker services run in isolated containers
+
+## Status
 
 ✅ **Multi-host configuration active**  
 ✅ **4 hosts configured** (david, pits, tristons-desk, tyoder-mbp)  
@@ -389,11 +461,10 @@ When making changes:
 ✅ **40+ custom modules**  
 ✅ **Home Manager integrated**  
 ✅ **Secret management** (agenix)  
-✅ **Documentation complete**  
 
 ---
 
-**Last Updated:** October 13, 2025  
-**NixOS Version:** 25.05+  
+**Last Updated:** October 21, 2025  
+**NixOS Version:** 25.05  
 **Flake:** Yes ✅  
 **Architecture:** Multi-host, multi-platform

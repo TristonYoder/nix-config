@@ -2,50 +2,52 @@
 
 Role-based configuration profiles for different types of hosts.
 
+## Table of Contents
+
+- [Available Profiles](#available-profiles)
+- [Using Profiles](#using-profiles)
+- [Overriding Defaults](#overriding-defaults)
+- [Profile Comparison](#profile-comparison)
+- [Creating New Profiles](#creating-new-profiles)
+
 ## Available Profiles
 
 ### server.nix
 **Full-featured server profile**
 
-Enables all infrastructure, media, productivity, and storage services.
+Complete infrastructure stack with all services enabled.
 
 **Used by:** `david` (main server)
 
 **Includes:**
-- ✅ All infrastructure services (Caddy, PostgreSQL, Tailscale, Technitium)
+- ✅ Infrastructure services (Caddy, PostgreSQL, Tailscale, Technitium)
 - ✅ Media services (Jellyfin, Immich, Jellyseerr, Sunshine)
 - ✅ Productivity tools (Vaultwarden, n8n, Actual)
 - ✅ Storage services (ZFS, NFS, Samba, Syncthing)
 - ✅ Development tools (vscode-server, GitHub Actions)
 
-**Resource Requirements:**
-- Medium to high CPU
-- 8GB+ RAM recommended
-- Significant storage
+**Resources:** Medium to high CPU, 8GB+ RAM, significant storage
 
 ### desktop.nix
 **Minimal desktop workstation profile**
 
-Provides core system and desktop environment with minimal services.
+Core system with KDE Plasma and essential development tools.
 
 **Used by:** `tristons-desk` (desktop workstation)
 
 **Includes:**
 - ✅ Core system modules
-- ✅ Desktop environment (KDE Plasma 6)
+- ✅ KDE Plasma 6 desktop environment
 - ✅ Development tools (vscode-server)
-- ✅ Tailscale for VPN access
+- ✅ Tailscale VPN
 - ✅ Basic system packages
 
-**Resource Requirements:**
-- Medium CPU
-- 4GB+ RAM recommended
-- Moderate storage
+**Resources:** Medium CPU, 4GB+ RAM, moderate storage
 
 ### edge.nix
 **Lightweight edge server profile**
 
-Optimized for low-resource devices like Raspberry Pi with public internet access.
+Optimized for low-resource devices with public internet access.
 
 **Used by:** `pits` (Pi in the Sky / edge VPS)
 
@@ -54,24 +56,20 @@ Optimized for low-resource devices like Raspberry Pi with public internet access
 - ✅ Caddy reverse proxy
 - ✅ Tailscale VPN
 - ✅ vscode-server for remote management
-- ✅ Aggressive optimizations for low resources
 
 **Optimizations:**
 - Reduced journal size (50MB system, 25MB runtime)
 - Daily garbage collection (keeps 7 days)
-- Auto store optimization enabled
+- Auto store optimization
 - zram swap (50% of RAM)
 - Minimal package footprint
 
-**Resource Requirements:**
-- Low CPU (ARM compatible)
-- 1GB+ RAM minimum
-- Limited storage
+**Resources:** Low CPU (ARM compatible), 1GB+ RAM, limited storage
 
 ### darwin.nix
 **macOS (nix-darwin) profile**
 
-System configuration for macOS machines.
+Native macOS system configuration.
 
 **Used by:** `tyoder-mbp` (MacBook Pro)
 
@@ -82,28 +80,25 @@ System configuration for macOS machines.
 - ✅ Homebrew integration (via Home Manager)
 - ✅ Mac App Store integration (via Home Manager)
 
-**Features:**
-- Declarative system preferences
-- Native macOS app management
-- Shell environment configuration
+**Features:** Declarative system preferences, native app management
 
 ## Using Profiles
 
-### In Host Configuration
+### Import in Host Configuration
 
-Import the appropriate profile in your host's `configuration.nix`:
+In your host's `configuration.nix`:
 
 ```nix
 {
   imports = [
-    ../../profiles/server.nix  # or desktop.nix, edge.nix
+    ../../profiles/server.nix  # or desktop.nix, edge.nix, darwin.nix
   ];
 }
 ```
 
-### In flake.nix
+### Automatic Import via flake.nix
 
-Profiles are automatically imported for each host:
+Profiles are automatically imported for each host in `flake.nix`:
 
 ```nix
 nixosConfigurations.hostname = nixpkgs.lib.nixosSystem {
@@ -115,21 +110,46 @@ nixosConfigurations.hostname = nixpkgs.lib.nixosSystem {
 };
 ```
 
-## Overriding Profile Settings
+## Overriding Defaults
 
-Host configurations can override profile defaults:
+Host configurations can override profile settings:
+
+### Disable Specific Services
 
 ```nix
 {
-  imports = [
-    ../../profiles/server.nix
-  ];
+  imports = [ ../../profiles/server.nix ];
   
-  # Override: Disable a service enabled by profile
+  # Disable services you don't want
   modules.services.media.jellyfin.enable = false;
+  modules.services.media.jellyseerr.enable = false;
+}
+```
+
+### Customize Service Options
+
+```nix
+{
+  imports = [ ../../profiles/server.nix ];
   
-  # Override: Customize a service option
-  modules.services.media.immich.domain = "photos.custom.com";
+  # Override service configuration
+  modules.services.media.immich = {
+    enable = true;
+    domain = "photos.custom.com";
+    port = 2284;
+  };
+}
+```
+
+### Add Services to Minimal Profile
+
+```nix
+{
+  imports = [ ../../profiles/edge.nix ];
+  
+  # Edge is minimal, add what you need
+  modules.services.media.jellyfin.enable = true;
+  modules.services.infrastructure.postgresql.enable = true;
 }
 ```
 
@@ -144,44 +164,58 @@ Host configurations can override profile defaults:
 | **Desktop** | ❌ No | ✅ KDE | ❌ No | ✅ macOS Native |
 | **Development** | ✅ All | ✅ Basic | ✅ Remote | ✅ Full |
 | **Optimizations** | Standard | Standard | ✅ Aggressive | macOS Native |
+| **Target** | Main server | Workstation | Pi/VPS | MacBook |
 
-## Creating a New Profile
+## Creating New Profiles
 
-1. Create `profiles/new-profile.nix`:
+### 1. Create Profile File
+
+Create `profiles/new-profile.nix`:
 
 ```nix
 { config, pkgs, ... }:
-
 {
-  # Import common settings
+  # Import common settings if needed
   imports = [
-    ./common.nix  # If you create one
+    # Add other profiles or modules
   ];
   
   # Enable specific modules
   modules.services.infrastructure.caddy.enable = true;
   modules.services.development.vscode-server.enable = true;
   
-  # Custom packages
+  # Profile-specific packages
   environment.systemPackages = with pkgs; [
     htop
-    neofetch
+    vim
+    git
   ];
   
   # Profile-specific settings
-  nix.gc.automatic = true;
+  nix.gc = {
+    automatic = true;
+    dates = "weekly";
+    options = "--delete-older-than 30d";
+  };
 }
 ```
 
-2. Use in host configuration or flake.nix
+### 2. Use in Host or flake.nix
 
-## Best Practices
+Import in host configuration:
+```nix
+imports = [ ../../profiles/new-profile.nix ];
+```
 
-1. **Keep profiles focused:** Each profile should serve a specific role
-2. **Use imports:** Share common configuration where appropriate
-3. **Override in hosts:** Host-specific customizations go in host configs
-4. **Document changes:** Update this README when modifying profiles
-5. **Test changes:** Build and test before deploying
+Or add to `flake.nix` for the host.
+
+### 3. Document the Profile
+
+Add to this README with:
+- Purpose and use case
+- Included services
+- Resource requirements
+- Example hosts using it
 
 ## Common Patterns
 
@@ -191,41 +225,50 @@ Host configurations can override profile defaults:
 {
   imports = [ ../../profiles/edge.nix ];
   
-  # Add just what you need
+  # Start minimal, add what you need
   modules.services.media.jellyfin.enable = true;
 }
 ```
 
-### Server Profile - Specific Services
+### Full Profile - Specific Services
 
 ```nix
 {
   imports = [ ../../profiles/server.nix ];
   
-  # Disable what you don't want
+  # Start with everything, disable what you don't want
   modules.services.media.jellyseerr.enable = false;
+  modules.services.productivity.n8n.enable = false;
 }
 ```
 
-### Desktop with Development Tools
+### Desktop with Development
 
 ```nix
 {
   imports = [ ../../profiles/desktop.nix ];
   
-  # Add development services
+  # Desktop + additional dev tools
   modules.services.development.github-actions.enable = true;
   modules.services.infrastructure.postgresql.enable = true;
 }
 ```
 
-## Resources
+## Best Practices
 
-- [Host Configurations](../hosts/) - Per-host configuration files
-- [Modules](../modules/) - Available modules and services
-- [Multi-Host Setup](../docs/MULTI-HOST-SETUP.md) - Complete setup guide
+1. **Keep profiles focused** - Each profile should serve a specific role
+2. **Use for common patterns** - Profiles are for repeated configurations
+3. **Override in hosts** - Host-specific customizations go in host configs, not profiles
+4. **Document changes** - Update this README when modifying profiles
+5. **Test thoroughly** - Profile changes affect multiple hosts
+
+## Additional Resources
+
+- [Main README](../README.md) - Repository overview
+- [Host Configurations](../hosts/README.md) - Per-host configuration
+- [Modules](../modules/README.md) - Available modules and services
 
 ---
 
-**Note:** Profiles provide sensible defaults for different use cases. Customize in host configurations as needed.
-
+**Available Profiles:** 4 (server, desktop, edge, darwin)  
+**Hosts Using Profiles:** 4 (david, pits, tristons-desk, tyoder-mbp)

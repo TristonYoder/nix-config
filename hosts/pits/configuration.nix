@@ -165,7 +165,7 @@
   #   enable = true;
   #   allowReboot = false;  # Set to true if you want automatic reboots
   #   dates = "daily";
-  #   flake = "github:yourusername/david-nixos#pits";
+  #   flake = "github:yourusername/nix-config#pits";
   # };
   
   # =============================================================================

@@ -30,7 +30,7 @@ For a fresh NixOS VPS:
 sudo systemctl enable --now sshd && sudo passwd root
 
 # Then from your local machine
-ssh root@<VPS_IP> 'nix-shell -p git --run "git clone https://github.com/TristonYoder/david-nixos.git /tmp/nixos-config && cd /tmp/nixos-config && sudo nixos-generate-config --show-hardware-config > hosts/pits/hardware-configuration.nix && sudo mv /tmp/nixos-config /etc/nixos && cd /etc/nixos && sudo nixos-rebuild switch --flake .#pits"'
+ssh root@<VPS_IP> 'nix-shell -p git --run "git clone https://github.com/TristonYoder/nix-config.git /tmp/nixos-config && cd /tmp/nixos-config && sudo nixos-generate-config --show-hardware-config > hosts/pits/hardware-configuration.nix && sudo mv /tmp/nixos-config /etc/nixos && cd /etc/nixos && sudo nixos-rebuild switch --flake .#pits"'
 ```
 
 ### Option 2: Remote Deployment
@@ -167,13 +167,6 @@ sudo nix-store --optimize
 ```
 
 ## VPS Providers
-
-**Recommended specs**: 1-2 CPU cores, 2GB RAM, 25GB disk (~$5-15/month)
-
-- **Hetzner Cloud**: €3.79/mo (best value)
-- **Vultr**: $5/mo
-- **DigitalOcean**: $6/mo
-- **Linode**: $5/mo
 
 ## Architecture
 

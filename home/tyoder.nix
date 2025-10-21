@@ -34,8 +34,8 @@
     dnsflush = "sudo killall -HUP mDNSResponder;sudo killall mDNSResponderHelper;sudo dscacheutil -flushcache";
     
     # Home manager switch shortcut
-    hms = "cd ~/Projects/david-nixos && darwin-rebuild switch --flake .";
-    hmswitch = "cd ~/Projects/david-nixos && darwin-rebuild switch --flake .";
+    hms = "cd ~/Projects/nix-config && darwin-rebuild switch --flake .";
+    hmswitch = "cd ~/Projects/nix-config && darwin-rebuild switch --flake .";
   };
   
   # =============================================================================

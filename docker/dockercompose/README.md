@@ -1,60 +1,119 @@
-# Docker Compose Services
+# Docker Compose Files
 
-This directory contains docker-compose.yml files for various services. Use compose2nix to convert them to NixOS modules.
+Original Docker Compose files used as sources for generating NixOS modules via `compose2nix`.
 
-## Quick Reference
+## Purpose
+
+These files are kept for:
+- **Reference** - Original compose configuration
+- **Regeneration** - Source for updating service modules
+- **Documentation** - Service requirements and dependencies
+
+## Converting to Nix
+
+### Basic Pattern
 
 ```bash
-# General pattern
-compose2nix -runtime docker -inputs COMPOSE_FILE.yml -output ../CATEGORY/SERVICE-NAME.nix
-
-# With environment files
-compose2nix -runtime docker -inputs COMPOSE_FILE.yml -output ../CATEGORY/SERVICE-NAME.nix --env_files=.env
+compose2nix \
+  -runtime docker \
+  -inputs COMPOSE_FILE.yml \
+  -output ../CATEGORY/SERVICE-NAME.nix
 ```
 
-## Categories
+### With Environment Files
+
+```bash
+compose2nix \
+  -runtime docker \
+  -inputs COMPOSE_FILE.yml \
+  -output ../CATEGORY/SERVICE-NAME.nix \
+  --env_files=.env
+```
+
+### With Subdirectories
+
+```bash
+cd subdirectory
+compose2nix \
+  -runtime docker \
+  -inputs docker-compose.yml \
+  -output ../../CATEGORY/SERVICE-NAME.nix \
+  --env_files=docker.env
+cd ..
+```
+
+## Output Categories
 
 - `../media/` - Media services (streaming, photos, audiobooks)
 - `../websites/` - Website containers
 - `../productivity/` - Productivity apps (notes, planning, recipes)
 
-## Examples
+## Example Conversions
 
 ### Media Services
 
 ```bash
-compose2nix -runtime docker -inputs docker-compose-media-aq.yml -output ../media/media-aq.nix
-compose2nix -runtime docker -inputs docker-compose_damselfly.yml -output ../media/damselfly.nix
+compose2nix -runtime docker \
+  -inputs docker-compose-media-aq.yml \
+  -output ../media/media-aq.nix
 ```
 
 ### Productivity
 
 ```bash
-# Services with subdirectories
-cd affine && compose2nix -runtime docker -inputs docker-compose_affine.yml -output ../../productivity/affine.nix && cd ..
-cd outline && compose2nix -runtime docker -inputs docker-compose_outline.yml -output ../../productivity/outline.nix --env_files=docker.env && cd ..
+compose2nix -runtime docker \
+  -inputs docker-compose_homarr.yml \
+  -output ../productivity/homarr.nix
 
-# Direct conversions
-compose2nix -runtime docker -inputs docker-compose_planning-poker.yml -output ../productivity/planning-poker.nix
-compose2nix -runtime docker -inputs docker-compose_tandoor.yml -output ../productivity/tandoor.nix
-compose2nix -runtime docker -inputs docker-compose_homarr.yml -output ../productivity/homarr.nix
-compose2nix -runtime docker -inputs docker-compose_wiki-js.yml -output ../productivity/wiki-js.nix
-compose2nix -runtime docker -inputs docker-compose_bookstack.yml -output ../productivity/bookstack.nix
-compose2nix -runtime docker -inputs docker-compose_docmost.yml -output ../productivity/docmost.nix
+compose2nix -runtime docker \
+  -inputs docker-compose_tandoor.yml \
+  -output ../productivity/tandoor.nix
 ```
 
-### Websites
+### Services with Environment Files
 
 ```bash
-compose2nix -runtime docker -inputs docker-compose_com_carolineyoder.yml -output ../websites/com.carolineyoder.nix
-compose2nix -runtime docker -inputs docker-compose_com_carolineyoder2.yml -output ../websites/com.carolineyoder2.nix
-compose2nix -runtime docker -inputs docker-compose_codeserver.yml -output ../websites/code-server.nix
+cd outline
+compose2nix -runtime docker \
+  -inputs docker-compose_outline.yml \
+  -output ../../productivity/outline.nix \
+  --env_files=docker.env
+cd ..
 ```
 
 ## After Conversion
 
-Add the service to your NixOS configuration and rebuild:
+1. Review the generated .nix file
+2. Import in host configuration
+3. Enable the service
+4. Rebuild
 
 ```bash
-sudo nixos-rebuild switch --flake .#david
+# Import in hosts/david/configuration.nix
+imports = [ ../../docker/productivity/homarr.nix ];
+
+# Enable
+virtualisation.arion.projects.homarr.enable = true;
+
+# Apply
+sudo nixos-rebuild switch --flake .
 ```
+
+## Updating Services
+
+When updating a Docker service:
+
+1. Edit the compose file here
+2. Regenerate the .nix file with compose2nix
+3. Test and rebuild
+
+## Additional Resources
+
+- [compose2nix](https://github.com/aksiksi/compose2nix)
+- [Docker README](../README.md) - Service management
+- [Main README](../../README.md) - Repository overview
+
+---
+
+**Purpose:** Source files for compose2nix conversions  
+**Status:** Reference and regeneration
