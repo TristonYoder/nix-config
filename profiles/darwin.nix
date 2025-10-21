@@ -33,11 +33,20 @@
   # SYSTEM PREFERENCES
   # =============================================================================
   
-  # Auto upgrade nix package and daemon
-  services.nix-daemon.enable = true;
+  # nix-daemon is now managed unconditionally by nix-darwin when nix.enable is on
   
-  # Enable Touch ID for sudo
-  security.pam.enableSudoTouchIdAuth = true;
+  # Enable Touch ID for sudo (updated syntax)
+  security.pam.services.sudo_local.touchIdAuth = true;
+  
+  # Set primary user for system defaults
+  system.primaryUser = "tyoder";
+  
+  # =============================================================================
+  # NIX OPTIMIZATION (Darwin-safe method)
+  # =============================================================================
+  
+  # Use automatic optimization instead of auto-optimise-store (which corrupts store on Darwin)
+  nix.optimise.automatic = true;
   
   # =============================================================================
   # SHELL CONFIGURATION

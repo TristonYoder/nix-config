@@ -13,12 +13,14 @@
     # Enable flakes and nix-command
     settings = {
       experimental-features = [ "nix-command" "flakes" ];
-      auto-optimise-store = true;
       
       # Trusted users for nix commands
       trusted-users = [ "root" "@wheel" ];
     };
     
+    # Note: auto-optimise-store is configured per-platform:
+    # - NixOS: common-linux.nix uses nix.settings.auto-optimise-store
+    # - Darwin: profiles/darwin.nix uses nix.optimise.automatic
     # Note: Automatic garbage collection is configured in modules/system/core.nix
   };
   
