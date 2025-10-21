@@ -31,7 +31,8 @@
   
   time.timeZone = lib.mkDefault "America/Indiana/Indianapolis";
   
-  i18n = {
+  # i18n settings (NixOS only)
+  i18n = lib.mkIf pkgs.stdenv.isLinux {
     defaultLocale = lib.mkDefault "en_US.UTF-8";
     extraLocaleSettings = {
       LC_ADDRESS = lib.mkDefault "en_US.UTF-8";
@@ -66,8 +67,8 @@
     # Network tools
     dig
     nmap
-    
-    # System utilities
+  ] ++ lib.optionals pkgs.stdenv.isLinux [
+    # Linux-only system utilities
     pciutils
     usbutils
   ];
@@ -76,8 +77,8 @@
   # SECURITY
   # =============================================================================
   
-  # Enable sudo
-  security.sudo.enable = lib.mkDefault true;
+  # Enable sudo (NixOS only - macOS has sudo by default)
+  security.sudo.enable = lib.mkIf pkgs.stdenv.isLinux (lib.mkDefault true);
   
   # =============================================================================
   # COMMON PROGRAMS
