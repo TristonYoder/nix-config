@@ -12,6 +12,12 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     
+    # Home Manager for Darwin (matches unstable)
+    home-manager-unstable = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
+    
     # nix-darwin for macOS (use nixpkgs-unstable for darwin)
     nix-darwin = {
       url = "github:LnL7/nix-darwin";
@@ -27,7 +33,7 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, nix-darwin, nix-bitcoin, nixos-vscode-server, agenix, flake-utils, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-bitcoin, nixos-vscode-server, agenix, flake-utils, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -226,8 +232,8 @@
             # Host-specific configuration
             ./hosts/tyoder-mbp/configuration.nix
             
-            # Home Manager for macOS
-            home-manager.darwinModules.home-manager
+            # Home Manager for macOS (using unstable to match nix-darwin)
+            home-manager-unstable.darwinModules.home-manager
             {
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
