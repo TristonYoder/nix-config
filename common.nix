@@ -31,7 +31,7 @@
   
   time.timeZone = lib.mkDefault "America/Indiana/Indianapolis";
 } 
-// lib.optionalAttrs pkgs.stdenv.isLinux {
+// lib.optionalAttrs pkgs.hostPlatform.isLinux {
   # i18n settings (NixOS only)
   i18n = {
     defaultLocale = lib.mkDefault "en_US.UTF-8";
@@ -70,7 +70,7 @@
     # Network tools
     dig
     nmap
-  ] ++ lib.optionals pkgs.stdenv.isLinux [
+  ] ++ lib.optionals pkgs.hostPlatform.isLinux [
     # Linux-only system utilities
     pciutils
     usbutils
@@ -88,7 +88,7 @@
     git.enable = true;
   };
 }
-// lib.optionalAttrs pkgs.stdenv.isLinux {
+// lib.optionalAttrs pkgs.hostPlatform.isLinux {
   # =============================================================================
   # SECURITY (NixOS only)
   # =============================================================================
