@@ -22,6 +22,7 @@
     # macOS-specific tools
     syncthing
     tailscale
+    element-desktop
   ];
   
   # =============================================================================
