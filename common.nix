@@ -30,9 +30,10 @@
   # =============================================================================
   
   time.timeZone = lib.mkDefault "America/Indiana/Indianapolis";
-  
+} 
+// lib.optionalAttrs pkgs.stdenv.isLinux {
   # i18n settings (NixOS only)
-  i18n = lib.mkIf pkgs.stdenv.isLinux {
+  i18n = {
     defaultLocale = lib.mkDefault "en_US.UTF-8";
     extraLocaleSettings = {
       LC_ADDRESS = lib.mkDefault "en_US.UTF-8";
@@ -46,6 +47,8 @@
       LC_TIME = lib.mkDefault "en_US.UTF-8";
     };
   };
+}
+// {
   
   # =============================================================================
   # COMMON PACKAGES
@@ -74,13 +77,6 @@
   ];
   
   # =============================================================================
-  # SECURITY
-  # =============================================================================
-  
-  # Enable sudo (NixOS only - macOS has sudo by default)
-  security.sudo.enable = lib.mkIf pkgs.stdenv.isLinux (lib.mkDefault true);
-  
-  # =============================================================================
   # COMMON PROGRAMS
   # =============================================================================
   
@@ -91,5 +87,13 @@
     # Enable git
     git.enable = true;
   };
+}
+// lib.optionalAttrs pkgs.stdenv.isLinux {
+  # =============================================================================
+  # SECURITY (NixOS only)
+  # =============================================================================
+  
+  # Enable sudo (macOS has sudo by default)
+  security.sudo.enable = lib.mkDefault true;
 }
 
