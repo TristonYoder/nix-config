@@ -65,11 +65,9 @@
   programs = {
     # Enable zsh globally
     zsh.enable = true;
-    
-    # Enable git
-    git.enable = true;
   };
   
-  # Note: security.sudo is NixOS-only and is configured in modules/system/core.nix
+  # Note: programs.git is NixOS-only and is configured in common-linux.nix
+  # Note: security.sudo is NixOS-only and is configured in common-linux.nix
 }
 
