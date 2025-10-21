@@ -35,7 +35,7 @@
   
   # nix-daemon is now managed unconditionally by nix-darwin when nix.enable is on
   
-  # Enable Touch ID for sudo (updated syntax)
+  # Enable Touch ID for sudo
   security.pam.services.sudo_local.touchIdAuth = true;
   
   # Set primary user for system defaults
@@ -63,7 +63,10 @@
   # =============================================================================
   
   fonts.packages = with pkgs; [
-    (nerdfonts.override { fonts = [ "FiraCode" "Meslo" "RobotoMono" ]; })
+    # Nerd Fonts (individual packages in new structure)
+    nerd-fonts.fira-code
+    nerd-fonts.meslo-lg
+    nerd-fonts.roboto-mono
   ];
 }
 
