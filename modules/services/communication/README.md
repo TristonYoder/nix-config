@@ -9,9 +9,9 @@ Modern all-in-one mail server with SMTP, IMAP, and JMAP support.
 ### Quick Info
 
 - **Server**: `pits` (edge server)
-- **Domain**: `test.7andco.dev` (test domain)
-- **Admin Panel**: https://testmailadmin.7andco.studio
-- **Webmail**: https://testmail.7andco.studio
+- **Domain**: `7andco.dev` (technical/system emails)
+- **Admin Panel**: https://mailadmin.7andco.dev
+- **Webmail**: https://webmail.7andco.dev
 
 ### Setup Secrets
 
@@ -49,21 +49,23 @@ export CLOUDFLARE_API_TOKEN='your-token'
 ./scripts/setup-mail-dns.sh
 ```
 
-Creates all DNS records for `test.7andco.dev`. For production, add DKIM and configure reverse DNS.
+Creates all DNS records for `7andco.dev`. For production, add DKIM and configure reverse DNS.
 
 ### Access
 
 **Admin Panel:**
-- URL: https://testmailadmin.7andco.studio
+- URL: https://mailadmin.7andco.dev
 - User: `admin`
 - Password: Your admin web password
 
 **Mail Accounts:**
-- `postmaster@test.7andco.dev`
-- `admin@test.7andco.dev`
+- `postmaster@7andco.dev`
+- `admin@7andco.dev`
+- `notifications@7andco.dev` (create in admin panel)
+- `noreply@7andco.dev` (create in admin panel)
 
 **Mail Client (IMAP/SMTP):**
-- Server: `mail.test.7andco.dev`
+- Server: `mail.7andco.dev`
 - IMAP Port: 993, SMTP Port: 465 (both SSL/TLS)
 
 ### Logs

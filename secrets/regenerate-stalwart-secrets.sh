@@ -38,17 +38,17 @@ encrypt_secret() {
 echo -e "${YELLOW}Enter passwords (or press Enter to use defaults):${NC}"
 echo ""
 
-read -p "Postmaster password (postmaster@test.7andco.dev): " POSTMASTER_PW
+read -p "Postmaster password (postmaster@7andco.dev): " POSTMASTER_PW
 if [ -z "$POSTMASTER_PW" ]; then
     POSTMASTER_PW="StrongPostmasterPassword2024!"
 fi
 
-read -p "Admin mail password (admin@test.7andco.dev): " ADMIN_MAIL_PW
+read -p "Admin mail password (admin@7andco.dev): " ADMIN_MAIL_PW
 if [ -z "$ADMIN_MAIL_PW" ]; then
     ADMIN_MAIL_PW="StrongAdminPassword2024!"
 fi
 
-read -p "Admin web password (https://testmailadmin.7andco.studio): " ADMIN_WEB_PW
+read -p "Admin web password (https://mailadmin.7andco.dev): " ADMIN_WEB_PW
 if [ -z "$ADMIN_WEB_PW" ]; then
     ADMIN_WEB_PW="StrongAdminWebPassword2024!"
 fi

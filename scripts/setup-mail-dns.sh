@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Setup DNS records for Stalwart Mail Server on 7andco.dev
+# Setup DNS records for Stalwart Mail Server
+# All subdomains under 7andco.dev
 # Uses Cloudflare API
 
 set -e
@@ -14,6 +15,7 @@ NC='\033[0m' # No Color
 # Configuration
 PITS_IPV4="66.135.18.197"
 PITS_IPV6="2001:19f0:c:d11:8e9e:d06c:8518:5829"
+DOMAIN="7andco.dev"
 
 # Cloudflare API endpoint
 CF_API="https://api.cloudflare.com/client/v4"
@@ -99,72 +101,59 @@ create_dns_record() {
 }
 
 # Get zone IDs
-echo -e "${BLUE}=== Step 1: Getting Zone IDs ===${NC}"
+echo -e "${BLUE}=== Step 1: Getting Zone ID ===${NC}"
 ZONE_7ANDCO_DEV=$(get_zone_id "7andco.dev")
-ZONE_7ANDCO_STUDIO=$(get_zone_id "7andco.studio")
 
 echo -e "${GREEN}✓ Zone ID for 7andco.dev: $ZONE_7ANDCO_DEV${NC}"
-echo -e "${GREEN}✓ Zone ID for 7andco.studio: $ZONE_7ANDCO_STUDIO${NC}"
 echo ""
 
 # Create DNS records for 7andco.dev
-echo -e "${BLUE}=== Step 2: Creating DNS Records for 7andco.dev ===${NC}"
+echo -e "${BLUE}=== Step 2: Creating DNS Records for $DOMAIN ===${NC}"
 
 # MX Record
-create_dns_record "$ZONE_7ANDCO_DEV" "MX" "7andco.dev" "mail.7andco.dev" "10"
+create_dns_record "$ZONE_7ANDCO_DEV" "MX" "$DOMAIN" "mail.$DOMAIN" "10"
 
-# A Record for mail subdomain
-create_dns_record "$ZONE_7ANDCO_DEV" "A" "mail.7andco.dev" "$PITS_IPV4"
+# A/AAAA Records for mail subdomain
+create_dns_record "$ZONE_7ANDCO_DEV" "A" "mail" "$PITS_IPV4"
+create_dns_record "$ZONE_7ANDCO_DEV" "AAAA" "mail" "$PITS_IPV6"
 
-# AAAA Record for mail subdomain
-create_dns_record "$ZONE_7ANDCO_DEV" "AAAA" "mail.7andco.dev" "$PITS_IPV6"
+# A/AAAA Records for webmail subdomain
+create_dns_record "$ZONE_7ANDCO_DEV" "A" "webmail" "$PITS_IPV4"
+create_dns_record "$ZONE_7ANDCO_DEV" "AAAA" "webmail" "$PITS_IPV6"
+
+# A/AAAA Records for admin subdomain
+create_dns_record "$ZONE_7ANDCO_DEV" "A" "mailadmin" "$PITS_IPV4"
+create_dns_record "$ZONE_7ANDCO_DEV" "AAAA" "mailadmin" "$PITS_IPV6"
 
 # SPF Record
-create_dns_record "$ZONE_7ANDCO_DEV" "TXT" "7andco.dev" "v=spf1 mx ~all"
+create_dns_record "$ZONE_7ANDCO_DEV" "TXT" "$DOMAIN" "v=spf1 mx ~all"
 
 # DMARC Record
-create_dns_record "$ZONE_7ANDCO_DEV" "TXT" "_dmarc.7andco.dev" "v=DMARC1; p=quarantine; rua=mailto:postmaster@7andco.dev"
+create_dns_record "$ZONE_7ANDCO_DEV" "TXT" "_dmarc" "v=DMARC1; p=quarantine; rua=mailto:postmaster@$DOMAIN"
 
 # MTA-STS Record
-create_dns_record "$ZONE_7ANDCO_DEV" "TXT" "_mta-sts.7andco.dev" "v=STSv1; id=20251022"
-
-echo ""
-
-# Create DNS records for 7andco.studio (web interfaces)
-echo -e "${BLUE}=== Step 3: Creating DNS Records for 7andco.studio ===${NC}"
-
-# A Record for webmail
-create_dns_record "$ZONE_7ANDCO_STUDIO" "A" "mail.7andco.studio" "$PITS_IPV4"
-
-# AAAA Record for webmail
-create_dns_record "$ZONE_7ANDCO_STUDIO" "AAAA" "mail.7andco.studio" "$PITS_IPV6"
-
-# A Record for admin interface
-create_dns_record "$ZONE_7ANDCO_STUDIO" "A" "mailadmin.7andco.studio" "$PITS_IPV4"
-
-# AAAA Record for admin interface
-create_dns_record "$ZONE_7ANDCO_STUDIO" "AAAA" "mailadmin.7andco.studio" "$PITS_IPV6"
+create_dns_record "$ZONE_7ANDCO_DEV" "TXT" "_mta-sts" "v=STSv1; id=20251022"
 
 echo ""
 echo -e "${GREEN}=== DNS Records Created! ===${NC}"
 echo ""
-echo -e "${YELLOW}Important Next Steps:${NC}"
+echo -e "${YELLOW}Next Steps:${NC}"
 echo ""
-echo "1. ${BLUE}DKIM Record${NC} - Add after deploying Stalwart:"
-echo "   • Deploy: nixos-rebuild switch --flake .#pits --target-host pits"
-echo "   • Login to: https://mailadmin.7andco.studio"
-echo "   • Get DKIM public key from Settings → DKIM"
-echo "   • Run: ./scripts/add-dkim-record.sh <public-key>"
+echo "1. ${BLUE}Deploy Stalwart:${NC}"
+echo "   nixos-rebuild switch --flake .#pits --target-host pits"
 echo ""
-echo "2. ${BLUE}Reverse DNS (PTR)${NC} - Configure at your VPS provider:"
-echo "   • Set: 66.135.18.197 → mail.7andco.dev"
-echo "   • This is CRITICAL for email deliverability"
+echo "2. ${BLUE}Access Admin Panel:${NC}"
+echo "   https://mailadmin.7andco.dev"
 echo ""
-echo "3. ${BLUE}Verify DNS${NC} propagation (wait 5-10 minutes):"
-echo "   dig MX 7andco.dev"
-echo "   dig A mail.7andco.dev"
-echo "   dig TXT 7andco.dev"
-echo "   dig TXT _dmarc.7andco.dev"
+echo "3. ${BLUE}Add DKIM${NC} (from admin panel):"
+echo "   ./scripts/add-dkim-record.sh '<public-key>'"
 echo ""
-echo -e "${GREEN}DNS setup complete! 🎉${NC}"
+echo "4. ${BLUE}Reverse DNS${NC} (at VPS provider):"
+echo "   66.135.18.197 → mail.7andco.dev"
+echo ""
+echo "5. ${BLUE}Verify DNS${NC} (wait 5-10 min):"
+echo "   dig MX $DOMAIN"
+echo "   dig A mail.$DOMAIN"
+echo ""
+echo -e "${GREEN}Done! 🎉${NC}"
 

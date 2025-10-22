@@ -10,25 +10,25 @@ in
     
     domain = mkOption {
       type = types.str;
-      default = "test.7andco.dev";
+      default = "7andco.dev";
       description = "Primary domain for the mail server";
     };
     
     hostname = mkOption {
       type = types.str;
-      default = "mail.test.7andco.dev";
+      default = "mail.7andco.dev";
       description = "Hostname for the mail server (MX record)";
     };
     
     webmailDomain = mkOption {
       type = types.str;
-      default = "testmail.7andco.studio";
+      default = "webmail.7andco.dev";
       description = "Domain for webmail interface";
     };
     
     contactEmail = mkOption {
       type = types.str;
-      default = "postmaster@test.7andco.dev";
+      default = "postmaster@7andco.dev";
       description = "Contact email for ACME certificates";
     };
     
@@ -193,7 +193,7 @@ in
     };
     
     # Caddy virtual host for admin interface
-    services.caddy.virtualHosts."testmailadmin.7andco.studio" = mkIf config.modules.services.infrastructure.caddy.enable {
+    services.caddy.virtualHosts."mailadmin.7andco.dev" = mkIf config.modules.services.infrastructure.caddy.enable {
       extraConfig = ''
         reverse_proxy http://localhost:8081
         import cloudflare_tls
