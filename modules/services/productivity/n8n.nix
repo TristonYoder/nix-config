@@ -1,8 +1,10 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, nixpkgs-unstable, ... }:
 
 with lib;
 let
   cfg = config.modules.services.productivity.n8n;
+  # Get n8n from unstable for latest version
+  pkgs-unstable = nixpkgs-unstable.legacyPackages.${pkgs.system};
 in
 {
   options.modules.services.productivity.n8n = {
@@ -25,6 +27,7 @@ in
     # n8n service
     services.n8n = {
       enable = true;
+      package = pkgs-unstable.n8n;  # Use unstable version
       openFirewall = cfg.openFirewall;
       webhookUrl = cfg.domain;
       settings = {
