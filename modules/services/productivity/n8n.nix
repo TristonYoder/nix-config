@@ -22,15 +22,13 @@ in
   };
 
   config = mkIf cfg.enable {
-    # Allow unfree license for n8n
-    nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
-      "n8n"
-    ];
-
-    # Use n8n from unstable via overlay
+    # Use n8n from unstable via overlay with unfree allowed
     nixpkgs.overlays = [
       (final: prev: {
-        n8n = nixpkgs-unstable.legacyPackages.${prev.system}.n8n;
+        n8n = import nixpkgs-unstable {
+          system = prev.system;
+          config.allowUnfree = true;
+        }.n8n;
       })
     ];
 
