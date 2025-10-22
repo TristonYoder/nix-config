@@ -3,8 +3,6 @@
 with lib;
 let
   cfg = config.modules.services.productivity.n8n;
-  # Get n8n from unstable for latest version
-  pkgs-unstable = nixpkgs-unstable.legacyPackages.${pkgs.system};
 in
 {
   options.modules.services.productivity.n8n = {
@@ -24,10 +22,16 @@ in
   };
 
   config = mkIf cfg.enable {
+    # Use n8n from unstable via overlay
+    nixpkgs.overlays = [
+      (final: prev: {
+        n8n = nixpkgs-unstable.legacyPackages.${prev.system}.n8n;
+      })
+    ];
+
     # n8n service
     services.n8n = {
       enable = true;
-      package = pkgs-unstable.n8n;  # Use unstable version
       openFirewall = cfg.openFirewall;
       webhookUrl = cfg.domain;
       settings = {
