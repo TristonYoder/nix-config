@@ -1,4 +1,4 @@
-{ config, lib, pkgs, nixpkgs-unstable, ... }:
+{ config, lib, pkgs, ... }:
 
 with lib;
 let
@@ -22,17 +22,7 @@ in
   };
 
   config = mkIf cfg.enable {
-    # Use n8n from unstable via overlay with unfree allowed
-    nixpkgs.overlays = [
-      (final: prev: {
-        n8n = import nixpkgs-unstable {
-          system = prev.system;
-          config.allowUnfree = true;
-        }.n8n;
-      })
-    ];
-
-    # n8n service
+    # n8n service - using version from stable nixpkgs (updated via flake update)
     services.n8n = {
       enable = true;
       openFirewall = cfg.openFirewall;
