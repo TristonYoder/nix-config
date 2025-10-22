@@ -212,7 +212,7 @@ Each host contains:
 - `hardware-configuration.nix` - Hardware config (NixOS only)
 
 Hosts automatically import:
-- Common settings (`common.nix`)
+- Common settings (`common/system.nix`, `common/linux.nix` or `common/darwin.nix`)
 - Profile (server/desktop/edge/darwin)
 - All modules
 - Home Manager integration
@@ -234,6 +234,7 @@ See [home/README.md](home/README.md) for customization.
 ## Documentation
 
 ### Configuration Guides
+- [common/README.md](common/README.md) - Common configuration shared across all hosts
 - [modules/README.md](modules/README.md) - Module system and available services
 - [profiles/README.md](profiles/README.md) - Role-based configuration profiles
 - [hosts/README.md](hosts/README.md) - Per-host setup and adding new hosts

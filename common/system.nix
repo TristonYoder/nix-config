@@ -19,7 +19,7 @@
     };
     
     # Note: auto-optimise-store is configured per-platform:
-    # - NixOS: common-linux.nix uses nix.settings.auto-optimise-store
+    # - NixOS: common/linux.nix uses nix.settings.auto-optimise-store
     # - Darwin: profiles/darwin.nix uses nix.optimise.automatic
     # Note: Automatic garbage collection is configured in modules/system/core.nix
   };
@@ -69,7 +69,7 @@
     zsh.enable = true;
   };
   
-  # Note: programs.git is NixOS-only and is configured in common-linux.nix
-  # Note: security.sudo is NixOS-only and is configured in common-linux.nix
+  # Note: programs.git is NixOS-only and is configured in common/linux.nix
+  # Note: security.sudo is NixOS-only and is configured in common/linux.nix
 }
 

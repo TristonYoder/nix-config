@@ -395,7 +395,7 @@ Custom Home Manager module for Mac App Store app management.
 
 ## Best Practices
 
-1. **Use common.nix for shared settings** - Put settings used across all platforms in common.nix
+1. **Use home/common.nix for shared settings** - Put settings used across all platforms in home/common.nix
 2. **Platform-specific in user files** - macOS-specific in tyoder.nix, Linux-specific in tristonyoder.nix
 3. **Test changes first** - Use `--dry-run` or build before switching
 4. **Document custom configuration** - Add comments for non-obvious settings

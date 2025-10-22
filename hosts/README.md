@@ -133,7 +133,8 @@ Copy to `hosts/new-hostname/hardware-configuration.nix` in your repo.
 nixosConfigurations.new-hostname = nixpkgs.lib.nixosSystem {
   system = "x86_64-linux";  # or aarch64-linux
   modules = [
-    ./common.nix
+    ./common/system.nix
+    ./common/linux.nix
     ./profiles/server.nix  # Choose appropriate profile
     ./hosts/new-hostname/configuration.nix
     ./hosts/new-hostname/hardware-configuration.nix
@@ -154,7 +155,8 @@ nixosConfigurations.new-hostname = nixpkgs.lib.nixosSystem {
 darwinConfigurations.new-hostname = nix-darwin.lib.darwinSystem {
   system = "aarch64-darwin";  # or x86_64-darwin
   modules = [
-    ./common.nix
+    ./common/system.nix
+    ./common/darwin.nix
     ./profiles/darwin.nix
     ./hosts/new-hostname/configuration.nix
     home-manager.darwinModules.home-manager

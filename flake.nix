@@ -75,8 +75,8 @@
           
           modules = [
             # Common configuration
-            ./common.nix
-            ./common-linux.nix
+            ./common/system.nix
+            ./common/linux.nix
             
             # Server profile
             ./profiles/server.nix
@@ -137,8 +137,8 @@
           
           modules = [
             # Common configuration
-            ./common.nix
-            ./common-linux.nix
+            ./common/system.nix
+            ./common/linux.nix
             
             # Desktop profile
             ./profiles/desktop.nix
@@ -177,8 +177,8 @@
           
           modules = [
             # Common configuration
-            ./common.nix
-            ./common-linux.nix
+            ./common/system.nix
+            ./common/linux.nix
             
             # Edge profile
             ./profiles/edge.nix
@@ -223,8 +223,8 @@
           
           modules = [
             # Common configuration
-            ./common.nix
-            ./common-darwin.nix
+            ./common/system.nix
+            ./common/darwin.nix
             
             # Darwin profile
             ./profiles/darwin.nix
