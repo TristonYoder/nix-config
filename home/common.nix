@@ -59,11 +59,9 @@ in
   
   programs.git = {
     enable = true;
-    settings = {
-      user = {
-        name = "Triston Yoder";
-        email = "triston@7co.dev";
-      };
+    userName = "Triston Yoder";
+    userEmail = "triston@7co.dev";
+    extraConfig = {
       init.defaultBranch = "main";
       pull.rebase = false;
       push.autoSetupRemote = true;
@@ -146,14 +144,17 @@ in
   
   programs.ssh = {
     enable = true;
-    matchBlocks."*" = {
-      addKeysToAgent = "yes";
-      identityFile = "~/.ssh/id_ed25519";
-    } // (if isDarwin then {
-      extraOptions = {
-        UseKeychain = "yes";
-      };
-    } else {});
+    addKeysToAgent = "yes";
+    extraConfig = if isDarwin then ''
+      Host *
+        AddKeysToAgent yes
+        UseKeychain yes
+        IdentityFile ~/.ssh/id_ed25519
+    '' else ''
+      Host *
+        AddKeysToAgent yes
+        IdentityFile ~/.ssh/id_ed25519
+    '';
   };
   
   # =============================================================================
