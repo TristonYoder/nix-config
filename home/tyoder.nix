@@ -33,9 +33,9 @@
     # macOS DNS flush
     dnsflush = "sudo killall -HUP mDNSResponder;sudo killall mDNSResponderHelper;sudo dscacheutil -flushcache";
     
-    # Home manager switch shortcut
-    hms = "cd ~/Projects/nix-config && darwin-rebuild switch --flake .";
-    hmswitch = "cd ~/Projects/nix-config && darwin-rebuild switch --flake .";
+    # Home manager switch shortcut (with auto-reload)
+    hms = "cd ~/Projects/nix-config && darwin-rebuild switch --flake . && exec zsh";
+    hmswitch = "cd ~/Projects/nix-config && darwin-rebuild switch --flake . && exec zsh";
   };
   
   # =============================================================================

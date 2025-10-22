@@ -104,10 +104,10 @@ in
       myip = "curl -s https://ipinfo.io/ip";
       weather = "curl -s wttr.in";
       
-      # Nix rebuild aliases
+      # Nix rebuild aliases (with auto-reload for darwin)
       rebuild = "sudo nixos-rebuild switch --flake ~/Projects/nix-config";
-      rebuild-darwin = "darwin-rebuild switch --flake ~/Projects/nix-config";
-      rebuild-home = "home-manager switch --flake ~/Projects/nix-config";
+      rebuild-darwin = "darwin-rebuild switch --flake ~/Projects/nix-config && exec zsh";
+      rebuild-home = "home-manager switch --flake ~/Projects/nix-config && exec zsh";
     };
     
     oh-my-zsh = {
