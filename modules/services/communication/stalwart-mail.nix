@@ -22,7 +22,7 @@ in
     
     webmailDomain = mkOption {
       type = types.str;
-      default = "webmail.7andco.dev";
+      default = "mail.7andco.dev";
       description = "Domain for webmail interface";
     };
     
@@ -193,7 +193,7 @@ in
     };
     
     # Caddy virtual host for admin interface
-    services.caddy.virtualHosts."mailadmin.7andco.dev" = mkIf config.modules.services.infrastructure.caddy.enable {
+    services.caddy.virtualHosts."admin.mail.7andco.dev" = mkIf config.modules.services.infrastructure.caddy.enable {
       extraConfig = ''
         reverse_proxy http://localhost:8081
         import cloudflare_tls

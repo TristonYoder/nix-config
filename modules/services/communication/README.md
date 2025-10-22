@@ -10,8 +10,8 @@ Modern all-in-one mail server with SMTP, IMAP, and JMAP support.
 
 - **Server**: `pits` (edge server)
 - **Domain**: `7andco.dev` (technical/system emails)
-- **Admin Panel**: https://mailadmin.7andco.dev
-- **Webmail**: https://webmail.7andco.dev
+- **Admin Panel**: https://admin.mail.7andco.dev
+- **Webmail**: https://mail.7andco.dev
 
 ### Setup Secrets
 
@@ -54,7 +54,7 @@ Creates all DNS records for `7andco.dev`. For production, add DKIM and configure
 ### Access
 
 **Admin Panel:**
-- URL: https://mailadmin.7andco.dev
+- URL: https://admin.mail.7andco.dev
 - User: `admin`
 - Password: Your admin web password
 
