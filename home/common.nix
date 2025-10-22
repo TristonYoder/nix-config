@@ -106,7 +106,7 @@ in
       
       # Nix rebuild aliases (with auto-reload for darwin)
       rebuild = "sudo nixos-rebuild switch --flake ~/Projects/nix-config";
-      rebuild-darwin = "darwin-rebuild switch --flake ~/Projects/nix-config && exec zsh";
+      rebuild-darwin = "sudo darwin-rebuild switch --flake ~/Projects/nix-config && exec zsh";
       rebuild-home = "home-manager switch --flake ~/Projects/nix-config && exec zsh";
     };
     
