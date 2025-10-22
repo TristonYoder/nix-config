@@ -16,7 +16,7 @@ if [ -z "$1" ]; then
     echo "Usage: $0 '<dkim-public-key>'"
     echo ""
     echo "To get your DKIM key:"
-    echo "  1. Visit https://mailadmin.7andco.dev"
+    echo "  1. Visit https://admin.mail.7andco.dev"
     echo "  2. Login with admin credentials"
     echo "  3. Go to Settings → DKIM"
     echo "  4. Copy the public key (long base64 string)"

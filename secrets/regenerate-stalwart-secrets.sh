@@ -48,7 +48,7 @@ if [ -z "$ADMIN_MAIL_PW" ]; then
     ADMIN_MAIL_PW="StrongAdminPassword2024!"
 fi
 
-read -p "Admin web password (https://mailadmin.7andco.dev): " ADMIN_WEB_PW
+read -p "Admin web password (https://admin.mail.7andco.dev): " ADMIN_WEB_PW
 if [ -z "$ADMIN_WEB_PW" ]; then
     ADMIN_WEB_PW="StrongAdminWebPassword2024!"
 fi

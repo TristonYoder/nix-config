@@ -117,13 +117,9 @@ create_dns_record "$ZONE_7ANDCO_DEV" "MX" "$DOMAIN" "mail.$DOMAIN" "10"
 create_dns_record "$ZONE_7ANDCO_DEV" "A" "mail" "$PITS_IPV4"
 create_dns_record "$ZONE_7ANDCO_DEV" "AAAA" "mail" "$PITS_IPV6"
 
-# A/AAAA Records for webmail subdomain
-create_dns_record "$ZONE_7ANDCO_DEV" "A" "webmail" "$PITS_IPV4"
-create_dns_record "$ZONE_7ANDCO_DEV" "AAAA" "webmail" "$PITS_IPV6"
-
-# A/AAAA Records for admin subdomain
-create_dns_record "$ZONE_7ANDCO_DEV" "A" "mailadmin" "$PITS_IPV4"
-create_dns_record "$ZONE_7ANDCO_DEV" "AAAA" "mailadmin" "$PITS_IPV6"
+# A/AAAA Records for admin.mail subdomain
+create_dns_record "$ZONE_7ANDCO_DEV" "A" "admin.mail" "$PITS_IPV4"
+create_dns_record "$ZONE_7ANDCO_DEV" "AAAA" "admin.mail" "$PITS_IPV6"
 
 # SPF Record
 create_dns_record "$ZONE_7ANDCO_DEV" "TXT" "$DOMAIN" "v=spf1 mx ~all"
@@ -143,7 +139,7 @@ echo "1. ${BLUE}Deploy Stalwart:${NC}"
 echo "   nixos-rebuild switch --flake .#pits --target-host pits"
 echo ""
 echo "2. ${BLUE}Access Admin Panel:${NC}"
-echo "   https://mailadmin.7andco.dev"
+echo "   https://admin.mail.7andco.dev"
 echo ""
 echo "3. ${BLUE}Add DKIM${NC} (from admin panel):"
 echo "   ./scripts/add-dkim-record.sh '<public-key>'"
