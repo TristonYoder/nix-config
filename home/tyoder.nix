@@ -224,7 +224,7 @@
       
       # Cloud & Storage
       "google-drive"
-      "gcloud"
+      "gcloud-cli"
       "google-cloud-sdk"
       
       # 3D Printing & Hardware
