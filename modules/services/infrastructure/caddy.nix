@@ -43,9 +43,30 @@ in
       '';
     };
 
-    # Load Cloudflare API token from agenix secret as environment variable
+    # Create a systemd service that prepares the Cloudflare API token environment file
+    # The agenix secret contains only the raw token value (cleaner secret management)
+    # We wrap it in KEY=VALUE format at runtime for systemd's EnvironmentFile
+    systemd.services.caddy-prepare-env = {
+      description = "Prepare Cloudflare API token for Caddy";
+      before = [ "caddy.service" ];
+      requiredBy = [ "caddy.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+      };
+      script = ''
+        # Read the raw token from agenix secret and format it for systemd EnvironmentFile
+        TOKEN=$(cat ${config.age.secrets.cloudflare-api-token.path})
+        mkdir -p /run/caddy
+        echo "CLOUDFLARE_API_TOKEN=$TOKEN" > /run/caddy/cloudflare.env
+        chmod 600 /run/caddy/cloudflare.env
+        chown caddy:caddy /run/caddy/cloudflare.env
+      '';
+    };
+
+    # Configure Caddy service to load the formatted environment file
     systemd.services.caddy.serviceConfig = {
-      EnvironmentFile = config.age.secrets.cloudflare-api-token.path;
+      EnvironmentFile = "/run/caddy/cloudflare.env";
     };
 
     # Open firewall ports for HTTP and HTTPS
