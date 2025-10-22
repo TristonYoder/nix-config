@@ -26,7 +26,7 @@ in
   config = mkIf cfg.enable {
     # Well-Known Delegation - Serve on base domain for federation discovery
     # Works for both host server (localhost routing) and edge servers (remote routing to host)
-    # Note: On edge servers uses HTTPS with HTTP-01 challenge, on host server uses HTTP (internal)
+    # Note: On edge servers uses HTTPS with Cloudflare DNS-01, on host server uses HTTP (internal)
     services.caddy.virtualHosts.${if isHostServer then "http://${cfg.domain}" else cfg.domain} = mkIf config.modules.services.infrastructure.caddy.enable {
       extraConfig = ''
         # Matrix well-known endpoints - serve directly
@@ -65,7 +65,7 @@ in
           ''}
         }
         
-        ${if !isHostServer then "# No TLS config - let Caddy use default HTTP-01 challenge" else ""}
+        ${if !isHostServer then "import cloudflare_tls" else ""}
       '';
     };
   };
