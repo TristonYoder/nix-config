@@ -1,8 +1,15 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, nixpkgs-unstable, ... }:
 
 with lib;
 let
   cfg = config.modules.services.productivity.n8n;
+  # Get unstable packages with unfree allowed
+  unstable = import nixpkgs-unstable {
+    system = pkgs.system;
+    config = {
+      allowUnfree = true;
+    };
+  };
 in
 {
   options.modules.services.productivity.n8n = {
@@ -22,7 +29,14 @@ in
   };
 
   config = mkIf cfg.enable {
-    # n8n service - using version from stable nixpkgs (updated via flake update)
+    # Use n8n from unstable via overlay
+    nixpkgs.overlays = [
+      (final: prev: {
+        n8n = unstable.n8n;
+      })
+    ];
+
+    # n8n service
     services.n8n = {
       enable = true;
       openFirewall = cfg.openFirewall;
