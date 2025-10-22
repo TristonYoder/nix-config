@@ -2,6 +2,166 @@
 
 This directory contains NixOS modules for communication and collaboration services.
 
+## Stalwart Mail Server
+
+Stalwart Mail is a modern, all-in-one mail server with SMTP, IMAP, and JMAP support.
+
+### Architecture
+
+- **Server**: Runs on `pits` (edge server with public IP)
+- **Domain**: `test.7andco.dev` (test mail domain)
+- **Web Interface**: `https://testmail.7andco.studio`
+- **Admin Interface**: `https://testmailadmin.7andco.studio`
+- **MX Hostname**: `mail.test.7andco.dev`
+
+### Configuration
+
+Enable in `hosts/pits/configuration.nix`:
+
+```nix
+modules.services.communication.stalwart-mail.enable = true;
+```
+
+### Pre-Deployment: Create Secrets
+
+Before deploying, create the encrypted password secrets:
+
+```bash
+cd secrets
+
+# Create postmaster password
+./encrypt-secret.sh -n stalwart-postmaster-password.age -e
+# Enter a strong password for postmaster@7andco.dev
+
+# Create admin mail password
+./encrypt-secret.sh -n stalwart-admin-password.age -e
+# Enter a strong password for admin@7andco.dev
+
+# Create admin web interface password
+./encrypt-secret.sh -n stalwart-admin-web-password.age -e
+# Enter a strong password for the web admin panel
+
+# Commit the secrets
+git add stalwart-*.age
+git commit -m "Add Stalwart mail server secrets"
+```
+
+### Post-Deployment Setup
+
+After deploying to pits:
+
+1. **Access Admin Panel**:
+   - Visit https://testmailadmin.7andco.studio
+   - Login with username: `admin`
+   - Password: (the admin web password you set in secrets)
+
+2. **Test Mail Accounts**:
+   - `postmaster@test.7andco.dev` - Uses postmaster password
+   - `admin@test.7andco.dev` - Uses admin password
+
+3. **Create Additional Users**:
+   - Use the admin panel to create new mail accounts
+   - Or add them to the NixOS configuration's `principals` list
+
+### DNS Configuration
+
+Configure these DNS records for `test.7andco.dev`:
+
+**MX Record:**
+```
+test.7andco.dev.    MX    10 mail.test.7andco.dev.
+```
+
+**A/AAAA Records:**
+```
+mail.test.7andco.dev.    A       <pits-ipv4>
+mail.test.7andco.dev.    AAAA    <pits-ipv6>
+```
+
+**SPF Record:**
+```
+test.7andco.dev.    TXT    "v=spf1 mx ~all"
+```
+
+**DMARC Record:**
+```
+_dmarc.test.7andco.dev.    TXT    "v=DMARC1; p=quarantine; rua=mailto:postmaster@test.7andco.dev"
+```
+
+**DKIM Record:** (get key from admin panel after first start)
+```
+default._domainkey.test.7andco.dev.    TXT    "v=DKIM1; k=rsa; p=<public-key>"
+```
+
+**MTA-STS Record:**
+```
+_mta-sts.test.7andco.dev.    TXT    "v=STSv1; id=<timestamp>"
+```
+
+### Default Users
+
+- `postmaster@test.7andco.dev` - Main postmaster account
+- `admin@test.7andco.dev` - Administrative account
+
+### Ports
+
+- **25** - SMTP (incoming mail)
+- **465** - SMTPS (secure SMTP submissions)
+- **993** - IMAPS (secure IMAP)
+- **8080** - JMAP/Webmail (proxied via Caddy)
+- **8081** - Admin interface (proxied via Caddy)
+
+### Mail Client Configuration
+
+**IMAP:**
+- Server: `mail.test.7andco.dev`
+- Port: `993`
+- Security: SSL/TLS
+- Username: Full email address
+- Password: Your password
+
+**SMTP:**
+- Server: `mail.test.7andco.dev`
+- Port: `465`
+- Security: SSL/TLS
+- Authentication: Required
+- Username: Full email address
+- Password: Your password
+
+### Logs
+
+```bash
+journalctl -u stalwart-mail -f
+```
+
+### Secrets
+
+Stalwart uses the following agenix-encrypted secrets:
+
+- `stalwart-postmaster-password.age` - Password for postmaster@7andco.dev
+- `stalwart-admin-password.age` - Password for admin@7andco.dev
+- `stalwart-admin-web-password.age` - Password for web admin panel
+- `cloudflare-api-token.age` - Cloudflare API token for ACME DNS-01 (shared)
+
+### Troubleshooting
+
+**Service not starting:**
+- Check service: `systemctl status stalwart-mail`
+- View logs: `journalctl -u stalwart-mail -n 100`
+- Verify secrets: `ls -l /run/agenix/stalwart-*`
+- Verify config: Check `/etc/stalwart/` files exist
+
+**Can't send/receive mail:**
+- Verify DNS records are correct
+- Check firewall: `sudo iptables -L | grep -E "25|465|993"`
+- Test SMTP: `telnet mail.7andco.dev 25`
+- Test IMAPS: `openssl s_client -connect mail.7andco.dev:993`
+
+**Web interface not accessible:**
+- Check Caddy is running: `systemctl status caddy`
+- Verify reverse proxy config
+- Test locally: `curl http://localhost:8080`
+
 ## Pixelfed
 
 Pixelfed is a federated photo-sharing platform, part of the ActivityPub network (Fediverse). It provides an Instagram-like experience with decentralized federation.

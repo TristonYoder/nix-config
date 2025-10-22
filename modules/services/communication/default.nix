@@ -6,6 +6,7 @@
     ./mautrix-groupme.nix
     ./mautrix-imessage.nix
     ./pixelfed.nix
+    ./stalwart-mail.nix
     ./wellknown.nix
   ];
 }
