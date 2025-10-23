@@ -4,9 +4,6 @@ with lib;
 let
   cfg = config.modules.services.communication.postal;
   
-  # Import the compose2nix generated configuration conditionally
-  postalBase = if cfg.enable then (import ../../../docker/communication/postal.nix { inherit config lib pkgs; }) else {};
-  
   # Generate postal.yml configuration template
   postalConfigTemplate = pkgs.writeText "postal.yml.template" ''
     web_server:
@@ -103,13 +100,12 @@ in
       description = "Base directory for Postal data";
     };
   };
+  
+  imports = [
+    ../../../docker/communication/postal.nix
+  ];
 
-  config = mkMerge [
-    # Base configuration from compose2nix
-    postalBase
-    
-    # Our customizations
-    (mkIf cfg.enable {
+  config = mkIf cfg.enable {
     # Agenix secrets - all secrets managed declaratively
     age.secrets.postal-db-password = {
       file = ../../../secrets/postal-db-password.age;
@@ -426,7 +422,6 @@ EOF
     
     # Open firewall for mail ports
     networking.firewall.allowedTCPPorts = [ 25 587 ];
-    })
-  ];
+  };
 }
 
