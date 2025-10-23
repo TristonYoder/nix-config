@@ -140,7 +140,7 @@ in
             jmap = {
               bind = "[::]:8080";
               url = "https://${cfg.webmailDomain}";
-              protocol = "jmap";
+              protocol = "http";
             };
             
             # Management Interface - localhost only
