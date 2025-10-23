@@ -288,7 +288,7 @@ in
           -e "s|__RAILS_SECRET_KEY__|$RAILS_SECRET|g" \
           ${postalConfigTemplate} > ${cfg.dataDir}/config/postal.yml
         
-        chmod 640 ${cfg.dataDir}/config/postal.yml
+        chmod 644 ${cfg.dataDir}/config/postal.yml
         echo "Configuration generated successfully"
       '';
     };
