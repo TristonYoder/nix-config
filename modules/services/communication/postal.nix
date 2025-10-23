@@ -4,6 +4,9 @@ with lib;
 let
   cfg = config.modules.services.communication.postal;
   
+  # Import the compose2nix generated configuration conditionally
+  postalBase = if cfg.enable then (import ../../../docker/communication/postal.nix { inherit config lib pkgs; }) else {};
+  
   # Generate postal.yml configuration template
   postalConfigTemplate = pkgs.writeText "postal.yml.template" ''
     web_server:
@@ -101,15 +104,11 @@ in
     };
   };
 
-  # Import the compose2nix generated configuration at module level
-  imports = [ ../../../docker/communication/postal.nix ];
-
   config = mkMerge [
-    # Always disable the postal root target unless explicitly enabled
-    {
-      systemd.targets."podman-compose-postal-root".wantedBy = mkForce [];
-    }
+    # Base configuration from compose2nix
+    postalBase
     
+    # Our customizations
     (mkIf cfg.enable {
     # Agenix secrets - all secrets managed declaratively
     age.secrets.postal-db-password = {
@@ -427,9 +426,6 @@ EOF
     
     # Open firewall for mail ports
     networking.firewall.allowedTCPPorts = [ 25 587 ];
-    
-    # Enable the postal root target when enabled
-    systemd.targets."podman-compose-postal-root".wantedBy = mkForce [ "multi-user.target" ];
     })
   ];
 }
