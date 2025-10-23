@@ -349,7 +349,7 @@ EOF
         
         echo "Waiting for MariaDB to be ready..."
         for i in {1..30}; do
-          if ${pkgs.docker}/bin/docker exec postal_mariadb mysqladmin ping -h localhost --silent 2>/dev/null; then
+          if ${pkgs.docker}/bin/docker exec postal_mariadb mysql -uroot -p"$(cat ${config.age.secrets.postal-db-password.path})" -e "SELECT 1" >/dev/null 2>&1; then
             echo "MariaDB is ready"
             break
           fi
