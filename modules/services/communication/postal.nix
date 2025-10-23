@@ -101,10 +101,16 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
-    # Import the compose2nix generated configuration
-    imports = [ ../../../docker/communication/postal.nix ];
+  # Import the compose2nix generated configuration at module level
+  imports = [ ../../../docker/communication/postal.nix ];
+
+  config = mkMerge [
+    # Always disable the postal root target unless explicitly enabled
+    {
+      systemd.targets."podman-compose-postal-root".wantedBy = mkForce [];
+    }
     
+    (mkIf cfg.enable {
     # Agenix secrets - all secrets managed declaratively
     age.secrets.postal-db-password = {
       file = ../../../secrets/postal-db-password.age;
@@ -421,6 +427,10 @@ EOF
     
     # Open firewall for mail ports
     networking.firewall.allowedTCPPorts = [ 25 587 ];
-  };
+    
+    # Enable the postal root target when enabled
+    systemd.targets."podman-compose-postal-root".wantedBy = mkForce [ "multi-user.target" ];
+    })
+  ];
 }
 
