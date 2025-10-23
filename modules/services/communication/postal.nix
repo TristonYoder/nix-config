@@ -100,12 +100,13 @@ in
       description = "Base directory for Postal data";
     };
   };
-  
-  imports = [
-    ../../../docker/communication/postal.nix
-  ];
 
-  config = mkIf cfg.enable {
+  config = mkIf cfg.enable (mkMerge [
+    # Import docker compose configuration only when enabled
+    (import ../../../docker/communication/postal.nix { inherit config lib pkgs; })
+    
+    # Our customizations
+    {
     # Agenix secrets - all secrets managed declaratively
     age.secrets.postal-db-password = {
       file = ../../../secrets/postal-db-password.age;
@@ -458,6 +459,7 @@ EOF
     
     # Open firewall for mail ports
     networking.firewall.allowedTCPPorts = [ 25 587 ];
-  };
+    }
+  ]);
 }
 
