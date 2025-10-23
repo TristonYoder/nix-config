@@ -246,7 +246,7 @@ in
       wants = [ "network-online.target" ];
       after = [ "network-online.target" ];
       before = [ "matrix-synapse.service" ];  # Ensure registration file exists before Matrix starts
-      requiredBy = [ "matrix-synapse.service" ];  # Matrix Synapse requires this service
+      # Note: Not using requiredBy to allow Matrix to start even if bridge fails
 
       preStart = ''
         # Copy config file
