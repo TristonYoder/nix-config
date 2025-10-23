@@ -246,7 +246,7 @@ in
     systemd.services.postal-install-signing-key = {
       description = "Install Postal signing key from secrets";
       wantedBy = [ "multi-user.target" ];
-      before = [ "podman-postal_runner.service" ];
+      before = [ "docker-postal_runner.service" ];
       
       serviceConfig = {
         Type = "oneshot";
@@ -265,7 +265,7 @@ in
     systemd.services.postal-generate-config = {
       description = "Generate Postal configuration with secrets";
       wantedBy = [ "multi-user.target" ];
-      before = [ "podman-postal_runner.service" ];
+      before = [ "docker-postal_runner.service" ];
       after = [ "postal-install-signing-key.service" ];
       requires = [ "postal-install-signing-key.service" ];
       
@@ -296,7 +296,7 @@ in
     systemd.services.postal-create-env = {
       description = "Create Postal environment file with database password";
       wantedBy = [ "multi-user.target" ];
-      before = [ "podman-postal_mariadb.service" ];
+      before = [ "docker-postal_mariadb.service" ];
       
       serviceConfig = {
         Type = "oneshot";
@@ -324,13 +324,13 @@ EOF
       description = "Initialize Postal database schema";
       wantedBy = [ "multi-user.target" ];
       after = [ 
-        "podman-postal_mariadb.service"
-        "podman-postal_runner.service"
+        "docker-postal_mariadb.service"
+        "docker-postal_runner.service"
         "postal-generate-config.service"
       ];
       requires = [ 
-        "podman-postal_mariadb.service"
-        "podman-postal_runner.service"
+        "docker-postal_mariadb.service"
+        "docker-postal_runner.service"
         "postal-generate-config.service"
       ];
       
@@ -374,11 +374,11 @@ EOF
       wantedBy = [ "multi-user.target" ];
       after = [ 
         "postal-initialize-db.service"
-        "podman-postal_runner.service"
+        "docker-postal_runner.service"
       ];
       requires = [ 
         "postal-initialize-db.service"
-        "podman-postal_runner.service"
+        "docker-postal_runner.service"
       ];
       
       serviceConfig = {
@@ -433,8 +433,8 @@ EOF
       '';
     };
     
-    # Override podman service dependencies to ensure proper ordering
-    systemd.services.podman-postal_runner = {
+    # Override docker service dependencies to ensure proper ordering
+    systemd.services.docker-postal_runner = {
       after = [
         "postal-install-signing-key.service"
         "postal-generate-config.service"
@@ -447,7 +447,7 @@ EOF
       ];
     };
     
-    systemd.services.podman-postal_mariadb = {
+    systemd.services.docker-postal_mariadb = {
       after = [
         "postal-create-env.service"
       ];
