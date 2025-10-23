@@ -2,67 +2,153 @@
 
 This directory contains NixOS modules for communication and collaboration services.
 
+## Table of Contents
+
+- [Postal Mail Server](#postal-mail-server) - SMTP relay (PITS)
+- [Stalwart Mail Server](#stalwart-mail-server) - User mailboxes (David)
+- [Matrix Synapse](#matrix-synapse)
+- [Pixelfed](#pixelfed)
+- [mautrix Bridges](#mautrix-bridges)
+
+---
+
+## Postal Mail Server
+
+SMTP relay server for outbound mail, deployed on PITS edge server with public IP.
+
+### Architecture
+
+```
+Internet → PITS (Postal) → Tailscale → David (Stalwart)
+           [Public IP]                  [Internal]
+```
+
+- **Server**: `pits` (edge server with public IP)
+- **Domain**: `7andco.dev`
+- **Web UI**: https://postal.7andco.dev (or https://postal.mail.7andco.dev)
+- **SMTP Ports**: 25 (receive), 587 (send with auth)
+
+### Quick Start
+
+1. **Generate Secrets** (one-time setup):
+```bash
+cd secrets
+./generate-postal-secrets.sh
+# Save the displayed admin credentials!
+
+git add secrets/postal-*.age
+git commit -m "Add Postal secrets"
+git push
+```
+
+2. **Deploy** (automatic via profiles/edge.nix):
+```bash
+nixos-rebuild switch --flake .#pits --target-host pits
+```
+
+3. **Access Web UI**:
+- URL: https://postal.7andco.dev
+- Email: Check `age -d -i ~/.ssh/agenix secrets/postal-admin-email.age`
+- Password: Check `age -d -i ~/.ssh/agenix secrets/postal-admin-password.age`
+
+### Configuration
+
+Enabled in `profiles/edge.nix`:
+```nix
+modules.services.communication.postal.enable = lib.mkDefault true;
+```
+
+### Features
+
+- ✅ Fully declarative deployment
+- ✅ Automatic database initialization
+- ✅ Automatic admin user creation
+- ✅ Comprehensive secret management via agenix
+- ✅ Docker-based (4 containers: MariaDB, Runner, Worker, SMTP)
+- ✅ Caddy reverse proxy with HTTPS
+- ✅ Idempotent configuration (safe to redeploy)
+
+### Services
+
+- **MariaDB** - Database backend
+- **Postal Runner** - Web server (port 5000)
+- **Postal Worker** - Background job processor
+- **Postal SMTP** - SMTP server for mail handling
+
+### Troubleshooting
+
+See detailed documentation in: `docker/dockercompose/postal/README.md`
+
+```bash
+# Check service status
+ssh pits systemctl status docker-postal_runner
+ssh pits systemctl status docker-postal_mariadb
+
+# View logs
+ssh pits sudo journalctl -u docker-postal_runner -f
+ssh pits sudo docker logs postal_runner
+
+# Verify containers
+ssh pits sudo docker ps | grep postal
+
+# Reset initialization (if needed)
+ssh pits "sudo rm /data/docker-appdata/postal/data/.db-initialized && sudo systemctl restart postal-initialize-db"
+```
+
+---
+
 ## Stalwart Mail Server
 
-Modern all-in-one mail server with SMTP, IMAP, and JMAP support.
+Modern all-in-one mail server with SMTP, IMAP, and JMAP support. Handles user mailboxes and email storage.
 
-### Quick Info
+### Architecture
 
-- **Server**: `pits` (edge server)
-- **Domain**: `7andco.dev` (technical/system emails)
-- **Admin Panel**: https://admin.mail.7andco.dev
-- **Webmail**: https://mail.7andco.dev
+- **Server**: `david` (internal server)
+- **Domain**: `7andco.dev` 
+- **Admin Panel**: https://admin.mail.7andco.dev (proxied via PITS)
+- **Webmail**: https://mail.7andco.dev (proxied via PITS)
+- **Storage**: `/data/docker-appdata/stalwart/data` (RocksDB)
 
-### Setup Secrets
+### Quick Start
 
+1. **Generate Secrets**:
 ```bash
 cd secrets
 ./regenerate-stalwart-secrets.sh
-# Enter passwords when prompted (or use defaults)
+# Enter passwords when prompted
 
-cd ..
 git add secrets/stalwart-*.age
 git commit -m "Update Stalwart secrets"
 git push
 ```
 
-### Deploy
-
+2. **Deploy** (automatic via profiles/server.nix):
 ```bash
-# Enabled by default in profiles/edge.nix for PITS
-
-# Deploy from local machine:
-nixos-rebuild switch --flake .#pits --target-host pits
-
-# Or on PITS directly:
-ssh pits
-cd ~/Projects/nix-config
-git pull
-sudo nixos-rebuild switch --flake .
-sudo systemctl restart stalwart-mail
+nixos-rebuild switch --flake .#david --target-host david
 ```
 
-### Setup DNS
+### Optional: Enable Postal Relay
 
-```bash
-export CLOUDFLARE_API_TOKEN='your-token'
-./scripts/setup-mail-dns.sh
+To route outbound mail through Postal on PITS, add to `hosts/david/configuration.nix`:
+
+```nix
+modules.services.communication.stalwart-mail = {
+  enablePostalRelay = true;
+  postalRelayHost = "pits";  # Via Tailscale
+  postalRelayPort = 587;
+};
 ```
-
-Creates all DNS records for `7andco.dev`. For production, add DKIM and configure reverse DNS.
 
 ### Access
 
 **Admin Panel:**
 - URL: https://admin.mail.7andco.dev
 - User: `admin`
-- Password: Your admin web password
+- Password: Your admin web password (from secrets)
 
-**Mail Accounts:**
-- `postmaster@7andco.dev`
-- `admin@7andco.dev`
-- `notifications@7andco.dev` (create in admin panel)
-- `noreply@7andco.dev` (create in admin panel)
+**Webmail:**
+- URL: https://mail.7andco.dev
+- User: `postmaster@7andco.dev` or `admin@7andco.dev`
 
 **Mail Client (IMAP/SMTP):**
 - Server: `mail.7andco.dev`
@@ -71,8 +157,15 @@ Creates all DNS records for `7andco.dev`. For production, add DKIM and configure
 ### Logs
 
 ```bash
-ssh pits sudo journalctl -u stalwart-mail -f
+ssh david sudo journalctl -u stalwart-mail -f
 ```
+
+### Data Storage
+
+All mail data stored in: `/data/docker-appdata/stalwart/data/`
+- RocksDB database for mail storage
+- LZ4 compression enabled
+- Persistent across restarts
 
 ## Pixelfed
 
