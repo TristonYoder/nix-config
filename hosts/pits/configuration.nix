@@ -124,6 +124,9 @@
       reverse_proxy http://localhost:5000
       import cloudflare_tls
     '';
+    serverAliases = [
+      "postal.mail.7andco.dev"
+    ];
   };
   
   # Well-Known Delegation for Federation is handled by the wellknown module
