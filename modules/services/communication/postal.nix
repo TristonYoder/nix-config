@@ -324,14 +324,15 @@ EOF
       description = "Initialize Postal database schema";
       wantedBy = [ "multi-user.target" ];
       after = [ 
-        "podman-postal_mariadb.service" 
+        "podman-postal_mariadb.service"
+        "podman-postal_runner.service"
         "postal-generate-config.service"
       ];
       requires = [ 
         "podman-postal_mariadb.service"
+        "podman-postal_runner.service"
         "postal-generate-config.service"
       ];
-      before = [ "podman-postal_runner.service" ];
       
       serviceConfig = {
         Type = "oneshot";
@@ -437,13 +438,11 @@ EOF
       after = [
         "postal-install-signing-key.service"
         "postal-generate-config.service"
-        "postal-initialize-db.service"
         "postal-create-env.service"
       ];
       requires = [
         "postal-install-signing-key.service"
         "postal-generate-config.service"
-        "postal-initialize-db.service"
         "postal-create-env.service"
       ];
     };
