@@ -55,10 +55,7 @@
   # COMMUNICATION SERVICES
   # =============================================================================
   
-  modules.services.communication.matrix-synapse = {
-    enable = lib.mkDefault true;
-    enableRegistration = lib.mkDefault true; # Temporarily enable for bridge setup
-  };
+  modules.services.communication.matrix-synapse.enable = lib.mkDefault true;
   modules.services.communication.mautrix-groupme.enable = lib.mkDefault true;
   modules.services.communication.mautrix-imessage.enable = lib.mkDefault true;
   modules.services.communication.pixelfed.enable = lib.mkDefault true;
