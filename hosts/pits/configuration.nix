@@ -92,6 +92,40 @@
     '';
   };
   
+  # Stalwart Mail Webmail Interface - Reverse proxy to david
+  # Uses Cloudflare DNS-01 challenge for automatic HTTPS
+  services.caddy.virtualHosts."mail.7andco.dev" = {
+    extraConfig = ''
+      reverse_proxy http://david:8080
+      import cloudflare_tls
+    '';
+    serverAliases = [
+      # MTA-STS for mail security policy
+      "mta-sts.7andco.dev"
+      # Autoconfig for mail clients
+      "autoconfig.7andco.dev"
+      "autodiscover.7andco.dev"
+    ];
+  };
+  
+  # Stalwart Mail Admin Interface - Reverse proxy to david
+  # Uses Cloudflare DNS-01 challenge for automatic HTTPS
+  services.caddy.virtualHosts."admin.mail.7andco.dev" = {
+    extraConfig = ''
+      reverse_proxy http://david:8081
+      import cloudflare_tls
+    '';
+  };
+  
+  # Postal Mail Server Web UI - Local service on PITS
+  # Uses Cloudflare DNS-01 challenge for automatic HTTPS
+  services.caddy.virtualHosts."postal.7andco.dev" = {
+    extraConfig = ''
+      reverse_proxy http://localhost:5000
+      import cloudflare_tls
+    '';
+  };
+  
   # Well-Known Delegation for Federation is handled by the wellknown module
   # (modules/services/communication/wellknown.nix)
   # It automatically configures routing based on hostname:

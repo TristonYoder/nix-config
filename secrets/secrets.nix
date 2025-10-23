@@ -105,5 +105,12 @@ in
   "stalwart-postmaster-password.age".publicKeys = allServers;
   "stalwart-admin-password.age".publicKeys = allServers;
   "stalwart-admin-web-password.age".publicKeys = allServers;
+  
+  # Postal Mail Server secrets (runs on pits)
+  "postal-db-password.age".publicKeys = pitsKeys;
+  "postal-rails-secret.age".publicKeys = pitsKeys;
+  "postal-signing-key.age".publicKeys = pitsKeys;
+  "postal-admin-email.age".publicKeys = pitsKeys;
+  "postal-admin-password.age".publicKeys = pitsKeys;
 }
 

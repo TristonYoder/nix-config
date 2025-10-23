@@ -55,8 +55,8 @@
   # Well-known delegation for federation (Matrix, Pixelfed, etc.)
   modules.services.communication.wellknown.enable = lib.mkDefault true;
   
-  # Stalwart Mail Server (edge servers have public IPs for mail)
-  modules.services.communication.stalwart-mail.enable = lib.mkDefault true;
+  # Postal Mail Server (SMTP relay on edge servers with public IP)
+  modules.services.communication.postal.enable = lib.mkDefault true;
   
   # =============================================================================
   # STORAGE (Optional)
