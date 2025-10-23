@@ -1,0 +1,130 @@
+name: postal
+
+services:
+  mariadb:
+    image: mariadb:11.4
+    container_name: postal_mariadb
+    restart: always
+    environment:
+      MARIADB_DATABASE: postal
+      MARIADB_ROOT_PASSWORD: ${POSTAL_DB_PASSWORD}
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "no"
+    volumes:
+      - ${POSTAL_DATA_DIR}/mariadb:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  postal:
+    image: ghcr.io/postalserver/postal:3.3.3
+    container_name: postal_runner
+    restart: always
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    volumes:
+      - ${POSTAL_DATA_DIR}/config:/config:ro
+      - ${POSTAL_DATA_DIR}/data:/opt/postal/app/data
+    environment:
+      # Database configuration
+      MAIN_DB_HOST: mariadb
+      MAIN_DB_PORT: 3306
+      MAIN_DB_USERNAME: root
+      MAIN_DB_PASSWORD: ${POSTAL_DB_PASSWORD}
+      MAIN_DB_DATABASE: postal
+      
+      MESSAGE_DB_HOST: mariadb
+      MESSAGE_DB_PORT: 3306
+      MESSAGE_DB_USERNAME: root
+      MESSAGE_DB_PASSWORD: ${POSTAL_DB_PASSWORD}
+      MESSAGE_DB_DATABASE: postal
+      
+      # Rails configuration
+      RAILS_ENVIRONMENT: production
+      RAILS_LOG_TO_STDOUT: "true"
+      
+      # Signing key path
+      POSTAL_SIGNING_KEY_PATH: /config/signing.key
+      
+      # Wait for database
+      WAIT_FOR_TARGETS: mariadb:3306
+      WAIT_FOR_TIMEOUT: 60
+    ports:
+      - "25:25"      # SMTP
+      - "587:587"    # SMTP Submission
+      - "5000:5000"  # Web UI
+    command: ["/docker-entrypoint.sh", "postal", "web-server"]
+
+  # Postal Worker for background jobs
+  postal-worker:
+    image: ghcr.io/postalserver/postal:3.3.3
+    container_name: postal_worker
+    restart: always
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      postal:
+        condition: service_started
+    volumes:
+      - ${POSTAL_DATA_DIR}/config:/config:ro
+      - ${POSTAL_DATA_DIR}/data:/opt/postal/app/data
+    environment:
+      # Database configuration
+      MAIN_DB_HOST: mariadb
+      MAIN_DB_PORT: 3306
+      MAIN_DB_USERNAME: root
+      MAIN_DB_PASSWORD: ${POSTAL_DB_PASSWORD}
+      MAIN_DB_DATABASE: postal
+      
+      MESSAGE_DB_HOST: mariadb
+      MESSAGE_DB_PORT: 3306
+      MESSAGE_DB_USERNAME: root
+      MESSAGE_DB_PASSWORD: ${POSTAL_DB_PASSWORD}
+      MESSAGE_DB_DATABASE: postal
+      
+      # Rails configuration
+      RAILS_ENVIRONMENT: production
+      RAILS_LOG_TO_STDOUT: "true"
+      
+      # Signing key path
+      POSTAL_SIGNING_KEY_PATH: /config/signing.key
+    command: ["/docker-entrypoint.sh", "postal", "worker"]
+
+  # SMTP Server
+  postal-smtp:
+    image: ghcr.io/postalserver/postal:3.3.3
+    container_name: postal_smtp
+    restart: always
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      postal:
+        condition: service_started
+    volumes:
+      - ${POSTAL_DATA_DIR}/config:/config:ro
+      - ${POSTAL_DATA_DIR}/data:/opt/postal/app/data
+    environment:
+      # Database configuration
+      MAIN_DB_HOST: mariadb
+      MAIN_DB_PORT: 3306
+      MAIN_DB_USERNAME: root
+      MAIN_DB_PASSWORD: ${POSTAL_DB_PASSWORD}
+      MAIN_DB_DATABASE: postal
+      
+      MESSAGE_DB_HOST: mariadb
+      MESSAGE_DB_PORT: 3306
+      MESSAGE_DB_USERNAME: root
+      MESSAGE_DB_PASSWORD: ${POSTAL_DB_PASSWORD}
+      MESSAGE_DB_DATABASE: postal
+      
+      # Rails configuration
+      RAILS_ENVIRONMENT: production
+      RAILS_LOG_TO_STDOUT: "true"
+      
+      # Signing key path
+      POSTAL_SIGNING_KEY_PATH: /config/signing.key
+    command: ["/docker-entrypoint.sh", "postal", "smtp-server"]
+

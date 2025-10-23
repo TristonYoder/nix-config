@@ -49,11 +49,14 @@
   modules.services.development.github-actions.enable = lib.mkDefault true;
   
   # =============================================================================
-  # COMMUNICATION SERVICES (Federation Discovery)
+  # COMMUNICATION SERVICES
   # =============================================================================
   
   # Well-known delegation for federation (Matrix, Pixelfed, etc.)
   modules.services.communication.wellknown.enable = lib.mkDefault true;
+  
+  # Postal Mail Server (SMTP relay on edge servers with public IP)
+  modules.services.communication.postal.enable = lib.mkDefault true;
   
   # =============================================================================
   # STORAGE (Optional)

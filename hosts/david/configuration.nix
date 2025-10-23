@@ -38,6 +38,9 @@
     ];
   };
   
+  # Stalwart Mail Server
+  modules.services.communication.stalwart-mail.enable = false;
+  
   # =============================================================================
   # ADDITIONAL SERVICES
   # =============================================================================

@@ -22,6 +22,32 @@ export PATH="/nix/var/nix/profiles/default/bin:$PATH"
 ./decrypt-secret.sh --help
 ```
 
+## Service-Specific Secret Generation
+
+For services requiring multiple secrets, use the dedicated generation scripts:
+
+### Postal Mail Server
+```bash
+cd secrets
+./generate-postal-secrets.sh
+```
+Generates 5 encrypted secrets:
+- `postal-db-password.age` - MariaDB password
+- `postal-rails-secret.age` - Rails secret key
+- `postal-signing-key.age` - RSA signing key
+- `postal-admin-email.age` - Admin email
+- `postal-admin-password.age` - Admin password
+
+### Stalwart Mail Server
+```bash
+cd secrets
+./regenerate-stalwart-secrets.sh
+```
+Generates 3 encrypted secrets:
+- `stalwart-postmaster-password.age` - Postmaster account
+- `stalwart-admin-password.age` - Admin mail account
+- `stalwart-admin-web-password.age` - Web admin interface
+
 ## How It Works
 
 - **Encryption**: Uses PUBLIC keys (from `secrets.nix`) - no private key needed
