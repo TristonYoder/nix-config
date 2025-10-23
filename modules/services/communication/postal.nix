@@ -150,27 +150,42 @@ in
       "d ${cfg.dataDir}/mariadb 0750 999 999 -"  # MariaDB UID
     ];
     
-    # Override the generated container configurations to use proper paths
+    # Override the generated container configurations to use proper paths and environment files
     virtualisation.oci-containers.containers."postal_mariadb" = {
-      environmentFiles = [
-        config.age.secrets.postal-db-password.path
-      ];
-      environment = {
-        MARIADB_ROOT_PASSWORD = lib.mkForce null;  # Will come from environmentFile
+      environment = lib.mkForce {
+        MARIADB_ALLOW_EMPTY_ROOT_PASSWORD = "no";
+        MARIADB_DATABASE = "postal";
+        MARIADB_ROOT_PASSWORD = "PLACEHOLDER";  # Will be overridden by environmentFile
       };
+      environmentFiles = [
+        "${cfg.dataDir}/config/db.env"
+      ];
       volumes = lib.mkForce [
         "${cfg.dataDir}/mariadb:/var/lib/mysql:rw"
       ];
     };
     
     virtualisation.oci-containers.containers."postal_runner" = {
-      environmentFiles = [
-        config.age.secrets.postal-db-password.path
-      ];
-      environment = {
-        MAIN_DB_PASSWORD = lib.mkForce null;  # Will come from environmentFile
-        MESSAGE_DB_PASSWORD = lib.mkForce null;  # Will come from environmentFile
+      environment = lib.mkForce {
+        MAIN_DB_DATABASE = "postal";
+        MAIN_DB_HOST = "mariadb";
+        MAIN_DB_PASSWORD = "PLACEHOLDER";  # Will be overridden by environmentFile
+        MAIN_DB_PORT = "3306";
+        MAIN_DB_USERNAME = "root";
+        MESSAGE_DB_DATABASE = "postal";
+        MESSAGE_DB_HOST = "mariadb";
+        MESSAGE_DB_PASSWORD = "PLACEHOLDER";  # Will be overridden by environmentFile
+        MESSAGE_DB_PORT = "3306";
+        MESSAGE_DB_USERNAME = "root";
+        POSTAL_SIGNING_KEY_PATH = "/config/signing.key";
+        RAILS_ENVIRONMENT = "production";
+        RAILS_LOG_TO_STDOUT = "true";
+        WAIT_FOR_TARGETS = "mariadb:3306";
+        WAIT_FOR_TIMEOUT = "60";
       };
+      environmentFiles = [
+        "${cfg.dataDir}/config/db.env"
+      ];
       volumes = lib.mkForce [
         "${cfg.dataDir}/config:/config:ro"
         "${cfg.dataDir}/data:/opt/postal/app/data:rw"
@@ -178,13 +193,24 @@ in
     };
     
     virtualisation.oci-containers.containers."postal_worker" = {
-      environmentFiles = [
-        config.age.secrets.postal-db-password.path
-      ];
-      environment = {
-        MAIN_DB_PASSWORD = lib.mkForce null;  # Will come from environmentFile
-        MESSAGE_DB_PASSWORD = lib.mkForce null;  # Will come from environmentFile
+      environment = lib.mkForce {
+        MAIN_DB_DATABASE = "postal";
+        MAIN_DB_HOST = "mariadb";
+        MAIN_DB_PASSWORD = "PLACEHOLDER";  # Will be overridden by environmentFile
+        MAIN_DB_PORT = "3306";
+        MAIN_DB_USERNAME = "root";
+        MESSAGE_DB_DATABASE = "postal";
+        MESSAGE_DB_HOST = "mariadb";
+        MESSAGE_DB_PASSWORD = "PLACEHOLDER";  # Will be overridden by environmentFile
+        MESSAGE_DB_PORT = "3306";
+        MESSAGE_DB_USERNAME = "root";
+        POSTAL_SIGNING_KEY_PATH = "/config/signing.key";
+        RAILS_ENVIRONMENT = "production";
+        RAILS_LOG_TO_STDOUT = "true";
       };
+      environmentFiles = [
+        "${cfg.dataDir}/config/db.env"
+      ];
       volumes = lib.mkForce [
         "${cfg.dataDir}/config:/config:ro"
         "${cfg.dataDir}/data:/opt/postal/app/data:rw"
@@ -192,13 +218,24 @@ in
     };
     
     virtualisation.oci-containers.containers."postal_smtp" = {
-      environmentFiles = [
-        config.age.secrets.postal-db-password.path
-      ];
-      environment = {
-        MAIN_DB_PASSWORD = lib.mkForce null;  # Will come from environmentFile
-        MESSAGE_DB_PASSWORD = lib.mkForce null;  # Will come from environmentFile
+      environment = lib.mkForce {
+        MAIN_DB_DATABASE = "postal";
+        MAIN_DB_HOST = "mariadb";
+        MAIN_DB_PASSWORD = "PLACEHOLDER";  # Will be overridden by environmentFile
+        MAIN_DB_PORT = "3306";
+        MAIN_DB_USERNAME = "root";
+        MESSAGE_DB_DATABASE = "postal";
+        MESSAGE_DB_HOST = "mariadb";
+        MESSAGE_DB_PASSWORD = "PLACEHOLDER";  # Will be overridden by environmentFile
+        MESSAGE_DB_PORT = "3306";
+        MESSAGE_DB_USERNAME = "root";
+        POSTAL_SIGNING_KEY_PATH = "/config/signing.key";
+        RAILS_ENVIRONMENT = "production";
+        RAILS_LOG_TO_STDOUT = "true";
       };
+      environmentFiles = [
+        "${cfg.dataDir}/config/db.env"
+      ];
       volumes = lib.mkForce [
         "${cfg.dataDir}/config:/config:ro"
         "${cfg.dataDir}/data:/opt/postal/app/data:rw"
