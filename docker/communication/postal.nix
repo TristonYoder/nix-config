@@ -85,7 +85,7 @@
       "587:587/tcp"
       "5000:5000/tcp"
     ];
-    cmd = [ "/docker-entrypoint.sh" "postal" "run" ];
+    cmd = [ "/docker-entrypoint.sh" "postal" "web-server" ];
     dependsOn = [
       "postal_mariadb"
     ];

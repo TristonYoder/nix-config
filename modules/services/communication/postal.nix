@@ -348,7 +348,7 @@ EOF
         
         echo "Waiting for MariaDB to be ready..."
         for i in {1..30}; do
-          if ${pkgs.podman}/bin/podman exec postal_mariadb mysqladmin ping -h localhost --silent 2>/dev/null; then
+          if ${pkgs.docker}/bin/docker exec postal_mariadb mysqladmin ping -h localhost --silent 2>/dev/null; then
             echo "MariaDB is ready"
             break
           fi
@@ -357,7 +357,7 @@ EOF
         done
         
         echo "Initializing Postal database schema..."
-        ${pkgs.podman}/bin/podman exec postal_runner postal initialize || {
+        ${pkgs.docker}/bin/docker exec postal_runner postal initialize || {
           echo "Failed to initialize database"
           exit 1
         }
@@ -405,7 +405,7 @@ EOF
         echo "Email: $ADMIN_EMAIL"
         
         # Create admin user using Postal's make-user command with automated input
-        ${pkgs.podman}/bin/podman exec postal_runner bash -c "
+        ${pkgs.docker}/bin/docker exec postal_runner bash -c "
           postal make-user <<EOF
 $ADMIN_EMAIL
 $ADMIN_EMAIL

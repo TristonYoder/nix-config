@@ -56,7 +56,7 @@ services:
       - "25:25"      # SMTP
       - "587:587"    # SMTP Submission
       - "5000:5000"  # Web UI
-    command: ["/docker-entrypoint.sh", "postal", "run"]
+    command: ["/docker-entrypoint.sh", "postal", "web-server"]
 
   # Postal Worker for background jobs
   postal-worker:
