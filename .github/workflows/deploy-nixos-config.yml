@@ -201,6 +201,18 @@ jobs:
       with:
         message: |
           ❌ ${{ matrix.host }} failed
+          
+          Error details:
+          ```
+          Deployment failed for ${{ matrix.host }}
+          The server may be in an inconsistent state.
+          Common issues:
+          - Configuration errors preventing nixos-rebuild
+          - Disk space issues
+          - Dependency build failures
+          - Network connectivity issues
+          ```
+          
           View logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
@@ -256,6 +268,14 @@ jobs:
       with:
         message: |
           ⚠️ Some deployments failed
+          
+          Error details:
+          ```
+          One or more hosts failed to deploy successfully.
+          Check individual host logs above for specific errors.
+          Failed hosts may need manual intervention.
+          ```
+          
           View logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}

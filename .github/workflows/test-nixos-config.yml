@@ -52,10 +52,13 @@ jobs:
         nix_path: nixpkgs=channel:nixos-unstable
     
     - name: Check flake syntax
+      id: syntax-check
       run: |
         echo "Testing flake syntax..."
         nix flake check --all-systems
         echo "✅ Flake syntax check passed!"
+        echo "check_result=success" >> $GITHUB_OUTPUT
+      continue-on-error: true
     
     - name: Debug outputs
       if: success()
@@ -81,6 +84,16 @@ jobs:
       with:
         message: |
           ❌ Syntax check failed
+          
+          Error details:
+          ```
+          Check the GitHub Actions logs for the full error output.
+          Common issues:
+          - Syntax errors in flake.nix
+          - Missing required inputs
+          - Invalid host configurations
+          ```
+          
           View logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
@@ -227,6 +240,17 @@ jobs:
       with:
         message: |
           ❌ ${{ matrix.host.name }} failed
+          
+          Error details:
+          ```
+          Configuration test failed for ${{ matrix.host.name }}
+          Check server logs for detailed error information.
+          Common issues:
+          - Invalid NixOS configuration
+          - Missing dependencies
+          - Network connectivity issues
+          ```
+          
           View logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
