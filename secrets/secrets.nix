@@ -86,14 +86,14 @@ in
   
   # NextDNS Dynamic DNS Link
   "nextdns-link.age".publicKeys = davidKeys;
+
+  # Cloudflare tunnel token
+    "cloudflared-token-current.age".publicKeys = davidKeys;
   
   # =============================================================================
-  # SHARED SECRETS (Both Servers)
+  # SHARED SECRETS (All Servers)
   # =============================================================================
-  
-  # Cloudflare tunnel token - currently only used by david (server profile)
-  # Available to all servers but disabled on edge servers
-  "cloudflared-token-current.age".publicKeys = allServers;
+
   
   # =============================================================================
   # PITS-SPECIFIC SECRETS

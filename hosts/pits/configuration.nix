@@ -59,9 +59,7 @@
   
   # All module enables are set in ../../profiles/edge.nix
   # You can override or add specific services here
-  
-  # Note: Cloudflare Tunnel is NOT enabled on edge servers (only on david)
-  
+    
   # Example: Enable Syncthing for edge data sync
   # modules.services.storage.syncthing.enable = true;
   
