@@ -30,16 +30,25 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
+    - name: Get commit message
+      id: get-commit
+      if: always()
+      run: |
+        COMMIT_MSG="${{ github.event.head_commit.message || github.event.commits[0].message || 'Manual trigger' }}"
+        TRUNCATED_MSG=$(echo "$COMMIT_MSG" | head -n 2 | tr '\n' ' ')
+        echo "commit_message<<EOF" >> $GITHUB_OUTPUT
+        echo "$TRUNCATED_MSG" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+    
     - name: Notify deployment start
       id: notify-start
       if: always()
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          🚀 GitHub Actions: Deploying NixOS Configuration
-          Workflow: Deploy NixOS Flake Configuration
+          🚀 Deploying NixOS Configuration
+          Commit: ${{ steps.get-commit.outputs.commit_message }}
           Branch: ${{ github.ref_name }}
-          Trigger: ${{ github.event_name }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
