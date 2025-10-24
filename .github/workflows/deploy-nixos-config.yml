@@ -81,7 +81,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          🔵 Deploying ${{ matrix.host }}
+          [🔵 Deploying ${{ matrix.host }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
@@ -189,7 +189,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ✅ ${{ matrix.host }} deployed
+          [✅ ${{ matrix.host }} deployed](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
@@ -243,7 +243,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ✅ All deployments completed
+          [✅ All deployments completed](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}

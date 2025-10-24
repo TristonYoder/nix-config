@@ -40,7 +40,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          🔵 Testing syntax
+          [🔵 Testing syntax](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
@@ -72,7 +72,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ✅ Syntax check passed
+          [✅ Syntax check passed](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
@@ -133,7 +133,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          🔵 Testing ${{ matrix.host.name }}
+          [🔵 Testing ${{ matrix.host.name }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
@@ -217,7 +217,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ✅ ${{ matrix.host.name }} passed
+          [✅ ${{ matrix.host.name }} passed](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
