@@ -71,8 +71,8 @@ in
       configureRedis = true;
       # Increase the maximum file upload size
       maxUploadSize = cfg.maxUploadSize;
-      # Disable HTTPS since we're using Caddy
-      https = false;
+      # Enable HTTPS with Nextcloud's built-in nginx
+      https = true;
       # Enable automatic app updates
       autoUpdateApps.enable = true;
       
@@ -108,32 +108,11 @@ in
       "f /var/lib/nextcloud/config/config.php 0640 nextcloud nextcloud -"
     ];
 
-    # Add caddy user to nextcloud group
-    users.users.caddy.extraGroups = [ "nextcloud" ];
-
-    # PHP-FPM configuration for Nextcloud
-    # Listen on Unix socket for local Caddy and TCP port for remote proxies (PITS)
-    services.phpfpm.pools.nextcloud = {
-      user = "nextcloud";
-      group = "nextcloud";
-      listen = "/run/phpfpm/nextcloud.sock /run/phpfpm/nextcloud-tcp.sock 127.0.0.1:9000";
-      settings = {
-        "listen.mode" = "0660";
-        "listen.owner" = "nextcloud";
-        "listen.group" = "nextcloud";
-        "listen.allowed_clients" = "127.0.0.1,10.150.100.0/23";
-      };
-    };
-
     # Caddy virtual host configuration
+    # Proxy to Nextcloud's built-in nginx
     services.caddy.virtualHosts.${cfg.domain} = mkIf config.modules.services.infrastructure.caddy.enable {
       extraConfig = ''
-        reverse_proxy / unix//run/phpfpm/nextcloud.sock {
-          transport http {
-            read_timeout 300s
-            write_timeout 300s
-          }
-        }
+        reverse_proxy http://localhost:80
         import cloudflare_tls
       '';
     };
