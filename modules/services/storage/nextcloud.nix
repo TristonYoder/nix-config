@@ -131,12 +131,14 @@ in
       extraConfig = ''
         # Serve Nextcloud via PHP-FPM
         root * ${config.services.nextcloud.package}
-        file_server
         
         # PHP FastCGI through Unix socket
         php_fastcgi unix//run/phpfpm/nextcloud.sock {
           env front_controller_active true
         }
+        
+        # File server
+        file_server
         
         # Compression
         encode gzip
