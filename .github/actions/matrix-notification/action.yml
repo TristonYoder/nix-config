@@ -47,7 +47,9 @@ runs:
         ROOM_ID_ENCODED=$(echo -n "$ROOM_ID" | jq -sRr @uri)
         
         # Build base payload with HTML formatting - bold workflow names and headers
+        # Convert markdown links to HTML links
         FORMATTED_MESSAGE=$(echo "$MESSAGE" | \
+          sed 's/\[\([^\]]*\)\](\([^)]*\))/<a href="\2">\1<\/a>/g' | \
           sed 's/^🚀/<b>🚀<\/b>/g' | \
           sed 's/^✅/<b>✅<\/b>/g' | \
           sed 's/^❌/<b>❌<\/b>/g' | \
