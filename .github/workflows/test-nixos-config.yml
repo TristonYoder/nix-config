@@ -37,7 +37,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          🚀 Testing NixOS Configuration
+          🧪 Testing NixOS Configuration
           Workflow: Test NixOS Flake Configuration
           Branch: ${{ github.ref_name }}
           Committer: ${{ github.actor }}
