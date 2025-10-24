@@ -76,6 +76,23 @@ jobs:
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
         thread_id: ${{ steps.notify-start.outputs['event_id'] }}
+    
+    - name: React to parent with failure emoji
+      if: failure()
+      run: |
+        PARENT_EVENT_ID="${{ steps.notify-start.outputs['event_id'] }}"
+        ROOM_ID_ENCODED=$(echo -n "${{ secrets.MATRIX_ROOM_ID }}" | jq -sRr @uri)
+        
+        curl -X PUT "${{ secrets.MATRIX_HOMESERVER_URL }}/_matrix/client/r0/rooms/$ROOM_ID_ENCODED/redact/$PARENT_EVENT_ID/react-$(date +%s)" \
+          -H "Authorization: Bearer ${{ secrets.MATRIX_ACCESS_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "m.relates_to": {
+              "rel_type": "m.annotation",
+              "event_id": "'"$PARENT_EVENT_ID"'",
+              "key": "❌"
+            }
+          }' || echo "Reaction failed, continuing..."
 
   # Test all NixOS configurations
   test-configurations:
@@ -205,3 +222,20 @@ jobs:
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
         thread_id: ${{ needs.check-flake-syntax.outputs.parent_event_id }}
+    
+    - name: React to parent with failure emoji
+      if: failure()
+      run: |
+        PARENT_EVENT_ID="${{ needs.check-flake-syntax.outputs.parent_event_id }}"
+        ROOM_ID_ENCODED=$(echo -n "${{ secrets.MATRIX_ROOM_ID }}" | jq -sRr @uri)
+        
+        curl -X PUT "${{ secrets.MATRIX_HOMESERVER_URL }}/_matrix/client/r0/rooms/$ROOM_ID_ENCODED/send/m.reaction/$(openssl rand -hex 16)" \
+          -H "Authorization: Bearer ${{ secrets.MATRIX_ACCESS_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "m.relates_to": {
+              "rel_type": "m.annotation",
+              "event_id": "'"$PARENT_EVENT_ID"'",
+              "key": "❌"
+            }
+          }' || echo "Reaction failed, continuing..."
