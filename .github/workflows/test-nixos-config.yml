@@ -6,12 +6,31 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  MATRIX_HOMESERVER_URL: ${{ secrets.MATRIX_HOMESERVER_URL }}
+  MATRIX_ROOM_ID: ${{ secrets.MATRIX_ROOM_ID }}
+  MATRIX_ACCESS_TOKEN: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+
 jobs:
   # First, check flake syntax locally (fast fail)
   check-flake-syntax:
     runs-on: ubuntu-latest
     
     steps:
+    - name: Notify start
+      if: always()
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          🚀 GitHub Actions: Testing NixOS configuration
+          Workflow: Test NixOS Flake Configuration
+          Status: Starting syntax check
+          Branch: ${{ github.ref_name }}
+          Committer: ${{ github.actor }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+      
     - name: Checkout code
       uses: actions/checkout@v4
       
@@ -25,6 +44,33 @@ jobs:
         echo "Testing flake syntax..."
         nix flake check --all-systems
         echo "✅ Flake syntax check passed!"
+    
+    - name: Notify success
+      if: success()
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ✅ GitHub Actions: Syntax check passed
+          Workflow: Test NixOS Flake Configuration
+          Status: Success
+          Branch: ${{ github.ref_name }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+    
+    - name: Notify failure
+      if: failure()
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ❌ GitHub Actions: Syntax check failed
+          Workflow: Test NixOS Flake Configuration
+          Status: Failed
+          Branch: ${{ github.ref_name }}
+          View logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
 
   # Test all NixOS configurations
   test-configurations:
@@ -42,6 +88,20 @@ jobs:
       fail-fast: false  # Continue testing other hosts even if one fails
     
     steps:
+    - name: Notify start
+      if: always()
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          🚀 GitHub Actions: Testing ${{ matrix.host.name }} configuration
+          Workflow: Test NixOS Flake Configuration
+          Host: ${{ matrix.host.name }}
+          Status: Starting test
+          Branch: ${{ github.ref_name }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+      
     - name: Checkout code
       uses: actions/checkout@v4
       
@@ -117,3 +177,32 @@ jobs:
         else
           echo "❌ ${{ matrix.host.name }} configuration test failed"
         fi
+    
+    - name: Notify success
+      if: success()
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ✅ GitHub Actions: Test passed for ${{ matrix.host.name }}
+          Workflow: Test NixOS Flake Configuration
+          Host: ${{ matrix.host.name }}
+          Status: Success
+          Branch: ${{ github.ref_name }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+    
+    - name: Notify failure
+      if: failure()
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ❌ GitHub Actions: Test failed for ${{ matrix.host.name }}
+          Workflow: Test NixOS Flake Configuration
+          Host: ${{ matrix.host.name }}
+          Status: Failed
+          Branch: ${{ github.ref_name }}
+          View logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}

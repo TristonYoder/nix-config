@@ -1,0 +1,58 @@
+name: 'Matrix Notification'
+description: 'Send a notification to a Matrix room'
+
+inputs:
+  message:
+    description: 'The message to send'
+    required: true
+  room_id:
+    description: 'The Matrix room ID'
+    required: true
+  homeserver_url:
+    description: 'The Matrix homeserver URL'
+    required: true
+  access_token:
+    description: 'The Matrix access token'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Send Matrix notification
+      shell: bash
+      run: |
+        MESSAGE="${{ inputs.message }}"
+        ROOM_ID="${{ inputs.room_id }}"
+        HOMESERVER_URL="${{ inputs.homeserver_url }}"
+        ACCESS_TOKEN="${{ inputs.access_token }}"
+        
+        # URL encode the room ID
+        ROOM_ID_ENCODED=$(echo -n "$ROOM_ID" | jq -sRr @uri)
+        
+        # Create the API URL
+        URL="${HOMESERVER_URL}/_matrix/client/r0/rooms/${ROOM_ID_ENCODED}/send/m.room.message"
+        
+        # Create the payload with HTML formatting
+        PAYLOAD=$(jq -n \
+          --arg body "$MESSAGE" \
+          --arg formatted_body "$(echo "$MESSAGE" | sed 's/$/<br>/g')" \
+          '{msgtype: "m.text", body: $body, format: "org.matrix.custom.html", formatted_body: $formatted_body}')
+        
+        # Send the notification
+        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$URL" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $ACCESS_TOKEN" \
+          -d "$PAYLOAD")
+        
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        BODY=$(echo "$RESPONSE" | sed '$d')
+        
+        if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+          echo "✅ Matrix notification sent successfully"
+        else
+          echo "❌ Failed to send Matrix notification"
+          echo "HTTP Code: $HTTP_CODE"
+          echo "Response: $BODY"
+          exit 1
+        fi
+

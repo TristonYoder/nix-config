@@ -12,6 +12,11 @@ on:
         required: false
         default: 'all'
 
+env:
+  MATRIX_HOMESERVER_URL: ${{ secrets.MATRIX_HOMESERVER_URL }}
+  MATRIX_ROOM_ID: ${{ secrets.MATRIX_ROOM_ID }}
+  MATRIX_ACCESS_TOKEN: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+
 jobs:
   # Determine which hosts to deploy
   prepare-deployment:
@@ -21,6 +26,20 @@ jobs:
       hosts: ${{ steps.set-hosts.outputs.hosts }}
     
     steps:
+    - name: Notify deployment start
+      if: always()
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          🚀 GitHub Actions: Starting NixOS deployment
+          Workflow: Deploy NixOS Flake Configuration
+          Status: Preparing deployment
+          Branch: ${{ github.ref_name }}
+          Trigger: ${{ github.event_name }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+    
     - name: Determine deployment hosts
       id: set-hosts
       run: |
@@ -51,6 +70,20 @@ jobs:
       fail-fast: false  # Continue deploying to other hosts even if one fails
     
     steps:
+    - name: Notify deployment start
+      if: always()
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          🚀 GitHub Actions: Deploying to ${{ matrix.host }}
+          Workflow: Deploy NixOS Flake Configuration
+          Host: ${{ matrix.host }}
+          Status: Starting deployment
+          Branch: ${{ github.ref_name }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+    
     - name: Checkout code
       uses: actions/checkout@v4
       
@@ -150,6 +183,35 @@ jobs:
       run: |
         echo "❌ NixOS configuration deployment failed for ${{ matrix.host }}"
         echo "Check the server logs for more details"
+    
+    - name: Notify success
+      if: success()
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ✅ GitHub Actions: Deployment successful for ${{ matrix.host }}
+          Workflow: Deploy NixOS Flake Configuration
+          Host: ${{ matrix.host }}
+          Status: Success
+          Branch: ${{ github.ref_name }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+    
+    - name: Notify failure
+      if: failure()
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ❌ GitHub Actions: Deployment failed for ${{ matrix.host }}
+          Workflow: Deploy NixOS Flake Configuration
+          Host: ${{ matrix.host }}
+          Status: Failed
+          Branch: ${{ github.ref_name }}
+          View logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
         
   # Summary job to report overall deployment status
   deployment-summary:
@@ -165,4 +227,30 @@ jobs:
         else
           echo "⚠️  Some deployments may have failed. Check individual job logs."
           exit 1
-        fi
+    
+    - name: Notify summary success
+      if: success()
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ✅ GitHub Actions: All deployments completed successfully
+          Workflow: Deploy NixOS Flake Configuration
+          Status: All hosts deployed
+          Branch: ${{ github.ref_name }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+    
+    - name: Notify summary failure
+      if: failure()
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ⚠️ GitHub Actions: Some deployments failed
+          Workflow: Deploy NixOS Flake Configuration
+          Status: Partial failure
+          Branch: ${{ github.ref_name }}
+          View logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
