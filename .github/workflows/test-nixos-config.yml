@@ -83,18 +83,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ❌ Syntax check failed
-          
-          Error details:
-          ```
-          Check the GitHub Actions logs for the full error output.
-          Common issues:
-          - Syntax errors in flake.nix
-          - Missing required inputs
-          - Invalid host configurations
-          ```
-          
-          View logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ❌ Syntax check failed - [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
@@ -239,19 +228,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ❌ ${{ matrix.host.name }} failed
-          
-          Error details:
-          ```
-          Configuration test failed for ${{ matrix.host.name }}
-          Check server logs for detailed error information.
-          Common issues:
-          - Invalid NixOS configuration
-          - Missing dependencies
-          - Network connectivity issues
-          ```
-          
-          View logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ❌ ${{ matrix.host.name }} failed - [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
