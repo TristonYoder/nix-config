@@ -74,9 +74,6 @@ in
       hostName = cfg.domain;
       package = cfg.package;
       
-      # Disable NGINX - Caddy will serve Nextcloud directly
-      nginx.enable = false;
-      
       # Database configuration - PostgreSQL
       database.createLocally = true;
       
