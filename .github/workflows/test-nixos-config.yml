@@ -47,6 +47,7 @@ jobs:
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
     
     - name: Notify testing syntax
+      id: notify-syntax-start
       uses: ./.github/actions/matrix-notification
       with:
         message: |
@@ -80,6 +81,7 @@ jobs:
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
         thread_id: ${{ steps.send-start-notify.outputs['event_id'] }}
+        event_id: ${{ steps.notify-syntax-start.outputs['event_id'] }}
     
     - name: Notify failure
       if: failure()
@@ -92,6 +94,7 @@ jobs:
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
         thread_id: ${{ steps.send-start-notify.outputs['event_id'] }}
+        event_id: ${{ steps.notify-syntax-start.outputs['event_id'] }}
     
     - name: React to parent with failure emoji
       if: failure()
