@@ -77,20 +77,15 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Notify deployment start
-      id: notify-start
-      if: always()
+    - name: Notify deploying host
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          🚀 GitHub Actions: Deploying to ${{ matrix.host }}
-          Workflow: Deploy NixOS Flake Configuration
-          Host: ${{ matrix.host }}
-          Status: Starting deployment
-          Branch: ${{ github.ref_name }}
+          🔵 Deploying ${{ matrix.host }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
       
     - name: Setup Tailscale
       uses: tailscale/github-action@v2
