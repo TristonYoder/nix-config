@@ -81,7 +81,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          [🔵 Deploying ${{ matrix.host }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          🔵 Deploying ${{ matrix.host }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
@@ -189,7 +189,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          [✅ ${{ matrix.host }} deployed](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          ✅ ${{ matrix.host }} deployed
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
@@ -200,7 +200,8 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ❌ ${{ matrix.host }} failed - [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          ❌ ${{ matrix.host }} failed
+          ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
@@ -243,7 +244,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          [✅ All deployments completed](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          ✅ All deployments completed
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
@@ -254,7 +255,8 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ⚠️ Some deployments failed - [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          ⚠️ Some deployments failed
+          ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}

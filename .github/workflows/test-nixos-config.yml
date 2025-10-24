@@ -40,7 +40,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          [🔵 Testing syntax](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          🔵 Testing syntax
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
@@ -72,7 +72,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          [✅ Syntax check passed](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          ✅ Syntax check passed
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
@@ -83,7 +83,8 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ❌ Syntax check failed - [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          ❌ Syntax check failed
+          ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
@@ -133,7 +134,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          [🔵 Testing ${{ matrix.host.name }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          🔵 Testing ${{ matrix.host.name }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
@@ -217,7 +218,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          [✅ ${{ matrix.host.name }} passed](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          ✅ ${{ matrix.host.name }} passed
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
@@ -228,7 +229,8 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ❌ ${{ matrix.host.name }} failed - [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          ❌ ${{ matrix.host.name }} failed
+          ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
