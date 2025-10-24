@@ -24,19 +24,20 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     outputs:
       hosts: ${{ steps.set-hosts.outputs.hosts }}
+      parent_event_id: ${{ steps.notify-start.outputs.event_id }}
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
     
     - name: Notify deployment start
+      id: notify-start
       if: always()
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          🚀 GitHub Actions: Starting NixOS deployment
+          🚀 GitHub Actions: Deploying NixOS Configuration
           Workflow: Deploy NixOS Flake Configuration
-          Status: Preparing deployment
           Branch: ${{ github.ref_name }}
           Trigger: ${{ github.event_name }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
@@ -193,31 +194,40 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ✅ GitHub Actions: Deployment successful for ${{ matrix.host }}
-          Workflow: Deploy NixOS Flake Configuration
-          Host: ${{ matrix.host }}
-          Status: Success
-          Branch: ${{ github.ref_name }}
+          ✅ ${{ matrix.host }} deployed
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
-        thread_id: ${{ steps.notify-start.outputs['event_id'] }}
+        thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
     
     - name: Notify failure
       if: failure()
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ❌ GitHub Actions: Deployment failed for ${{ matrix.host }}
-          Workflow: Deploy NixOS Flake Configuration
-          Host: ${{ matrix.host }}
-          Status: Failed
-          Branch: ${{ github.ref_name }}
+          ❌ ${{ matrix.host }} failed
           View logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
-        thread_id: ${{ steps.notify-start.outputs['event_id'] }}
+        thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
+    
+    - name: React to parent with failure emoji
+      if: failure()
+      run: |
+        PARENT_EVENT_ID="${{ needs.prepare-deployment.outputs.parent_event_id }}"
+        ROOM_ID_ENCODED=$(echo -n "${{ secrets.MATRIX_ROOM_ID }}" | jq -sRr @uri)
+        
+        curl -X PUT "${{ secrets.MATRIX_HOMESERVER_URL }}/_matrix/client/r0/rooms/$ROOM_ID_ENCODED/send/m.reaction/$(openssl rand -hex 16)" \
+          -H "Authorization: Bearer ${{ secrets.MATRIX_ACCESS_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "m.relates_to": {
+              "rel_type": "m.annotation",
+              "event_id": "'"$PARENT_EVENT_ID"'",
+              "key": "❌"
+            }
+          }' || echo "Reaction failed, continuing..."
         
   # Summary job to report overall deployment status
   deployment-summary:
@@ -239,24 +249,20 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ✅ GitHub Actions: All deployments completed successfully
-          Workflow: Deploy NixOS Flake Configuration
-          Status: All hosts deployed
-          Branch: ${{ github.ref_name }}
+          ✅ All deployments completed
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
     
     - name: Notify summary failure
       if: failure()
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ⚠️ GitHub Actions: Some deployments failed
-          Workflow: Deploy NixOS Flake Configuration
-          Status: Partial failure
-          Branch: ${{ github.ref_name }}
+          ⚠️ Some deployments failed
           View logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
