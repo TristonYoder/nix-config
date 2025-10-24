@@ -10,7 +10,7 @@ in
     
     domain = mkOption {
       type = types.str;
-      default = "cloud.theyoder.family";
+      default = "cloud.7andco.dev";
       description = "Domain for Nextcloud";
     };
     
@@ -41,7 +41,9 @@ in
     trustedDomains = mkOption {
       type = types.listOf types.str;
       default = [
+        "cloud.7andco.dev"
         "cloud.theyoder.family"
+        "cloud.7andco.studio"
         "10.150.100.30" # Optional LAN IP
       ];
       description = "List of trusted domains";
@@ -130,6 +132,21 @@ in
             write_timeout 300s
           }
         }
+        import cloudflare_tls
+      '';
+    };
+
+    # Redirect aliases to main domain
+    services.caddy.virtualHosts."cloud.theyoder.family" = mkIf config.modules.services.infrastructure.caddy.enable {
+      extraConfig = ''
+        redir https://${cfg.domain}{uri} permanent
+        import cloudflare_tls
+      '';
+    };
+
+    services.caddy.virtualHosts."cloud.7andco.studio" = mkIf config.modules.services.infrastructure.caddy.enable {
+      extraConfig = ''
+        redir https://${cfg.domain}{uri} permanent
         import cloudflare_tls
       '';
     };

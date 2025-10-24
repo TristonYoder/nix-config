@@ -106,6 +106,21 @@
     ];
   };
   
+  # Nextcloud redirects - redirect old domains to cloud.7andco.dev
+  services.caddy.virtualHosts."cloud.theyoder.family" = {
+    extraConfig = ''
+      redir https://cloud.7andco.dev{uri} permanent
+      import cloudflare_tls
+    '';
+  };
+  
+  services.caddy.virtualHosts."cloud.7andco.studio" = {
+    extraConfig = ''
+      redir https://cloud.7andco.dev{uri} permanent
+      import cloudflare_tls
+    '';
+  };
+  
   # Stalwart Mail Admin Interface - Reverse proxy to david
   # Uses Cloudflare DNS-01 challenge for automatic HTTPS
   services.caddy.virtualHosts."admin.mail.7andco.dev" = {
