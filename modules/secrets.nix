@@ -35,18 +35,18 @@ with lib;
       group = "caddy";
       mode = "0400";
     };
+  } // (optionalAttrs (config.networking.hostName == "david") {
+    # -------------------------------------------------------------------------
+    # DAVID-SPECIFIC SECRETS
+    # -------------------------------------------------------------------------
     
-    # Cloudflare Tunnel Token (shared by both hosts for redundancy)
+    # Cloudflare Tunnel Token (only on david, not on edge servers)
     cloudflared-token-current = {
       file = ../secrets/cloudflared-token-current.age;
       owner = "cloudflared";
       group = "cloudflared";
       mode = "0400";
     };
-  } // (optionalAttrs (config.networking.hostName == "david") {
-    # -------------------------------------------------------------------------
-    # DAVID-SPECIFIC SECRETS
-    # -------------------------------------------------------------------------
     
     matrix-registration-secret = {
       file = ../secrets/matrix-registration-secret.age;
