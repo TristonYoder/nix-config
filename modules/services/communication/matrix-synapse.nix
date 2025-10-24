@@ -32,6 +32,12 @@ in
       description = "Allow open registration";
     };
     
+    enableRegistrationWithoutVerification = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Allow registration without email verification (warning: security risk)";
+    };
+    
     enableUrlPreviews = mkOption {
       type = types.bool;
       default = true;
@@ -98,7 +104,7 @@ in
         
         # Registration settings
         enable_registration = cfg.enableRegistration;
-        enable_registration_without_verification = false;
+        enable_registration_without_verification = cfg.enableRegistrationWithoutVerification;
         
         # Federation settings
         federation_domain_whitelist = null; # Allow federation with all domains

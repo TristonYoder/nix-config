@@ -58,6 +58,7 @@
   modules.services.communication.matrix-synapse = {
     enable = lib.mkDefault true;
     enableRegistration = lib.mkDefault true; # Temporarily enable for bridge setup
+    enableRegistrationWithoutVerification = lib.mkDefault true; # Allow registration without email verification
   };
   modules.services.communication.mautrix-groupme.enable = lib.mkDefault true;
   modules.services.communication.mautrix-imessage.enable = lib.mkDefault true;
