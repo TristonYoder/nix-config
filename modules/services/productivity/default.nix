@@ -5,6 +5,7 @@
     ./vaultwarden.nix
     ./n8n.nix
     ./actual.nix
+    ./nextcloud.nix
   ];
 }
 
