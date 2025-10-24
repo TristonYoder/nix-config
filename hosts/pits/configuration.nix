@@ -106,6 +106,15 @@
     ];
   };
   
+  # Nextcloud - Reverse proxy to david
+  # Uses Cloudflare DNS-01 challenge for automatic HTTPS
+  services.caddy.virtualHosts."cloud.7andco.dev" = {
+    extraConfig = ''
+      reverse_proxy http://david:9000
+      import cloudflare_tls
+    '';
+  };
+  
   # Nextcloud redirects - redirect old domains to cloud.7andco.dev
   services.caddy.virtualHosts."cloud.theyoder.family" = {
     extraConfig = ''

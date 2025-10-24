@@ -112,14 +112,16 @@ in
     users.users.caddy.extraGroups = [ "nextcloud" ];
 
     # PHP-FPM configuration for Nextcloud
+    # Listen on Unix socket for local Caddy and TCP port for remote proxies (PITS)
     services.phpfpm.pools.nextcloud = {
       user = "nextcloud";
       group = "nextcloud";
+      listen = "/run/phpfpm/nextcloud.sock /run/phpfpm/nextcloud-tcp.sock 127.0.0.1:9000";
       settings = {
-        "listen" = "/run/phpfpm/nextcloud.sock";
+        "listen.mode" = "0660";
         "listen.owner" = "nextcloud";
         "listen.group" = "nextcloud";
-        "listen.mode" = "0660";
+        "listen.allowed_clients" = "127.0.0.1,10.150.100.0/23";
       };
     };
 
