@@ -206,7 +206,7 @@ jobs:
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
         thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
-        event_id: ${{ steps.notify-deploy-start.outputs['event_id'] }}
+        redact_event_id: ${{ steps.notify-deploy-start.outputs['event_id'] }}
     
     - name: Notify failure
       if: failure()
@@ -216,10 +216,10 @@ jobs:
           ❌ ${{ matrix.host }} failed
           ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        redact_event_id: ${{ steps.notify-deploy-start.outputs['event_id'] }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
         thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
-        event_id: ${{ steps.notify-deploy-start.outputs['event_id'] }}
     
     - name: React to parent with failure emoji
       if: failure()
