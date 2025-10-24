@@ -47,8 +47,10 @@ jobs:
       with:
         message: |
           🚀 Deploying NixOS Configuration
-          Commit: ${{ steps.get-commit.outputs.commit_message }}
+          Workflow: Deploy NixOS Flake Configuration
           Branch: ${{ github.ref_name }}
+          Committer: ${{ github.actor }}
+          Commit: ${{ steps.get-commit.outputs.commit_message }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}

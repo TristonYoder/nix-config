@@ -38,8 +38,10 @@ jobs:
       with:
         message: |
           🚀 Testing NixOS Configuration
-          Commit: ${{ steps.notify-start.outputs.commit_message }}
+          Workflow: Test NixOS Flake Configuration
           Branch: ${{ github.ref_name }}
+          Committer: ${{ github.actor }}
+          Commit: ${{ steps.notify-start.outputs.commit_message }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
