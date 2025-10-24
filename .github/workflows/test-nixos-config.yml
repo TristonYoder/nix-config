@@ -46,6 +46,13 @@ jobs:
         nix flake check --all-systems
         echo "✅ Flake syntax check passed!"
     
+    - name: Debug outputs
+      if: success()
+      run: |
+        echo "All outputs from notify-start:"
+        echo "${{ toJSON(steps.notify-start.outputs) }}"
+        echo "Event ID specifically: ${{ steps.notify-start.outputs['event_id'] }}"
+    
     - name: Notify success
       if: success()
       uses: ./.github/actions/matrix-notification
