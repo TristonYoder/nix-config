@@ -16,7 +16,7 @@ in
     
     package = mkOption {
       type = types.package;
-      default = pkgs.nextcloud30;
+      default = pkgs.nextcloud31;
       description = "Nextcloud package version";
     };
     
