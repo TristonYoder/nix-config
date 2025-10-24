@@ -32,11 +32,9 @@
   # Tailscale for secure networking back to main infrastructure
   modules.services.infrastructure.tailscale.enable = lib.mkDefault true;
   
-  # Cloudflared for Cloudflare tunnel (redundancy with main server)
-  modules.services.infrastructure.cloudflared = {
-    enable = lib.mkDefault true;
-    tokenFile = lib.mkDefault config.age.secrets.cloudflared-token-current.path;
-  };
+  # Cloudflare tunnel is only on david (server profile), not on edge servers
+  # Cloudflared disabled - only run on main server
+  modules.services.infrastructure.cloudflared.enable = lib.mkDefault false;
   
   # =============================================================================
   # DEVELOPMENT SERVICES

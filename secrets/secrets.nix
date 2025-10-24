@@ -91,7 +91,8 @@ in
   # SHARED SECRETS (Both Servers)
   # =============================================================================
   
-  # Cloudflare tunnel token - shared by both david and pits for redundancy
+  # Cloudflare tunnel token - currently only used by david (server profile)
+  # Available to all servers but disabled on edge servers
   "cloudflared-token-current.age".publicKeys = allServers;
   
   # =============================================================================
