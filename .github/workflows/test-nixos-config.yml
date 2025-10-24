@@ -104,14 +104,11 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          🚀 GitHub Actions: Testing ${{ matrix.host.name }} configuration
-          Workflow: Test NixOS Flake Configuration
-          Host: ${{ matrix.host.name }}
-          Status: Starting test
-          Branch: ${{ github.ref_name }}
+          🔵 Testing ${{ matrix.host.name }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.check-flake-syntax.outputs.parent_event_id }}
       
     - name: Setup Tailscale
       uses: tailscale/github-action@v2
