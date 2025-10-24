@@ -51,9 +51,11 @@ runs:
         FORMATTED_MESSAGE=$(echo "$MESSAGE" | \
           sed 's/\[\([^\]]*\)\](\([^)]*\))/<a href="\2">\1<\/a>/g' | \
           sed 's/^🚀/<b>🚀<\/b>/g' | \
+          sed 's/^🧪/<b>🧪<\/b>/g' | \
           sed 's/^✅/<b>✅<\/b>/g' | \
           sed 's/^❌/<b>❌<\/b>/g' | \
           sed 's/^⚠️/<b>⚠️<\/b>/g' | \
+          sed 's/^🔵/<b>🔵<\/b>/g' | \
           sed 's/^Workflow: /<b>Workflow:<\/b> /g' | \
           sed 's/^Host: /<b>Host:<\/b> /g' | \
           sed 's/^Status: /<b>Status:<\/b> /g' | \
@@ -61,6 +63,7 @@ runs:
           sed 's/^Committer: /<b>Committer:<\/b> /g' | \
           sed 's/^Trigger: /<b>Trigger:<\/b> /g' | \
           sed 's/^View logs: /<b>View logs:<\/b> /g' | \
+          sed 's/^Commit: /<b>Commit:<\/b> /g' | \
           sed 's/$/<br>/g')
         
         BASE_PAYLOAD=$(jq -n \
