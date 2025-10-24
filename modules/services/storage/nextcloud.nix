@@ -60,9 +60,6 @@ in
       mode = "0400";
     };
 
-    # Disable NGINX - Caddy will serve Nextcloud directly
-    services.nginx.enable = mkForce false;
-
     # Ensure PostgreSQL is available
     assertions = [
       {
@@ -76,6 +73,9 @@ in
       enable = true;
       hostName = cfg.domain;
       package = cfg.package;
+      
+      # Disable NGINX - Caddy will serve Nextcloud directly
+      nginx.enable = false;
       
       # Database configuration - PostgreSQL
       database.createLocally = true;
