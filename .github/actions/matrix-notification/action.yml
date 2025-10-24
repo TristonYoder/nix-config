@@ -79,7 +79,9 @@ runs:
         
         # If thread_id is provided, add thread relation
         if [ -n "$THREAD_ID" ]; then
+          echo "🧵 Adding thread relation to parent event: $THREAD_ID"
           PAYLOAD=$(echo "$PAYLOAD" | jq --arg tid "$THREAD_ID" '. + {"m.relates_to": {"rel_type": "m.thread", "event_id": $tid}}')
+          echo "📦 Thread payload: $PAYLOAD"
         fi
         
         # Send the notification
@@ -91,13 +93,20 @@ runs:
         HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
         BODY=$(echo "$RESPONSE" | sed '$d')
         
+        echo "📊 Matrix API Response:"
+        echo "HTTP Code: $HTTP_CODE"
+        echo "Body: $BODY"
+        
         if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
           # Extract event_id from response and set as output
           EVENT_ID=$(echo "$BODY" | jq -r '.event_id // empty')
+          echo "📌 Extracted event_id: $EVENT_ID"
+          
           if [ -n "$EVENT_ID" ] && [ "$EVENT_ID" != "null" ]; then
             echo "event_id=$EVENT_ID" >> $GITHUB_OUTPUT
             echo "✅ Matrix notification sent successfully (event_id: $EVENT_ID)"
           else
+            echo "⚠️  No event_id found in response"
             echo "✅ Matrix notification sent successfully"
           fi
         else
