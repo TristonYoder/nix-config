@@ -35,6 +35,16 @@ jobs:
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+    
+    - name: Notify testing syntax
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          🔵 Testing syntax
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ steps.notify-start.outputs['event_id'] }}
       
     - name: Install Nix
       uses: cachix/install-nix-action@v27
