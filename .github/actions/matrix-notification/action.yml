@@ -108,9 +108,11 @@ runs:
           echo "📌 Extracted event_id: $EVENT_ID"
           
           if [ -n "$EVENT_ID" ] && [ "$EVENT_ID" != "null" ]; then
-            echo "event_id=$EVENT_ID" >> $GITHUB_OUTPUT
+            # Escape $ for GitHub Actions output
+            ESCAPED_EVENT_ID=$(echo "$EVENT_ID" | sed 's/\$/\\$/g')
+            echo "event_id=$ESCAPED_EVENT_ID" >> $GITHUB_OUTPUT
             echo "✅ Matrix notification sent successfully (event_id: $EVENT_ID)"
-            echo "::set-output name=event_id::$EVENT_ID"
+            echo "::set-output name=event_id::$ESCAPED_EVENT_ID"
           else
             echo "⚠️  No event_id found in response"
             echo "✅ Matrix notification sent successfully"
