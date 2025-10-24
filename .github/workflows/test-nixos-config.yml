@@ -15,6 +15,8 @@ jobs:
   # First, check flake syntax locally (fast fail)
   check-flake-syntax:
     runs-on: ubuntu-latest
+    outputs:
+      parent_event_id: ${{ steps.notify-start.outputs.event_id }}
     
     steps:
     - name: Checkout code
@@ -26,9 +28,8 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          🚀 GitHub Actions: Testing NixOS configuration
+          🚀 GitHub Actions: Testing NixOS Configuration
           Workflow: Test NixOS Flake Configuration
-          Status: Starting syntax check
           Branch: ${{ github.ref_name }}
           Committer: ${{ github.actor }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
@@ -58,10 +59,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ✅ GitHub Actions: Syntax check passed
-          Workflow: Test NixOS Flake Configuration
-          Status: Success
-          Branch: ${{ github.ref_name }}
+          ✅ Syntax check passed
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
@@ -72,10 +70,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ❌ GitHub Actions: Syntax check failed
-          Workflow: Test NixOS Flake Configuration
-          Status: Failed
-          Branch: ${{ github.ref_name }}
+          ❌ Syntax check failed
           View logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
@@ -86,6 +81,8 @@ jobs:
   test-configurations:
     runs-on: ubuntu-latest
     needs: check-flake-syntax
+    outputs:
+      parent_event_id: ${{ needs.check-flake-syntax.outputs.parent_event_id }}
     strategy:
       matrix:
         host: 
@@ -194,28 +191,20 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ✅ GitHub Actions: Test passed for ${{ matrix.host.name }}
-          Workflow: Test NixOS Flake Configuration
-          Host: ${{ matrix.host.name }}
-          Status: Success
-          Branch: ${{ github.ref_name }}
+          ✅ ${{ matrix.host.name }} passed
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
-        thread_id: ${{ steps.notify-start.outputs['event_id'] }}
+        thread_id: ${{ needs.check-flake-syntax.outputs.parent_event_id }}
     
     - name: Notify failure
       if: failure()
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ❌ GitHub Actions: Test failed for ${{ matrix.host.name }}
-          Workflow: Test NixOS Flake Configuration
-          Host: ${{ matrix.host.name }}
-          Status: Failed
-          Branch: ${{ github.ref_name }}
+          ❌ ${{ matrix.host.name }} failed
           View logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
-        thread_id: ${{ steps.notify-start.outputs['event_id'] }}
+        thread_id: ${{ needs.check-flake-syntax.outputs.parent_event_id }}
