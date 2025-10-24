@@ -134,7 +134,7 @@ Configure these in your repository settings:
 | `NIXOS_SERVER_USER` | SSH user (github-actions) |
 | `SSH_PRIVATE_KEY` | SSH private key for all hosts |
 | `MATRIX_HOMESERVER_URL` | Matrix homeserver URL (e.g., https://matrix.theyoder.family) |
-| `MATRIX_ROOM_ID` | Matrix room ID to send notifications to |
+| `MATRIX_ROOM_ID` | Matrix room ID (starts with `!`, not the alias `#`) |
 | `MATRIX_ACCESS_TOKEN` | Matrix access token for the bot user |
 
 ### Setting Up Secrets
@@ -154,7 +154,10 @@ Configure these in your repository settings:
    - Create a Matrix bot user in your homeserver
    - Generate an access token for the bot
    - Invite the bot to your notification room
-   - Get the room ID (usually `!RoomId:domain.com` format)
+   - Get the room ID (starts with `!`, NOT the alias that starts with `#`)
+     - From Element: Room Settings → Advanced → Room ID
+     - Example: `!abc123xyz:theyoder.family` (correct)
+     - NOT: `#systems-alerts:theyoder.family` (alias, won't work)
    - Add secrets to GitHub repository
 
 4. **GitHub Repository:**
