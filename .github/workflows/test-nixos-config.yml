@@ -70,13 +70,6 @@ jobs:
         echo "check_result=success" >> $GITHUB_OUTPUT
       continue-on-error: true
     
-    - name: Debug outputs
-      if: success()
-      run: |
-        echo "All outputs from send-start-notify:"
-        echo "${{ toJSON(steps.send-start-notify.outputs) }}"
-        echo "Event ID specifically: ${{ steps.send-start-notify.outputs['event_id'] }}"
-    
     - name: Notify success
       if: success()
       uses: ./.github/actions/matrix-notification
