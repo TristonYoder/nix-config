@@ -132,7 +132,7 @@
   # PITS terminates SSL for external access, forwards to David over Tailscale
   services.caddy.virtualHosts."cloud.7andco.dev" = {
     extraConfig = ''
-      reverse_proxy http://david:443
+      reverse_proxy https://david
       import cloudflare_tls
     '';
   };
