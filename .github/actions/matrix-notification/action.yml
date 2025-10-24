@@ -1,0 +1,133 @@
+name: 'Matrix Notification'
+description: 'Send a notification to a Matrix room'
+
+outputs:
+  event_id:
+    description: 'The Matrix event ID of the sent message'
+    value: ${{ steps.matrix-notify.outputs.event_id }}
+
+inputs:
+  message:
+    description: 'The message to send'
+    required: true
+  room_id:
+    description: 'The Matrix room ID'
+    required: true
+  homeserver_url:
+    description: 'The Matrix homeserver URL'
+    required: true
+  access_token:
+    description: 'The Matrix access token'
+    required: true
+  thread_id:
+    description: 'Optional: Parent event ID for thread replies'
+    required: false
+  event_id:
+    description: 'Optional: Event ID to edit (replaces existing message)'
+    required: false
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Send Matrix notification
+      id: matrix-notify
+      shell: bash
+      run: |
+        MESSAGE="${{ inputs.message }}"
+        ROOM_ID="${{ inputs.room_id }}"
+        HOMESERVER_URL="${{ inputs.homeserver_url }}"
+        ACCESS_TOKEN="${{ inputs.access_token }}"
+        THREAD_ID="${{ inputs.thread_id }}"
+        EVENT_ID="${{ inputs.event_id }}"
+        
+        echo "📍 Debug: THREAD_ID input = '$THREAD_ID'"
+        echo "📍 Debug: EVENT_ID input = '$EVENT_ID'"
+        
+        # URL encode the room ID
+        ROOM_ID_ENCODED=$(echo -n "$ROOM_ID" | jq -sRr @uri)
+        
+        # Build base payload with HTML formatting - bold workflow names and headers
+        # Convert markdown links to HTML links
+        # First, make the entire first line bold (the title)
+        FIRST_LINE=$(echo "$MESSAGE" | head -n 1)
+        FORMATTED_MESSAGE=$(echo "$MESSAGE" | \
+          sed 's/\[\([^\]]*\)\](\([^)]*\))/<a href="\2">\1<\/a>/g' | \
+          sed "1s/^/<b>/" | \
+          sed "1s/$/<\/b>/" | \
+          sed 's/^✅/<b>✅<\/b>/g' | \
+          sed 's/^❌/<b>❌<\/b>/g' | \
+          sed 's/^⚠️/<b>⚠️<\/b>/g' | \
+          sed 's/^🔵/<b>🔵<\/b>/g' | \
+          sed 's/^Workflow: /<b>Workflow:<\/b> /g' | \
+          sed 's/^Host: /<b>Host:<\/b> /g' | \
+          sed 's/^Status: /<b>Status:<\/b> /g' | \
+          sed 's/^Branch: /<b>Branch:<\/b> /g' | \
+          sed 's/^Committer: /<b>Committer:<\/b> /g' | \
+          sed 's/^Trigger: /<b>Trigger:<\/b> /g' | \
+          sed 's/^View logs: /<b>View logs:<\/b> /g' | \
+          sed 's/^Commit: /<b>Commit:<\/b> /g' | \
+          sed 's/$/<br>/g')
+        
+        BASE_PAYLOAD=$(jq -n \
+          --arg body "$MESSAGE" \
+          --arg formatted_body "$FORMATTED_MESSAGE" \
+          '{msgtype: "m.text", body: $body, format: "org.matrix.custom.html", formatted_body: $formatted_body}')
+        
+        # If event_id is provided, edit the message
+        if [ -n "$EVENT_ID" ]; then
+          EVENT_ID_ENCODED=$(echo -n "$EVENT_ID" | jq -sRr @uri)
+          URL="${HOMESERVER_URL}/_matrix/client/r0/rooms/${ROOM_ID_ENCODED}/send/m.room.message"
+          
+          # Create edit payload
+          NEW_CONTENT=$(echo "$BASE_PAYLOAD" | jq '.')
+          PAYLOAD=$(jq -n \
+            --argjson new_content "$NEW_CONTENT" \
+            --arg eid "$EVENT_ID" \
+            '{msgtype: "m.text", body: "\ufeff *(edited)*", "m.new_content": $new_content, "m.relates_to": {"rel_type": "m.replace", "event_id": $eid}}')
+        else
+          URL="${HOMESERVER_URL}/_matrix/client/r0/rooms/${ROOM_ID_ENCODED}/send/m.room.message"
+          PAYLOAD="$BASE_PAYLOAD"
+        fi
+        
+        # If thread_id is provided, add thread relation
+        if [ -n "$THREAD_ID" ]; then
+          echo "🧵 Adding thread relation to parent event: $THREAD_ID"
+          PAYLOAD=$(echo "$PAYLOAD" | jq --arg tid "$THREAD_ID" '. + {"m.relates_to": {"rel_type": "m.thread", "event_id": $tid}}')
+          echo "📦 Thread payload: $PAYLOAD"
+        fi
+        
+        # Send the notification
+        RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$URL" \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer $ACCESS_TOKEN" \
+          -d "$PAYLOAD")
+        
+        HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+        BODY=$(echo "$RESPONSE" | sed '$d')
+        
+        echo "📊 Matrix API Response:"
+        echo "HTTP Code: $HTTP_CODE"
+        echo "Body: $BODY"
+        
+        if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+          # Extract event_id from response and set as output
+          EVENT_ID=$(echo "$BODY" | jq -r '.event_id // empty')
+          echo "📌 Extracted event_id: $EVENT_ID"
+          
+          if [ -n "$EVENT_ID" ] && [ "$EVENT_ID" != "null" ]; then
+            # Escape $ for GitHub Actions output
+            ESCAPED_EVENT_ID=$(echo "$EVENT_ID" | sed 's/\$/\\$/g')
+            echo "event_id=$ESCAPED_EVENT_ID" >> $GITHUB_OUTPUT
+            echo "✅ Matrix notification sent successfully (event_id: $EVENT_ID)"
+            echo "::set-output name=event_id::$ESCAPED_EVENT_ID"
+          else
+            echo "⚠️  No event_id found in response"
+            echo "✅ Matrix notification sent successfully"
+          fi
+        else
+          echo "❌ Failed to send Matrix notification"
+          echo "HTTP Code: $HTTP_CODE"
+          echo "Response: $BODY"
+          exit 1
+        fi
+

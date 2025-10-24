@@ -12,6 +12,11 @@ on:
         required: false
         default: 'all'
 
+env:
+  MATRIX_HOMESERVER_URL: ${{ secrets.MATRIX_HOMESERVER_URL }}
+  MATRIX_ROOM_ID: ${{ secrets.MATRIX_ROOM_ID }}
+  MATRIX_ACCESS_TOKEN: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+
 jobs:
   # Determine which hosts to deploy
   prepare-deployment:
@@ -19,8 +24,37 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     outputs:
       hosts: ${{ steps.set-hosts.outputs.hosts }}
+      parent_event_id: ${{ steps.notify-start.outputs.event_id }}
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Get commit message
+      id: get-commit
+      if: always()
+      run: |
+        COMMIT_MSG="${{ github.event.head_commit.message || github.event.commits[0].message || 'Manual trigger' }}"
+        TRUNCATED_MSG=$(echo "$COMMIT_MSG" | head -n 2 | tr '\n' ' ')
+        echo "commit_message<<EOF" >> $GITHUB_OUTPUT
+        echo "$TRUNCATED_MSG" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+    
+    - name: Notify deployment start
+      id: notify-start
+      if: always()
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          🚀 Deploying NixOS Configuration
+          Workflow: Deploy NixOS Flake Configuration
+          Branch: ${{ github.ref_name }}
+          Committer: ${{ github.actor }}
+          Commit: ${{ steps.get-commit.outputs.commit_message }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+    
     - name: Determine deployment hosts
       id: set-hosts
       run: |
@@ -53,6 +87,16 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+    
+    - name: Notify deploying host
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          🔵 Deploying ${{ matrix.host }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
       
     - name: Setup Tailscale
       uses: tailscale/github-action@v2
@@ -150,6 +194,46 @@ jobs:
       run: |
         echo "❌ NixOS configuration deployment failed for ${{ matrix.host }}"
         echo "Check the server logs for more details"
+    
+    - name: Notify success
+      if: success()
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ✅ ${{ matrix.host }} deployed
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
+    
+    - name: Notify failure
+      if: failure()
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ❌ ${{ matrix.host }} failed
+          ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
+    
+    - name: React to parent with failure emoji
+      if: failure()
+      run: |
+        PARENT_EVENT_ID="${{ needs.prepare-deployment.outputs.parent_event_id }}"
+        ROOM_ID_ENCODED=$(echo -n "${{ secrets.MATRIX_ROOM_ID }}" | jq -sRr @uri)
+        
+        curl -X PUT "${{ secrets.MATRIX_HOMESERVER_URL }}/_matrix/client/r0/rooms/$ROOM_ID_ENCODED/send/m.reaction/$(openssl rand -hex 16)" \
+          -H "Authorization: Bearer ${{ secrets.MATRIX_ACCESS_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "m.relates_to": {
+              "rel_type": "m.annotation",
+              "event_id": "'"$PARENT_EVENT_ID"'",
+              "key": "❌"
+            }
+          }' || echo "Reaction failed, continuing..."
         
   # Summary job to report overall deployment status
   deployment-summary:
@@ -165,4 +249,26 @@ jobs:
         else
           echo "⚠️  Some deployments may have failed. Check individual job logs."
           exit 1
-        fi
+    
+    - name: Notify summary success
+      if: success()
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ✅ All deployments completed
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
+    
+    - name: Notify summary failure
+      if: failure()
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ⚠️ Some deployments failed
+          ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
