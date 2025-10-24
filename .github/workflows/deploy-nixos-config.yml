@@ -26,6 +26,9 @@ jobs:
       hosts: ${{ steps.set-hosts.outputs.hosts }}
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
     - name: Notify deployment start
       if: always()
       uses: ./.github/actions/matrix-notification
@@ -70,6 +73,9 @@ jobs:
       fail-fast: false  # Continue deploying to other hosts even if one fails
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
     - name: Notify deployment start
       if: always()
       uses: ./.github/actions/matrix-notification
@@ -83,9 +89,6 @@ jobs:
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
-    
-    - name: Checkout code
-      uses: actions/checkout@v4
       
     - name: Setup Tailscale
       uses: tailscale/github-action@v2

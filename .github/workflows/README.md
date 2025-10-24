@@ -133,6 +133,9 @@ Configure these in your repository settings:
 | `TAILSCALE_OAUTH_SECRET` | Tailscale OAuth Secret |
 | `NIXOS_SERVER_USER` | SSH user (github-actions) |
 | `SSH_PRIVATE_KEY` | SSH private key for all hosts |
+| `MATRIX_HOMESERVER_URL` | Matrix homeserver URL (e.g., https://matrix.theyoder.family) |
+| `MATRIX_ROOM_ID` | Matrix room ID to send notifications to |
+| `MATRIX_ACCESS_TOKEN` | Matrix access token for the bot user |
 
 ### Setting Up Secrets
 
@@ -147,7 +150,14 @@ Configure these in your repository settings:
    - Add public key to each host's configuration
    - Add private key to GitHub secrets
 
-3. **GitHub Repository:**
+3. **Matrix Notifications:**
+   - Create a Matrix bot user in your homeserver
+   - Generate an access token for the bot
+   - Invite the bot to your notification room
+   - Get the room ID (usually `!RoomId:domain.com` format)
+   - Add secrets to GitHub repository
+
+4. **GitHub Repository:**
    - Settings → Secrets and variables → Actions
    - Add each secret
 
@@ -221,12 +231,32 @@ Add to your Tailscale ACL policy:
 
 ## Monitoring
 
+### Matrix Notifications
+
+All GitHub Actions workflows automatically send notifications to your configured Matrix room:
+
+- **Job Start**: Notifications when jobs begin
+- **Job Success**: Notifications when jobs complete successfully
+- **Job Failure**: Notifications when jobs fail with links to logs
+
+Notifications include:
+- Workflow name
+- Host name (for matrix jobs)
+- Branch name
+- Status (Starting, Success, Failed)
+- Direct links to GitHub Actions logs
+
 ### View Status
 
 **GitHub Actions Tab:**
 - See all workflow runs
 - View parallel job execution
 - Check individual host logs
+
+**Matrix Room:**
+- Real-time notifications
+- Quick status overview
+- Direct links to logs
 
 **Individual Host:**
 ```bash
@@ -346,6 +376,7 @@ This is expected with `fail-fast: false`:
 
 - [Test Workflow](.github/workflows/test-nixos-config.yml)
 - [Deploy Workflow](.github/workflows/deploy-nixos-config.yml)
+- [Matrix Notification Action](.github/actions/matrix-notification)
 - [GitHub Actions Module](../modules/services/development/github-actions.nix)
 - [Tailscale Documentation](https://tailscale.com/kb/)
 

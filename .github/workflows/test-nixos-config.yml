@@ -17,6 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
     - name: Notify start
       if: always()
       uses: ./.github/actions/matrix-notification
@@ -30,9 +33,6 @@ jobs:
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
-      
-    - name: Checkout code
-      uses: actions/checkout@v4
       
     - name: Install Nix
       uses: cachix/install-nix-action@v27
@@ -88,6 +88,9 @@ jobs:
       fail-fast: false  # Continue testing other hosts even if one fails
     
     steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
     - name: Notify start
       if: always()
       uses: ./.github/actions/matrix-notification
@@ -101,9 +104,6 @@ jobs:
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
-      
-    - name: Checkout code
-      uses: actions/checkout@v4
       
     - name: Setup Tailscale
       uses: tailscale/github-action@v2
