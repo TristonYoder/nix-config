@@ -14,12 +14,6 @@ in
       description = "Domain for Nextcloud web interface";
     };
     
-    dataDir = mkOption {
-      type = types.str;
-      default = "/data/docker-appdata/nextcloud";
-      description = "Directory for Nextcloud data storage";
-    };
-    
     package = mkOption {
       type = types.package;
       default = pkgs.nextcloud30;
@@ -83,9 +77,6 @@ in
       hostName = cfg.domain;
       package = cfg.package;
       
-      # Data directory
-      dataDir = cfg.dataDir;
-      
       # Database configuration - PostgreSQL
       database.createLocally = true;
       
@@ -130,11 +121,6 @@ in
 
     # Add caddy user to nextcloud group for proper permissions
     users.users.caddy.extraGroups = [ "nextcloud" ];
-
-    # Ensure data directory exists with correct permissions
-    systemd.tmpfiles.rules = [
-      "d ${cfg.dataDir} 0750 nextcloud nextcloud -"
-    ];
 
     # PostgreSQL backups
     services.postgresqlBackup = mkIf cfg.enableBackups {
