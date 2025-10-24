@@ -71,9 +71,9 @@ jobs:
     - name: Debug outputs
       if: success()
       run: |
-        echo "All outputs from notify-start:"
-        echo "${{ toJSON(steps.notify-start.outputs) }}"
-        echo "Event ID specifically: ${{ steps.notify-start.outputs['event_id'] }}"
+        echo "All outputs from send-start-notify:"
+        echo "${{ toJSON(steps.send-start-notify.outputs) }}"
+        echo "Event ID specifically: ${{ steps.send-start-notify.outputs['event_id'] }}"
     
     - name: Notify success
       if: success()
