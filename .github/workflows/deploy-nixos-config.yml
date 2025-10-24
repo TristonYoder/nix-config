@@ -201,7 +201,7 @@ jobs:
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
-        thread_id: ${{ steps.notify-start.outputs.event_id }}
+        thread_id: ${{ steps.notify-start.outputs['event_id'] }}
     
     - name: Notify failure
       if: failure()
@@ -217,7 +217,7 @@ jobs:
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
-        thread_id: ${{ steps.notify-start.outputs.event_id }}
+        thread_id: ${{ steps.notify-start.outputs['event_id'] }}
         
   # Summary job to report overall deployment status
   deployment-summary:
