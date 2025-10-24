@@ -4,6 +4,7 @@ description: 'Send a notification to a Matrix room'
 outputs:
   event_id:
     description: 'The Matrix event ID of the sent message'
+    value: ${{ steps.matrix-notify.outputs.event_id }}
 
 inputs:
   message:
@@ -38,6 +39,9 @@ runs:
         ACCESS_TOKEN="${{ inputs.access_token }}"
         THREAD_ID="${{ inputs.thread_id }}"
         EVENT_ID="${{ inputs.event_id }}"
+        
+        echo "📍 Debug: THREAD_ID input = '$THREAD_ID'"
+        echo "📍 Debug: EVENT_ID input = '$EVENT_ID'"
         
         # URL encode the room ID
         ROOM_ID_ENCODED=$(echo -n "$ROOM_ID" | jq -sRr @uri)
