@@ -48,10 +48,12 @@ runs:
         
         # Build base payload with HTML formatting - bold workflow names and headers
         # Convert markdown links to HTML links
+        # First, make the entire first line bold (the title)
+        FIRST_LINE=$(echo "$MESSAGE" | head -n 1)
         FORMATTED_MESSAGE=$(echo "$MESSAGE" | \
           sed 's/\[\([^\]]*\)\](\([^)]*\))/<a href="\2">\1<\/a>/g' | \
-          sed 's/^🚀/<b>🚀<\/b>/g' | \
-          sed 's/^🧪/<b>🧪<\/b>/g' | \
+          sed "1s/^/<b>/" | \
+          sed "1s/$/<\/b>/" | \
           sed 's/^✅/<b>✅<\/b>/g' | \
           sed 's/^❌/<b>❌<\/b>/g' | \
           sed 's/^⚠️/<b>⚠️<\/b>/g' | \
