@@ -1,6 +1,10 @@
 name: 'Matrix Notification'
 description: 'Send a notification to a Matrix room'
 
+outputs:
+  event_id:
+    description: 'The Matrix event ID of the sent message'
+
 inputs:
   message:
     description: 'The message to send'
@@ -88,7 +92,14 @@ runs:
         BODY=$(echo "$RESPONSE" | sed '$d')
         
         if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
-          echo "✅ Matrix notification sent successfully"
+          # Extract event_id from response and set as output
+          EVENT_ID=$(echo "$BODY" | jq -r '.event_id // empty')
+          if [ -n "$EVENT_ID" ] && [ "$EVENT_ID" != "null" ]; then
+            echo "event_id=$EVENT_ID" >> $GITHUB_OUTPUT
+            echo "✅ Matrix notification sent successfully (event_id: $EVENT_ID)"
+          else
+            echo "✅ Matrix notification sent successfully"
+          fi
         else
           echo "❌ Failed to send Matrix notification"
           echo "HTTP Code: $HTTP_CODE"
