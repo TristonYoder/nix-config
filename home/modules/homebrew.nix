@@ -45,7 +45,24 @@ in
 
   config = mkIf cfg.enable {
     home.activation = {
-      installHomebrewTaps = lib.hm.dag.entryAfter ["writeBoundary"] ''
+      # Fix Homebrew permissions before installing anything
+      fixHomebrewPermissions = lib.hm.dag.entryAfter ["setBrewPath"] ''
+        $DRY_RUN_CMD echo "Fixing Homebrew permissions..."
+        if [ "${pkgs.stdenv.system}" = "x86_64-darwin" ] && [ -d /usr/local ]; then
+          # Intel Mac: fix /usr/local permissions
+          for dir in /usr/local/share/man /usr/local/share/man/man8 /usr/local/include /usr/local/lib /usr/local/share/zsh /usr/local/share/zsh/site-functions; do
+            if [ -d "$dir" ]; then
+              if [ "$(stat -f "%Su" "$dir" 2>/dev/null)" = "root" ]; then
+                $DRY_RUN_CMD echo "Fixing ownership of $dir"
+                $DRY_RUN_CMD chown -R "$USER:admin" "$dir" || true
+                $DRY_RUN_CMD chmod u+w "$dir" || true
+              fi
+            fi
+          done
+        fi
+      '';
+      
+      installHomebrewTaps = lib.hm.dag.entryAfter ["fixHomebrewPermissions"] ''
         $DRY_RUN_CMD echo "Installing Homebrew taps..."
         for tap in ${concatStringsSep " " cfg.taps}; do
           if ! "$BREW" tap list | grep -q "^$tap"; then
