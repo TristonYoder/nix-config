@@ -1,5 +1,5 @@
-# Configuration for tyoder-mbp - macOS MacBook Pro (Apple Silicon)
-# Friendly name: Triston's TPCC MacBook Pro
+# Configuration for Tristons-MacBook-Pro - macOS MacBook Pro (Intel T2)
+# Friendly name: Triston's MacBook Pro
 # Uses nix-darwin for system configuration
 
 { config, pkgs, lib, ... }:
@@ -9,18 +9,17 @@
   # SYSTEM IDENTIFICATION
   # =============================================================================
   
-  networking.hostName = "tyoder-mbp";
-  networking.localHostName = "tyoder-mbp";
-  networking.computerName = "Triston Yoder's MacBook Pro";
+  networking.hostName = "Tristons-MacBook-Pro";
+  networking.localHostName = "Tristons-MacBook-Pro";
+  networking.computerName = "Triston's MacBook Pro";
   
   # =============================================================================
   # USER CONFIGURATION
   # =============================================================================
   
-  users.users.tyoder = {
-    name = "tyoder";
-    home = "/Users/tyoder";
+  users.users.tristonyoder = {
+    name = "tristonyoder";
+    home = "/Users/tristonyoder";
     shell = pkgs.zsh;
   };
 }
-

@@ -24,6 +24,11 @@
       inputs.nixpkgs.follows = "nixpkgs-unstable";
     };
     
+    # nix-homebrew for managing Homebrew on macOS
+    nix-homebrew = {
+      url = "github:zhaofengli/nix-homebrew";
+    };
+    
     # External modules
     nix-bitcoin.url = "github:fort-nix/nix-bitcoin/v0.0.117";
     nixos-vscode-server.url = "github:nix-community/nixos-vscode-server";
@@ -33,7 +38,7 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-bitcoin, nixos-vscode-server, agenix, flake-utils, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, flake-utils, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -216,7 +221,8 @@
       
       darwinConfigurations = {
         # -----------------------------------------------------------------------------
-        # tyoder-mbp - macOS MacBook Pro (aarch64-darwin or x86_64-darwin)
+        # tyoder-mbp - macOS MacBook Pro (Apple Silicon)
+        # Friendly name: Triston's TPCC MacBook Pro (work)
         # -----------------------------------------------------------------------------
         tyoder-mbp = nix-darwin.lib.darwinSystem {
           system = "aarch64-darwin";  # Change to x86_64-darwin if Intel Mac
@@ -232,12 +238,74 @@
             # Host-specific configuration
             ./hosts/tyoder-mbp/configuration.nix
             
+            # nix-homebrew - Homebrew installation management
+            nix-homebrew.darwinModules.nix-homebrew
+            {
+              nix-homebrew = {
+                enable = true;
+                enableRosetta = true;  # Apple Silicon: install Homebrew for Rosetta 2
+                user = "tyoder";
+                autoMigrate = true;  # Migrate existing Homebrew installation if present
+              };
+            }
+            
             # Home Manager for macOS (using unstable to match nix-darwin)
             home-manager-unstable.darwinModules.home-manager
             {
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.users.tyoder = import ./home/tyoder.nix;
+            }
+          ];
+          
+          specialArgs = {
+            inherit nixpkgs nixpkgs-unstable;
+          };
+        };
+        
+        # -----------------------------------------------------------------------------
+        # Tristons-MacBook-Pro - macOS MacBook Pro (Intel T2)
+        # Friendly name: Triston's MacBook Pro
+        # -----------------------------------------------------------------------------
+        "Tristons-MacBook-Pro" = nix-darwin.lib.darwinSystem {
+          system = "x86_64-darwin";  # Intel Mac
+          
+          modules = [
+            # Common configuration
+            ./common/system.nix
+            ./common/darwin.nix
+            
+            # Darwin profile
+            ./profiles/darwin.nix
+            
+            # Host-specific configuration
+            ./hosts/tristons-mbp/configuration.nix
+            
+            # nix-homebrew - Homebrew installation management
+            nix-homebrew.darwinModules.nix-homebrew
+            {
+              nix-homebrew = {
+                enable = true;
+                enableRosetta = false;  # Intel Mac: no Rosetta needed
+                user = "tristonyoder";
+                autoMigrate = true;  # Migrate existing Homebrew installation if present
+              };
+            }
+            
+            # Home Manager for macOS (using unstable to match nix-darwin)
+            home-manager-unstable.darwinModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.users.tristonyoder = {
+                imports = [
+                  ./home/tristonyoder.nix
+                  ./home/modules/homebrew.nix
+                  ./home/modules/mas.nix
+                  ./home/tristonyoder-darwin.nix
+                ];
+                home.homeDirectory = "/Users/tristonyoder";
+              };
             }
           ];
           
