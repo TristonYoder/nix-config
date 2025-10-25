@@ -22,4 +22,7 @@
     home = "/Users/tristonyoder";
     shell = pkgs.zsh;
   };
+  
+  # Set primary user for system defaults
+  system.primaryUser = "tristonyoder";
 }

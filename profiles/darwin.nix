@@ -38,8 +38,8 @@
   # Enable Touch ID for sudo
   security.pam.services.sudo_local.touchIdAuth = true;
   
-  # Set primary user for system defaults
-  system.primaryUser = "tyoder";
+  # Note: system.primaryUser is set in individual host configurations
+  # (hosts/tyoder-mbp/configuration.nix or hosts/tristons-mbp/configuration.nix)
   
   # =============================================================================
   # NIX OPTIMIZATION (Darwin-safe method)

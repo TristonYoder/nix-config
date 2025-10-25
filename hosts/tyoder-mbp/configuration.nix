@@ -22,5 +22,8 @@
     home = "/Users/tyoder";
     shell = pkgs.zsh;
   };
+  
+  # Set primary user for system defaults
+  system.primaryUser = "tyoder";
 }
 
