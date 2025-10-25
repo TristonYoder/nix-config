@@ -107,7 +107,6 @@ in
         dbtype = "pgsql";
         adminuser = cfg.adminUser;
         adminpassFile = if cfg.adminPassFile != null then cfg.adminPassFile else config.age.secrets.nextcloud-admin-password.path;
-        dbtableprefix = cfg.dbTablePrefix;
       };
       
       # Settings
@@ -118,6 +117,8 @@ in
         trusted_proxies = [ "127.0.0.1" "100.64.0.0/10" "fd7a:115c:a1e0::/48" ];
         # Custom data directory
         datadirectory = cfg.dataDir;
+        # Database table prefix (set in config.php)
+        dbtableprefix = cfg.dbTablePrefix;
       };
       
       # PHP optimization (suggested by Nextcloud health check)
@@ -133,6 +134,11 @@ in
 
     # Add caddy user to nextcloud group for proper permissions
     users.users.caddy.extraGroups = [ "nextcloud" ];
+
+    # Create data directory with proper permissions
+    systemd.tmpfiles.rules = [
+      "d ${cfg.dataDir} 0755 nextcloud nextcloud -"
+    ];
 
     # PostgreSQL backups
     services.postgresqlBackup = mkIf cfg.enableBackups {
