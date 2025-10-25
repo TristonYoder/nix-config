@@ -29,8 +29,8 @@
       if [ "${pkgs.stdenv.system}" = "x86_64-darwin" ] && [ -d /usr/local ]; then
         echo "Fixing Homebrew permissions for Intel Mac..."
         
-        # Get the current primary user
-        PRIMARY_USER="${config.system.primaryUser:-$(logname)}"
+        # Get the current primary user from config
+        PRIMARY_USER="${config.system.primaryUser}"
         
         # Fix permissions for common Homebrew directories
         for dir in /usr/local/share/man /usr/local/share/man/man8 /usr/local/include /usr/local/lib /usr/local/share/zsh /usr/local/share/zsh/site-functions; do
