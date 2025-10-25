@@ -65,6 +65,7 @@
 
 3. **Clone the repository**:
    ```bash
+   mkdir ~/Projects;cd ~/Projects
    git clone https://github.com/TristonYoder/nix-config.git
    cd nix-config
    ```
