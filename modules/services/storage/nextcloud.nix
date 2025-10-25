@@ -128,7 +128,6 @@ in
     # Caddy virtual host on David
     # Caddy serves Nextcloud directly via PHP-FPM Unix socket
     services.caddy.virtualHosts.${cfg.domain} = mkIf config.modules.services.infrastructure.caddy.enable {
-      listenAddresses = [ "0.0.0.0:443" "[::]:443" ];
       extraConfig = ''
         # Serve Nextcloud via PHP-FPM
         root * ${config.services.nextcloud.package}
