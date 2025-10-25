@@ -77,12 +77,10 @@
 # Enter the repository
 cd ~/Projects/nix-config
 
-# First, install nix-darwin (one-time setup)
-nix build '.#darwinConfigurations.tyoder-mbp.config.system.build.toplevel' --out-link /tmp/result
-sudo /tmp/result/sw/bin/darwin-rebuild switch --flake '.#tyoder-mbp'
-
-# Subsequent rebuilds don't need the full path
-darwin-rebuild switch --flake '.#tyoder-mbp'
+# Install nix-darwin and apply configuration (first time or after updates)
+# This builds the configuration, then activates it with sudo
+nix build '.#darwinConfigurations.tyoder-mbp.config.system.build.toplevel' --out-link /tmp/result && \
+  sudo /tmp/result/sw/bin/darwin-rebuild switch --flake '.#tyoder-mbp'
 ```
 
 **For Tristons-MacBook-Pro (Intel T2):**
@@ -90,12 +88,10 @@ darwin-rebuild switch --flake '.#tyoder-mbp'
 # Enter the repository
 cd ~/Projects/nix-config
 
-# First, install nix-darwin (one-time setup)
-nix build '.#darwinConfigurations."Tristons-MacBook-Pro".config.system.build.toplevel' --out-link /tmp/result
-sudo /tmp/result/sw/bin/darwin-rebuild switch --flake '.#Tristons-MacBook-Pro'
-
-# Subsequent rebuilds don't need the full path
-darwin-rebuild switch --flake '.#Tristons-MacBook-Pro'
+# Install nix-darwin and apply configuration (first time or after updates)
+# This builds the configuration, then activates it with sudo
+nix build '.#darwinConfigurations."Tristons-MacBook-Pro".config.system.build.toplevel' --out-link /tmp/result && \
+  sudo /tmp/result/sw/bin/darwin-rebuild switch --flake '.#Tristons-MacBook-Pro'
 ```
 
 This will:
