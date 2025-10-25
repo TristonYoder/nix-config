@@ -111,8 +111,6 @@ in
         dbname = "nextcloud";
         dbuser = "nextcloud";
         dbhost = "/run/postgresql";
-        # Database password (empty for local PostgreSQL)
-        dbpass = "";
       };
       
       # Settings
