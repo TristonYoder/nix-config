@@ -52,7 +52,7 @@ in
     
     dbTablePrefix = mkOption {
       type = types.str;
-      default = "nc1_";
+      default = "oc_";
       description = "Database table prefix for Nextcloud (useful for multiple instances)";
     };
     
@@ -86,6 +86,9 @@ in
       hostName = cfg.domain;
       package = cfg.package;
       
+      # Disable automatic setup until manually initialized
+      enableAutoUpdate = false;
+      
       # Database configuration - PostgreSQL
       database.createLocally = true;
       
@@ -117,8 +120,6 @@ in
         trusted_proxies = [ "127.0.0.1" "100.64.0.0/10" "fd7a:115c:a1e0::/48" ];
         # Custom data directory
         datadirectory = cfg.dataDir;
-        # Database table prefix (set in config.php)
-        dbtableprefix = cfg.dbTablePrefix;
       };
       
       # PHP optimization (suggested by Nextcloud health check)
@@ -139,6 +140,10 @@ in
     systemd.tmpfiles.rules = [
       "d ${cfg.dataDir} 0755 nextcloud nextcloud -"
     ];
+
+    # Disable problematic services until Nextcloud is manually initialized
+    systemd.services.nextcloud-setup.enable = false;
+    systemd.services.nextcloud-update-db.enable = false;
 
     # PostgreSQL backups
     services.postgresqlBackup = mkIf cfg.enableBackups {
