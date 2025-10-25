@@ -159,6 +159,27 @@ nixos-option modules.services.media.immich
 cat modules/services/media/immich.nix
 ```
 
+### First-Time Service Setup
+
+Some services require initial configuration through their web interface:
+
+#### Nextcloud Setup
+
+After enabling Nextcloud, complete the initial setup at `https://cloud.7andco.dev`:
+
+**Database Configuration:**
+- **Database Type:** `postgres`
+- **Database Name:** `nextcloud`
+- **Database User:** `nextcloud`
+- **Database Password:** `<blank>`
+- **Database Host:** `/run/postgresql`
+
+**Admin Account:**
+- **Username:** `admin`
+- **Password:** Use the password from the agenix secret
+
+The data directory will be automatically set to `/data/nextcloud`.
+
 ## Architecture
 
 ### Profiles

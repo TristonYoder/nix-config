@@ -61,6 +61,12 @@ in
       default = "/data/nextcloud";
       description = "Nextcloud data directory for user files";
     };
+    
+    enableOfficeApps = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Enable Office apps (OnlyOffice, Collabora, etc.)";
+    };
   };
 
   config = mkIf cfg.enable {
@@ -101,6 +107,14 @@ in
       # App updates
       autoUpdateApps.enable = cfg.autoUpdateApps;
       extraAppsEnable = true;
+      
+      # Office and productivity apps
+      extraApps = mkIf cfg.enableOfficeApps (with config.services.nextcloud.package.packages.apps; {
+        inherit onlyoffice;
+        # Additional office apps can be added here
+        # inherit collabora;
+        # inherit richdocuments;
+      });
       
       # Configuration
       config = {
