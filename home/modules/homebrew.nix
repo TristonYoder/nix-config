@@ -4,7 +4,8 @@ with lib;
 
 let
   cfg = config.homebrew;
-  brew = "/opt/homebrew/bin/brew";
+  # Homebrew is in /usr/local on Intel and /opt/homebrew on Apple Silicon
+  brew = if pkgs.stdenv.isAarch64 then "/opt/homebrew/bin/brew" else "/usr/local/bin/brew";
 in
 {
   options.homebrew = {
@@ -211,8 +212,9 @@ in
     };
 
     # Set BREW variable for use in activation scripts
+    # Use architecture-appropriate path (Intel: /usr/local, Apple Silicon: /opt/homebrew)
     home.activation.setBrewPath = lib.hm.dag.entryBefore ["writeBoundary"] ''
-      export BREW="/opt/homebrew/bin/brew"
+      export BREW="${brew}"
     '';
   };
 }
