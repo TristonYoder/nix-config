@@ -36,7 +36,148 @@
 | **david** | NixOS Server | Server | ✅ | Full infrastructure stack |
 | **pits** | NixOS Edge (Pi) | Edge | ✅ | Public-facing reverse proxy |
 | **tristons-desk** | NixOS Desktop | Desktop | ✅ | Development workstation |
-| **tyoder-mbp** | macOS (M1) | Darwin | ➖ | Personal laptop |
+| **tyoder-mbp** | macOS (Apple Silicon) | Darwin | ➖ | Triston's TPCC MacBook Pro (work) |
+| **Tristons-MacBook-Pro** | macOS (Intel T2) | Darwin | ➖ | Triston's MacBook Pro |
+
+## Deploying from Scratch
+
+### macOS
+
+#### Prerequisites
+
+1. **Install Git** (if not already installed):
+   ```bash
+   # On a wiped MacBook, git is not installed by default
+   # Install Xcode Command Line Tools (includes git)
+   xcode-select --install
+   # Follow the GUI prompts to complete installation
+   ```
+
+2. **Install Nix** (if not already installed):
+   ```bash
+   # Install Nix
+   sh <(curl -L https://nixos.org/nix/install)
+   
+   # Enable experimental features
+   mkdir -p ~/.config/nix
+   echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
+   ```
+
+3. **Clone the repository**:
+   ```bash
+   git clone https://github.com/TristonYoder/nix-config.git
+   cd nix-config
+   ```
+
+#### First-Time Deployment
+
+**For tyoder-mbp:**
+```bash
+# Enter the repository
+cd ~/Projects/nix-config
+
+# Install nix-darwin and apply configuration
+nix run nix-darwin -- switch --flake .#tyoder-mbp
+```
+
+**For Tristons-MacBook-Pro (Intel T2):**
+```bash
+# Enter the repository
+cd ~/Projects/nix-config
+
+# Install nix-darwin and apply configuration
+nix run nix-darwin -- switch --flake .#Tristons-MacBook-Pro
+```
+
+This will:
+1. Install nix-darwin
+2. Install and configure Homebrew via nix-homebrew
+   - **Apple Silicon (tyoder-mbp):** Includes Rosetta 2 support for x86_64 emulation
+   - **Intel (Tristons-MacBook-Pro):** Native x86_64 installation
+3. Configure macOS system defaults (keyboard, trackpad, dock, finder, etc.)
+4. Install and configure Homebrew casks
+5. Install Mac App Store apps (if mas is authenticated)
+6. Set up user environment (zsh, git, ssh, etc.)
+7. Apply all configuration from this repository
+
+#### Post-Deployment
+
+After first deployment:
+
+1. **Sign in to Mac App Store** (required for mas apps):
+   ```bash
+   mas signin your-email@apple.com
+   ```
+
+2. **Complete Homebrew installations**:
+   ```bash
+   # Some casks may require manual approval or additional setup
+   brew list --cask
+   ```
+
+3. **Rebuild to ensure everything is applied**:
+   ```bash
+   darwin-rebuild switch --flake .
+   ```
+
+#### Subsequent Rebuilds
+
+```bash
+# From anywhere
+darwin-rebuild switch --flake ~/Projects/nix-config
+
+# Or if already in the directory
+darwin-rebuild switch --flake .
+
+# Test build without applying
+darwin-rebuild build --flake .
+```
+
+#### Troubleshooting First Deployment
+
+**If nix-darwin is already installed:**
+```bash
+# Use darwin-rebuild instead
+darwin-rebuild switch --flake .#Tristons-MacBook-Pro
+```
+
+**Permission errors:**
+```bash
+# Grant Full Disk Access to Terminal/iTerm
+# System Preferences → Security & Privacy → Privacy → Full Disk Access
+```
+
+**Homebrew not found:**
+```bash
+# Homebrew should be installed automatically by nix-homebrew
+# If you still have issues, try rebuilding:
+darwin-rebuild switch --flake .
+```
+
+**Changes not applied:**
+```bash
+# Rebuild with verbosity
+darwin-rebuild switch --flake . --show-trace
+
+# Or restart the Mac to apply system-level changes
+```
+
+#### Switching Between Hosts
+
+If you want to switch from one host configuration to another:
+
+```bash
+# For example, switch from Tristons-MacBook-Pro to tyoder-mbp
+darwin-rebuild switch --flake .#tyoder-mbp
+
+# Or vice versa
+darwin-rebuild switch --flake .#Tristons-MacBook-Pro
+```
+
+**Note:** The configurations share most settings via `hosts/darwin-common.nix` and `home/tristonyoder-common.nix`, but differ in:
+- Hostname (tyoder-mbp vs Tristons-MacBook-Pro)
+- Username (tyoder vs tristonyoder)
+- Home directory (/Users/tyoder vs /Users/tristonyoder)
 
 ## Quick Start
 

@@ -40,10 +40,17 @@ Per-host NixOS and macOS configurations managed through this flake.
 
 ### macOS Hosts
 
-#### tyoder-mbp (MacBook Pro)
+#### tyoder-mbp (Triston's TPCC MacBook Pro - Work)
 - **Profile:** [darwin](../profiles/darwin.nix)
-- **Architecture:** aarch64-darwin (Apple Silicon M1)
+- **Architecture:** aarch64-darwin (Apple Silicon)
 - **User:** tyoder
+- **Auto-Deploy:** ➖ Manual only
+- **Features:** Declarative macOS system preferences, Homebrew, Mac App Store
+
+#### Tristons-MacBook-Pro (Triston's MacBook Pro)
+- **Profile:** [darwin](../profiles/darwin.nix)
+- **Architecture:** x86_64-darwin (Intel T2)
+- **User:** tristonyoder
 - **Auto-Deploy:** ➖ Manual only
 - **Features:** Declarative macOS system preferences, Homebrew, Mac App Store
 
@@ -71,6 +78,7 @@ sudo nixos-rebuild switch --flake .#tristons-desk
 
 # macOS
 darwin-rebuild switch --flake .#tyoder-mbp
+darwin-rebuild switch --flake .#Tristons-MacBook-Pro
 ```
 
 ### Testing
@@ -352,6 +360,6 @@ killall Dock && killall Finder
 
 ---
 
-**Managed Hosts:** 4 (david, pits, tristons-desk, tyoder-mbp)  
+**Managed Hosts:** 5 (david, pits, tristons-desk, tyoder-mbp, Tristons-MacBook-Pro)  
 **Auto-Deploy:** 3 NixOS hosts via GitHub Actions  
-**Platforms:** NixOS (x86_64, aarch64) + macOS (aarch64)
+**Platforms:** NixOS (x86_64, aarch64) + macOS (aarch64, x86_64)

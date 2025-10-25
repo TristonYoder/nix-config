@@ -5,20 +5,69 @@
 
 {
   # =============================================================================
-  # DARWIN-SPECIFIC SETTINGS
+  # NIX-DARWIN SYSTEM SETTINGS
   # =============================================================================
   
-  # macOS system defaults are primarily configured in profiles/darwin.nix
-  # and home-manager (home/tyoder.nix)
+  # Used for backwards compatibility, please read the changelog before changing.
+  # $ darwin-rebuild changelog
+  system.stateVersion = 5;
   
   # =============================================================================
-  # DARWIN-SPECIFIC PACKAGES
+  # HOST-SPECIFIC SETTINGS
   # =============================================================================
   
-  # Add any macOS-specific system packages here
-  # Most macOS apps are managed via Homebrew in home-manager
+  # macOS-specific system packages
   environment.systemPackages = with pkgs; [
-    # Add Darwin-specific packages here if needed
+    # Additional packages beyond darwin profile
   ];
+  
+  # =============================================================================
+  # MACOS SYSTEM PREFERENCES
+  # =============================================================================
+  
+  # Keyboard settings
+  system.keyboard = {
+    enableKeyMapping = true;
+    remapCapsLockToControl = false;
+  };
+  
+  # Trackpad settings
+  system.defaults.trackpad = {
+    Clicking = true;  # Enable tap to click
+    TrackpadRightClick = true;
+    TrackpadThreeFingerDrag = false;
+  };
+  
+  # Dock settings (additional to home-manager settings)
+  system.defaults.dock = {
+    autohide = false;
+    orientation = "bottom";
+    show-recents = false;
+    tilesize = 36;
+  };
+  
+  # Finder settings
+  system.defaults.finder = {
+    AppleShowAllExtensions = true;
+    ShowPathbar = true;
+    FXEnableExtensionChangeWarning = false;
+  };
+  
+  # Global settings
+  system.defaults.NSGlobalDomain = {
+    AppleKeyboardUIMode = 3;
+    ApplePressAndHoldEnabled = false;
+    InitialKeyRepeat = 15;
+    KeyRepeat = 1;
+    
+    # Enable dark mode
+    AppleInterfaceStyle = "Dark";
+    
+    # Disable automatic capitalization
+    NSAutomaticCapitalizationEnabled = false;
+    NSAutomaticDashSubstitutionEnabled = false;
+    NSAutomaticPeriodSubstitutionEnabled = false;
+    NSAutomaticQuoteSubstitutionEnabled = false;
+    NSAutomaticSpellingCorrectionEnabled = false;
+  };
 }
-

@@ -59,12 +59,13 @@ macOS-specific configuration extending common.nix.
 **Homebrew apps:** 30+ applications
 **Mac App Store apps:** 10+ applications
 
-### tristonyoder.nix (NixOS User)
+### tristonyoder.nix (Cross-Platform User)
 
-NixOS-specific configuration extending common.nix.
+Cross-platform configuration extending common.nix.
 
 **Includes:**
-- Linux-specific packages
+- macOS-specific settings (when on macOS)
+- Linux-specific packages (when on NixOS)
 - Desktop environment settings
 - Development tools
 - System integration
@@ -413,6 +414,6 @@ Custom Home Manager module for Mac App Store app management.
 
 ---
 
-**Users:** 2 (tyoder on macOS, tristonyoder on NixOS)  
+**Users:** 2 (tyoder on macOS, tristonyoder on NixOS + macOS)  
 **Platforms:** NixOS + macOS  
 **Integration:** Flake-based, auto-applied with system rebuilds
