@@ -90,6 +90,9 @@ in
   # Cloudflare tunnel token
     "cloudflared-token-current.age".publicKeys = davidKeys;
   
+  # Nextcloud admin password (only on david)
+  "nextcloud-admin-password.age".publicKeys = davidKeys;
+  
   # =============================================================================
   # SHARED SECRETS (All Servers)
   # =============================================================================

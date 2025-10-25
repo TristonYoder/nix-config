@@ -58,7 +58,16 @@ Generates 3 encrypted secrets:
 
 ### 1. Encrypt the secret value
 
-**Important:** Use `age --encrypt` with **SSH public keys** (`-R` flag) for agenix compatibility.
+**Recommended:** Use the helper script for easiest secret creation:
+
+```bash
+cd secrets
+
+# Encrypt with all hosts (david, pits, admin)
+./encrypt-secret.sh -n my-secret.age -h all -s "secret-value"
+```
+
+**Manual Method:** If you need full control, encrypt manually:
 
 ```bash
 cd secrets
@@ -412,7 +421,10 @@ export PATH="/nix/var/nix/profiles/default/bin:$PATH"
 # Interactive mode (recommended)
 ./encrypt-secret.sh -n api-token.age -e
 
-# From command line
+# From command line with all hosts (default)
+./encrypt-secret.sh -n db-password.age -h all -s "mypassword123"
+
+# From command line (all hosts is default)
 ./encrypt-secret.sh -n db-password.age -s "mypassword123"
 
 # From file
@@ -420,6 +432,9 @@ export PATH="/nix/var/nix/profiles/default/bin:$PATH"
 
 # Only specific hosts
 ./encrypt-secret.sh -n david-only.age -h david -s "secret"
+
+# Multiple hosts
+./encrypt-secret.sh -n multi-host.age -h david,pits -s "secret"
 
 # Environment variable format
 ./encrypt-secret.sh -n token.age -e -s "API_KEY=abc123"

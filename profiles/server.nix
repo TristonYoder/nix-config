@@ -74,6 +74,7 @@
   modules.services.storage.nfs.enable = lib.mkDefault true;
   modules.services.storage.samba.enable = lib.mkDefault true;
   modules.services.storage.syncthing.enable = lib.mkDefault true;
+  modules.services.storage.nextcloud.enable = lib.mkDefault true;
 
   # =============================================================================
   # DEVELOPMENT SERVICES

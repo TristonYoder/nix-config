@@ -156,6 +156,14 @@ with lib;
       mode = "0400";
     };
     
+    # Nextcloud Admin Password
+    nextcloud-admin-password = {
+      file = ../secrets/nextcloud-admin-password.age;
+      owner = "nextcloud";
+      group = "nextcloud";
+      mode = "0400";
+    };
+    
     # TODO: Create these secrets when ready
     # vaultwarden-admin-token = {
     #   file = ../secrets/vaultwarden-admin-token.age;

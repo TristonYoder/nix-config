@@ -31,6 +31,11 @@ in
       };
       globalConfig = ''
         email ${cfg.email}
+        
+        # Bind to both IPv4 and IPv6
+        servers {
+          protocols h1 h2 h3
+        }
       '';
       extraConfig = ''
         # Cloudflare TLS snippet for reuse across virtual hosts
