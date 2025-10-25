@@ -72,6 +72,12 @@
 
 #### First-Time Deployment
 
+**Note:** If you see an error about `/etc/bashrc` or `/etc/zshrc` being overwritten, first manually back them up:
+```bash
+sudo cp /etc/bashrc /etc/bashrc.before-nix-darwin
+sudo cp /etc/zshrc /etc/zshrc.before-nix-darwin
+```
+
 **For tyoder-mbp:**
 ```bash
 # Enter the repository
