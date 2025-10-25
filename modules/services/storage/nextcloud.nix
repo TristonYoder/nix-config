@@ -107,6 +107,10 @@ in
         dbtype = "pgsql";
         adminuser = cfg.adminUser;
         adminpassFile = if cfg.adminPassFile != null then cfg.adminPassFile else config.age.secrets.nextcloud-admin-password.path;
+        # Force installation by setting these required fields
+        dbname = "nextcloud";
+        dbuser = "nextcloud";
+        dbhost = "/run/postgresql";
       };
       
       # Settings
