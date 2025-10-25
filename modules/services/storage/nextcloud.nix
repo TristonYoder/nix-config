@@ -86,9 +86,6 @@ in
       hostName = cfg.domain;
       package = cfg.package;
       
-      # Disable automatic setup until manually initialized
-      enableAutoUpdate = false;
-      
       # Database configuration - PostgreSQL
       database.createLocally = true;
       
