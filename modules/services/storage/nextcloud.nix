@@ -49,6 +49,18 @@ in
       default = true;
       description = "Enable nightly PostgreSQL backups";
     };
+    
+    dbTablePrefix = mkOption {
+      type = types.str;
+      default = "nc1_";
+      description = "Database table prefix for Nextcloud (useful for multiple instances)";
+    };
+    
+    dataDir = mkOption {
+      type = types.str;
+      default = "/data/nextcloud";
+      description = "Nextcloud data directory for user files";
+    };
   };
 
   config = mkIf cfg.enable {
@@ -73,6 +85,7 @@ in
       enable = true;
       hostName = cfg.domain;
       package = cfg.package;
+      dataDir = cfg.dataDir;
       
       # Database configuration - PostgreSQL
       database.createLocally = true;
@@ -95,6 +108,7 @@ in
         dbtype = "pgsql";
         adminuser = cfg.adminUser;
         adminpassFile = if cfg.adminPassFile != null then cfg.adminPassFile else config.age.secrets.nextcloud-admin-password.path;
+        dbtableprefix = cfg.dbTablePrefix;
       };
       
       # Settings
