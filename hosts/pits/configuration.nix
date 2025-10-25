@@ -130,12 +130,12 @@
   # Nextcloud - Reverse proxy to david
   # Uses Cloudflare DNS-01 challenge for automatic HTTPS
   # PITS terminates SSL for external access, forwards to David over Tailscale
-  services.caddy.virtualHosts."cloud.7andco.dev" = {
-    extraConfig = ''
-      reverse_proxy https://david
-      import cloudflare_tls
-    '';
-  };
+    services.caddy.virtualHosts."cloud.7andco.dev" = {
+      extraConfig = ''
+        reverse_proxy https://10.150.100.30
+        import cloudflare_tls
+      '';
+    };
   
   # Well-Known Delegation for Federation is handled by the wellknown module
   # (modules/services/communication/wellknown.nix)
