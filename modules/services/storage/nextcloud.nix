@@ -67,6 +67,12 @@ in
       default = true;
       description = "Enable Office apps (OnlyOffice, Collabora, etc.)";
     };
+    
+    enableElementApp = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Enable Element (Matrix) chat app";
+    };
   };
 
   config = mkIf cfg.enable {
@@ -109,12 +115,24 @@ in
       extraAppsEnable = true;
       
       # Office and productivity apps
-      extraApps = mkIf cfg.enableOfficeApps (with config.services.nextcloud.package.packages.apps; {
-        inherit onlyoffice;
-        # Additional office apps can be added here
-        # inherit collabora;
-        # inherit richdocuments;
-      });
+      extraApps = mkMerge [
+        # Office apps
+        (mkIf cfg.enableOfficeApps (with config.services.nextcloud.package.packages.apps; {
+          inherit onlyoffice;
+          # Additional office apps can be added here
+          # inherit collabora;
+          # inherit richdocuments;
+        }))
+        
+        # Element/Matrix chat app
+        (mkIf cfg.enableElementApp {
+          riotchat = pkgs.fetchNextcloudApp rec {
+            url = "https://github.com/gary-kim/riotchat/releases/download/v0.19.0/riotchat.tar.gz";
+            sha256 = "sha256-01py4wma7b7f0pssy5pl3rna9la559wk21z4qwf2b7kbdk4ybrhx";
+            license = "agpl3";
+          };
+        })
+      ];
       
       # Configuration
       config = {
