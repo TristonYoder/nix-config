@@ -57,7 +57,7 @@ in
       extraGroups = cfg.mainUser.extraGroups;
       packages = cfg.mainUser.packages;
       openssh.authorizedKeys.keys = cfg.mainUser.sshKeys;
-      homeDirectory = "/data/${cfg.mainUser.name}/home";
+      home = "/data/${cfg.mainUser.name}/home";
     };
     
     # Caroline Yoder user account
@@ -73,7 +73,7 @@ in
       openssh.authorizedKeys.keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK5JWm3A5tXTCPq8YTua30QH2+Pa/Mz96QC5KJZKdEsz"  # Same key as tristonyoder for now
       ];
-      homeDirectory = "/data/carolineyoder/home";
+      home = "/data/carolineyoder/home";
     };
     
     # Create data directories with proper permissions for Nextcloud access
