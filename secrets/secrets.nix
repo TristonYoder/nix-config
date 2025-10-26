@@ -93,6 +93,9 @@ in
   # Nextcloud admin password (only on david)
   "nextcloud-admin-password.age".publicKeys = davidKeys;
   
+  # Scrypted Watchtower HTTP API Token (only on david)
+  "scrypted-watchtower-token.age".publicKeys = davidKeys;
+  
   # =============================================================================
   # SHARED SECRETS (All Servers)
   # =============================================================================
