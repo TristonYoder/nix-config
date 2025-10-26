@@ -126,9 +126,9 @@ in
         
         # Element/Matrix chat app
         (mkIf cfg.enableElementApp {
-          riotchat = pkgs.fetchNextcloudApp rec {
+          riotchat = pkgs.fetchNextcloudApp {
             url = "https://github.com/gary-kim/riotchat/releases/download/v0.19.0/riotchat.tar.gz";
-            sha256 = "sha256-01py4wma7b7f0pssy5pl3rna9la559wk21z4qwf2b7kbdk4ybrhx";
+            sha256 = "sha256:01py4wma7b7f0pssy5pl3rna9la559wk21z4qwf2b7kbdk4ybrhx";
             license = "agpl3Only";
           };
         })
