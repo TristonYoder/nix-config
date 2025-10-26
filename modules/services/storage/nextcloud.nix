@@ -128,7 +128,7 @@ in
         (mkIf cfg.enableElementApp {
           riotchat = pkgs.fetchNextcloudApp {
             url = "https://github.com/gary-kim/riotchat/releases/download/v0.19.0/riotchat.tar.gz";
-            sha256 = "sha256:01py4wma7b7f0pssy5pl3rna9la559wk21z4qwf2b7kbdk4ybrhx";
+            sha256 = "X1yYQUdSTD9jZDX2usmM0cdPRQEe67GOAI3Na3FK224=";
             license = "agpl3Only";
           };
         })
