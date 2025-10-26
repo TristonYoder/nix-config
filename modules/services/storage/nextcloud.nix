@@ -155,6 +155,13 @@ in
     systemd.tmpfiles.rules = [
       "d ${cfg.dataDir} 0755 nextcloud nextcloud -"
     ];
+    
+    # Configure Nextcloud to access user home directories
+    # This allows Nextcloud to mount external storage from user directories
+    services.nextcloud.extraOptions = {
+      # Enable external storage app
+      "appstoreenabled" = "true";
+    };
 
     # Disable problematic services until Nextcloud is manually initialized
     systemd.services.nextcloud-setup.enable = false;

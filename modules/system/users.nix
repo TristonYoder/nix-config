@@ -23,7 +23,7 @@ in
       
       extraGroups = mkOption {
         type = types.listOf types.str;
-        default = [ "networkmanager" "wheel" "docker" ];
+        default = [ "networkmanager" "wheel" "docker" "nextcloud" ];
         description = "Additional groups for main user";
       };
       
@@ -58,6 +58,38 @@ in
       packages = cfg.mainUser.packages;
       openssh.authorizedKeys.keys = cfg.mainUser.sshKeys;
     };
+    
+    # Caroline Yoder user account
+    users.users.carolineyoder = {
+      isNormalUser = true;
+      description = "Caroline Yoder";
+      extraGroups = [ "nextcloud" ];
+      packages = with pkgs; [
+        firefox
+        bitwarden-desktop
+        _1password-gui
+      ];
+      openssh.authorizedKeys.keys = [
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK5JWm3A5tXTCPq8YTua30QH2+Pa/Mz96QC5KJZKdEsz"  # Same key as tristonyoder for now
+      ];
+    };
+    
+    # Create data directories with proper permissions for Nextcloud access
+    systemd.tmpfiles.rules = [
+      # Main data directory
+      "d /data 0755 root root -"
+      
+      # User home directories with nextcloud group access
+      "d /data/tristonyoder 0755 tristonyoder nextcloud -"
+      "d /data/tristonyoder/home 0755 tristonyoder nextcloud -"
+      "d /data/carolineyoder 0755 carolineyoder nextcloud -"
+      "d /data/carolineyoder/home 0755 carolineyoder nextcloud -"
+      
+      # Ensure nextcloud can access user directories
+      "Z /data/tristonyoder/home 0755 tristonyoder nextcloud -"
+      "Z /data/carolineyoder/home 0755 carolineyoder nextcloud -"
+    ];
+    
   };
 }
 
