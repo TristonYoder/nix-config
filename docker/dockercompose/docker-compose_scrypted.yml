@@ -1,0 +1,41 @@
+name: scrypted
+
+services:
+  scrypted:
+    container_name: scrypted
+    image: ghcr.io/koush/scrypted
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - SCRYPTED_WEBHOOK_UPDATE_AUTHORIZATION=Bearer ${WATCHTOWER_HTTP_API_TOKEN:-env_missing_fallback}
+      - SCRYPTED_WEBHOOK_UPDATE=http://localhost:10444/v1/update
+      - SCRYPTED_DNS_SERVER_0=${SCRYPTED_DNS_SERVER_0:-1.1.1.1}
+      - SCRYPTED_DNS_SERVER_1=${SCRYPTED_DNS_SERVER_1:-8.8.8.8}
+    volumes:
+      - ./volume:/server/volume
+    devices:
+      - "/dev/bus/usb:/dev/bus/usb"
+      - "/dev/dri:/dev/dri"
+    logging:
+      driver: "none"
+    labels:
+      - "com.centurylinklabs.watchtower.scope=scrypted"
+
+  scrypted-watchtower:
+    container_name: scrypted-watchtower
+    image: containrrr/watchtower
+    restart: unless-stopped
+    environment:
+      - WATCHTOWER_HTTP_API_TOKEN=${WATCHTOWER_HTTP_API_TOKEN:-env_missing_fallback}
+      - WATCHTOWER_HTTP_API_UPDATE=true
+      - WATCHTOWER_SCOPE=scrypted
+      - WATCHTOWER_HTTP_API_PERIODIC_POLLS=${WATCHTOWER_HTTP_API_PERIODIC_POLLS:-true}
+      - SCRYPTED_DNS_SERVER_0=${SCRYPTED_DNS_SERVER_0:-1.1.1.1}
+      - SCRYPTED_DNS_SERVER_1=${SCRYPTED_DNS_SERVER_1:-8.8.8.8}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "10444:8080"
+    command: --interval 3600 --cleanup --scope scrypted
+    labels:
+      - "com.centurylinklabs.watchtower.scope=scrypted"
