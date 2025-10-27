@@ -73,6 +73,62 @@ in
       default = true;
       description = "Enable Element (Matrix) chat app";
     };
+    
+    # Built-in Nextcloud apps
+    enableNews = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Enable News RSS reader";
+    };
+    
+    enableMail = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Enable Mail client";
+    };
+    
+    enableTables = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Enable Tables (spreadsheet app)";
+    };
+    
+    enableForms = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Enable Forms";
+    };
+    
+    enableContacts = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Enable Contacts";
+    };
+    
+    enableCalendar = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Enable Calendar";
+    };
+    
+    enableGroupfolders = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Enable Groupfolders";
+    };
+    
+    enableExternal = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Enable External storage support";
+    };
+    
+    # Custom apps that need manual fetching
+    enableUserSaml = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Enable user_saml SSO authentication";
+    };
   };
 
   config = mkIf cfg.enable {
@@ -116,15 +172,45 @@ in
       
       # Office and productivity apps
       extraApps = mkMerge [
-        # Office apps
+        # Built-in Office apps (OnlyOffice, Richdocuments)
         (mkIf cfg.enableOfficeApps (with config.services.nextcloud.package.packages.apps; {
-          inherit onlyoffice;
-          # Additional office apps can be added here
-          # inherit collabora;
-          # inherit richdocuments;
+          inherit onlyoffice richdocuments;
         }))
         
-        # Element/Matrix chat app
+        # Built-in core apps
+        (mkIf cfg.enableNews (with config.services.nextcloud.package.packages.apps; {
+          inherit news;
+        }))
+        
+        (mkIf cfg.enableMail (with config.services.nextcloud.package.packages.apps; {
+          inherit mail;
+        }))
+        
+        (mkIf cfg.enableTables (with config.services.nextcloud.package.packages.apps; {
+          inherit tables;
+        }))
+        
+        (mkIf cfg.enableForms (with config.services.nextcloud.package.packages.apps; {
+          inherit forms;
+        }))
+        
+        (mkIf cfg.enableContacts (with config.services.nextcloud.package.packages.apps; {
+          inherit contacts;
+        }))
+        
+        (mkIf cfg.enableCalendar (with config.services.nextcloud.package.packages.apps; {
+          inherit calendar;
+        }))
+        
+        (mkIf cfg.enableGroupfolders (with config.services.nextcloud.package.packages.apps; {
+          inherit groupfolders;
+        }))
+        
+        (mkIf cfg.enableExternal (with config.services.nextcloud.package.packages.apps; {
+          inherit external;
+        }))
+        
+        # Custom apps (manually fetched)
         (mkIf cfg.enableElementApp {
           riotchat = pkgs.fetchNextcloudApp {
             url = "https://github.com/gary-kim/riotchat/releases/download/v0.19.0/riotchat.tar.gz";
@@ -132,6 +218,17 @@ in
             license = "agpl3Only";
           };
         })
+        
+        # TODO: Add other custom apps as needed:
+        # - user_saml
+        # - richdocumentscode
+        # - integration_notion
+        # - integration_github
+        # - officeonline
+        # - electronicsignatures
+        # - snappymail
+        # - libresign
+        # - files_readmemd
       ];
       
       # Configuration
