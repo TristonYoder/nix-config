@@ -253,9 +253,10 @@ in
           inherit groupfolders;
         }))
         
-        (mkIf cfg.enableExternal (with config.services.nextcloud.package.packages.apps; {
-          inherit external;
-        }))
+        # External app is not available as a built-in app, comment it out
+        # (mkIf cfg.enableExternal (with config.services.nextcloud.package.packages.apps; {
+        #   inherit external;
+        # }))
         
         # Custom apps (manually fetched)
         (mkIf cfg.enableElementApp {
