@@ -311,7 +311,7 @@ in
           electronicsignatures = pkgs.fetchNextcloudApp {
             url = "https://github.com/eideasy/nextcloud-electronic-signatures-plugin/releases/download/v3.0.5/electronicsignatures.tar.gz";
             sha256 = "1VijwoiDHtWQ5ujqj6f0/3Qx28VLB+feViX/poqNHf4=";
-            license = "proprietary";
+            license = "unfree";
           };
         })
         
