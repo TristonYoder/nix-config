@@ -77,57 +77,104 @@ in
     # Built-in Nextcloud apps
     enableNews = mkOption {
       type = types.bool;
-      default = true;
+      default = false;
       description = "Enable News RSS reader";
     };
     
     enableMail = mkOption {
       type = types.bool;
-      default = true;
+      default = false;
       description = "Enable Mail client";
     };
     
     enableTables = mkOption {
       type = types.bool;
-      default = true;
+      default = false;
       description = "Enable Tables (spreadsheet app)";
     };
     
     enableForms = mkOption {
       type = types.bool;
-      default = true;
+      default = false;
       description = "Enable Forms";
     };
     
     enableContacts = mkOption {
       type = types.bool;
-      default = true;
+      default = false;
       description = "Enable Contacts";
     };
     
     enableCalendar = mkOption {
       type = types.bool;
-      default = true;
+      default = false;
       description = "Enable Calendar";
     };
     
     enableGroupfolders = mkOption {
       type = types.bool;
-      default = true;
+      default = false;
       description = "Enable Groupfolders";
     };
     
     enableExternal = mkOption {
       type = types.bool;
-      default = true;
+      default = false;
       description = "Enable External storage support";
     };
     
-    # Custom apps that need manual fetching
     enableUserSaml = mkOption {
       type = types.bool;
       default = false;
       description = "Enable user_saml SSO authentication";
+    };
+    
+    enableRichdocumentscode = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Enable Richdocumentscode document server";
+    };
+    
+    enableIntegrationNotion = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Enable Notion integration";
+    };
+    
+    enableIntegrationGithub = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Enable GitHub integration";
+    };
+    
+    enableOfficeonline = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Enable Officeonline document editor";
+    };
+    
+    enableElectronicsignatures = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Enable Electronic Signatures";
+    };
+    
+    enableSnappymail = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Enable Snappymail email client";
+    };
+    
+    enableLibresign = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Enable Libresign document signing";
+    };
+    
+    enableFilesReadmemd = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Enable files_readmemd markdown viewer";
     };
   };
 
@@ -219,16 +266,69 @@ in
           };
         })
         
-        # TODO: Add other custom apps as needed:
-        # - user_saml
-        # - richdocumentscode
-        # - integration_notion
-        # - integration_github
-        # - officeonline
-        # - electronicsignatures
-        # - snappymail
-        # - libresign
-        # - files_readmemd
+        (mkIf cfg.enableUserSaml {
+          user_saml = pkgs.fetchNextcloudApp {
+            url = "https://github.com/nextcloud-releases/user_saml/releases/download/v7.0.0/user_saml-v7.0.0.tar.gz";
+            sha256 = "kE51sQWjGzDbJxgRQNFmexcW+s9/6lcbW2Rxf+Tj6hA=";
+            license = "agpl3";
+          };
+        })
+        
+        (mkIf cfg.enableRichdocumentscode {
+          richdocumentscode = pkgs.fetchNextcloudApp {
+            url = "https://github.com/CollaboraOnline/richdocumentscode/releases/download/25.4.504/richdocumentscode.tar.gz";
+            sha256 = "y5zNEAGF5Xw1Ba7jHGimzAEK6bk6gWYiVgxofbONEc4=";
+            license = "agpl3";
+          };
+        })
+        
+        (mkIf cfg.enableIntegrationNotion {
+          integration_notion = pkgs.fetchNextcloudApp {
+            url = "https://github.com/nextcloud-releases/integration_notion/releases/download/v2.0.0/integration_notion-v2.0.0.tar.gz";
+            sha256 = "S4KVhg7YI/T0E/t56X3VlOZ2g4EZlEIMNFxsIj0gTIw=";
+            license = "agpl3";
+          };
+        })
+        
+        (mkIf cfg.enableIntegrationGithub {
+          integration_github = pkgs.fetchNextcloudApp {
+            url = "https://github.com/nextcloud-releases/integration_github/releases/download/v3.2.1/integration_github-v3.2.1.tar.gz";
+            sha256 = "iBWphFaXmQHNxgoi9qkfV7vCTChwtk6yg0aVr9Lhn4c=";
+            license = "agpl3";
+          };
+        })
+        
+        (mkIf cfg.enableOfficeonline {
+          officeonline = pkgs.fetchNextcloudApp {
+            url = "https://github.com/nextcloud-releases/officeonline/releases/download/v3.1.0/officeonline-v3.1.0.tar.gz";
+            sha256 = "UoBHQfclI9fQu6tXDJsw1dbnW48q8lWyDa8A79J483c=";
+            license = "agpl3";
+          };
+        })
+        
+        (mkIf cfg.enableElectronicsignatures {
+          electronicsignatures = pkgs.fetchNextcloudApp {
+            url = "https://github.com/eideasy/nextcloud-electronic-signatures-plugin/releases/download/v3.0.5/electronicsignatures.tar.gz";
+            sha256 = "1VijwoiDHtWQ5ujqj6f0/3Qx28VLB+feViX/poqNHf4=";
+            license = "proprietary";
+          };
+        })
+        
+        (mkIf cfg.enableLibresign {
+          libresign = pkgs.fetchNextcloudApp {
+            url = "https://github.com/LibreSign/libresign/releases/download/v12.0.1/libresign-v12.0.1.tar.gz";
+            sha256 = "ey6jH+S20HxxDpA3CcizIvn4ddqk2GGnvYpyW+Iaciw=";
+            license = "agpl3";
+          };
+        })
+        
+        (mkIf cfg.enableFilesReadmemd {
+          files_readmemd = pkgs.fetchNextcloudApp {
+            url = "https://github.com/mamatt/files_readmemd/releases/download/V3.0.2/files_readmemd.tar.gz";
+            sha256 = "Sdai8E7MJcveoxYVpDjkdetspLB5G6kNDUSVJ7KOFlQ=";
+            license = "agpl3";
+          };
+        })
       ];
       
       # Configuration

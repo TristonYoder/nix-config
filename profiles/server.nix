@@ -74,7 +74,32 @@
   modules.services.storage.nfs.enable = lib.mkDefault true;
   modules.services.storage.samba.enable = lib.mkDefault true;
   modules.services.storage.syncthing.enable = lib.mkDefault true;
-  modules.services.storage.nextcloud.enable = lib.mkDefault true;
+  
+  # Nextcloud with all apps enabled
+  modules.services.storage.nextcloud = {
+    enable = lib.mkDefault true;
+    
+    # Built-in apps
+    enableNews = true;
+    enableMail = true;
+    enableTables = true;
+    enableForms = true;
+    enableContacts = true;
+    enableCalendar = true;
+    enableGroupfolders = true;
+    enableExternal = true;
+    
+    # Custom apps
+    enableElementApp = true;
+    enableUserSaml = true;
+    enableRichdocumentscode = true;
+    enableIntegrationNotion = true;
+    enableIntegrationGithub = true;
+    enableOfficeonline = true;
+    enableElectronicsignatures = true;
+    enableLibresign = true;
+    enableFilesReadmemd = true;
+  };
 
   # =============================================================================
   # DEVELOPMENT SERVICES
