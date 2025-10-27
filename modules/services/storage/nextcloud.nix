@@ -271,7 +271,7 @@ in
           user_saml = pkgs.fetchNextcloudApp {
             url = "https://github.com/nextcloud-releases/user_saml/releases/download/v7.0.0/user_saml-v7.0.0.tar.gz";
             sha256 = "kE51sQWjGzDbJxgRQNFmexcW+s9/6lcbW2Rxf+Tj6hA=";
-            license = "agpl3";
+            license = "agpl3Only";
           };
         })
         
@@ -279,7 +279,7 @@ in
           richdocumentscode = pkgs.fetchNextcloudApp {
             url = "https://github.com/CollaboraOnline/richdocumentscode/releases/download/25.4.504/richdocumentscode.tar.gz";
             sha256 = "y5zNEAGF5Xw1Ba7jHGimzAEK6bk6gWYiVgxofbONEc4=";
-            license = "agpl3";
+            license = "agpl3Only";
           };
         })
         
@@ -287,7 +287,7 @@ in
           integration_notion = pkgs.fetchNextcloudApp {
             url = "https://github.com/nextcloud-releases/integration_notion/releases/download/v2.0.0/integration_notion-v2.0.0.tar.gz";
             sha256 = "S4KVhg7YI/T0E/t56X3VlOZ2g4EZlEIMNFxsIj0gTIw=";
-            license = "agpl3";
+            license = "agpl3Only";
           };
         })
         
@@ -295,7 +295,7 @@ in
           integration_github = pkgs.fetchNextcloudApp {
             url = "https://github.com/nextcloud-releases/integration_github/releases/download/v3.2.1/integration_github-v3.2.1.tar.gz";
             sha256 = "iBWphFaXmQHNxgoi9qkfV7vCTChwtk6yg0aVr9Lhn4c=";
-            license = "agpl3";
+            license = "agpl3Only";
           };
         })
         
@@ -303,7 +303,7 @@ in
           officeonline = pkgs.fetchNextcloudApp {
             url = "https://github.com/nextcloud-releases/officeonline/releases/download/v3.1.0/officeonline-v3.1.0.tar.gz";
             sha256 = "UoBHQfclI9fQu6tXDJsw1dbnW48q8lWyDa8A79J483c=";
-            license = "agpl3";
+            license = "agpl3Only";
           };
         })
         
@@ -319,7 +319,7 @@ in
           libresign = pkgs.fetchNextcloudApp {
             url = "https://github.com/LibreSign/libresign/releases/download/v12.0.1/libresign-v12.0.1.tar.gz";
             sha256 = "ey6jH+S20HxxDpA3CcizIvn4ddqk2GGnvYpyW+Iaciw=";
-            license = "agpl3";
+            license = "agpl3Only";
           };
         })
         
@@ -327,7 +327,7 @@ in
           files_readmemd = pkgs.fetchNextcloudApp {
             url = "https://github.com/mamatt/files_readmemd/releases/download/V3.0.2/files_readmemd.tar.gz";
             sha256 = "Sdai8E7MJcveoxYVpDjkdetspLB5G6kNDUSVJ7KOFlQ=";
-            license = "agpl3";
+            license = "agpl3Only";
           };
         })
       ];
