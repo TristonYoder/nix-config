@@ -210,9 +210,8 @@ in
       # Upload size
       maxUploadSize = cfg.maxUploadSize;
       
-      # HTTPS - disabled to prevent nginx from binding to port 80
-      # Caddy will handle HTTPS termination
-      https = false;
+      # HTTPS
+      https = true;
       
       # App updates
       autoUpdateApps.enable = cfg.autoUpdateApps;
@@ -375,7 +374,7 @@ in
     
     # Configure Nextcloud to access user home directories
     # This allows Nextcloud to mount external storage from user directories
-    services.nextcloud.settings = {
+    services.nextcloud.extraOptions = {
       # Enable external storage app
       "appstoreenabled" = "true";
     };
