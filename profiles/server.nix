@@ -90,15 +90,15 @@
     enableExternal = true;
     
     # Custom apps
-    enableElementApp = true;
-    enableUserSaml = true;
-    enableRichdocumentscode = true;
-    enableIntegrationNotion = true;
-    enableIntegrationGithub = true;
-    enableOfficeonline = true;
-    enableElectronicsignatures = true;
-    enableLibresign = true;
-    enableFilesReadmemd = true;
+    enableElementApp = false;
+    enableUserSaml = false;
+    enableRichdocumentscode = false;
+    enableIntegrationNotion = false;
+    enableIntegrationGithub = false;
+    enableOfficeonline = false;
+    enableElectronicsignatures = false;
+    enableLibresign = false;
+    enableFilesReadmemd = false;
   };
 
   # =============================================================================
