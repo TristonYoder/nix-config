@@ -76,30 +76,30 @@
   modules.services.storage.syncthing.enable = lib.mkDefault true;
   
   # Nextcloud with all apps enabled
-  modules.services.storage.nextcloud = {
-    enable = lib.mkDefault true;
+  # modules.services.storage.nextcloud = {
+  #   enable = lib.mkDefault true;
     
-    # Built-in apps
-    enableNews = true;
-    enableMail = true;
-    enableTables = true;
-    enableForms = true;
-    enableContacts = true;
-    enableCalendar = true;
-    enableGroupfolders = true;
-    enableExternal = true;
+  #   # Built-in apps
+  #   enableNews = true;
+  #   enableMail = true;
+  #   enableTables = true;
+  #   enableForms = true;
+  #   enableContacts = true;
+  #   enableCalendar = true;
+  #   enableGroupfolders = true;
+  #   enableExternal = true;
     
-    # Custom apps
-    enableElementApp = false;
-    enableUserSaml = false;
-    enableRichdocumentscode = false;
-    enableIntegrationNotion = false;
-    enableIntegrationGithub = false;
-    enableOfficeonline = false;
-    enableElectronicsignatures = false;
-    enableLibresign = false;
-    enableFilesReadmemd = false;
-  };
+  #   # Custom apps
+  #   enableElementApp = false;
+  #   enableUserSaml = false;
+  #   enableRichdocumentscode = false;
+  #   enableIntegrationNotion = false;
+  #   enableIntegrationGithub = false;
+  #   enableOfficeonline = false;
+  #   enableElectronicsignatures = false;
+  #   enableLibresign = false;
+  #   enableFilesReadmemd = false;
+  # };
 
   # =============================================================================
   # DEVELOPMENT SERVICES
