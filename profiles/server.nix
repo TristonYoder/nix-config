@@ -113,7 +113,7 @@
   # DNS CONFIGURATION
   # =============================================================================
   
-  # Configure DNS servers to use Cloudflare DNS
-  networking.nameservers = [ "1.1.1.1" "1.0.0.1" ];
+  # Configure DNS servers to use NextDNS
+  networking.nameservers = [ "45.90.28.160" "45.90.30.160" ];
 }
 
