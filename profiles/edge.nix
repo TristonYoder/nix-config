@@ -91,5 +91,12 @@
   
   # Optimize nix store
   nix.settings.auto-optimise-store = lib.mkDefault true;
+
+  # =============================================================================
+  # DNS CONFIGURATION
+  # =============================================================================
+  
+  # Configure DNS servers to use Cloudflare DNS
+  networking.nameservers = [ "1.1.1.1" "1.0.0.1" ];
 }
 
