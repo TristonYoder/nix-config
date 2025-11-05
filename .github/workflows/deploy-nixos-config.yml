@@ -241,7 +241,7 @@ jobs:
   # Summary job to report overall deployment status
   deployment-summary:
     runs-on: ubuntu-latest
-    needs: deploy-configurations
+    needs: [prepare-deployment, deploy-configurations]
     if: always()
     
     steps:

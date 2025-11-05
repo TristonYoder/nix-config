@@ -76,30 +76,30 @@
   modules.services.storage.syncthing.enable = lib.mkDefault true;
   
   # Nextcloud with all apps enabled
-  modules.services.storage.nextcloud = {
-    enable = lib.mkDefault true;
+  # modules.services.storage.nextcloud = {
+  #   enable = lib.mkDefault true;
     
-    # Built-in apps
-    enableNews = true;
-    enableMail = true;
-    enableTables = true;
-    enableForms = true;
-    enableContacts = true;
-    enableCalendar = true;
-    enableGroupfolders = true;
-    enableExternal = true;
+  #   # Built-in apps
+  #   enableNews = true;
+  #   enableMail = true;
+  #   enableTables = true;
+  #   enableForms = true;
+  #   enableContacts = true;
+  #   enableCalendar = true;
+  #   enableGroupfolders = true;
+  #   enableExternal = true;
     
-    # Custom apps
-    enableElementApp = true;
-    enableUserSaml = true;
-    enableRichdocumentscode = true;
-    enableIntegrationNotion = true;
-    enableIntegrationGithub = true;
-    enableOfficeonline = true;
-    enableElectronicsignatures = true;
-    enableLibresign = true;
-    enableFilesReadmemd = true;
-  };
+  #   # Custom apps
+  #   enableElementApp = false;
+  #   enableUserSaml = false;
+  #   enableRichdocumentscode = false;
+  #   enableIntegrationNotion = false;
+  #   enableIntegrationGithub = false;
+  #   enableOfficeonline = false;
+  #   enableElectronicsignatures = false;
+  #   enableLibresign = false;
+  #   enableFilesReadmemd = false;
+  # };
 
   # =============================================================================
   # DEVELOPMENT SERVICES
@@ -108,5 +108,12 @@
   modules.services.development.vscode-server.enable = lib.mkDefault true;
   modules.services.development.github-actions.enable = lib.mkDefault true;
   modules.services.development.kasm.enable = lib.mkDefault true;
+
+  # =============================================================================
+  # DNS CONFIGURATION
+  # =============================================================================
+  
+  # Configure DNS servers to use Cloudflare DNS
+  networking.nameservers = [ "1.1.1.1" "1.0.0.1" ];
 }
 

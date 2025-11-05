@@ -64,6 +64,46 @@
   # modules.services.storage.syncthing.enable = true;
   
   # =============================================================================
+  # CADDY CONFIGURATION FOR TECHNITIUM DNS
+  # =============================================================================
+  
+  # Technitium DNS Web UI and DoH - dns02.theyoder.family
+  services.caddy.virtualHosts."dns02.theyoder.family" = {
+    extraConfig = ''
+      # Define matchers for allowed IP ranges (internal networks + Tailscale)
+      @internal {
+        remote_ip 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 100.64.0.0/10
+      }
+      
+      # Handle requests from allowed internal IPs
+      handle @internal {
+        # DNS over HTTPS endpoint - Technitium runs DoH on port 5353
+        handle /dns-query* {
+          reverse_proxy http://localhost:5353 {
+            header_up Host {upstream_hostport}
+            header_up X-Real-IP {remote_host}
+          }
+        }
+        
+        # Web UI for all other paths
+        handle {
+          reverse_proxy http://localhost:5380 {
+            header_up Host {upstream_hostport}
+            header_up X-Real-IP {remote_host}
+          }
+        }
+      }
+      
+      # Handle requests from disallowed IPs (external access)
+      handle {
+        respond "Access Forbidden - Internal Network Only" 403
+      }
+      
+      import cloudflare_tls
+    '';
+  };
+
+  # =============================================================================
   # CADDY CONFIGURATION
   # =============================================================================
   

@@ -32,6 +32,9 @@
   # Tailscale for secure networking back to main infrastructure
   modules.services.infrastructure.tailscale.enable = lib.mkDefault true;
   
+  # Technitium DNS Server for edge DNS resolution
+  modules.services.infrastructure.technitium.enable = lib.mkDefault true;
+  
   # Cloudflare tunnel is only on david (server profile), not on edge servers
   # Cloudflared disabled - only run on main server
   modules.services.infrastructure.cloudflared.enable = lib.mkDefault false;
@@ -88,5 +91,12 @@
   
   # Optimize nix store
   nix.settings.auto-optimise-store = lib.mkDefault true;
+
+  # =============================================================================
+  # DNS CONFIGURATION
+  # =============================================================================
+  
+  # Configure DNS servers to use Cloudflare DNS
+  networking.nameservers = [ "1.1.1.1" "1.0.0.1" ];
 }
 
