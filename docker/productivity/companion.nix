@@ -5,6 +5,12 @@
 { pkgs, lib, ... }:
 
 {
+  # Ensure data directory exists with correct permissions
+  # Companion container runs as user "companion" (UID 1000, GID 1000)
+  systemd.tmpfiles.rules = [
+    "d /data/docker-appdata/companion 0755 1000 1000 -"
+  ];
+
   # Containers
   virtualisation.oci-containers.containers."companion" = {
     image = "ghcr.io/bitfocus/companion/companion:latest";
