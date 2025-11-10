@@ -84,6 +84,7 @@ sudo nixos-rebuild switch --flake .
 ### Productivity Services
 
 - **affine.nix** - Knowledge base (open source Notion alternative)
+- **companion.nix** - Bitfocus Companion control software for Streamdecks and button panels
 - **homarr.nix** - Homepage dashboard for services
 - **outline.nix** - Team knowledge base with real-time collaboration
 - **planning-poker.nix** - Agile estimation tool
@@ -302,16 +303,46 @@ Use NixOS modules for:
 - Better integration with system configuration
 - More declarative configuration
 
+## Special Service Configurations
+
+### Bitfocus Companion
+
+**What is Companion?**
+Bitfocus Companion is a control software for Streamdecks, button panels, and other broadcast/presentation control surfaces. It integrates with 2,800+ modules including:
+- Video switchers (ATEM, vMix, OBS)
+- Audio equipment
+- Lighting systems
+- Media servers
+- Smart home devices
+
+**Ports:**
+- `8880` - Web interface (mapped from container port 8000)
+- `16622` - Companion Satellite (for remote USB connections)
+- `28492` - Module communications
+
+**USB Device Integration:**
+Direct USB passthrough is not supported in Docker. To use USB devices like Elgato Stream Deck:
+1. Install [Companion Satellite](https://github.com/bitfocus/companion-satellite) on the machine with USB devices
+2. Configure Satellite to connect to `http://<server-ip>:16622`
+3. Stream Deck will appear as a remote device in Companion
+
+**Data Location:**
+`/data/docker-appdata/companion` - Configuration and button layouts
+
+**Access:**
+Navigate to `http://<server-ip>:8880` to configure buttons and integrations.
+
 ## Additional Resources
 
 - [compose2nix](https://github.com/aksiksi/compose2nix) - Docker Compose to Nix converter
 - [Docker Documentation](https://docs.docker.com/)
 - [NixOS Containers](https://nixos.wiki/wiki/Docker)
 - [Arion](https://docs.hercules-ci.com/arion/) - Docker Compose via Nix
+- [Bitfocus Companion](https://github.com/bitfocus/companion) - Official Companion repository
 - [Main README](../README.md) - Repository overview
 
 ---
 
-**Services:** 10+ Docker services  
+**Services:** 11+ Docker services  
 **Categories:** Core, Media, Productivity, Websites  
 **Auto-Updates:** ✅ Via Watchtower

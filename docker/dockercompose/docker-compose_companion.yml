@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  companion:
+    image: ghcr.io/bitfocus/companion/companion:latest
+    container_name: companion
+    restart: unless-stopped
+    ports:
+      - "8880:8000"    # Web interface (host:container) - using 8880 to avoid conflict with gluetun
+      - "16622:16622"  # Companion Satellite (remote USB)
+      - "28492:28492"  # Module communications
+    volumes:
+      - /data/docker-appdata/companion:/companion
+    networks:
+      - portainer_default
+    labels:
+      com.centurylinklabs.watchtower.enable: "true"
+    logging:
+      driver: journald
+
+networks:
+  portainer_default:
+    external: true
+
