@@ -26,7 +26,13 @@ jobs:
       id: notify-start
       if: always()
       run: |
-        COMMIT_MSG="${{ github.event.head_commit.message || github.event.commits[0].message || 'Manual trigger' }}"
+        # Get commit message from GitHub event JSON to safely handle quotes and special characters
+        # Read from GITHUB_EVENT_PATH to avoid shell interpolation issues with quotes
+        COMMIT_MSG=$(jq -r '.head_commit.message // .commits[0].message // "Manual trigger" // empty' "$GITHUB_EVENT_PATH" 2>/dev/null || echo "Manual trigger")
+        # If message is empty or null, use fallback
+        if [ -z "$COMMIT_MSG" ] || [ "$COMMIT_MSG" = "null" ]; then
+          COMMIT_MSG="Manual trigger"
+        fi
         TRUNCATED_MSG=$(echo "$COMMIT_MSG" | head -n 2 | tr '\n' ' ')
         echo "commit_message<<EOF" >> $GITHUB_OUTPUT
         echo "$TRUNCATED_MSG" >> $GITHUB_OUTPUT

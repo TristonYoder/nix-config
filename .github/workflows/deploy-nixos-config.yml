@@ -34,7 +34,24 @@ jobs:
       id: get-commit
       if: always()
       run: |
-        COMMIT_MSG="${{ github.event.head_commit.message || github.event.commits[0].message || 'Manual trigger' }}"
+        # Get commit message from GitHub event JSON to safely handle quotes and special characters
+        # Read from GITHUB_EVENT_PATH to avoid shell interpolation issues with quotes
+        # For workflow_run events, try to get commit from workflow_run.head_commit
+        if [ "${{ github.event_name }}" = "workflow_run" ]; then
+          # Try to get commit message from workflow_run event structure
+          COMMIT_MSG=$(jq -r '.workflow_run.head_commit.message // "Deployment triggered by workflow run" // empty' "$GITHUB_EVENT_PATH" 2>/dev/null || echo "Deployment triggered by workflow run")
+        else
+          # For push and other events, get from standard location
+          COMMIT_MSG=$(jq -r '.head_commit.message // .commits[0].message // "Manual trigger" // empty' "$GITHUB_EVENT_PATH" 2>/dev/null || echo "Manual trigger")
+        fi
+        # If message is empty or null, use fallback
+        if [ -z "$COMMIT_MSG" ] || [ "$COMMIT_MSG" = "null" ]; then
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            COMMIT_MSG="Deployment triggered by workflow run"
+          else
+            COMMIT_MSG="Manual trigger"
+          fi
+        fi
         TRUNCATED_MSG=$(echo "$COMMIT_MSG" | head -n 2 | tr '\n' ' ')
         echo "commit_message<<EOF" >> $GITHUB_OUTPUT
         echo "$TRUNCATED_MSG" >> $GITHUB_OUTPUT
