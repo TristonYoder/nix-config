@@ -1,5 +1,5 @@
 # Auto-generated using compose2nix v0.2.3-pre.
-{ pkgs, lib, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   # Runtime
@@ -13,7 +13,8 @@
   virtualisation.oci-containers.containers."ersatztv-ersatztv" = {
     image = "jasongdove/ersatztv:latest";
     environment = {
-      "TZ" = "America/Indinapolis";
+      # Use system timezone to ensure consistency
+      "TZ" = config.time.timeZone;
     };
     volumes = [
       "/data/docker-appdata/ersatztv/:/root/.local/share/ersatztv:rw"
