@@ -197,6 +197,8 @@
       "bitwarden"
       "visual-studio-code"
       "iterm2"
+      "claude"
+      "claude-code"
       
       # System Utilities
       "hazel"
