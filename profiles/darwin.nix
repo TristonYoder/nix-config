@@ -81,32 +81,30 @@
   # Launch agents run in the user's context, so HOME is automatically set
   launchd.agents.syncthing = {
     enable = true;
-    config = {
-      Label = "com.syncthing.syncthing";
-      ProgramArguments = [
-        "${pkgs.syncthing}/bin/syncthing"
-        "-no-browser"
-        "-no-restart"
-        "-logflags=0"
+    Label = "com.syncthing.syncthing";
+    ProgramArguments = [
+      "${pkgs.syncthing}/bin/syncthing"
+      "-no-browser"
+      "-no-restart"
+      "-logflags=0"
+    ];
+    RunAtLoad = true;
+    KeepAlive = {
+      SuccessfulExit = false;
+      Crashed = true;
+    };
+    ProcessType = "Background";
+    StandardErrorPath = "/tmp/syncthing.err.log";
+    StandardOutPath = "/tmp/syncthing.out.log";
+    # PATH includes syncthing binary location and standard system paths
+    EnvironmentVariables = {
+      PATH = lib.concatStringsSep ":" [
+        "/usr/bin"
+        "/bin"
+        "/usr/sbin"
+        "/sbin"
+        "${pkgs.syncthing}/bin"
       ];
-      RunAtLoad = true;
-      KeepAlive = {
-        SuccessfulExit = false;
-        Crashed = true;
-      };
-      ProcessType = "Background";
-      StandardErrorPath = "/tmp/syncthing.err.log";
-      StandardOutPath = "/tmp/syncthing.out.log";
-      # PATH includes syncthing binary location and standard system paths
-      EnvironmentVariables = {
-        PATH = lib.concatStringsSep ":" [
-          "/usr/bin"
-          "/bin"
-          "/usr/sbin"
-          "/sbin"
-          "${pkgs.syncthing}/bin"
-        ];
-      };
     };
   };
   

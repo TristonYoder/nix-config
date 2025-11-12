@@ -175,7 +175,6 @@
       IncludeDevelopMenu = true;
       IncludeInternalDebugMenu = true;
       WebKitDeveloperExtrasEnabledPreferenceKey = true;
-      "com.apple.Safari.ContentPageGroupIdentifier.WebKit2DeveloperExtrasEnabled" = true;
       WebKitPreferences.developerExtrasEnabled = true;
     };
   };

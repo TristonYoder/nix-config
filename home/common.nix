@@ -59,6 +59,21 @@ in
   
   programs.git = {
     enable = true;
+  } // (if isDarwin then {
+    # Darwin uses home-manager-unstable which supports the new settings format
+    settings = {
+      user.name = "Triston Yoder";
+      user.email = "triston@7co.dev";
+      init.defaultBranch = "main";
+      pull.rebase = false;
+      push.autoSetupRemote = true;
+      core.editor = "cursor";
+      core.autocrlf = "input";
+      credential.helper = "osxkeychain";
+    };
+  } else {
+    # NixOS uses home-manager release-25.05 which may not support settings yet
+    # Using deprecated format for backward compatibility
     userName = "Triston Yoder";
     userEmail = "triston@7co.dev";
     extraConfig = {
@@ -67,10 +82,8 @@ in
       push.autoSetupRemote = true;
       core.editor = "cursor";
       core.autocrlf = "input";
-    } // (if isDarwin then {
-      credential.helper = "osxkeychain";
-    } else {});
-  };
+    };
+  });
   
   # =============================================================================
   # ZSH CONFIGURATION
@@ -144,18 +157,24 @@ in
   
   programs.ssh = {
     enable = true;
+  } // (if isDarwin then {
+    # Darwin uses home-manager-unstable which supports the new matchBlocks format
+    enableDefaultConfig = false;
+    matchBlocks."*" = {
+      addKeysToAgent = true;
+      identityFile = "~/.ssh/id_ed25519";
+      extraOptions = "UseKeychain yes";
+    };
+  } else {
+    # NixOS uses home-manager release-25.05 which may not support matchBlocks yet
+    # Using deprecated format for backward compatibility
     addKeysToAgent = "yes";
-    extraConfig = if isDarwin then ''
-      Host *
-        AddKeysToAgent yes
-        UseKeychain yes
-        IdentityFile ~/.ssh/id_ed25519
-    '' else ''
+    extraConfig = ''
       Host *
         AddKeysToAgent yes
         IdentityFile ~/.ssh/id_ed25519
     '';
-  };
+  });
   
   # =============================================================================
   # ACTIVATION SCRIPTS
