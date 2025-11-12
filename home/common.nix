@@ -161,9 +161,13 @@ in
     # Darwin uses home-manager-unstable which supports the new matchBlocks format
     enableDefaultConfig = false;
     matchBlocks."*" = {
-      addKeysToAgent = true;
+      # home-manager expects a string (e.g. "yes") or null for addKeysToAgent in this
+      # compatible configuration; avoid a bare boolean which fails type-checking.
+      addKeysToAgent = "yes";
       identityFile = "~/.ssh/id_ed25519";
-      extraOptions = "UseKeychain yes";
+      extraOptions = {
+        UseKeychain = "yes";
+      };
     };
   } else {
     # NixOS uses home-manager release-25.05 which may not support matchBlocks yet

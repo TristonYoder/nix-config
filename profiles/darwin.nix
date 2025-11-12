@@ -79,33 +79,52 @@
   # Configure Syncthing to start automatically at login using launchd
   # This ensures Syncthing runs in the background after user login
   # Launch agents run in the user's context, so HOME is automatically set
-  launchd.agents.syncthing = {
+  environment.launchAgents."com.syncthing.syncthing" = {
     enable = true;
-    Label = "com.syncthing.syncthing";
-    ProgramArguments = [
-      "${pkgs.syncthing}/bin/syncthing"
-      "-no-browser"
-      "-no-restart"
-      "-logflags=0"
-    ];
-    RunAtLoad = true;
-    KeepAlive = {
-      SuccessfulExit = false;
-      Crashed = true;
-    };
-    ProcessType = "Background";
-    StandardErrorPath = "/tmp/syncthing.err.log";
-    StandardOutPath = "/tmp/syncthing.out.log";
-    # PATH includes syncthing binary location and standard system paths
-    EnvironmentVariables = {
-      PATH = lib.concatStringsSep ":" [
-        "/usr/bin"
-        "/bin"
-        "/usr/sbin"
-        "/sbin"
-        "${pkgs.syncthing}/bin"
-      ];
-    };
+    target = "com.syncthing.syncthing.plist";
+    text = ''<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.syncthing.syncthing</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>${pkgs.syncthing}/bin/syncthing</string>
+    <string>-no-browser</string>
+    <string>-no-restart</string>
+    <string>-logflags=0</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+    <key>Crashed</key>
+    <true/>
+  </dict>
+
+  <key>ProcessType</key>
+  <string>Background</string>
+
+  <key>StandardErrorPath</key>
+  <string>/tmp/syncthing.err.log</string>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/syncthing.out.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>${lib.concatStringsSep ":" [ "/usr/bin" "/bin" "/usr/sbin" "/sbin" "${pkgs.syncthing}/bin" ]}</string>
+  </dict>
+</dict>
+</plist>
+'';
   };
   
 }
