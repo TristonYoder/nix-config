@@ -45,29 +45,28 @@ in
     home.activation = {
       installMasApps = lib.hm.dag.entryAfter ["installPackages"] ''
         $DRY_RUN_CMD echo "Installing Mac App Store apps via mas..."
-        
+
         # Ensure mas is available
         MAS_CMD="${mas}"
         if ! "$MAS_CMD" list &> /dev/null; then
           $DRY_RUN_CMD echo "mas not found, skipping App Store app installation"
           exit 0
         fi
-        
+
+        # Get list of all installed apps once for better performance
+        INSTALLED_APPS=$("$MAS_CMD" list 2>/dev/null | ${pkgs.gawk}/bin/awk '{print $1}' || echo "")
+
         # Install each configured app if not already installed
         ${concatMapStringsSep "\n" (app: ''
-          $DRY_RUN_CMD echo "Checking if ${app.name} (${app.id}) is installed..."
-          
-          if ! "$MAS_CMD" list | grep -q "^${app.id}"; then
+          if ! echo "$INSTALLED_APPS" | grep -qx "${app.id}"; then
             $DRY_RUN_CMD echo "Installing ${app.name} (${app.id})..."
             $DRY_RUN_CMD ${mas} install "${app.id}" || {
               $DRY_RUN_CMD echo "Failed to install ${app.name} (${app.id})"
               # Continue with other apps even if one fails
             }
-          else
-            $DRY_RUN_CMD echo "${app.name} is already installed"
           fi
         '') cfg.apps}
-        
+
         $DRY_RUN_CMD echo "Mac App Store app installation complete"
       '';
 
