@@ -34,7 +34,7 @@ in
     
     signupDomainsWhitelist = mkOption {
       type = types.str;
-      default = "7andco.studio, elizabehthallen.photography, theyoder.family";
+      default = "7andco.studio, elizabethallen.photography, theyoder.family";
       description = "Comma-separated list of allowed signup domains";
     };
   };

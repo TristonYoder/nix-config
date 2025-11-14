@@ -81,6 +81,14 @@
     '';
   };
 
+  # Elizabeth Allen Photography - WordPress site
+  services.caddy.virtualHosts."elizabethallen.photography" = {
+    extraConfig = ''
+      reverse_proxy http://localhost:1996
+      import cloudflare_tls
+    '';
+  };
+
   # =============================================================================
   # ADDITIONAL SERVICES
   # =============================================================================
