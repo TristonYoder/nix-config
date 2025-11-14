@@ -179,6 +179,40 @@ Later imports can override earlier ones using `lib.mkForce`.
 
 ## Development Workflow
 
+### Feature Branch Process
+
+For non-trivial changes, use feature branches:
+
+```bash
+# Create feature branch with descriptive name
+git checkout -b category/brief-description
+
+# Examples:
+git checkout -b feat/add-service-name
+git checkout -b fix/service-startup-issue
+git checkout -b optimize/homebrew-rebuild-performance
+
+# Make changes and commit
+git add .
+git commit -m "category: brief description
+
+Additional context for troubleshooting."
+
+# Merge to main when ready
+git checkout main
+git merge category/brief-description
+git push
+```
+
+Commit message conventions:
+- `feat:` - New features
+- `fix:` - Bug fixes
+- `perf:` - Performance improvements
+- `refactor:` - Code restructuring
+- `docs:` - Documentation updates
+
+Keep messages minimal but helpful for future troubleshooting.
+
 ### Creating a New Service Module
 
 1. Create module file: `modules/services/<category>/<servicename>.nix`
@@ -265,6 +299,15 @@ Docker services are organized in `docker/` by category. Changes to Docker servic
 - Darwin uses `home-manager-unstable.darwinModules.home-manager`
 - User configs in `home/` are imported via `flake.nix`
 - Changes to Home Manager configs require full system rebuild
+
+### macOS Homebrew/MAS Performance
+
+The Homebrew and Mac App Store (mas) modules use batch-checking for optimal rebuild performance:
+
+- `home/modules/homebrew.nix` - Fetches `brew list --formula` and `brew list --cask` once, then checks all packages against cached list
+- `home/modules/mas.nix` - Fetches `mas list` once, then checks all apps against cached list
+
+This reduces darwin-rebuild from 50+ individual command invocations to just 3 total (brew list --formula, brew list --cask, mas list), significantly improving rebuild speed. Output is silent when all packages are already installed.
 
 ### Version Consistency
 
