@@ -77,12 +77,14 @@ in
       installHomebrewBrews = lib.hm.dag.entryAfter ["installHomebrewTaps"] ''
         $DRY_RUN_CMD echo "Installing Homebrew brews..."
         BREW="$BREW"
+
+        # Get list of all installed brews once for better performance
+        INSTALLED_BREWS=$("$BREW" list --formula 2>/dev/null || echo "")
+
         for brew in ${concatStringsSep " " cfg.brews}; do
-          if ! "$BREW" list --formula "$brew" &>/dev/null; then
+          if ! echo "$INSTALLED_BREWS" | grep -qx "$brew"; then
             $DRY_RUN_CMD echo "Installing brew: $brew"
             $DRY_RUN_CMD "$BREW" install "$brew"
-          else
-            $DRY_RUN_CMD echo "Brew already installed: $brew"
           fi
         done
       '';
@@ -90,12 +92,14 @@ in
       installHomebrewCasks = lib.hm.dag.entryAfter ["installHomebrewBrews"] ''
         $DRY_RUN_CMD echo "Installing Homebrew casks..."
         BREW="$BREW"
+
+        # Get list of all installed casks once for better performance
+        INSTALLED_CASKS=$("$BREW" list --cask 2>/dev/null || echo "")
+
         for cask in ${concatStringsSep " " cfg.casks}; do
-          if ! "$BREW" list --cask "$cask" &>/dev/null; then
+          if ! echo "$INSTALLED_CASKS" | grep -qx "$cask"; then
             $DRY_RUN_CMD echo "Installing cask: $cask"
             $DRY_RUN_CMD "$BREW" install --cask "$cask"
-          else
-            $DRY_RUN_CMD echo "Cask already installed: $cask"
           fi
         done
       '';
