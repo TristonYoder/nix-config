@@ -42,7 +42,7 @@ in
     DISABLE_UPDATE_PROMPT = "true";
     
     # Editor
-    EDITOR = "cursor";
+    EDITOR = "code";
   };
   
   # Add local bin to PATH
@@ -67,7 +67,7 @@ in
       init.defaultBranch = "main";
       pull.rebase = false;
       push.autoSetupRemote = true;
-      core.editor = "cursor";
+      core.editor = "code";
       core.autocrlf = "input";
       credential.helper = "osxkeychain";
     };
@@ -80,7 +80,7 @@ in
       init.defaultBranch = "main";
       pull.rebase = false;
       push.autoSetupRemote = true;
-      core.editor = "cursor";
+      core.editor = "code";
       core.autocrlf = "input";
     };
   });
