@@ -48,15 +48,19 @@
     curl
     htop
     tree
-    
+
     # Compression & archiving
     unzip
     zip
-    
+
     # Network tools
     dig
     nmap
-    
+
+    # AI tools
+    gemini-cli
+    claude-code
+
     # Note: Linux-only utilities (pciutils, usbutils) are in profiles/server.nix
   ];
   
