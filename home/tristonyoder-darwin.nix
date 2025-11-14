@@ -175,7 +175,6 @@
       IncludeDevelopMenu = true;
       IncludeInternalDebugMenu = true;
       WebKitDeveloperExtrasEnabledPreferenceKey = true;
-      "com.apple.Safari.ContentPageGroupIdentifier.WebKit2DeveloperExtrasEnabled" = true;
       WebKitPreferences.developerExtrasEnabled = true;
     };
   };
@@ -198,6 +197,8 @@
       "bitwarden"
       "visual-studio-code"
       "iterm2"
+      "claude"
+      "claude-code"
       
       # System Utilities
       "hazel"
