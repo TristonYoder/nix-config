@@ -211,7 +211,12 @@ Commit message conventions:
 - `refactor:` - Code restructuring
 - `docs:` - Documentation updates
 
-Keep messages minimal but helpful for future troubleshooting.
+**IMPORTANT**: Keep commit messages, PR descriptions, and documentation simple and to the point. Focus on clarity for future troubleshooting. Do NOT add:
+- Attribution footers (e.g., "🤖 Generated with Claude Code")
+- Unnecessary boilerplate or fluff
+- Excessive formatting or emojis
+
+Write concisely with technical accuracy.
 
 ### Creating a New Service Module
 
