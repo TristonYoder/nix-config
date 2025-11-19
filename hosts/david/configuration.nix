@@ -89,6 +89,14 @@
     '';
   };
 
+  # Affine
+  services.caddy.virtualHosts."notes.theyoder.family" = {
+    extraConfig = ''
+      reverse_proxy http://localhost:3010
+      import cloudflare_tls
+    '';
+  };
+
   # =============================================================================
   # ADDITIONAL SERVICES
   # =============================================================================
