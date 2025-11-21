@@ -203,7 +203,10 @@
       "hazel"
       "lunar"
       "tailscale"
-      
+
+      # Virtualization
+      "parallels"
+
       # Communication & Media
       "fantastical"
       "microsoft-teams"
