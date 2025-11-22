@@ -177,6 +177,46 @@
         };
         
         # -----------------------------------------------------------------------------
+        # tristons-nixbook - NixOS Laptop (x86_64-linux)
+        # -----------------------------------------------------------------------------
+        tristons-nixbook = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+
+          modules = [
+            # Common configuration
+            ./common/system.nix
+            ./common/linux.nix
+
+            # Desktop profile
+            ./profiles/desktop.nix
+
+            # Host-specific configuration
+            ./hosts/tristons-nixbook/configuration.nix
+            ./hosts/tristons-nixbook/hardware-configuration.nix
+
+            # Custom modules (hardware, system, services)
+            ./modules
+
+            # External modules
+            nixos-vscode-server.nixosModules.default
+            agenix.nixosModules.default
+
+            # Home Manager
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.backupFileExtension = "backup";
+              home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
+            }
+          ];
+
+          specialArgs = {
+            inherit nixpkgs nixpkgs-unstable;
+          };
+        };
+
+        # -----------------------------------------------------------------------------
         # pits - Pi in the Sky - Edge Server (Cloud VPS)
         # -----------------------------------------------------------------------------
         pits = nixpkgs.lib.nixosSystem {
