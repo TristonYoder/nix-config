@@ -26,11 +26,7 @@
   # =============================================================================
 
   environment.systemPackages = with pkgs; [
-    # Desktop applications
-    firefox
-    vlc
-
-    # Development tools
-    vscode
+    # Laptop-specific packages go here
+    # Common desktop apps are provided by workstation.nix profile
   ];
 }

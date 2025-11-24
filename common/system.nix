@@ -61,6 +61,10 @@
     gemini-cli
     claude-code
 
+    # Cross-platform services (available on all hosts)
+    syncthing
+    tailscale
+
     # Note: Linux-only utilities (pciutils, usbutils) are in profiles/server.nix
   ];
   
