@@ -33,8 +33,12 @@
   # =============================================================================
   
   environment.systemPackages = with pkgs; [
-    # Desktop-specific packages go here
-    # Common desktop apps are provided by workstation.nix profile
+    # Desktop-specific packages
+    firefox
+    vlc
+    
+    # Development tools
+    vscode
   ];
 }
 

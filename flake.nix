@@ -83,11 +83,8 @@
             ./common/system.nix
             ./common/linux.nix
             
-            # Server profile (services only)
+            # Server profile
             ./profiles/server.nix
-            
-            # Workstation profile (desktop apps)
-            ./profiles/workstation.nix
             
             # Host-specific configuration
             ./hosts/david/configuration.nix
@@ -150,8 +147,8 @@
             ./common/system.nix
             ./common/linux.nix
             
-            # Workstation profile (includes desktop profile)
-            ./profiles/workstation.nix
+            # Desktop profile
+            ./profiles/desktop.nix
             
             # Host-specific configuration
             ./hosts/tristons-desk/configuration.nix
@@ -190,8 +187,8 @@
             ./common/system.nix
             ./common/linux.nix
 
-            # Workstation profile (includes desktop profile)
-            ./profiles/workstation.nix
+            # Desktop profile
+            ./profiles/desktop.nix
 
             # Host-specific configuration
             ./hosts/tristons-nixbook/configuration.nix
