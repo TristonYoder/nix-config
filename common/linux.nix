@@ -59,55 +59,40 @@
   security.sudo.enable = lib.mkDefault true;
 
   # =============================================================================
-  # BOOT ASCII ART HEADER
+  # BOOT ASCII ART
   # =============================================================================
 
-  # Display ASCII art header at boot and configure console for persistent display
-  boot.kernelParams = [
-    # Increase console buffer to accommodate header + boot messages
-    "fbcon=scrollback:128k"
-  ];
-
-  # Create the ASCII art header script
-  environment.etc."boot-header.sh" = {
-    text = ''
-      #!/bin/bash
-      # Purple color codes
-      PURPLE='\033[0;35m'
-      BRIGHT_PURPLE='\033[1;35m'
-      MAGENTA='\033[0;95m'
-      RESET='\033[0m'
-      
-      # Display ASCII header
-      echo -e "$BRIGHT_PURPLE████████ ██   ██ ███████ $PURPLE██    ██  ██████  ██████  ███████ ██████     $MAGENTA███████  █████  ███    ███ ██ ██      ██    ██$RESET"
-      echo -e "$BRIGHT_PURPLE   ██    ██   ██ ██       $PURPLE██  ██  ██    ██ ██   ██ ██      ██   ██    $MAGENTA██      ██   ██ ████  ████ ██ ██       ██  ██$RESET"
-      echo -e "$BRIGHT_PURPLE   ██    ███████ █████    $PURPLE ████   ██    ██ ██   ██ █████   ██████     $MAGENTA█████   ███████ ██ ████ ██ ██ ██        ████$RESET"
-      echo -e "$BRIGHT_PURPLE   ██    ██   ██ ██       $PURPLE  ██    ██    ██ ██   ██ ██      ██   ██    $MAGENTA██      ██   ██ ██  ██  ██ ██ ██         ██$RESET"
-      echo -e "$BRIGHT_PURPLE   ██    ██   ██ ███████  $PURPLE  ██     ██████  ██████  ███████ ██   ██ ██ $MAGENTA██      ██   ██ ██      ██ ██ ███████    ██$RESET"
-      echo ""
-      echo -e "$PURPLE                            ╔════════════════════════════════╗$RESET"
-      echo -e "$PURPLE                            ║     FAMILY INFRASTRUCTURE     ║$RESET"
-      echo -e "$PURPLE                            ║        Powered by NixOS       ║$RESET"
-      echo -e "$PURPLE                            ║      Host: $(hostname)                ║$RESET"
-      echo -e "$PURPLE                            ╚════════════════════════════════╝$RESET"
-      echo ""
-      echo -e "${PURPLE}Boot Messages:${RESET}"
-      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    '';
-    mode = "0755";
-  };
-
-  # Early boot service to display header
-  systemd.services.boot-header = {
-    description = "Boot ASCII Header";
-    wantedBy = [ "sysinit.target" ];
-    after = [ "systemd-journald.service" ];
-    before = [ "multi-user.target" ];
+  # Purple ASCII art boot message for theyoder.family
+  systemd.services.ascii-boot = {
+    description = "ASCII Art Boot Message";
+    wantedBy = [ "multi-user.target" ];
+    before = [ "getty.target" ];
     serviceConfig = {
       Type = "oneshot";
-      ExecStart = "${pkgs.bash}/bin/bash /etc/boot-header.sh";
-      StandardOutput = "kmsg+console";
-      StandardError = "kmsg+console";
+      ExecStart = "${pkgs.writeShellScript "show-ascii" ''
+        # Purple color codes
+        PURPLE='\033[0;35m'
+        BRIGHT_PURPLE='\033[1;35m'
+        MAGENTA='\033[0;95m'
+        RESET='\033[0m'
+        
+        echo -e "
+$BRIGHT_PURPLE████████ ██   ██ ███████ $PURPLE██    ██  ██████  ██████  ███████ ██████     $MAGENTA███████  █████  ███    ███ ██ ██      ██    ██ 
+   ██    ██   ██ ██       $PURPLE██  ██  ██    ██ ██   ██ ██      ██   ██    $MAGENTA██      ██   ██ ████  ████ ██ ██       ██  ██  
+   ██    ███████ █████    $PURPLE ████   ██    ██ ██   ██ █████   ██████     $MAGENTA█████   ███████ ██ ████ ██ ██ ██        ████   
+   ██    ██   ██ ██       $PURPLE  ██    ██    ██ ██   ██ ██      ██   ██    $MAGENTA██      ██   ██ ██  ██  ██ ██ ██         ██    
+   ██    ██   ██ ███████  $PURPLE  ██     ██████  ██████  ███████ ██   ██ ██ $MAGENTA██      ██   ██ ██      ██ ██ ███████    ██    $RESET
+                                                                                                                                        
+$PURPLE                            ╔════════════════════════════════╗
+                            ║     FAMILY INFRASTRUCTURE     ║
+                            ║        Powered by NixOS       ║
+                            ║      Host: ${config.networking.hostName}                ║
+                            ╚════════════════════════════════╝$RESET
+        "
+        
+        # Brief pause to let users see the message
+        sleep 2
+      ''}";
     };
   };
 }
