@@ -399,7 +399,46 @@
       "--network=media-aq_default"
     ];
   };
+  virtualisation.oci-containers.containers."dispatcharr" = {
+    image = "ghcr.io/dispatcharr/dispatcharr:latest";
+    environment = {
+      "PGID" = "1000";
+      "PUID" = "1000";
+      "TZ" = "America/Indianapolis";
+    };
+    volumes = [
+      "/data/docker-appdata/dispatcharr:/data:rw"
+    ];
+    ports = [
+      "9191:9191/tcp"
+    ];
+    log-driver = "journald";
+    extraOptions = [
+      "--network-alias=dispatcharr"
+      "--network=media-aq_default"
+    ];
+  };
   systemd.services."docker-tubesync" = {
+    serviceConfig = {
+      Restart = lib.mkOverride 500 "always";
+      RestartMaxDelaySec = lib.mkOverride 500 "1m";
+      RestartSec = lib.mkOverride 500 "100ms";
+      RestartSteps = lib.mkOverride 500 9;
+    };
+    after = [
+      "docker-network-media-aq_default.service"
+    ];
+    requires = [
+      "docker-network-media-aq_default.service"
+    ];
+    partOf = [
+      "docker-compose-media-aq-root.target"
+    ];
+    wantedBy = [
+      "docker-compose-media-aq-root.target"
+    ];
+  };
+  systemd.services."docker-dispatcharr" = {
     serviceConfig = {
       Restart = lib.mkOverride 500 "always";
       RestartMaxDelaySec = lib.mkOverride 500 "1m";
