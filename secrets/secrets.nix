@@ -5,8 +5,10 @@ let
   # Generated with: ssh <host> "cat /etc/ssh/ssh_host_ed25519_key.pub" | ssh-to-age
   
   david = "age19my5vpmrvl5u9ug4frpdmuuemjhdgemgqjm6xunknmfjf6efvdxs232kym";
-  
+
   pits = "age1jja99mf5qfczutr574nve8vhpt7azm8aq4ukqqrstdn0agud23nscazh6r";
+
+  tristons-nixbook = "age1nmhy84rxx5rsk37jcmwp7rvjujd2kqjzet2klj96h6gdnqyxm46qwmg88s";
   
   # =============================================================================
   # ADMIN KEYS - Keys for managing secrets from local machines
@@ -26,8 +28,8 @@ let
   # KEY GROUPS - Define which keys can access which secrets
   # =============================================================================
   
-  # Secrets accessible by both servers + admins (shared secrets)
-  allServers = [ david pits ] ++ adminKeys;
+  # Secrets accessible by all hosts + admins (shared secrets)
+  allServers = [ david pits tristons-nixbook ] ++ adminKeys;
   
   # Secrets for david only
   davidKeys = [ david ] ++ adminKeys;

@@ -38,6 +38,13 @@ Per-host NixOS and macOS configurations managed through this flake.
 - **Auto-Deploy:** ✅ GitHub Actions enabled
 - **Services:** Minimal desktop (KDE Plasma, development tools)
 
+#### tristons-nixbook (Laptop Workstation)
+- **Profile:** [desktop](../profiles/desktop.nix)
+- **Architecture:** x86_64-linux
+- **User:** tristonyoder
+- **Auto-Deploy:** ✅ GitHub Actions enabled
+- **Services:** Minimal desktop (KDE Plasma, development tools)
+
 ### macOS Hosts
 
 #### tyoder-mbp (Triston's TPCC MacBook Pro - Work)
@@ -75,6 +82,7 @@ darwin-rebuild switch --flake .
 sudo nixos-rebuild switch --flake .#david
 sudo nixos-rebuild switch --flake .#pits
 sudo nixos-rebuild switch --flake .#tristons-desk
+sudo nixos-rebuild switch --flake .#tristons-nixbook
 
 # macOS
 darwin-rebuild switch --flake .#tyoder-mbp
@@ -360,6 +368,6 @@ killall Dock && killall Finder
 
 ---
 
-**Managed Hosts:** 5 (david, pits, tristons-desk, tyoder-mbp, Tristons-MacBook-Pro)  
-**Auto-Deploy:** 3 NixOS hosts via GitHub Actions  
+**Managed Hosts:** 6 (david, pits, tristons-desk, tristons-nixbook, tyoder-mbp, Tristons-MacBook-Pro)
+**Auto-Deploy:** 4 NixOS hosts via GitHub Actions
 **Platforms:** NixOS (x86_64, aarch64) + macOS (aarch64, x86_64)

@@ -18,6 +18,7 @@
   modules.system.core.enable = lib.mkDefault true;
   modules.system.networking.enable = lib.mkDefault true;
   modules.system.users.enable = lib.mkDefault true;
+  modules.system.users.useDataDrive = lib.mkDefault true;  # Symlink /home to /data
   modules.system.desktop.enable = lib.mkDefault true;
 
   # =============================================================================
