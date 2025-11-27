@@ -62,6 +62,9 @@
   # BOOT CONFIGURATION
   # =============================================================================
 
+  # Enable automatic display resolution detection for Plymouth
+  modules.hardware.displayResolution.enable = true;
+
   boot = {
     plymouth = {
       enable = true;
@@ -72,6 +75,13 @@
           selected_themes = [ "colorful" ];
         })
       ];
+      # Configure Plymouth to use native resolution without scaling
+      extraConfig = ''
+        [Daemon]
+        Theme=colorful
+        ShowDelay=0
+        DeviceTimeout=5
+      '';
     };
 
     # Enable "Silent boot"
