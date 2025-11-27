@@ -79,7 +79,7 @@ sudo nixos-rebuild switch --flake .
 
 - **audiobooks.nix** - Self-hosted audiobook server
 - **ersatztv.nix** - Custom TV channels from your media
-- **media-aq.nix** - Media acquisition and management automation
+- **media-aq.nix** - Media acquisition and management automation (includes Dispatcharr for IPTV/stream management)
 
 ### Productivity Services
 
@@ -331,6 +331,30 @@ Direct USB passthrough is not supported in Docker. To use USB devices like Elgat
 
 **Access:**
 Navigate to `http://<server-ip>:8880` to configure buttons and integrations.
+
+### Dispatcharr
+
+**What is Dispatcharr?**
+Dispatcharr is an IPTV and stream management platform designed to provide comprehensive control over media streaming. It helps import, organize, and manage IPTV streams and electronic program guide (EPG) data.
+
+**Key Features:**
+- Proxy streaming engine with real-time stats
+- EPG auto-matching and VOD management
+- Supports Streamlink and FFmpeg
+- Compatible with Plex, Jellyfin, HDHomeRun, and M3U/XMLTV formats
+- Ideal for combining HDHomeRun tuners with ErsatzTV streams
+
+**Port:**
+- `9191` - Web interface
+
+**Data Location:**
+`/data/docker-appdata/dispatcharr` - Configuration and stream data
+
+**Access:**
+Navigate to `http://<server-ip>:9191` to configure IPTV streams and EPG data.
+
+**Note:** 
+Dispatcharr is licensed under Creative Commons BY-NC-SA 4.0, which restricts commercial use and requires attribution.
 
 ## Additional Resources
 
