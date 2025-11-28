@@ -40,6 +40,7 @@
     
     # Gaming
     steam
+    gfn-electron
     
     # Communication
     element-desktop

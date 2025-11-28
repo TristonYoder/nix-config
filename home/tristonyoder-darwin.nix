@@ -240,6 +240,7 @@
       "home-assistant"
       "sonos"
       "moonlight"
+      "nvidia-geforce-now"
       "logos"
       "fontbase"
       "goodsync"
