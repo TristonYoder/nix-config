@@ -27,6 +27,12 @@
   # Allow unfree packages globally
   nixpkgs.config.allowUnfree = true;
   
+  # Allow insecure packages for specific applications
+  nixpkgs.config.permittedInsecurePackages = [
+    "electron-35.7.5"  # Required for gfn-electron (GeForce Now)
+    "olm-3.2.16"       # Required for Matrix communication bridges
+  ];
+  
   # =============================================================================
   # LOCALE & TIME (can be overridden per-host)
   # =============================================================================

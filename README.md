@@ -36,6 +36,7 @@
 | **david** | NixOS Server | Server | ✅ | Full infrastructure stack |
 | **pits** | NixOS Edge (Pi) | Edge | ✅ | Public-facing reverse proxy |
 | **tristons-desk** | NixOS Desktop | Desktop | ✅ | Development workstation |
+| **tristons-nixbook** | NixOS Laptop | Desktop | ✅ | Laptop workstation |
 | **tyoder-mbp** | macOS (Apple Silicon) | Darwin | ➖ | Triston's TPCC MacBook Pro (work) |
 | **Tristons-MacBook-Pro** | macOS (Intel T2) | Darwin | ➖ | Triston's MacBook Pro |
 
@@ -629,11 +630,11 @@ sudo /nix/var/nix/profiles/system/bin/switch-to-configuration switch
 
 ## Status
 
-✅ **Multi-host configuration active**  
-✅ **4 hosts configured** (david, pits, tristons-desk, tyoder-mbp)  
-✅ **Automated CI/CD** (GitHub Actions)  
-✅ **40+ custom modules**  
-✅ **Home Manager integrated**  
+✅ **Multi-host configuration active**
+✅ **5 hosts configured** (david, pits, tristons-desk, tristons-nixbook, tyoder-mbp)
+✅ **Automated CI/CD** (GitHub Actions)
+✅ **40+ custom modules**
+✅ **Home Manager integrated**
 ✅ **Secret management** (agenix)  
 
 ---

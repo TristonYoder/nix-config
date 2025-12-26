@@ -103,6 +103,14 @@
     '';
   };
 
+  # Dispatcharr - IPTV and stream management
+  services.caddy.virtualHosts."tv.theyoder.family" = {
+    extraConfig = ''
+      reverse_proxy http://localhost:9191
+      import cloudflare_tls
+    '';
+  };
+
   # =============================================================================
   # ADDITIONAL SERVICES
   # =============================================================================
