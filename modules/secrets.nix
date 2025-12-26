@@ -24,165 +24,46 @@ with lib;
     ssh-to-age
   ];
   
-  age.secrets = {
-    # -------------------------------------------------------------------------
-    # SHARED SECRETS - Used by multiple services/servers
-    # -------------------------------------------------------------------------
-    
-    cloudflare-api-token = {
-      file = ../secrets/cloudflare-api-token.age;
-      owner = "caddy";
-      group = "caddy";
-      mode = "0400";
-    };
-  } // (optionalAttrs (config.networking.hostName == "david") {
-    # -------------------------------------------------------------------------
-    # DAVID-SPECIFIC SECRETS
-    # -------------------------------------------------------------------------
-    
-    # Cloudflare Tunnel Token (only on david, not on edge servers)
-    cloudflared-token-current = {
-      file = ../secrets/cloudflared-token-current.age;
-      owner = "cloudflared";
-      group = "cloudflared";
-      mode = "0400";
-    };
-    
-    matrix-registration-secret = {
-      file = ../secrets/matrix-registration-secret.age;
-      owner = "matrix-synapse";
-      group = "matrix-synapse";
-      mode = "0400";
-    };
-    
-    # Google OAuth Secret for Outline
-    outline-google-secret = {
-      file = ../secrets/outline-google-secret.age;
-      owner = "root";
-      group = "docker";
-      mode = "0440";
-    };
-    
-    # Affine Database Password (for affine containers)
-    affine-db-password = {
-      file = ../secrets/affine-db-password.age;
-      owner = "root";
-      group = "docker";
-      mode = "0440";
-    };
-    
-    # Affine Postgres Password (for postgres container)
-    affine-postgres-password = {
-      file = ../secrets/affine-postgres-password.age;
-      owner = "root";
-      group = "docker";
-      mode = "0440";
-    };
-    
-    # Tandoor Secrets (DB password + secret key)
-    tandoor-secrets = {
-      file = ../secrets/tandoor-secrets.age;
-      owner = "root";
-      group = "docker";
-      mode = "0440";
-    };
-    
-    # Docmost Secrets (DB password + app secret)
-    docmost-secrets = {
-      file = ../secrets/docmost-secrets.age;
-      owner = "root";
-      group = "docker";
-      mode = "0440";
-    };
-    
-    # WordPress Studio 7andco Secrets
-    wordpress-studio-mysql = {
-      file = ../secrets/wordpress-studio-mysql.age;
-      owner = "root";
-      group = "docker";
-      mode = "0440";
-    };
-    
-    wordpress-studio-wp = {
-      file = ../secrets/wordpress-studio-wp.age;
-      owner = "root";
-      group = "docker";
-      mode = "0440";
-    };
-    
-    # WordPress Photography Secrets
-    wordpress-photography-mysql = {
-      file = ../secrets/wordpress-photography-mysql.age;
-      owner = "root";
-      group = "docker";
-      mode = "0440";
-    };
-    
-    wordpress-photography-wp = {
-      file = ../secrets/wordpress-photography-wp.age;
-      owner = "root";
-      group = "docker";
-      mode = "0440";
-    };
-    
-    # WordPress CarolineYoder Secrets
-    wordpress-carolineyoder-mysql = {
-      file = ../secrets/wordpress-carolineyoder-mysql.age;
-      owner = "root";
-      group = "docker";
-      mode = "0440";
-    };
-    
-    wordpress-carolineyoder-wp = {
-      file = ../secrets/wordpress-carolineyoder-wp.age;
-      owner = "root";
-      group = "docker";
-      mode = "0440";
-    };
-    
-    # Outline Secrets (SECRET_KEY, UTILS_SECRET, DB password)
-    outline-secrets = {
-      file = ../secrets/outline-secrets.age;
-      owner = "root";
-      group = "docker";
-      mode = "0440";
-    };
-    
-    # NextDNS Dynamic DNS Link
-    nextdns-link = {
-      file = ../secrets/nextdns-link.age;
-      owner = "root";
-      group = "root";
-      mode = "0400";
-    };
-    
-    # Nextcloud Admin Password
-    nextcloud-admin-password = {
-      file = ../secrets/nextcloud-admin-password.age;
-      owner = "nextcloud";
-      group = "nextcloud";
-      mode = "0400";
-    };
-    
-    # TODO: Create these secrets when ready
-    # vaultwarden-admin-token = {
-    #   file = ../secrets/vaultwarden-admin-token.age;
-    #   owner = "vaultwarden";
-    #   group = "vaultwarden";
-    #   mode = "0400";
-    # };
-  }) // (optionalAttrs (config.networking.hostName == "pits") {
-    # -------------------------------------------------------------------------
-    # PITS-SPECIFIC SECRETS
-    # -------------------------------------------------------------------------
-    
-    # TODO: Create these secrets when ready
-    # tailscale-authkey-pits = {
-    #   file = ../secrets/tailscale-authkey-pits.age;
-    #   owner = "root";
-    #   group = "root";
-    #   mode = "0400";
-    # };
-  });
-}
+  age.secrets =
+    (optionalAttrs config.services.caddy.enable {
+      "cloudflare-api-token" = {
+        file = ../secrets/cloudflare-api-token.age;
+        owner = "caddy";
+        group = "caddy";
+        mode = "0400";
+      };
+    })
 
+    // (optionalAttrs (config.networking.hostName == "david") {
+      # Unconditional david secrets
+      "outline-google-secret" = { file = ../secrets/outline-google-secret.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "affine-db-password" = { file = ../secrets/affine-db-password.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "affine-postgres-password" = { file = ../secrets/affine-postgres-password.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "tandoor-secrets" = { file = ../secrets/tandoor-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "docmost-secrets" = { file = ../secrets/docmost-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "wordpress-studio-mysql" = { file = ../secrets/wordpress-studio-mysql.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "wordpress-studio-wp" = { file = ../secrets/wordpress-studio-wp.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "wordpress-photography-mysql" = { file = ../secrets/wordpress-photography-mysql.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "wordpress-photography-wp" = { file = ../secrets/wordpress-photography-wp.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "wordpress-carolineyoder-mysql" = { file = ../secrets/wordpress-carolineyoder-mysql.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "wordpress-carolineyoder-wp" = { file = ../secrets/wordpress-carolineyoder-wp.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "outline-secrets" = { file = ../secrets/outline-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "nextdns-link" = { file = ../secrets/nextdns-link.age; owner = "root"; group = "root"; mode = "0400"; };
+    })
+
+    // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.infrastructure.cloudflared.enable) {
+      "cloudflared-token-current" = { file = ../secrets/cloudflared-token-current.age; owner = "cloudflared"; group = "cloudflared"; mode = "0400"; };
+    })
+
+    // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.communication.matrix-synapse.enable) {
+      "matrix-registration-secret" = { file = ../secrets/matrix-registration-secret.age; owner = "matrix-synapse"; group = "matrix-synapse"; mode = "0400"; };
+    })
+
+    // (optionalAttrs (config.networking.hostName == "david" && config.services.nextcloud.enable) {
+      "nextcloud-admin-password" = { file = ../secrets/nextcloud-admin-password.age; owner = "nextcloud"; group = "nextcloud"; mode = "0400"; };
+    })
+
+    // (optionalAttrs (config.networking.hostName == "pits") {
+      # PITS secrets here
+    });
+}
