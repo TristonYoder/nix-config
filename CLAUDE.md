@@ -246,21 +246,37 @@ Write concisely with technical accuracy.
 
 Secrets are encrypted with SSH public keys using agenix.
 
+**CRITICAL**: ALWAYS use `encrypt-secret.sh` for encrypting/re-encrypting secrets. DO NOT encrypt manually with age commands. Manual encryption often results in X25519 format which breaks agenix decryption on hosts.
+
 ```bash
 cd secrets
 
 # On macOS: Add nix to PATH
 export PATH="/nix/var/nix/profiles/default/bin:$PATH"
 
-# Encrypt new secret (recommended - uses helper script)
+# Encrypt new secret (REQUIRED - always use this script)
 ./encrypt-secret.sh -n my-secret.age -e
+
+# Re-encrypt existing secret for new hosts
+# 1. Decrypt first
+./decrypt-secret.sh my-secret.age > /tmp/plain.txt
+# 2. Re-encrypt with script
+./encrypt-secret.sh -n my-secret.age -f /tmp/plain.txt
+# 3. Clean up
+rm /tmp/plain.txt
 
 # Decrypt/view secret
 ./decrypt-secret.sh cloudflare-api-token.age
 
-# CRITICAL: Always use ssh-ed25519 keys, NOT X25519
-# Use -R flag with age, not -r when encrypting manually
+# Verify secret has correct format (should show ssh-ed25519, NOT X25519)
+./encrypt-secret.sh -v my-secret.age
 ```
+
+**Why the script is required**:
+- Automatically fetches SSH host keys from servers (ensures correct recipients)
+- Uses `-R` flag for SSH public key encryption (not age keys)
+- Verifies output has `ssh-ed25519` recipients (not X25519)
+- X25519-encrypted secrets cause "no identity matched" errors on hosts
 
 Declare secrets in `modules/secrets.nix`:
 
