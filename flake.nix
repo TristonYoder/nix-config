@@ -104,6 +104,7 @@
             ./docker/media/audiobooks.nix
             ./docker/media/media-aq.nix
             ./docker/media/ersatztv.nix
+            ./docker/media/threadfin.nix
             # ./docker/scrypted.nix
             
             # Website services
