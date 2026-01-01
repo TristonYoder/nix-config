@@ -111,6 +111,14 @@
     '';
   };
 
+  # Threadfin - IPTV EPG proxy and M3U playlist management
+  services.caddy.virtualHosts."local-epg.tv.theyoder.family" = {
+    extraConfig = ''
+      reverse_proxy http://localhost:34400
+      import cloudflare_tls
+    '';
+  };
+
   # =============================================================================
   # ADDITIONAL SERVICES
   # =============================================================================
