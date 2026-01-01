@@ -1,12 +1,41 @@
-# Ignore Secrets (but allow .age encrypted files and secrets.nix)
+# Secrets (allow only .age encrypted files and configuration)
 /secrets/*
 !/secrets/*.age
 !/secrets/secrets.nix
 !/secrets/README.md
 !/secrets/*.sh
-#ignore nix builds
-**/result
-*/.DS_Store
 
-# Old backup files from refactoring
+# Nix build outputs
+**/result
+**/result-*
+
+# macOS
+.DS_Store
+**/.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor files
+*.swp
+*.swo
+*.swn
+*~
+.vscode/
+.idea/
+*.save
+
+# Direnv
+.direnv/
+.envrc.cache
+
+# Syncthing conflicts
+*.sync-conflict-*
+
+# Backup files
 *.old
+*.bak
+*.backup
+
+# Temporary files
+.tmp/
+*.tmp
