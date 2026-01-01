@@ -60,6 +60,7 @@ jobs:
     - name: Notify deployment start
       id: notify-start
       if: always()
+      continue-on-error: true
       uses: ./.github/actions/matrix-notification
       with:
         message: |
@@ -107,6 +108,7 @@ jobs:
     
     - name: Notify deploying host
       id: notify-deploy-start
+      continue-on-error: true
       uses: ./.github/actions/matrix-notification
       with:
         message: |
@@ -215,6 +217,7 @@ jobs:
     
     - name: Notify success
       if: success()
+      continue-on-error: true
       uses: ./.github/actions/matrix-notification
       with:
         message: |
@@ -227,6 +230,7 @@ jobs:
     
     - name: Notify failure
       if: failure()
+      continue-on-error: true
       uses: ./.github/actions/matrix-notification
       with:
         message: |
@@ -276,6 +280,7 @@ jobs:
     
     - name: Notify summary success
       if: success()
+      continue-on-error: true
       uses: ./.github/actions/matrix-notification
       with:
         message: |
@@ -287,6 +292,7 @@ jobs:
     
     - name: Notify summary failure
       if: failure()
+      continue-on-error: true
       uses: ./.github/actions/matrix-notification
       with:
         message: |
