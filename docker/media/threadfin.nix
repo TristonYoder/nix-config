@@ -15,7 +15,7 @@
     environment = {
       "PUID" = "1001";
       "PGID" = "1001";
-      "TZ" = "America/Los_Angeles";
+      "TZ" = config.time.timeZone;
     };
     volumes = [
       "/data/docker-appdata/threadfin/conf:/home/threadfin/conf:rw"
