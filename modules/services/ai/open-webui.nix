@@ -38,11 +38,19 @@ in
       };
     };
 
+    # Ensure Tailscale is running before starting open-webui
+    # Required for resolving remote Ollama backend via Tailscale DNS
+    systemd.services.open-webui = {
+      after = [ "tailscaled.service" ];
+      wants = [ "tailscaled.service" ];
+    };
+
     # Caddy reverse proxy
     services.caddy.virtualHosts.${cfg.domain} =
       mkIf config.modules.services.infrastructure.caddy.enable {
         extraConfig = ''
           reverse_proxy http://127.0.0.1:${toString cfg.port}
+          import cloudflare_tls
         '';
       };
   };
