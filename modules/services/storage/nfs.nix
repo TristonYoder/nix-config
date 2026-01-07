@@ -29,6 +29,7 @@ in
     exports = mkOption {
       type = types.lines;
       default = ''
+        /data                   10.150.0.0/16(rw,fsid=0,no_subtree_check,crossmnt) 100.64.0.0/10(rw,fsid=0,no_subtree_check,crossmnt)
         /data/docker-appdata    10.150.0.0/16(rw,fsid=1000,no_subtree_check,crossmnt) 100.64.0.0/10(rw,fsid=1000,no_subtree_check,crossmnt)
         /data/media             10.150.0.0/16(rw,fsid=1000,no_subtree_check,crossmnt) 100.64.0.0/10(rw,fsid=1000,no_subtree_check,crossmnt)
         /data/tristonyoder      10.150.0.0/16(rw,fsid=1000,no_subtree_check,crossmnt) 100.64.0.0/10(rw,fsid=1000,no_subtree_check,crossmnt)

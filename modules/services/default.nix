@@ -8,6 +8,7 @@
     ./storage
     ./development
     ./communication
+    ./ai
   ];
 }
 
