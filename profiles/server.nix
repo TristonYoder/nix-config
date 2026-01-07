@@ -105,15 +105,25 @@
   # =============================================================================
   # DEVELOPMENT SERVICES
   # =============================================================================
-  
+
   modules.services.development.vscode-server.enable = lib.mkDefault true;
   modules.services.development.github-actions.enable = lib.mkDefault true;
   modules.services.development.kasm.enable = lib.mkDefault true;
 
   # =============================================================================
+  # AI SERVICES
+  # =============================================================================
+
+  modules.services.ai.open-webui = {
+    enable = lib.mkDefault true;
+    domain = lib.mkDefault "chat.theyoder.family";
+    ollamaHost = lib.mkDefault "http://tristons-workstation.theyoder.family:11434";
+  };
+
+  # =============================================================================
   # DNS CONFIGURATION
   # =============================================================================
-  
+
   # Configure DNS servers to use Cloudflare DNS
   networking.nameservers = [ "1.1.1.1" "1.0.0.1" ];
 }
