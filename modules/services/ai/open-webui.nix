@@ -16,7 +16,7 @@ in
 
     port = mkOption {
       type = types.port;
-      default = 8080;
+      default = 3095;
       description = "Port for Open WebUI";
     };
 
