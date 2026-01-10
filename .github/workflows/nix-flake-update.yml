@@ -359,23 +359,7 @@ jobs:
       run: |
         ISSUE_URL=$(gh issue create \
           --title "Fix flake update dry-run failures (automated)" \
-          --body "@claude The automated flake update on branch \`${{ needs.update-flake.outputs.branch_name }}\` has failed dry-run tests on one or more hosts.
-
-Please investigate the test failures and attempt to fix common issues such as:
-- Hash mismatches in fixed-output derivations
-- Known build failures with updated packages
-- Dependency conflicts
-- Simple configuration issues
-
-The branch already has the updated flake.lock. Please:
-1. Check the dry-run output on the failing hosts
-2. Apply fixes if they're straightforward (hash updates, known workarounds, etc.)
-3. Test the fixes with dry-run
-4. If fixes are successful, update this issue with what was fixed
-5. If fixes are too complex, document the issues and recommend manual intervention
-
-Branch: \`${{ needs.update-flake.outputs.branch_name }}\`
-Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+          --body "@claude The automated flake update on branch \`${{ needs.update-flake.outputs.branch_name }}\` has failed dry-run tests on one or more hosts.\n\nPlease investigate the test failures and attempt to fix common issues such as:\n- Hash mismatches in fixed-output derivations\n- Known build failures with updated packages\n- Dependency conflicts\n- Simple configuration issues\n\nThe branch already has the updated flake.lock. Please:\n1. Check the dry-run output on the failing hosts\n2. Apply fixes if they're straightforward (hash updates, known workarounds, etc.)\n3. Test the fixes with dry-run\n4. If fixes are successful, update this issue with what was fixed\n5. If fixes are too complex, document the issues and recommend manual intervention\n\nBranch: \`${{ needs.update-flake.outputs.branch_name }}\`\nWorkflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
           --label "automated" \
           --label "flake-update")
 
