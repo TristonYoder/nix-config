@@ -6,6 +6,7 @@ on:
     - cron: '0 7 * * 1'
   # Allow manual trigger
   workflow_dispatch:
+
 env:
   MATRIX_HOMESERVER_URL: ${{ secrets.MATRIX_HOMESERVER_URL }}
   MATRIX_ROOM_ID: ${{ secrets.MATRIX_ROOM_ID }}
@@ -55,6 +56,8 @@ jobs:
       update_available: ${{ steps.update-flake.outputs.update_available }}
       parent_event_id: ${{ steps.notify-start.outputs.event_id }}
       branch_name: ${{ steps.create-branch.outputs.branch_name }}
+      # Output the hosts list for use in downstream jobs
+      hosts: ${{ steps.set-hosts.outputs.hosts }}
 
     steps:
     - name: Checkout code
@@ -74,6 +77,13 @@ jobs:
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+
+    - name: Set deployment hosts
+      id: set-hosts
+      run: |
+        # Define all NixOS hosts to test/deploy (single source of truth)
+        ALL_HOSTS='[{"name": "david", "hostname": "david"}, {"name": "pits", "hostname": "pits"}]'
+        echo "hosts=$ALL_HOSTS" >> $GITHUB_OUTPUT
 
     - name: Install Nix
       uses: cachix/install-nix-action@v27
@@ -159,7 +169,7 @@ Automated flake update by GitHub Actions"
     if: needs.update-flake.outputs.update_available == 'true'
     strategy:
       matrix:
-        host: [david, pits]
+        host: ${{ fromJson(needs.update-flake.outputs.hosts) }}
       fail-fast: false
     
     steps:
@@ -189,11 +199,11 @@ Automated flake update by GitHub Actions"
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
         chmod 600 ~/.ssh/id_ed25519
 
-    - name: Test configuration on ${{ matrix.host }}
-      timeout-minutes: 15
+    - name: Test configuration on ${{ matrix.host.name }}
+      timeout-minutes: 60
       run: |
-        HOST="${{ matrix.host }}"
-        echo "Testing configuration on $HOST..."
+        HOST="${{ matrix.host.hostname }}"
+        echo "Testing configuration on ${{ matrix.host.name }} at $HOST..."
 
         # Verify SSH connection
         if ! timeout 10s ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST "echo 'SSH connection successful'"; then
@@ -207,7 +217,7 @@ Automated flake update by GitHub Actions"
           --exclude='.github' \
           --exclude='*.save' \
           --exclude='nextcloud/admin-pass' \
-          ./ ${{ secrets.NIXOS_SERVER_USER }}@$HOST:/tmp/nixos-flake-update-test-$HOST/; then
+          ./ ${{ secrets.NIXOS_SERVER_USER }}@$HOST:/tmp/nixos-flake-update-test-${{ matrix.host.name }}/; then
           echo "Failed to rsync files to $HOST"
           exit 1
         fi
@@ -215,16 +225,16 @@ Automated flake update by GitHub Actions"
         # Run dry-run test
         ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST << 'EOF'
           set -e
-          cd /tmp/nixos-flake-update-test-${{ matrix.host }}
-          echo "Running dry-run for ${{ matrix.host }}..."
-          sudo nixos-rebuild dry-run --flake .#${{ matrix.host }}
+          cd /tmp/nixos-flake-update-test-${{ matrix.host.name }}
+          echo "Running dry-run for ${{ matrix.host.name }}..."
+          sudo nixos-rebuild dry-run --flake .#${{ matrix.host.name }}
         EOF
 
     - name: Cleanup test directory
       if: always()
       run: |
-        ssh ${{ secrets.NIXOS_SERVER_USER }}@${{ matrix.host }} \
-          "rm -rf /tmp/nixos-flake-update-test-${{ matrix.host }}" || true
+        ssh ${{ secrets.NIXOS_SERVER_USER }}@${{ matrix.host.hostname }} \
+          "rm -rf /tmp/nixos-flake-update-test-${{ matrix.host.name }}" || true
 
   # Create PR if all tests passed
   create-pr-success:
@@ -243,14 +253,17 @@ Automated flake update by GitHub Actions"
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
+        # Generate host list for PR body
+        HOSTS_JSON='${{ needs.update-flake.outputs.hosts }}'
+        HOST_LIST=$(echo "$HOSTS_JSON" | jq -r '.[] | "- \(.name) ✅"' | tr '\n' '\n')
+        
         PR_URL=$(gh pr create \
           --title "chore: update flake inputs" \
-          --body "$(cat <<'EOF'
+          --body "$(cat <<EOF
 Automated flake update by GitHub Actions.
 
 All dry-run tests passed successfully on:
-- david ✅
-- pits ✅
+$HOST_LIST
 
 The flake.lock has been updated with the latest inputs.
 

@@ -1,11 +1,10 @@
-name: Nix Flake Update
+name: Test NixOS Flake Configuration
 
 on:
-  # Run weekly on Mondays at 2 AM EST (7 AM UTC)
-  schedule:
-    - cron: '0 7 * * 1'
-  # Allow manual trigger
-  workflow_dispatch:
+  push:
+    branches-ignore: []
+  pull_request:
+    branches: [ main ]
 
 env:
   MATRIX_HOMESERVER_URL: ${{ secrets.MATRIX_HOMESERVER_URL }}
@@ -13,338 +12,264 @@ env:
   MATRIX_ACCESS_TOKEN: ${{ secrets.MATRIX_ACCESS_TOKEN }}
 
 jobs:
-  # Close any old open PRs from previous runs
-  close-old-prs:
+  # First, check flake syntax locally (fast fail)
+  check-flake-syntax:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Close superseded PRs
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        # Find all open PRs with head branches matching the pattern
-        OLD_PRS=$(gh pr list \
-          --state open \
-          --json number,headRefName \
-          --jq '.[] | select(.headRefName | startswith("nix-flake-update-")) | .number')
-
-        if [ -z "$OLD_PRS" ]; then
-          echo "No old flake update PRs to close"
-          exit 0
-        fi
-
-        # Close each old PR with explanation
-        echo "$OLD_PRS" | while read -r PR_NUMBER; do
-          if [ -n "$PR_NUMBER" ]; then
-            echo "Closing PR #$PR_NUMBER"
-            gh pr close "$PR_NUMBER" \
-              --comment "This flake update PR has been superseded by a new automated run. Closing to avoid clutter."
-          fi
-        done
-
-  # Update flake.lock
-  update-flake:
-    runs-on: ubuntu-latest
-    needs: close-old-prs
     outputs:
-      update_available: ${{ steps.update-flake.outputs.update_available }}
-      parent_event_id: ${{ steps.notify-start.outputs.event_id }}
-      branch_name: ${{ steps.create-branch.outputs.branch_name }}
-      # Output the hosts list for use in downstream jobs
-      hosts: ${{ steps.set-hosts.outputs.hosts }}
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Notify start
-      id: notify-start
-      continue-on-error: true
-      uses: ./.github/actions/matrix-notification
-      with:
-        message: |
-          🔄 Running Nix Flake Update
-          Workflow: Nix Flake Update
-          Branch: ${{ github.ref_name }}
-        room_id: ${{ secrets.MATRIX_ROOM_ID }}
-        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
-        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
-
-    - name: Set deployment hosts
-      id: set-hosts
-      run: |
-        # Define all NixOS hosts to test/deploy (single source of truth)
-        ALL_HOSTS='[{"name": "david", "hostname": "david"}, {"name": "pits", "hostname": "pits"}]'
-        echo "hosts=$ALL_HOSTS" >> $GITHUB_OUTPUT
-
-    - name: Install Nix
-      uses: cachix/install-nix-action@v27
-      with:
-        nix_path: nixpkgs=channel:nixos-unstable
-
-    - name: Update flake inputs
-      id: update-flake
-      run: |
-        echo "Running nix flake update..."
-        nix flake update
-
-        # Check if flake.lock changed
-        if git diff --quiet flake.lock; then
-          echo "No updates available"
-          echo "update_available=false" >> $GITHUB_OUTPUT
-        else
-          echo "Updates available"
-          echo "update_available=true" >> $GITHUB_OUTPUT
-
-          # Get summary of changes
-          echo "Changes in flake.lock:"
-          git diff flake.lock | head -n 50
-        fi
-
-    - name: Notify no updates
-      if: steps.update-flake.outputs.update_available == 'false'
-      continue-on-error: true
-      uses: ./.github/actions/matrix-notification
-      with:
-        message: |
-          ℹ️ No flake updates available
-        room_id: ${{ secrets.MATRIX_ROOM_ID }}
-        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
-        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
-        thread_id: ${{ steps.notify-start.outputs.event_id }}
-
-    - name: Skip if no updates
-      if: steps.update-flake.outputs.update_available == 'false'
-      run: |
-        echo "No updates available, skipping tests"
-        exit 0
-
-    - name: Create update branch
-      id: create-branch
-      if: steps.update-flake.outputs.update_available == 'true'
-      run: |
-        SHORT_SHA=$(git rev-parse --short HEAD)
-        BRANCH_NAME="nix-flake-update-$(date +%Y%m%d-%H%M%S)-${SHORT_SHA}"
-        echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
-
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git checkout -b "$BRANCH_NAME"
-        git add flake.lock
-        git commit -m "chore: update flake inputs
-
-Automated flake update by GitHub Actions"
-        
-        # Push and verify success
-        if ! git push origin "$BRANCH_NAME"; then
-          echo "Failed to push branch"
-          exit 1
-        fi
-        echo "Successfully pushed branch $BRANCH_NAME"
-
-    - name: Notify testing
-      if: steps.update-flake.outputs.update_available == 'true'
-      continue-on-error: true
-      uses: ./.github/actions/matrix-notification
-      with:
-        message: |
-          🔵 Testing updated flake on all hosts
-        room_id: ${{ secrets.MATRIX_ROOM_ID }}
-        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
-        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
-        thread_id: ${{ steps.notify-start.outputs.event_id }}
-
-  # Test configurations on all NixOS hosts in parallel
-  test-configurations:
-    runs-on: ubuntu-latest
-    needs: update-flake
-    if: needs.update-flake.outputs.update_available == 'true'
-    strategy:
-      matrix:
-        host: ${{ fromJson(needs.update-flake.outputs.hosts) }}
-      fail-fast: false
+      parent_event_id: ${{ steps.send-start-notify.outputs.event_id }}
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+    
+    - name: Notify start
+      id: notify-start
+      if: always()
+      run: |
+        # Get commit message from GitHub event JSON to safely handle quotes and special characters
+        # Read from GITHUB_EVENT_PATH to avoid shell interpolation issues with quotes
+        COMMIT_MSG=$(jq -r '.head_commit.message // .commits[0].message // "Manual trigger" // empty' "$GITHUB_EVENT_PATH" 2>/dev/null || echo "Manual trigger")
+        # If message is empty or null, use fallback
+        if [ -z "$COMMIT_MSG" ] || [ "$COMMIT_MSG" = "null" ]; then
+          COMMIT_MSG="Manual trigger"
+        fi
+        TRUNCATED_MSG=$(echo "$COMMIT_MSG" | head -n 2 | tr '\n' ' ')
+        echo "commit_message<<EOF" >> $GITHUB_OUTPUT
+        echo "$TRUNCATED_MSG" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+    
+    - name: Send start notification
+      id: send-start-notify
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
       with:
-        ref: ${{ needs.update-flake.outputs.branch_name }}
+        message: |
+          🧪 Testing NixOS Configuration
+          Workflow: Test NixOS Flake Configuration
+          Branch: ${{ github.ref_name }}
+          Committer: ${{ github.actor }}
+          Commit: ${{ steps.notify-start.outputs.commit_message }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+    
+    - name: Notify testing syntax
+      id: notify-syntax-start
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          🔵 Testing syntax
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ steps.send-start-notify.outputs['event_id'] }}
+      
+    - name: Install Nix
+      uses: cachix/install-nix-action@v27
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+    
+    - name: Check flake syntax
+      id: syntax-check
+      run: |
+        echo "Testing flake syntax..."
+        nix flake check --all-systems
+        echo "✅ Flake syntax check passed!"
+        echo "check_result=success" >> $GITHUB_OUTPUT
+      continue-on-error: true
+    
+    - name: Notify success
+      if: success()
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ✅ Syntax check passed
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ steps.send-start-notify.outputs['event_id'] }}
+        # redact_event_id: ${{ steps.notify-syntax-start.outputs['event_id'] }}
 
+    - name: Notify failure
+      if: failure()
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ❌ Syntax check failed
+          ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ steps.send-start-notify.outputs['event_id'] }}
+        # redact_event_id: ${{ steps.notify-syntax-start.outputs['event_id'] }}
+    
+    - name: React to parent with failure emoji
+      if: failure()
+      run: |
+        PARENT_EVENT_ID="${{ steps.send-start-notify.outputs['event_id'] }}"
+        ROOM_ID_ENCODED=$(echo -n "${{ secrets.MATRIX_ROOM_ID }}" | jq -sRr @uri)
+        
+        curl -X PUT "${{ secrets.MATRIX_HOMESERVER_URL }}/_matrix/client/r0/rooms/$ROOM_ID_ENCODED/redact/$PARENT_EVENT_ID/react-$(date +%s)" \
+          -H "Authorization: Bearer ${{ secrets.MATRIX_ACCESS_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "m.relates_to": {
+              "rel_type": "m.annotation",
+              "event_id": "'"$PARENT_EVENT_ID"'",
+              "key": "❌"
+            }
+          }' || echo "Reaction failed, continuing..."
+
+  # Test all NixOS configurations
+  test-configurations:
+    runs-on: ubuntu-latest
+    needs: check-flake-syntax
+    outputs:
+      parent_event_id: ${{ needs.check-flake-syntax.outputs.parent_event_id }}
+    strategy:
+      matrix:
+        host: 
+          - name: david
+            hostname: david
+          - name: pits
+            hostname: pits
+          # - name: tristons-desk
+            # hostname: tristons-desk
+      fail-fast: false  # Continue testing other hosts even if one fails
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Notify start
+      id: notify-start-test
+      if: always()
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          🔵 Testing ${{ matrix.host.name }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.check-flake-syntax.outputs.parent_event_id }}
+      
     - name: Setup Tailscale
       uses: tailscale/github-action@v2
       with:
         oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
         oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
         tags: tag:github-actions
-
+        
     - name: Wait for Tailscale connection
       run: sleep 10
-
-    - name: Configure SSH
+      
+    - name: Test ${{ matrix.host.name }} Configuration
       run: |
+        # Connect to server via Tailscale
+        SERVER_HOSTNAME="${{ matrix.host.hostname }}"
+        echo "Testing configuration for ${{ matrix.host.name }} on $SERVER_HOSTNAME"
+        
+        # Configure SSH to bypass host key verification
         mkdir -p ~/.ssh
         echo "Host *" >> ~/.ssh/config
         echo "  StrictHostKeyChecking no" >> ~/.ssh/config
         echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
         chmod 600 ~/.ssh/config
-
+        
+        # Setup SSH key
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
         chmod 600 ~/.ssh/id_ed25519
-
-    - name: Test configuration on ${{ matrix.host.name }}
-      timeout-minutes: 60
-      run: |
-        HOST="${{ matrix.host.hostname }}"
-        echo "Testing configuration on ${{ matrix.host.name }} at $HOST..."
-
-        # Verify SSH connection
-        if ! timeout 10s ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST "echo 'SSH connection successful'"; then
-          echo "Failed to establish SSH connection to $HOST"
-          exit 1
-        fi
-
-        # Rsync files to host
-        if ! rsync -avz --delete \
+        
+        # Copy configuration to server
+        rsync -avz --delete \
           --exclude='.git' \
           --exclude='.github' \
           --exclude='*.save' \
           --exclude='nextcloud/admin-pass' \
-          ./ ${{ secrets.NIXOS_SERVER_USER }}@$HOST:/tmp/nixos-flake-update-test-${{ matrix.host.name }}/; then
-          echo "Failed to rsync files to $HOST"
+          ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME:/tmp/nixos-config-test-${{ matrix.host.name }}/
+        
+        # Test configuration on server
+        ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << EOF
+          set -e
+          
+          # Navigate to test directory
+          cd /tmp/nixos-config-test-${{ matrix.host.name }}
+          
+          # Test the NixOS configuration using flake
+          echo "Testing NixOS configuration for ${{ matrix.host.name }}..."
+          if sudo nixos-rebuild dry-run --flake .#${{ matrix.host.name }}; then
+            echo "✅ Configuration test passed for ${{ matrix.host.name }}!"
+            echo "SUCCESS" > /tmp/nixos-test-result-${{ matrix.host.name }}.txt
+          else
+            echo "❌ Configuration test failed for ${{ matrix.host.name }}!"
+            echo "FAILED" > /tmp/nixos-test-result-${{ matrix.host.name }}.txt
+            exit 1
+          fi
+        EOF
+        
+        # Get test result
+        TEST_RESULT=$(ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME "cat /tmp/nixos-test-result-${{ matrix.host.name }}.txt")
+        
+        if [ "$TEST_RESULT" = "SUCCESS" ]; then
+          echo "✅ NixOS configuration test passed for ${{ matrix.host.name }}!"
+        else
+          echo "❌ NixOS configuration test failed for ${{ matrix.host.name }}!"
           exit 1
         fi
-
-        # Run dry-run test
-        ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST << 'EOF'
-          set -e
-          cd /tmp/nixos-flake-update-test-${{ matrix.host.name }}
-          echo "Running dry-run for ${{ matrix.host.name }}..."
-          sudo nixos-rebuild dry-run --flake .#${{ matrix.host.name }}
-        EOF
-
-    - name: Cleanup test directory
+        
+    - name: Set GitHub status
       if: always()
       run: |
-        ssh ${{ secrets.NIXOS_SERVER_USER }}@${{ matrix.host.hostname }} \
-          "rm -rf /tmp/nixos-flake-update-test-${{ matrix.host.name }}" || true
-
-  # Create PR if all tests passed
-  create-pr-success:
-    runs-on: ubuntu-latest
-    needs: [update-flake, test-configurations]
-    if: needs.update-flake.outputs.update_available == 'true' && needs.test-configurations.result == 'success'
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        ref: ${{ needs.update-flake.outputs.branch_name }}
-
-    - name: Create Pull Request
-      id: create-pr
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        # Generate host list for PR body
-        HOSTS_JSON='${{ needs.update-flake.outputs.hosts }}'
-        HOST_LIST=$(echo "$HOSTS_JSON" | jq -r '.[] | "- \(.name) ✅"' | tr '\n' '\n')
-        
-        PR_URL=$(gh pr create \
-          --title "chore: update flake inputs" \
-          --body "$(cat <<EOF
-Automated flake update by GitHub Actions.
-
-All dry-run tests passed successfully on:
-$HOST_LIST
-
-The flake.lock has been updated with the latest inputs.
-
-## Review Steps
-1. Review the changes to flake.lock
-2. Merge if everything looks good
-3. The deploy workflow will automatically run on merge
-EOF
-)" \
-          --base main \
-          --head "${{ needs.update-flake.outputs.branch_name }}")
-        
-        echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
-        echo "Created PR: $PR_URL"
-
-    - name: Notify PR created
+        if [ "${{ job.status }}" = "success" ]; then
+          echo "✅ ${{ matrix.host.name }} configuration test passed"
+        else
+          echo "❌ ${{ matrix.host.name }} configuration test failed"
+        fi
+    
+    - name: Notify success
+      if: success()
       continue-on-error: true
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ✅ Pull request created for flake update
-          ${{ steps.create-pr.outputs.pr_url }}
+          ✅ ${{ matrix.host.name }} passed
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
-        thread_id: ${{ needs.update-flake.outputs.parent_event_id }}
+        thread_id: ${{ needs.check-flake-syntax.outputs.parent_event_id }}
+        # redact_event_id: ${{ steps.notify-start-test.outputs['event_id'] }}
 
-  # Trigger Claude to fix issues if tests failed
-  claude-fix-attempt:
-    runs-on: ubuntu-latest
-    needs: [update-flake, test-configurations]
-    if: needs.update-flake.outputs.update_available == 'true' && needs.test-configurations.result == 'failure'
-    permissions:
-      contents: write
-      pull-requests: write
-      issues: write
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        ref: ${{ needs.update-flake.outputs.branch_name }}
-
-    - name: Create issue for Claude
-      id: create-issue
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        ISSUE_URL=$(gh issue create \
-          --title "Fix flake update dry-run failures (automated)" \
-          --body "@claude The automated flake update on branch \`${{ needs.update-flake.outputs.branch_name }}\` has failed dry-run tests on one or more hosts.
-
-Please investigate the test failures and attempt to fix common issues such as:
-- Hash mismatches in fixed-output derivations
-- Known build failures with updated packages
-- Dependency conflicts
-- Simple configuration issues
-
-The branch already has the updated flake.lock. Please:
-1. Check the dry-run output on the failing hosts
-2. Apply fixes if they're straightforward (hash updates, known workarounds, etc.)
-3. Test the fixes with dry-run
-4. If fixes are successful, update this issue with what was fixed
-5. If fixes are too complex, document the issues and recommend manual intervention
-
-Branch: \`${{ needs.update-flake.outputs.branch_name }}\`
-Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-          --label "automated" \
-          --label "flake-update")
-
-        echo "issue_url=$ISSUE_URL" >> $GITHUB_OUTPUT
-        echo "Created issue: $ISSUE_URL"
-
-    - name: Notify Claude triggered
+    - name: Notify failure
+      if: failure()
       continue-on-error: true
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          🤖 Claude triggered to attempt fixes
-          ${{ steps.create-issue.outputs.issue_url }}
+          ❌ ${{ matrix.host.name }} failed
+          ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
-        thread_id: ${{ needs.update-flake.outputs.parent_event_id }}
+        thread_id: ${{ needs.check-flake-syntax.outputs.parent_event_id }}
+        # redact_event_id: ${{ steps.notify-start-test.outputs['event_id'] }}
+    
+    - name: React to parent with failure emoji
+      if: failure()
+      run: |
+        PARENT_EVENT_ID="${{ needs.check-flake-syntax.outputs.parent_event_id }}"
+        ROOM_ID_ENCODED=$(echo -n "${{ secrets.MATRIX_ROOM_ID }}" | jq -sRr @uri)
+        
+        curl -X PUT "${{ secrets.MATRIX_HOMESERVER_URL }}/_matrix/client/r0/rooms/$ROOM_ID_ENCODED/send/m.reaction/$(openssl rand -hex 16)" \
+          -H "Authorization: Bearer ${{ secrets.MATRIX_ACCESS_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "m.relates_to": {
+              "rel_type": "m.annotation",
+              "event_id": "'"$PARENT_EVENT_ID"'",
+              "key": "❌"
+            }
+          }' || echo "Reaction failed, continuing..."
