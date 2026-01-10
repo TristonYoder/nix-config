@@ -1,0 +1,356 @@
+name: Nix Flake Update
+
+on:
+  # Run weekly on Sundays at 2 AM UTC
+  schedule:
+    - cron: '0 2 * * 0'
+  # Allow manual trigger
+  workflow_dispatch:
+
+env:
+  MATRIX_HOMESERVER_URL: ${{ secrets.MATRIX_HOMESERVER_URL }}
+  MATRIX_ROOM_ID: ${{ secrets.MATRIX_ROOM_ID }}
+  MATRIX_ACCESS_TOKEN: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+
+jobs:
+  # Update flake.lock and test configurations
+  update-and-test:
+    runs-on: ubuntu-latest
+    outputs:
+      update_available: ${{ steps.update-flake.outputs.update_available }}
+      test_result: ${{ steps.set-test-result.outputs.result }}
+      parent_event_id: ${{ steps.notify-start.outputs.event_id }}
+      branch_name: ${{ steps.create-branch.outputs.branch_name }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Notify start
+      id: notify-start
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          🔄 Running Nix Flake Update
+          Workflow: Nix Flake Update
+          Branch: ${{ github.ref_name }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+
+    - name: Install Nix
+      uses: cachix/install-nix-action@v27
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+
+    - name: Update flake inputs
+      id: update-flake
+      run: |
+        echo "Running nix flake update..."
+        nix flake update
+
+        # Check if flake.lock changed
+        if git diff --quiet flake.lock; then
+          echo "No updates available"
+          echo "update_available=false" >> $GITHUB_OUTPUT
+        else
+          echo "Updates available"
+          echo "update_available=true" >> $GITHUB_OUTPUT
+
+          # Get summary of changes
+          echo "Changes in flake.lock:"
+          git diff flake.lock | head -n 50
+        fi
+
+    - name: Notify no updates
+      if: steps.update-flake.outputs.update_available == 'false'
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ℹ️ No flake updates available
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ steps.notify-start.outputs.event_id }}
+
+    - name: Skip if no updates
+      if: steps.update-flake.outputs.update_available == 'false'
+      run: |
+        echo "No updates available, skipping tests"
+        exit 0
+
+    - name: Create update branch
+      id: create-branch
+      if: steps.update-flake.outputs.update_available == 'true'
+      run: |
+        BRANCH_NAME="nix-flake-update-$(date +%Y%m%d-%H%M%S)"
+        echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git checkout -b "$BRANCH_NAME"
+        git add flake.lock
+        git commit -m "chore: update flake inputs
+
+Automated flake update by GitHub Actions"
+        git push origin "$BRANCH_NAME"
+
+    - name: Notify testing
+      if: steps.update-flake.outputs.update_available == 'true'
+      id: notify-testing
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          🔵 Testing updated flake on all hosts
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ steps.notify-start.outputs.event_id }}
+
+    - name: Setup Tailscale
+      if: steps.update-flake.outputs.update_available == 'true'
+      uses: tailscale/github-action@v2
+      with:
+        oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
+        oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+        tags: tag:github-actions
+
+    - name: Wait for Tailscale connection
+      if: steps.update-flake.outputs.update_available == 'true'
+      run: sleep 10
+
+    - name: Configure SSH
+      if: steps.update-flake.outputs.update_available == 'true'
+      run: |
+        mkdir -p ~/.ssh
+        echo "Host *" >> ~/.ssh/config
+        echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+        echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
+        chmod 600 ~/.ssh/config
+
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+
+    - name: Test on david
+      if: steps.update-flake.outputs.update_available == 'true'
+      id: test-david
+      continue-on-error: true
+      run: |
+        SERVER_HOSTNAME="david"
+        echo "Testing configuration on david..."
+
+        rsync -avz --delete \
+          --exclude='.git' \
+          --exclude='.github' \
+          --exclude='*.save' \
+          --exclude='nextcloud/admin-pass' \
+          ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME:/tmp/nixos-flake-update-test/
+
+        ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << 'EOF'
+          set -e
+          cd /tmp/nixos-flake-update-test
+          echo "Running dry-run for david..."
+          if sudo nixos-rebuild dry-run --flake .#david; then
+            echo "SUCCESS" > /tmp/test-result-david.txt
+          else
+            echo "FAILED" > /tmp/test-result-david.txt
+            exit 1
+          fi
+        EOF
+
+        TEST_RESULT=$(ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME "cat /tmp/test-result-david.txt")
+        if [ "$TEST_RESULT" = "SUCCESS" ]; then
+          echo "result=success" >> $GITHUB_OUTPUT
+          exit 0
+        else
+          echo "result=failure" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+
+    - name: Test on pits
+      if: steps.update-flake.outputs.update_available == 'true'
+      id: test-pits
+      continue-on-error: true
+      run: |
+        SERVER_HOSTNAME="pits"
+        echo "Testing configuration on pits..."
+
+        rsync -avz --delete \
+          --exclude='.git' \
+          --exclude='.github' \
+          --exclude='*.save' \
+          --exclude='nextcloud/admin-pass' \
+          ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME:/tmp/nixos-flake-update-test/
+
+        ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << 'EOF'
+          set -e
+          cd /tmp/nixos-flake-update-test
+          echo "Running dry-run for pits..."
+          if sudo nixos-rebuild dry-run --flake .#pits; then
+            echo "SUCCESS" > /tmp/test-result-pits.txt
+          else
+            echo "FAILED" > /tmp/test-result-pits.txt
+            exit 1
+          fi
+        EOF
+
+        TEST_RESULT=$(ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME "cat /tmp/test-result-pits.txt")
+        if [ "$TEST_RESULT" = "SUCCESS" ]; then
+          echo "result=success" >> $GITHUB_OUTPUT
+          exit 0
+        else
+          echo "result=failure" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+
+    - name: Set overall test result
+      if: steps.update-flake.outputs.update_available == 'true'
+      id: set-test-result
+      run: |
+        DAVID_RESULT="${{ steps.test-david.outputs.result }}"
+        PITS_RESULT="${{ steps.test-pits.outputs.result }}"
+
+        if [ "$DAVID_RESULT" = "success" ] && [ "$PITS_RESULT" = "success" ]; then
+          echo "result=success" >> $GITHUB_OUTPUT
+          echo "All tests passed"
+        else
+          echo "result=failure" >> $GITHUB_OUTPUT
+          echo "Some tests failed: david=$DAVID_RESULT, pits=$PITS_RESULT"
+        fi
+
+    - name: Notify test success
+      if: steps.update-flake.outputs.update_available == 'true' && steps.set-test-result.outputs.result == 'success'
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ✅ All dry-run tests passed
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ steps.notify-start.outputs.event_id }}
+
+    - name: Notify test failure
+      if: steps.update-flake.outputs.update_available == 'true' && steps.set-test-result.outputs.result == 'failure'
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ⚠️ Dry-run tests failed, triggering Claude for fixes
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ steps.notify-start.outputs.event_id }}
+
+  # Create PR if tests passed
+  create-pr-success:
+    runs-on: ubuntu-latest
+    needs: update-and-test
+    if: needs.update-and-test.outputs.update_available == 'true' && needs.update-and-test.outputs.test_result == 'success'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ needs.update-and-test.outputs.branch_name }}
+
+    - name: Create Pull Request
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh pr create \
+          --title "chore: update flake inputs" \
+          --body "$(cat <<'EOF'
+Automated flake update by GitHub Actions.
+
+All dry-run tests passed successfully on:
+- david ✅
+- pits ✅
+
+The flake.lock has been updated with the latest inputs.
+
+## Review Steps
+1. Review the changes to flake.lock
+2. Merge if everything looks good
+3. The deploy workflow will automatically run on merge
+
+Generated by Nix Flake Update workflow
+EOF
+)" \
+          --base main \
+          --head "${{ needs.update-and-test.outputs.branch_name }}"
+
+    - name: Notify PR created
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ✅ Pull request created for flake update
+          ${{ github.server_url }}/${{ github.repository }}/pulls
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.update-and-test.outputs.parent_event_id }}
+
+  # Trigger Claude to fix issues if tests failed
+  claude-fix-attempt:
+    runs-on: ubuntu-latest
+    needs: update-and-test
+    if: needs.update-and-test.outputs.update_available == 'true' && needs.update-and-test.outputs.test_result == 'failure'
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ needs.update-and-test.outputs.branch_name }}
+
+    - name: Create issue for Claude
+      id: create-issue
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        ISSUE_URL=$(gh issue create \
+          --title "Fix flake update dry-run failures (automated)" \
+          --body "@claude The automated flake update on branch \`${{ needs.update-and-test.outputs.branch_name }}\` has failed dry-run tests on one or more hosts.
+
+Please investigate the test failures and attempt to fix common issues such as:
+- Hash mismatches in fixed-output derivations
+- Known build failures with updated packages
+- Dependency conflicts
+- Simple configuration issues
+
+The branch already has the updated flake.lock. Please:
+1. Check the dry-run output on the failing hosts
+2. Apply fixes if they're straightforward (hash updates, known workarounds, etc.)
+3. Test the fixes with dry-run
+4. If fixes are successful, update this issue with what was fixed
+5. If fixes are too complex, document the issues and recommend manual intervention
+
+Branch: \`${{ needs.update-and-test.outputs.branch_name }}\`
+Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+          --label "automated" \
+          --label "flake-update")
+
+        echo "issue_url=$ISSUE_URL" >> $GITHUB_OUTPUT
+        echo "Created issue: $ISSUE_URL"
+
+    - name: Notify Claude triggered
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          🤖 Claude triggered to attempt fixes
+          ${{ steps.create-issue.outputs.issue_url }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.update-and-test.outputs.parent_event_id }}
