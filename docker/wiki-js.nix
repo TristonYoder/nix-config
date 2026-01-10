@@ -1,3 +1,5 @@
+# Wiki.js - Modern wiki platform
+# Powerful documentation site with markdown support, search, and authentication integrations
 # Auto-generated using compose2nix v0.3.1.
 { pkgs, lib, ... }:
 

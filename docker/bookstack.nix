@@ -1,3 +1,5 @@
+# BookStack - Documentation and wiki platform
+# Organize content in books, chapters, and pages with WYSIWYG editor and markdown support
 # Auto-generated using compose2nix v0.3.1.
 { pkgs, lib, ... }:
 

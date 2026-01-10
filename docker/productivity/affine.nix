@@ -1,3 +1,5 @@
+# AFFiNE - Privacy-focused knowledge base and collaboration platform
+# Open-source alternative to Notion with offline-first architecture and end-to-end encryption
 # Auto-generated using compose2nix v0.3.1.
 { config, pkgs, lib, ... }:
 

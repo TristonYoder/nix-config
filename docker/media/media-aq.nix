@@ -1,3 +1,11 @@
+# Media acquisition and management stack (Arr suite)
+# Sonarr, Radarr, Lidarr, Readarr - Automated content management for TV, movies, music, and books
+# Prowlarr - Indexer manager for content sources
+# Bazarr - Subtitle management and download automation
+# Transmission, Deluge - BitTorrent clients for downloads
+# Gluetun - VPN client providing network privacy for torrent clients
+# TubeSync - YouTube channel synchronization and download manager
+# Dispatcharr - Content request and notification manager
 # Auto-generated using compose2nix v0.2.3-pre.
 { config, pkgs, lib, ... }:
 

@@ -1,3 +1,5 @@
+# Postal - Self-hosted mail server and SMTP relay
+# Complete mail delivery platform with web interface for sending and receiving emails
 # Auto-generated using compose2nix v0.3.2.
 { pkgs, lib, config, ... }:
 

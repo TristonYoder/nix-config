@@ -1,3 +1,5 @@
+# carolineyoder.com - WordPress personal website
+# Personal portfolio and blog site with WordPress CMS and MySQL database
 # Auto-generated using compose2nix v0.2.0-pre.
 { config, pkgs, lib, ... }:
 

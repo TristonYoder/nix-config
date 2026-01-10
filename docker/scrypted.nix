@@ -1,3 +1,5 @@
+# Scrypted - Home automation and video integration platform
+# Connects cameras and smart devices to HomeKit, Google Home, and Alexa with hardware transcoding
 # Auto-generated using compose2nix v0.3.2.
 { config, pkgs, lib, ... }:
 

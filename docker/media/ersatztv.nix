@@ -1,3 +1,5 @@
+# ErsatzTV - Custom IPTV server for Plex, Jellyfin, and Emby
+# Creates linear TV channels from your media library with scheduling and guide data
 # Auto-generated using compose2nix v0.2.3-pre.
 { config, pkgs, lib, ... }:
 

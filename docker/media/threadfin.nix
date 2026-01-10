@@ -1,3 +1,5 @@
+# Threadfin - M3U proxy for Plex, Emby, and Jellyfin
+# Provides IPTV stream buffering, filtering, and EPG management for media servers
 # Auto-generated using compose2nix v0.3.2.
 { config, pkgs, lib, ... }:
 

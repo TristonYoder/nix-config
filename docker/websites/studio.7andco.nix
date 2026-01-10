@@ -1,3 +1,5 @@
+# studio.7andco.com - WordPress studio website
+# Business website for 7 and Co studio with WordPress CMS and MySQL database
 # Auto-generated using compose2nix v0.2.0-pre.
 { config, pkgs, lib, ... }:
 
