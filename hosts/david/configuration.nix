@@ -119,6 +119,14 @@
     '';
   };
 
+  # InvokeAI
+  services.caddy.virtualHosts."invoke.theyoder.family" = {
+    extraConfig = ''
+      reverse_proxy http://tristons-workstation.theyoder.family:9090
+      import cloudflare_tls
+    '';
+  };
+
   # =============================================================================
   # ADDITIONAL SERVICES
   # =============================================================================
