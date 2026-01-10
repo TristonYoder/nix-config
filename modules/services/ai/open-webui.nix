@@ -16,7 +16,7 @@ in
 
     port = mkOption {
       type = types.port;
-      default = 8080;
+      default = 3095;
       description = "Port for Open WebUI";
     };
 
@@ -35,6 +35,7 @@ in
       environment = {
         OLLAMA_BASE_URL = cfg.ollamaHost;
         WEBUI_AUTH = "True";
+        ENABLE_SIGNUP = "True";
       };
     };
 
