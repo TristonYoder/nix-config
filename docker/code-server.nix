@@ -1,3 +1,5 @@
+# Code-Server - VS Code in the browser
+# Access Visual Studio Code from any device via web browser with full extension support
 # Auto-generated using compose2nix v0.1.9.
 { pkgs, lib, ... }:
 

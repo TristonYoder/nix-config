@@ -1,3 +1,5 @@
+# Kasm Workspaces - Containerized desktop and application streaming
+# Browser-based access to Linux desktops and applications with GPU support
 # Auto-generated using compose2nix v0.1.9.
 { pkgs, lib, ... }:
 

@@ -1,3 +1,5 @@
+# Watchtower - Automatic Docker container updates
+# Monitors running containers and automatically updates them to the latest image versions
 { config, pkgs, ... }:
 
 {

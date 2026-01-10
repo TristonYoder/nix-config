@@ -1,3 +1,5 @@
+# Docmost - Collaborative documentation and wiki platform
+# Real-time collaborative editor for team documentation with page permissions and workspaces
 # Auto-generated using compose2nix v0.3.1.
 { config, pkgs, lib, ... }:
 

@@ -1,3 +1,6 @@
+# Audiobook management stack
+# Audiobookshelf - Self-hosted audiobook and podcast server with mobile apps
+# OpenAudible - Download and manage Audible audiobooks
 # Auto-generated using compose2nix v0.1.9.
 { pkgs, lib, ... }:
 

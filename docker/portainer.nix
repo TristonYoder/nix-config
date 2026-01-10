@@ -1,3 +1,5 @@
+# Portainer Edge Agent - Docker management edge client
+# Lightweight agent enabling remote Docker container management via Portainer
 # Auto-generated using compose2nix v0.1.9.
 { pkgs, lib, ... }:
 

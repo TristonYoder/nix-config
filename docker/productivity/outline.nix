@@ -1,3 +1,5 @@
+# Outline - Team wiki and knowledge base
+# Collaborative documentation platform with real-time editing and rich integrations
 # Auto-generated using compose2nix v0.3.2.
 { config, pkgs, lib, ... }:
 

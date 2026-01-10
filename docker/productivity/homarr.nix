@@ -1,3 +1,6 @@
+# Dashboard and service management stack
+# Homarr - Customizable homepage dashboard with service integrations and widgets
+# DashDot - Server monitoring dashboard displaying system metrics and GPU stats
 # Auto-generated using compose2nix v0.1.9.
 { pkgs, lib, ... }:
 

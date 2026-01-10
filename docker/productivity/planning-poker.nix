@@ -1,3 +1,5 @@
+# Planning Poker - Agile estimation tool for development teams
+# Self-hosted platform for conducting sprint planning and story point estimation sessions
 # Auto-generated using compose2nix v0.3.1.
 { pkgs, lib, ... }:
 

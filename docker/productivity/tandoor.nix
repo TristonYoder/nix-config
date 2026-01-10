@@ -1,3 +1,5 @@
+# Tandoor Recipes - Recipe manager and meal planner
+# Organize recipes, create meal plans, generate shopping lists, and scale ingredients
 # Auto-generated using compose2nix v0.1.9.
 { config, pkgs, lib, ... }:
 
