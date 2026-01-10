@@ -310,20 +310,7 @@ jobs:
         
         PR_URL=$(gh pr create \
           --title "chore: update flake inputs" \
-          --body "$(cat <<EOF
-Automated flake update by GitHub Actions.
-
-All dry-run tests passed successfully on:
-$HOST_LIST
-
-The flake.lock has been updated with the latest inputs.
-
-## Review Steps
-1. Review the changes to flake.lock
-2. Merge if everything looks good
-3. The deploy workflow will automatically run on merge
-EOF
-)" \
+          --body "Automated flake update by GitHub Actions.\nAll dry-run tests passed successfully on all hosts. The flake.lock has been updated with the latest inputs.\n## Review Steps\n1. Review the changes to flake.lock\n2. Merge if everything looks good\n3. The deploy workflow will automatically run on merge" \
           --base main \
           --head "${{ needs.update-flake.outputs.branch_name }}")
         
