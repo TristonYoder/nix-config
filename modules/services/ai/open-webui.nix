@@ -35,6 +35,7 @@ in
       environment = {
         OLLAMA_BASE_URL = cfg.ollamaHost;
         WEBUI_AUTH = "True";
+        ENABLE_SIGNUP = "True";
       };
     };
 
