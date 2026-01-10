@@ -170,11 +170,7 @@ jobs:
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git checkout -b "$BRANCH_NAME"
         git add flake.lock
-        git commit -F - <<EOF
-chore: update flake inputs
-
-Automated flake update by GitHub Actions
-EOF
+        git commit -m "chore: update flake inputs"
         
         # Push and verify success
         if ! git push origin "$BRANCH_NAME"; then
