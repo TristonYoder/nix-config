@@ -1,5 +1,5 @@
 # Auto-generated using compose2nix v0.2.3-pre.
-{ pkgs, lib, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   # Runtime
@@ -15,7 +15,7 @@
     environment = {
       "PGID" = "1000";
       "PUID" = "1000";
-      "TZ" = "America/Indianapolis";
+      "TZ" = config.time.timeZone;
     };
     volumes = [
       "/data/docker-appdata/bazarr:/config:rw"
@@ -59,7 +59,7 @@
       "DELUGE_LOGLEVEL" = "error";
       "PGID" = "1000";
       "PUID" = "1000";
-      "TZ" = "Etc/UTC";
+      "TZ" = config.time.timeZone;
     };
     volumes = [
       "/data/docker-appdata/deluge/config/:/config:rw"
@@ -141,7 +141,7 @@
     environment = {
       "PGID" = "1000";
       "PUID" = "1000";
-      "TZ" = "America/Indianapolis";
+      "TZ" = config.time.timeZone;
     };
     volumes = [
       "/data/docker-appdata/lidar:/config:rw"
@@ -183,7 +183,7 @@
     environment = {
       "PGID" = "1000";
       "PUID" = "1000";
-      "TZ" = "America/Indianapolis";
+      "TZ" = config.time.timeZone;
     };
     volumes = [
       "/data/docker-appdata/prowlarr:/config:rw"
@@ -222,7 +222,7 @@
     environment = {
       "PGID" = "1000";
       "PUID" = "1000";
-      "TZ" = "America/Indianapolis";
+      "TZ" = config.time.timeZone;
       "UMASK_SET" = "022";
     };
     volumes = [
@@ -265,7 +265,7 @@
     environment = {
       "PGID" = "1000";
       "PUID" = "1000";
-      "TZ" = "America/Indianapolis";
+      "TZ" = config.time.timeZone;
     };
     volumes = [
       "/data/docker-appdata/readarr:/config:rw"
@@ -307,7 +307,7 @@
     environment = {
       "PGID" = "1000";
       "PUID" = "1000";
-      "TZ" = "America/Indianapolis";
+      "TZ" = config.time.timeZone;
       "UMASK_SET" = "022";
     };
     volumes = [
@@ -350,7 +350,7 @@
     environment = {
       "PGID" = "1000";
       "PUID" = "1000";
-      "TZ" = "Etc/UTC";
+      "TZ" = config.time.timeZone;
     };
     volumes = [
       "/data/docker-appdata/transmission/config/:/config:rw"
@@ -384,7 +384,7 @@
     environment = {
       "PGID" = "1000";
       "PUID" = "1000";
-      "TZ" = "America/Indianapolis";
+      "TZ" = config.time.timeZone;
     };
     volumes = [
       "/data/docker-appdata/tubesync:/config:rw"
@@ -404,7 +404,7 @@
     environment = {
       "PGID" = "1000";
       "PUID" = "1000";
-      "TZ" = "America/Indianapolis";
+      "TZ" = config.time.timeZone;
     };
     volumes = [
       "/data/docker-appdata/dispatcharr:/data:rw"
