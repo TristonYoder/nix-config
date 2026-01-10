@@ -1,5 +1,4 @@
-# Automated Nix Flake Update Workflow
-#
+name: NixOS Flake Updater
 # Purpose:
 #   Automatically updates flake.lock with latest input versions on a weekly schedule.
 #   Tests updated configuration on all NixOS hosts before creating a PR for review.
