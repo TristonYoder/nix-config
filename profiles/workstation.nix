@@ -2,12 +2,19 @@
 # Shared desktop applications and development tools for all workstations
 # Imported by server.nix and individual workstation hosts
 
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, nixpkgs-unstable, ... }:
 
 {
   # Import the base desktop profile for KDE and core desktop functionality
   imports = [
     ./desktop.nix
+  ];
+
+  # Use rpi-imager from unstable to fix build issue
+  nixpkgs.overlays = [
+    (final: prev: {
+      rpi-imager = nixpkgs-unstable.legacyPackages.${prev.system}.rpi-imager;
+    })
   ];
 
   # =============================================================================
