@@ -1,3 +1,37 @@
+# Automated Nix Flake Update Workflow
+#
+# Purpose:
+#   Automatically updates flake.lock with latest input versions on a weekly schedule.
+#   Tests updated configuration on all NixOS hosts before creating a PR for review.
+#
+# Triggers:
+#   - Weekly: Mondays at 2 AM EST (7 AM UTC)
+#   - Manual: workflow_dispatch for on-demand updates
+#
+# Workflow:
+#   1. Close any old open flake update PRs from previous runs
+#   2. Update flake.lock with latest versions
+#   3. Create timestamped branch with changes
+#   4. Test configurations in parallel on all NixOS hosts (dry-run)
+#   5. If tests pass: Create PR for manual review
+#   6. If tests fail: Create issue mentioning @claude to attempt automated fixes
+#
+# Required Secrets:
+#   - GITHUB_TOKEN: For PR/issue creation (automatically provided)
+#   - SSH_PRIVATE_KEY: SSH key for connecting to NixOS hosts
+#   - NIXOS_SERVER_USER: Username for SSH connections
+#   - TAILSCALE_OAUTH_CLIENT_ID: Tailscale OAuth credentials
+#   - TAILSCALE_OAUTH_SECRET: Tailscale OAuth credentials
+#   - MATRIX_HOMESERVER_URL: Matrix notification server
+#   - MATRIX_ROOM_ID: Matrix room for notifications
+#   - MATRIX_ACCESS_TOKEN: Matrix authentication token
+#
+# Notes:
+#   - 60-minute timeout per host allows for large package downloads during updates
+#   - Test directories use unique naming to avoid conflicts with test workflow
+#   - SSH retry logic handles transient Tailscale connection issues
+#   - Auto-generated issues are labeled for easy filtering and cleanup
+
 name: Nix Flake Update
 
 on:
@@ -200,18 +234,37 @@ Automated flake update by GitHub Actions"
         chmod 600 ~/.ssh/id_ed25519
 
     - name: Test configuration on ${{ matrix.host.name }}
+      # Extended timeout: Flake updates may download large packages (kernels, etc)
+      # Typical dry-runs: 3-5 minutes; updates with downloads: 10-30 minutes
       timeout-minutes: 60
       run: |
         HOST="${{ matrix.host.hostname }}"
         echo "Testing configuration on ${{ matrix.host.name }} at $HOST..."
 
-        # Verify SSH connection
-        if ! timeout 10s ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST "echo 'SSH connection successful'"; then
-          echo "Failed to establish SSH connection to $HOST"
-          exit 1
-        fi
+        # Verify SSH connection with retry logic
+        MAX_RETRIES=3
+        RETRY_COUNT=0
+        RETRY_DELAY=5
+
+        while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+          if timeout 10s ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST "echo 'SSH connection successful'"; then
+            echo "SSH connection established successfully"
+            break
+          else
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+              echo "SSH connection attempt $RETRY_COUNT failed, retrying in ${RETRY_DELAY}s..."
+              sleep $RETRY_DELAY
+              RETRY_DELAY=$((RETRY_DELAY * 2))  # Exponential backoff
+            else
+              echo "Failed to establish SSH connection to $HOST after $MAX_RETRIES attempts"
+              exit 1
+            fi
+          fi
+        done
 
         # Rsync files to host
+        # Uses unique test directory name to avoid conflicts with test-nixos-config workflow
         if ! rsync -avz --delete \
           --exclude='.git' \
           --exclude='.github' \
@@ -241,6 +294,9 @@ Automated flake update by GitHub Actions"
     runs-on: ubuntu-latest
     needs: [update-flake, test-configurations]
     if: needs.update-flake.outputs.update_available == 'true' && needs.test-configurations.result == 'success'
+    permissions:
+      contents: read
+      pull-requests: write
 
     steps:
     - name: Checkout code
@@ -292,6 +348,13 @@ EOF
         thread_id: ${{ needs.update-flake.outputs.parent_event_id }}
 
   # Trigger Claude to fix issues if tests failed
+  # Claude Fix Process Lifecycle:
+  #   1. Issue created with @claude mention and workflow run link
+  #   2. Claude investigates failures via workflow logs
+  #   3. Applies fixes for common issues (hash updates, workarounds)
+  #   4. Updates issue with resolution or requests manual intervention
+  #   5. Issues labeled "automated" and "flake-update" for filtering
+  #   Note: Stale issues (30+ days) should be periodically reviewed/closed
   claude-fix-attempt:
     runs-on: ubuntu-latest
     needs: [update-flake, test-configurations]
