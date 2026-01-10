@@ -31,8 +31,6 @@ name: NixOS Flake Updater
 #   - SSH retry logic handles transient Tailscale connection issues
 #   - Auto-generated issues are labeled for easy filtering and cleanup
 
-name: Nix Flake Update
-
 on:
   # Run weekly on Mondays at 2 AM EST (7 AM UTC)
   schedule:
