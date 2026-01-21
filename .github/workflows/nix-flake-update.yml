@@ -48,7 +48,7 @@ jobs:
   close-old-prs:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
 
     steps:
