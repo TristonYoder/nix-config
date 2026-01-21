@@ -63,19 +63,24 @@ jobs:
         OLD_PRS=$(gh pr list \
           --state open \
           --json number,headRefName \
-          --jq '.[] | select(.headRefName | startswith("nix-flake-update-")) | .number')
+          --jq '.[] | select(.headRefName | startswith("nix-flake-update-")) | "\(.number) \(.headRefName)"')
 
         if [ -z "$OLD_PRS" ]; then
           echo "No old flake update PRs to close"
           exit 0
         fi
 
-        # Close each old PR with explanation
-        echo "$OLD_PRS" | while read -r PR_NUMBER; do
+        # Close each old PR with explanation and delete matching branch
+        echo "$OLD_PRS" | while read -r PR_NUMBER BRANCH_NAME; do
           if [ -n "$PR_NUMBER" ]; then
             echo "Closing PR #$PR_NUMBER"
             gh pr close "$PR_NUMBER" \
               --comment "This flake update PR has been superseded by a new automated run. Closing to avoid clutter."
+          fi
+
+          if [ -n "$BRANCH_NAME" ]; then
+            echo "Deleting branch $BRANCH_NAME"
+            gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/${BRANCH_NAME}" || true
           fi
         done
 
