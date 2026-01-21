@@ -66,6 +66,7 @@
     # AI tools
     gemini-cli
     claude-code
+    codex
 
     # Note: Linux-only utilities (pciutils, usbutils) are in profiles/server.nix
   ];
@@ -82,4 +83,3 @@
   # Note: programs.git is NixOS-only and is configured in common/linux.nix
   # Note: security.sudo is NixOS-only and is configured in common/linux.nix
 }
-
