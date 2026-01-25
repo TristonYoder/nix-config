@@ -39,6 +39,7 @@ in
       dataDir = cfg.dataDir;
       settings = {
         APP_URL = "https://${cfg.domain}";
+        PUBLIC_APP_URL = "https://${cfg.domain}";
         TRUST_PROXY = cfg.trustProxy;
         PORT = cfg.port;
       };
