@@ -51,6 +51,7 @@
   modules.services.productivity.vaultwarden.enable = lib.mkDefault true;
   modules.services.productivity.n8n.enable = lib.mkDefault true;
   modules.services.productivity.actual.enable = lib.mkDefault true;
+  modules.services.infrastructure.pocket-id.enable = lib.mkDefault true;
 
   # =============================================================================
   # COMMUNICATION SERVICES
@@ -127,4 +128,3 @@
   # Configure DNS servers to use Cloudflare DNS
   networking.nameservers = [ "1.1.1.1" "1.0.0.1" ];
 }
-
