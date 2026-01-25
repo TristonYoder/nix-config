@@ -10,7 +10,7 @@ in
     
     domain = mkOption {
       type = types.str;
-      default = "auth.theyoder.family";
+      default = "id.theyoder.family";
       description = "Domain for Pocket ID";
     };
     
