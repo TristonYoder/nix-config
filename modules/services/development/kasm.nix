@@ -141,6 +141,13 @@ in
           transport http {
             tls_insecure_skip_verify
           }
+          
+          # Required headers for Kasm session validation
+          header_up Host {upstream_hostport}
+          header_up X-Real-IP {remote_host}
+          header_up X-Forwarded-For {remote_host}
+          header_up X-Forwarded-Proto {scheme}
+          header_up X-Forwarded-Host {host}
         }
         import cloudflare_tls
       '';
