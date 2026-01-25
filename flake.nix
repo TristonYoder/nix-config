@@ -99,6 +99,8 @@
             # Docker services (organized by category)
             ./docker/docker.nix
             ./docker/watchtower.nix
+            ./docker/caddy-virtual-hosts.nix
+
             
             # Media services
             ./docker/media/audiobooks.nix
