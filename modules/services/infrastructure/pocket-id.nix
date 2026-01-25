@@ -47,7 +47,26 @@ in
 
     services.caddy.virtualHosts.${cfg.domain} = mkIf config.modules.services.infrastructure.caddy.enable {
       extraConfig = ''
-        reverse_proxy http://localhost:${toString cfg.port}
+        # Route API requests to backend (port 8080)
+        handle /api/* {
+          reverse_proxy http://localhost:8080 {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+            header_up X-Forwarded-Host {host}
+          }
+        }
+
+        # Route everything else to frontend (port 8090)
+        handle {
+          reverse_proxy http://localhost:${toString cfg.port} {
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+            header_up X-Forwarded-Host {host}
+          }
+        }
+
         import cloudflare_tls
       '';
     };
