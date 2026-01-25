@@ -32,7 +32,7 @@ in
       enable = true;
       settings = {
         APP_URL = "https://${cfg.domain}";
-        TRUST_PROXY = if cfg.trustProxy then "true" else "false";
+        TRUST_PROXY = cfg.trustProxy;
         PORT = cfg.port;
       };
     };
