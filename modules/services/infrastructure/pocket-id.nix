@@ -19,6 +19,12 @@ in
       default = 8090;
       description = "Pocket ID port";
     };
+
+    dataDir = mkOption {
+      type = types.str;
+      default = "/data/docker-appdata/pocket-id/data";
+      description = "Data directory for Pocket ID";
+    };
     
     trustProxy = mkOption {
       type = types.bool;
@@ -30,6 +36,7 @@ in
   config = mkIf cfg.enable {
     services.pocket-id = {
       enable = true;
+      dataDir = cfg.dataDir;
       settings = {
         APP_URL = "https://${cfg.domain}";
         TRUST_PROXY = cfg.trustProxy;
