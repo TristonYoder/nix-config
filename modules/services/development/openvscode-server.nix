@@ -1,8 +1,12 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, nixpkgs-unstable, ... }:
 
 with lib;
 let
   cfg = config.modules.services.development.openvscode-server;
+  pkgs-unstable = import nixpkgs-unstable {
+    system = pkgs.system;
+    config.allowUnfree = true;
+  };
 in
 {
   options.modules.services.development.openvscode-server = {
@@ -15,7 +19,7 @@ in
     };
 
     port = mkOption {
-      type = types.int;
+      type = types.port;
       default = 3000;
       description = "Port for Open VSCode Server";
     };
@@ -40,9 +44,10 @@ in
   };
 
   config = mkIf cfg.enable {
-    # Open VSCode Server service
+    # Open VSCode Server service (using unstable version)
     services.openvscode-server = {
       enable = true;
+      package = pkgs-unstable.openvscode-server;
       host = cfg.host;
       port = cfg.port;
       user = cfg.user;
