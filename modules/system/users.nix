@@ -53,6 +53,7 @@ in
         type = types.listOf types.str;
         default = [
           "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK5JWm3A5tXTCPq8YTua30QH2+Pa/Mz96QC5KJZKdEsz"
+          "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDv25/0nLCy/VRqOYPu10PA5lUcireG1GEUk1+mFMPbL7q7o+9GqJ8INhlncvd6tc5sm5ZblK5aqrZxKW8Cy78OZpPfPTyVWVIcxos+SWba1Fbi+Xco0ZT3BqRvCcgkLM/jCIVfr5Hzo2iP5lvt21KN2OY7XpwlqdCfmZyyjwPGwFfniEbwvHZSaxgSllXqTcLrpYt75ryn58T7HKF0m7vCGguct62UtKibLUw0jsgFk5rbXGqggGOH7W/Gg0gnzCN5eB3azbpFvRMW106lMz7iXIy1ZyfeQrGATH+TlEgYsU/ROk2LSQOun99DqJOAts6ZaeFu5+VDsJh0S17tIud5"
         ];
         description = "SSH public keys for main user";
       };
