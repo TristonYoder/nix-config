@@ -7,4 +7,3 @@
     ./actual.nix
   ];
 }
-
