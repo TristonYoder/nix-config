@@ -22,12 +22,15 @@ in
   };
 
   config = mkIf cfg.enable {
-    # Caddy with Cloudflare DNS plugin
+    # Caddy with Cloudflare DNS and Security plugins
     services.caddy = {
       enable = true;
       package = pkgs.caddy.withPlugins {
-        plugins = [ "github.com/caddy-dns/cloudflare@v0.2.1" ];
-        hash = "sha256-48Xq2tb8ruAl87IJNWlIQa6bLISmNic0LuMNAJO7/n0=";
+        plugins = [
+          "github.com/caddy-dns/cloudflare@v0.2.1"
+          "github.com/greenpau/caddy-security@v1.1.29"
+        ];
+        hash = "sha256-A36qym7+OUAre35pmLmjo4ate7ro/H1hVNjP/dWIg78=";
       };
       globalConfig = ''
         email ${cfg.email}
