@@ -29,7 +29,6 @@
     ports = [
       "1411:1411/tcp"
     ];
-    restart = "unless-stopped";
     log-driver = "journald";
     extraOptions = [
       "--network-alias=pocket-id"
