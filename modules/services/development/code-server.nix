@@ -1,0 +1,65 @@
+{ config, lib, pkgs, nixpkgs-unstable, ... }:
+
+with lib;
+let
+  cfg = config.modules.services.development.code-server;
+  pkgs-unstable = import nixpkgs-unstable {
+    system = pkgs.system;
+    config.allowUnfree = true;
+  };
+in
+{
+  options.modules.services.development.code-server = {
+    enable = mkEnableOption "code-server for web-based VS Code development";
+
+    domain = mkOption {
+      type = types.str;
+      default = "vscode.7co.dev";
+      description = "Domain for code-server";
+    };
+
+    port = mkOption {
+      type = types.port;
+      default = 3000;
+      description = "Port for code-server";
+    };
+
+    host = mkOption {
+      type = types.str;
+      default = "127.0.0.1";
+      description = "Host address to bind to";
+    };
+
+    user = mkOption {
+      type = types.str;
+      default = "tristonyoder";
+      description = "User to run code-server as";
+    };
+
+    auth = mkOption {
+      type = types.enum [ "password" "none" ];
+      default = "none";
+      description = "Authentication method (use 'none' with reverse proxy auth)";
+    };
+  };
+
+  config = mkIf cfg.enable {
+    # code-server service (using unstable version)
+    services.code-server = {
+      enable = true;
+      package = pkgs-unstable.code-server;
+      host = cfg.host;
+      port = cfg.port;
+      user = cfg.user;
+      auth = cfg.auth;
+    };
+
+    # Caddy virtual host for reverse proxy
+    services.caddy.virtualHosts.${cfg.domain} = mkIf config.modules.services.infrastructure.caddy.enable {
+      extraConfig = ''
+        reverse_proxy http://${cfg.host}:${toString cfg.port}
+        import cloudflare_tls
+      '';
+    };
+  };
+}

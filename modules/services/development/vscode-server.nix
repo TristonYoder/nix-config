@@ -10,7 +10,8 @@ in
   };
 
   config = mkIf cfg.enable {
-    services.vscode-server.enable = true;
+    # Disabled in favor of code-server
+    # services.vscode-server.enable = true;
   };
 }
 

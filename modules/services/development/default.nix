@@ -6,6 +6,7 @@
     ./github-actions.nix
     ./kasm.nix
     ./openvscode-server.nix
+    ./code-server.nix
   ];
 }
 
