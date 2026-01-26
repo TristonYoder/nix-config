@@ -33,11 +33,6 @@
     extraOptions = [
       "--network-alias=pocket-id"
       "--network=pocket-id_default"
-      "--healthcheck-cmd=/app/pocket-id healthcheck"
-      "--healthcheck-interval=1m30s"
-      "--healthcheck-timeout=5s"
-      "--healthcheck-retries=2"
-      "--healthcheck-start-period=10s"
     ];
   };
 
@@ -46,6 +41,7 @@
       Restart = lib.mkOverride 90 "always";
       RestartMaxDelaySec = lib.mkOverride 90 "1m";
       RestartSec = lib.mkOverride 90 "10s";
+      RestartSteps = lib.mkOverride 90 9;
     };
     after = [
       "docker-network-pocket-id_default.service"
