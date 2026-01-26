@@ -40,17 +40,7 @@
   
   # Stalwart Mail Server
   modules.services.communication.stalwart-mail.enable = false;
-
-  # code-server OIDC authentication
-  modules.services.development.code-server.instances.default = {
-    domain = "vscode.7co.dev";
-    port = 11010;
-    caddyOIDC = {
-      enable = true;
-      allowedGroups = [ "admin" ];
-    };
-  };
-
+  
   # =============================================================================
   # CADDY CONFIGURATION FOR TECHNITIUM DNS
   # =============================================================================

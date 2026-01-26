@@ -97,11 +97,7 @@ in
   
   # Scrypted Watchtower HTTP API Token (only on david)
   "scrypted-watchtower-token.age".publicKeys = davidKeys;
-
-  # code-server OIDC client (only on david)
-  "pocket-id-client-code-server-id.age".publicKeys = davidKeys;
-  "pocket-id-client-code-server-secret.age".publicKeys = davidKeys;
-
+  
   # =============================================================================
   # SHARED SECRETS (All Servers)
   # =============================================================================
