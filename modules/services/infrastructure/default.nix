@@ -7,6 +7,5 @@
     ./postgresql.nix
     ./tailscale.nix
     ./technitium.nix
-    ./pocket-id.nix
   ];
 }

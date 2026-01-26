@@ -98,6 +98,9 @@ in
   # Scrypted Watchtower HTTP API Token (only on david)
   "scrypted-watchtower-token.age".publicKeys = davidKeys;
   
+  # Pocket ID Encryption Key
+  "pocket-id-encryption-key.age".publicKeys = davidKeys;
+  
   # =============================================================================
   # SHARED SECRETS (All Servers)
   # =============================================================================

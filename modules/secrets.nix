@@ -49,6 +49,7 @@ with lib;
       "wordpress-carolineyoder-wp" = { file = ../secrets/wordpress-carolineyoder-wp.age; owner = "root"; group = "docker"; mode = "0440"; };
       "outline-secrets" = { file = ../secrets/outline-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
       "nextdns-link" = { file = ../secrets/nextdns-link.age; owner = "root"; group = "root"; mode = "0400"; };
+      "pocket-id-encryption-key" = { file = ../secrets/pocket-id-encryption-key.age; owner = "root"; group = "docker"; mode = "0440"; };
     })
 
     // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.infrastructure.cloudflared.enable) {
