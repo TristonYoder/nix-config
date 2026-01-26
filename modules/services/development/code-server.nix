@@ -20,7 +20,7 @@ in
 
     port = mkOption {
       type = types.port;
-      default = 3000;
+      default = 11010;
       description = "Port for code-server";
     };
 
