@@ -66,7 +66,7 @@ in
 
             realm = mkOption {
               type = types.str;
-              default = name;
+              default = "code-server";
               description = "OIDC realm identifier";
             };
 
@@ -75,18 +75,6 @@ in
               default = [];
               description = "Pocket ID groups allowed to access this instance";
               example = [ "admin" "developer" ];
-            };
-
-            clientIdFile = mkOption {
-              type = types.nullOr types.path;
-              default = null;
-              description = "Path to agenix secret containing OIDC client ID";
-            };
-
-            clientSecretFile = mkOption {
-              type = types.nullOr types.path;
-              default = null;
-              description = "Path to agenix secret containing OIDC client secret";
             };
           };
         };
@@ -128,6 +116,15 @@ in
   };
 
   config = mkIf cfg.enable {
+    # Declare agenix secrets for OIDC (only when OIDC is enabled)
+    age.secrets.pocket-id-client-code-server-id = mkIf (any (inst: inst.caddyOIDC.enable) (attrValues cfg.instances)) {
+      file = ../../../secrets/pocket-id-client-code-server-id.age;
+    };
+
+    age.secrets.pocket-id-client-code-server-secret = mkIf (any (inst: inst.caddyOIDC.enable) (attrValues cfg.instances)) {
+      file = ../../../secrets/pocket-id-client-code-server-secret.age;
+    };
+
     # Backward compatibility: migrate old options to instances.default
     modules.services.development.code-server.instances.default = mkIf (cfg.domain != null) {
       enable = true;
@@ -168,8 +165,8 @@ in
       mapAttrs' (name: instanceCfg:
         nameValuePair "code_server_${name}" (mkIf instanceCfg.caddyOIDC.enable {
           realm = instanceCfg.caddyOIDC.realm;
-          clientIdFile = instanceCfg.caddyOIDC.clientIdFile;
-          clientSecretFile = instanceCfg.caddyOIDC.clientSecretFile;
+          clientIdFile = config.age.secrets.pocket-id-client-code-server-id.path;
+          clientSecretFile = config.age.secrets.pocket-id-client-code-server-secret.path;
           roleMapping = map (group: {
             group = group;
             role = "${instanceCfg.caddyOIDC.realm}/user";
