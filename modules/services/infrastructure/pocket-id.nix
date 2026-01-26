@@ -26,7 +26,7 @@ in
 
     dataDir = mkOption {
       type = types.str;
-      default = "/data/docker-appdata/pocket-id/data";
+      default = "/data/docker-appdata/pocket-id";
       description = "Data directory for Pocket ID";
     };
 
