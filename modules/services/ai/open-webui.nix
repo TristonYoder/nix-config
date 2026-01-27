@@ -22,7 +22,7 @@ in
 
     ollamaHost = mkOption {
       type = types.str;
-      default = "http://localhost:11434";
+      default = "http://tristons-workstation:11434";
       description = "Ollama API endpoint URL";
     };
   };
