@@ -332,10 +332,7 @@
       # UTILS_SECRET loaded from secret file
       "WEB_CONCURRENCY" = "1";
     };
-    volumes = [
-      "/etc/nixos/docker/dockercompose/outline/redis.conf:/redis.conf:rw"
-    ];
-    cmd = [ "redis-server" "/redis.conf" ];
+    cmd = [ "redis-server" ];
     log-driver = "journald";
     extraOptions = [
       "--health-cmd=[\"redis-cli\", \"ping\"]"

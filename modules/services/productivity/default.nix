@@ -5,5 +5,6 @@
     ./vaultwarden.nix
     ./n8n.nix
     ./actual.nix
+    ./outline.nix
   ];
 }
