@@ -51,6 +51,7 @@
   modules.services.productivity.vaultwarden.enable = lib.mkDefault true;
   modules.services.productivity.n8n.enable = lib.mkDefault true;
   modules.services.productivity.actual.enable = lib.mkDefault true;
+  modules.services.productivity.outline.enable = lib.mkDefault true;
 
   # =============================================================================
   # COMMUNICATION SERVICES

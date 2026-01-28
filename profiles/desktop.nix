@@ -28,7 +28,7 @@
   modules.services.development.vscode-server.enable = lib.mkDefault true;
   
   # =============================================================================
-  # OPTIONAL: Tailscale for VPN access
+  # Tailscale for VPN access
   # =============================================================================
   
   modules.services.infrastructure.tailscale.enable = lib.mkDefault true;

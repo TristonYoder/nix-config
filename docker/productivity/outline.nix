@@ -66,14 +66,14 @@
       "OIDC_AUTH_URI" = "";
       "OIDC_CLIENT_ID" = "";
       "OIDC_CLIENT_SECRET" = "";
-      "OIDC_DISPLAY_NAME" = "OpenID Connect";
+      "OIDC_DISPLAY_NAME" = "id.theyoder.family";
       "OIDC_LOGOUT_URI" = "";
       "OIDC_SCOPES" = "openid profile email";
       "OIDC_TOKEN_URI" = "";
       "OIDC_USERINFO_URI" = "";
       "OIDC_USERNAME_CLAIM" = "preferred_username";
       "PGSSLMODE" = "disable";
-      "PORT" = "3000";
+      "PORT" = "9454";
       "RATE_LIMITER_DURATION_WINDOW" = "60";
       "RATE_LIMITER_ENABLED" = "true";
       "RATE_LIMITER_REQUESTS" = "1000";
@@ -92,15 +92,15 @@
       "SMTP_USERNAME" = "";
       "SSL_CERT" = "";
       "SSL_KEY" = "";
-      "URL" = "https://outline.tpdemo.theyoder.family/";
+      "URL" = "https://wiki.theyoder.family/";
       # UTILS_SECRET loaded from secret file
       "WEB_CONCURRENCY" = "1";
     };
     volumes = [
-      "outline_storage-data:/var/lib/outline/data:rw"
+      "outline_storage-data:/data/docker-appdata/outline:rw"
     ];
     ports = [
-      "6591:3000/tcp"
+      "9454:9454/tcp"
     ];
     dependsOn = [
       "outline-postgres"
@@ -191,7 +191,7 @@
       "OIDC_USERINFO_URI" = "";
       "OIDC_USERNAME_CLAIM" = "preferred_username";
       "PGSSLMODE" = "disable";
-      "PORT" = "3000";
+      "PORT" = "9454";
       "POSTGRES_DB" = "outline";
       "POSTGRES_PASSWORD" = "pass";
       "POSTGRES_USER" = "user";
@@ -309,7 +309,7 @@
       "OIDC_USERINFO_URI" = "";
       "OIDC_USERNAME_CLAIM" = "preferred_username";
       "PGSSLMODE" = "disable";
-      "PORT" = "3000";
+      "PORT" = "9454";
       "RATE_LIMITER_DURATION_WINDOW" = "60";
       "RATE_LIMITER_ENABLED" = "true";
       "RATE_LIMITER_REQUESTS" = "1000";
@@ -332,10 +332,7 @@
       # UTILS_SECRET loaded from secret file
       "WEB_CONCURRENCY" = "1";
     };
-    volumes = [
-      "/etc/nixos/docker/dockercompose/outline/redis.conf:/redis.conf:rw"
-    ];
-    cmd = [ "redis-server" "/redis.conf" ];
+    cmd = [ "redis-server" ];
     log-driver = "journald";
     extraOptions = [
       "--health-cmd=[\"redis-cli\", \"ping\"]"

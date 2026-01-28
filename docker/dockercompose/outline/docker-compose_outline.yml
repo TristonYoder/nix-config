@@ -5,14 +5,14 @@ services:
     env_file: ./docker.env
     expose:
       - "3000"
-      - "6591"
+      - "9454"
     volumes:
       - storage-data:/var/lib/outline/data
     depends_on:
       - postgres
       - redis
     ports:
-      - '6591:3000'
+      - '9454:9454'
     restart: always
 
   redis:
