@@ -176,8 +176,8 @@ in
 
           domain = mkOption {
             type = types.str;
-            default = "admin.${cfg.domain}";
-            description = "Domain for admin UI (defaults to admin.{headscale domain})";
+            default = cfg.domain;
+            description = "Domain for admin UI (defaults to headscale domain, served at /admin path)";
           };
 
           port = mkOption {
@@ -307,20 +307,21 @@ in
       '';
     };
 
-    # Caddy reverse proxy for headscale API
+    # Caddy reverse proxy for headscale API and admin UI
     services.caddy.virtualHosts.${cfg.domain} =
       mkIf config.modules.services.infrastructure.caddy.enable {
         extraConfig = ''
-          reverse_proxy http://localhost:${toString cfg.port}
-          import cloudflare_tls
-        '';
-      };
+          ${optionalString (cfg.adminUI.type != "none") ''
+          # Admin UI at /admin path
+          handle /admin* {
+            reverse_proxy http://localhost:${toString cfg.adminUI.port}
+          }
 
-    # Caddy reverse proxy for admin UI (if enabled)
-    services.caddy.virtualHosts.${cfg.adminUI.domain} =
-      mkIf (config.modules.services.infrastructure.caddy.enable && cfg.adminUI.type != "none") {
-        extraConfig = ''
-          reverse_proxy http://localhost:${toString cfg.adminUI.port}
+          ''}# Headscale API for all other paths
+          handle {
+            reverse_proxy http://localhost:${toString cfg.port}
+          }
+
           import cloudflare_tls
         '';
       };
