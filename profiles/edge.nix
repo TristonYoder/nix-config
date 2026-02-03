@@ -38,7 +38,12 @@
   # Headscale coordination server (self-hosted Tailscale control plane)
   modules.services.infrastructure.headscale = {
     enable = lib.mkDefault true;
-    baseDomain = lib.mkDefault "theyoder.family";
+    # Use ts.theyoder.family as base_domain for MagicDNS
+    # This makes devices accessible as hostname.ts.theyoder.family
+    baseDomain = lib.mkDefault "ts.theyoder.family";
+    # Override domain to use hs.theyoder.family for the control server
+    # This prevents the server_url from being part of base_domain
+    domain = lib.mkDefault "hs.theyoder.family";
 
     adminUI = {
       type = lib.mkDefault "headplane";
