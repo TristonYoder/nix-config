@@ -57,11 +57,11 @@ with lib;
     })
 
     # TODO: Uncomment after generating and encrypting API key on first deployment
-    # // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.infrastructure.headscale.enable) {
+    # // (optionalAttrs (config.networking.hostName == "pits" && config.modules.services.infrastructure.headscale.enable) {
     #   "headscale-api-key" = { file = ../secrets/headscale-api-key.age; owner = "headscale"; group = "headscale"; mode = "0400"; };
     # })
 
-    // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.infrastructure.headscale.oidc.enable) {
+    // (optionalAttrs (config.networking.hostName == "pits" && config.modules.services.infrastructure.headscale.oidc.enable) {
       "headscale-oidc-secret" = { file = ../secrets/headscale-oidc-secret.age; owner = "headscale"; group = "headscale"; mode = "0400"; };
     })
 
