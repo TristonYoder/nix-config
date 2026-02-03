@@ -45,6 +45,9 @@
     # This prevents the server_url from being part of base_domain
     domain = lib.mkDefault "hs.theyoder.family";
 
+    # API key from agenix
+    apiKeyFile = lib.mkDefault config.age.secrets.headscale-api-key.path;
+
     adminUI = {
       type = lib.mkDefault "headplane";
     };
