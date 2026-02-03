@@ -38,18 +38,17 @@
   # Headscale coordination server (self-hosted Tailscale control plane)
   modules.services.infrastructure.headscale = {
     enable = lib.mkDefault true;
-    # Use ts.theyoder.family as base_domain for MagicDNS
-    # This makes devices accessible as hostname.ts.theyoder.family
-    baseDomain = lib.mkDefault "ts.theyoder.family";
-    # Override domain to use hs.theyoder.family for the control server
-    # This prevents the server_url from being part of base_domain
-    domain = lib.mkDefault "hs.theyoder.family";
+    # Use vpn.theyoder.family as base_domain for MagicDNS
+    # This makes devices accessible as hostname.vpn.theyoder.family
+    baseDomain = lib.mkDefault "vpn.theyoder.family";
+    # Headscale control server at ts.theyoder.family
+    domain = lib.mkDefault "ts.theyoder.family";
 
     # API key from agenix
     apiKeyFile = lib.mkDefault config.age.secrets.headscale-api-key.path;
 
     adminUI = {
-      type = lib.mkDefault "headplane";
+      type = lib.mkDefault "console";
     };
 
     oidc = {
