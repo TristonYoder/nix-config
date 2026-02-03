@@ -5,6 +5,18 @@ let
   cfg = config.modules.services.infrastructure.headscale;
 in
 {
+  # Conditional admin UI imports (top-level, not in config)
+  imports = [
+    (mkIf (cfg.enable && cfg.adminUI.type == "headplane")
+      ../../../docker/infrastructure/headscale/headplane.nix)
+    (mkIf (cfg.enable && cfg.adminUI.type == "admin")
+      ../../../docker/infrastructure/headscale/headscale-admin.nix)
+    (mkIf (cfg.enable && cfg.adminUI.type == "console")
+      ../../../docker/infrastructure/headscale/headscale-console.nix)
+    (mkIf (cfg.enable && cfg.adminUI.type == "ui")
+      ../../../docker/infrastructure/headscale/headscale-ui.nix)
+  ];
+
   options.modules.services.infrastructure.headscale = {
     enable = mkEnableOption "Headscale coordination server for Tailscale";
 
@@ -315,17 +327,5 @@ in
           import cloudflare_tls
         '';
       };
-
-    # Conditional admin UI imports
-    imports = [
-      (mkIf (cfg.adminUI.type == "headplane")
-        ../../../docker/infrastructure/headscale/headplane.nix)
-      (mkIf (cfg.adminUI.type == "admin")
-        ../../../docker/infrastructure/headscale/headscale-admin.nix)
-      (mkIf (cfg.adminUI.type == "console")
-        ../../../docker/infrastructure/headscale/headscale-console.nix)
-      (mkIf (cfg.adminUI.type == "ui")
-        ../../../docker/infrastructure/headscale/headscale-ui.nix)
-    ];
   };
 }
