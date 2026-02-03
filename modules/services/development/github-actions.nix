@@ -18,7 +18,7 @@ in
   config = mkIf cfg.enable {
     # GitHub Actions user for automated deployments
     users.users.github-actions = {
-      isNormalUser = true;
+      isSystemUser = true;
       description = "GitHub Actions user for automated deployments";
       home = "/home/github-actions";
       shell = pkgs.bash;
