@@ -49,6 +49,11 @@
       issuer = lib.mkDefault "https://id.theyoder.family";
       clientId = lib.mkDefault "fab17c4a-661a-4e5a-b6e0-eddcb9d9e06e";
       clientSecretFile = lib.mkDefault config.age.secrets.headscale-oidc-secret.path;
+      allowedGroups = lib.mkDefault [ "vpn_user" ];
+      pkce = {
+        enabled = lib.mkDefault true;
+        method = lib.mkDefault "S256";
+      };
     };
   };
 

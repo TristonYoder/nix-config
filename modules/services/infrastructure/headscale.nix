@@ -113,8 +113,35 @@ in
 
           scope = mkOption {
             type = types.listOf types.str;
-            default = [ "openid" "profile" "email" ];
-            description = "OIDC scopes to request";
+            default = [ "openid" "profile" "email" "groups" ];
+            description = "OIDC scopes to request (includes groups for group-based access)";
+          };
+
+          allowedGroups = mkOption {
+            type = types.listOf types.str;
+            default = [ ];
+            example = [ "vpn_user" "headscale" ];
+            description = "Restrict access to specific OIDC groups (PocketID group names)";
+          };
+
+          pkce = mkOption {
+            type = types.submodule {
+              options = {
+                enabled = mkOption {
+                  type = types.bool;
+                  default = true;
+                  description = "Enable PKCE (Proof Key for Code Exchange)";
+                };
+
+                method = mkOption {
+                  type = types.enum [ "S256" "plain" ];
+                  default = "S256";
+                  description = "PKCE challenge method";
+                };
+              };
+            };
+            default = {};
+            description = "PKCE configuration for enhanced security";
           };
         };
       };
@@ -208,6 +235,11 @@ in
           client_id = cfg.oidc.clientId;
           client_secret_path = cfg.oidc.clientSecretFile;
           scope = cfg.oidc.scope;
+          allowed_groups = cfg.oidc.allowedGroups;
+          pkce = {
+            enabled = cfg.oidc.pkce.enabled;
+            method = cfg.oidc.pkce.method;
+          };
         };
 
         # Default IP prefixes for Tailscale network
