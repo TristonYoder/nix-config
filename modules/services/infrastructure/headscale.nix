@@ -6,16 +6,15 @@ let
 in
 {
   # Conditional admin UI imports (top-level, not in config)
-  imports = [
-    (mkIf (cfg.enable && cfg.adminUI.type == "headplane")
-      ../../../docker/infrastructure/headscale/headplane.nix)
-    (mkIf (cfg.enable && cfg.adminUI.type == "admin")
-      ../../../docker/infrastructure/headscale/headscale-admin.nix)
-    (mkIf (cfg.enable && cfg.adminUI.type == "console")
-      ../../../docker/infrastructure/headscale/headscale-console.nix)
-    (mkIf (cfg.enable && cfg.adminUI.type == "ui")
-      ../../../docker/infrastructure/headscale/headscale-ui.nix)
-  ];
+  imports = [ ]
+    ++ optional (cfg.enable && cfg.adminUI.type == "headplane")
+      ../../../docker/infrastructure/headscale/headplane.nix
+    ++ optional (cfg.enable && cfg.adminUI.type == "admin")
+      ../../../docker/infrastructure/headscale/headscale-admin.nix
+    ++ optional (cfg.enable && cfg.adminUI.type == "console")
+      ../../../docker/infrastructure/headscale/headscale-console.nix
+    ++ optional (cfg.enable && cfg.adminUI.type == "ui")
+      ../../../docker/infrastructure/headscale/headscale-ui.nix;
 
   options.modules.services.infrastructure.headscale = {
     enable = mkEnableOption "Headscale coordination server for Tailscale";
