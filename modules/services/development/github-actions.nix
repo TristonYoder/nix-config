@@ -22,6 +22,7 @@ in
       description = "GitHub Actions user for automated deployments";
       home = "/home/github-actions";
       shell = pkgs.bash;
+      group = "github-actions";
       extraGroups = [ "wheel" ];
       openssh.authorizedKeys.keys = [ cfg.sshKey ];
     };
