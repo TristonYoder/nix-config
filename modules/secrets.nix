@@ -56,6 +56,14 @@ with lib;
       "cloudflared-token-current" = { file = ../secrets/cloudflared-token-current.age; owner = "cloudflared"; group = "cloudflared"; mode = "0400"; };
     })
 
+    // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.infrastructure.headscale.enable) {
+      "headscale-api-key" = { file = ../secrets/headscale-api-key.age; owner = "headscale"; group = "headscale"; mode = "0400"; };
+    })
+
+    // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.infrastructure.headscale.oidc.enable) {
+      "headscale-oidc-secret" = { file = ../secrets/headscale-oidc-secret.age; owner = "headscale"; group = "headscale"; mode = "0400"; };
+    })
+
     // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.communication.matrix-synapse.enable) {
       "matrix-registration-secret" = { file = ../secrets/matrix-registration-secret.age; owner = "matrix-synapse"; group = "matrix-synapse"; mode = "0400"; };
     })

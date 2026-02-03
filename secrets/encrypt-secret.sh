@@ -41,14 +41,15 @@ ${BLUE}Options:${NC}
   -f, --file FILE         Read secret from file instead of stdin
   -s, --secret SECRET     Provide secret directly as argument
   -v, --verify FILE       Verify an existing .age file has correct format
+  --git-add              Automatically stage the encrypted file with git add
   --help                  Show this help message
 
 ${BLUE}Examples:${NC}
   # Interactive prompt (recommended)
   $0 -n cloudflare-token.age -e
 
-  # From command line
-  $0 -n api-key.age -s "my-secret-value"
+  # From command line with auto git add
+  $0 -n api-key.age -s "my-secret-value" --git-add
 
   # From file
   $0 -n db-password.age -f /path/to/password.txt
@@ -139,6 +140,7 @@ ENV_FORMAT=false
 INPUT_FILE=""
 SECRET=""
 VERIFY_FILE=""
+GIT_ADD=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -165,6 +167,10 @@ while [[ $# -gt 0 ]]; do
         -v|--verify)
             VERIFY_FILE="$2"
             shift 2
+            ;;
+        --git-add)
+            GIT_ADD=true
+            shift
             ;;
         --help)
             usage
@@ -317,6 +323,18 @@ if nix-shell -p age --run "age --encrypt -R \"$RECIPIENTS_FILE\" -o \"$OUTPUT_FI
         echo -e "${YELLOW}⚠ Could not verify recipient format${NC}"
     fi
     
+    # Auto-add to git if requested
+    if [ "$GIT_ADD" = true ]; then
+        echo ""
+        echo -e "${BLUE}Auto-staging with git...${NC}"
+        if git add "$OUTPUT_FILE" 2>/dev/null; then
+            echo -e "${GREEN}✓ Staged: secrets/$OUTPUT_FILE${NC}"
+            echo -e "${YELLOW}Remember to commit:${NC} git commit -m \"Add $SECRET_NAME secret\""
+        else
+            echo -e "${YELLOW}⚠ Could not auto-stage (not in a git repo?)${NC}"
+        fi
+    fi
+
     echo ""
     echo -e "${GREEN}Next steps:${NC}"
     echo "1. Declare in modules/secrets.nix:"
@@ -333,10 +351,16 @@ EOF
     echo "2. Reference in your service configuration:"
     echo "   config.age.secrets.$SECRET_NAME.path"
     echo ""
-    echo "3. Commit the encrypted file:"
-    echo "   git add secrets/$OUTPUT_FILE"
-    echo "   git commit -m \"Add $SECRET_NAME secret\""
-    echo ""
+    if [ "$GIT_ADD" != true ]; then
+        echo "3. Commit the encrypted file:"
+        echo "   git add secrets/$OUTPUT_FILE"
+        echo "   git commit -m \"Add $SECRET_NAME secret\""
+        echo ""
+    else
+        echo "3. Commit the staged file:"
+        echo "   git commit -m \"Add $SECRET_NAME secret\""
+        echo ""
+    fi
     echo "4. Verify it works (optional):"
     echo "   $0 -v $OUTPUT_FILE"
 else
