@@ -48,7 +48,7 @@
     apiKeyFile = lib.mkDefault config.age.secrets.headscale-api-key.path;
 
     adminUI = {
-      type = lib.mkDefault "console";
+      type = lib.mkDefault "admin";
     };
 
     oidc = {
