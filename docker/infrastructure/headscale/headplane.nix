@@ -17,9 +17,11 @@ in
           host: 0.0.0.0
           port: ${toString cfg.adminUI.port}
           cookie_secret_path: ${if cfg.apiKeyFile != null then cfg.apiKeyFile else "/var/lib/headscale/api-key.txt"}
+          cookie_secure: true  # Use secure cookies (requires HTTPS via Caddy)
 
         headscale:
           url: http://localhost:${toString cfg.port}
+          config_strict: false  # Allow non-strict config validation
 
         ${optionalString cfg.oidc.enable ''
         oidc:
@@ -28,6 +30,8 @@ in
           client_id: ${cfg.oidc.clientId}
           client_secret_path: ${cfg.oidc.clientSecretFile}
           headscale_api_key_path: ${if cfg.apiKeyFile != null then cfg.apiKeyFile else "/var/lib/headscale/api-key.txt"}
+          disable_api_key_login: false  # Allow both OIDC and API key login
+          token_endpoint_auth_method: client_secret_post  # PocketID uses POST method
         ''}
       '';
       mode = "0644";
