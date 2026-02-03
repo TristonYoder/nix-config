@@ -41,6 +41,46 @@ in
       description = "Public URL for headscale server";
     };
 
+    dns = mkOption {
+      type = types.submodule {
+        options = {
+          searchDomains = mkOption {
+            type = types.listOf types.str;
+            default = [
+              cfg.baseDomain
+              "theyoder.family"
+              "7andco.studio"
+              "7co.dev"
+              "7andco.dev"
+            ];
+            description = "DNS search domains for Headscale clients";
+          };
+        };
+      };
+      default = {};
+      description = "DNS configuration";
+    };
+
+    policy = mkOption {
+      type = types.submodule {
+        options = {
+          path = mkOption {
+            type = types.nullOr types.str;
+            default = null;
+            description = "Path to policy file (null uses database-backed policy)";
+          };
+
+          mode = mkOption {
+            type = types.enum [ "file" "database" ];
+            default = "database";
+            description = "Policy backend mode";
+          };
+        };
+      };
+      default = {};
+      description = "Policy configuration";
+    };
+
     # Database Configuration
     database = mkOption {
       type = types.submodule {
@@ -174,12 +214,6 @@ in
             '';
           };
 
-          domain = mkOption {
-            type = types.str;
-            default = cfg.domain;
-            description = "Domain for admin UI (defaults to headscale domain, served at /admin path)";
-          };
-
           port = mkOption {
             type = types.port;
             default = 3000;
@@ -234,7 +268,12 @@ in
           nameservers = {
             global = [ "1.1.1.1" "1.0.0.1" ];
           };
-          search_domains = [ ];
+          search_domains = unique cfg.dns.searchDomains;
+        };
+
+        policy = {
+          path = cfg.policy.path;
+          mode = cfg.policy.mode;
         };
 
         # OIDC configuration (if enabled)
