@@ -34,7 +34,36 @@
   
   # Technitium DNS Server for edge DNS resolution
   modules.services.infrastructure.technitium.enable = lib.mkDefault true;
-  
+
+  # Headscale coordination server (self-hosted Tailscale control plane)
+  modules.services.infrastructure.headscale = {
+    enable = lib.mkDefault true;
+    # Use vpn.theyoder.family as base_domain for MagicDNS
+    # This makes devices accessible as hostname.vpn.theyoder.family
+    baseDomain = lib.mkDefault "vpn.theyoder.family";
+    # Headscale control server at ts.theyoder.family
+    domain = lib.mkDefault "ts.theyoder.family";
+
+    # API key from agenix
+    apiKeyFile = lib.mkDefault config.age.secrets.headscale-api-key.path;
+
+    adminUI = {
+      type = lib.mkDefault "admin";
+    };
+
+    oidc = {
+      enable = lib.mkDefault true;
+      issuer = lib.mkDefault "https://id.theyoder.family";
+      clientId = lib.mkDefault "fab17c4a-661a-4e5a-b6e0-eddcb9d9e06e";
+      clientSecretFile = lib.mkDefault config.age.secrets.headscale-oidc-secret.path;
+      allowedGroups = lib.mkDefault [ "vpn_user" ];
+      pkce = {
+        enabled = lib.mkDefault true;
+        method = lib.mkDefault "S256";
+      };
+    };
+  };
+
   # Cloudflare tunnel is only on david (server profile), not on edge servers
   # Cloudflared disabled - only run on main server
   modules.services.infrastructure.cloudflared.enable = lib.mkDefault false;
