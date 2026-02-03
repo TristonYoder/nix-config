@@ -36,30 +36,25 @@ in
     };
 
     # Override Caddy virtual host to add CORS headers for headscale-admin
-    services.caddy.virtualHosts.${cfg.adminUI.domain} =
-      mkIf config.modules.services.infrastructure.caddy.enable {
-        extraConfig = ''
-          reverse_proxy http://localhost:${toString cfg.adminUI.port}
-
-          # CORS headers for headscale API access
-          header Access-Control-Allow-Origin "https://${cfg.adminUI.domain}"
-          header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-          header Access-Control-Allow-Headers "Authorization, Content-Type"
-
-          import cloudflare_tls
-        '';
-      };
-
-    # Also add CORS to headscale domain for API access
+    # Since we're using path-based routing, we need to override the main definition
     services.caddy.virtualHosts.${cfg.domain} =
       mkIf config.modules.services.infrastructure.caddy.enable (mkForce {
         extraConfig = ''
-          reverse_proxy http://localhost:${toString cfg.port}
-
-          # CORS for headscale-admin
-          header Access-Control-Allow-Origin "https://${cfg.adminUI.domain}"
+          # CORS headers for headscale-admin (browser-based UI needs CORS)
+          header Access-Control-Allow-Origin "https://${cfg.domain}"
           header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
           header Access-Control-Allow-Headers "Authorization, Content-Type"
+          header Access-Control-Allow-Credentials "true"
+
+          # Admin UI at /admin path
+          handle /admin* {
+            reverse_proxy http://localhost:${toString cfg.adminUI.port}
+          }
+
+          # Headscale API for all other paths
+          handle {
+            reverse_proxy http://localhost:${toString cfg.port}
+          }
 
           import cloudflare_tls
         '';
