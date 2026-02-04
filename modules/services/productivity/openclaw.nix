@@ -3,6 +3,10 @@
 with lib;
 let
   cfg = config.modules.services.productivity.openclaw;
+  nixosModules = inputs.nix-openclaw.nixosModules or { };
+  openclawModule =
+    inputs.nix-openclaw.nixosModule
+      or (nixosModules.openclaw or (nixosModules.default or null));
   matrixConfig =
     cfg.matrix.config
     // optionalAttrs (cfg.matrix.accessTokenFile != null) {
@@ -10,7 +14,11 @@ let
     };
 in
 {
-  imports = [ inputs.nix-openclaw.nixosModules.openclaw ];
+  imports = [
+    (lib.assertMsg (openclawModule != null)
+      "nix-openclaw does not expose a NixOS module. Check the flake outputs for nixosModule/nixosModules.")
+    openclawModule
+  ];
 
   options.modules.services.productivity.openclaw = {
     enable = mkEnableOption "OpenClaw gateway";

@@ -3,9 +3,17 @@
 with lib;
 let
   cfg = config.modules.openclaw;
+  homeManagerModules = inputs.nix-openclaw.homeManagerModules or { };
+  openclawModule =
+    inputs.nix-openclaw.homeManagerModule
+      or (homeManagerModules.openclaw or (homeManagerModules.default or null));
 in
 {
-  imports = [ inputs.nix-openclaw.homeManagerModules.openclaw ];
+  imports = [
+    (lib.assertMsg (openclawModule != null)
+      "nix-openclaw does not expose a Home Manager module. Check the flake outputs for homeManagerModule/homeManagerModules.")
+    openclawModule
+  ];
 
   options.modules.openclaw = {
     enable = mkEnableOption "OpenClaw node client";
