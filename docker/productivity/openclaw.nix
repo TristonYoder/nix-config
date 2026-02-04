@@ -14,6 +14,9 @@
   # Containers
   virtualisation.oci-containers.containers."openclaw" = {
     image = "ghcr.io/phioranex/openclaw-docker:latest";
+    environment = {
+      OPENCLAW_GATEWAY_TOKEN = "changeme-configure-after-first-run";
+    };
     volumes = [
       "/data/docker-appdata/openclaw/config:/home/node/.openclaw:rw"
       "/data/docker-appdata/openclaw/workspace:/home/node/.openclaw/workspace:rw"
