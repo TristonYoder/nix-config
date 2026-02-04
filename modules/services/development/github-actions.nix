@@ -16,6 +16,9 @@ in
   };
 
   config = mkIf cfg.enable {
+    # GitHub Actions group
+    users.groups.github-actions = {};
+
     # GitHub Actions user for automated deployments
     users.users.github-actions = {
       isSystemUser = true;
