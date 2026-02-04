@@ -55,11 +55,9 @@ in
     };
 
     # Caddy virtual host for reverse proxy
-    services.caddy.virtualHosts.${cfg.domain} = mkIf config.modules.services.infrastructure.caddy.enable {
-      extraConfig = ''
-        reverse_proxy http://${cfg.host}:${toString cfg.port}
-        import cloudflare_tls
-      '';
+    modules.services.vHosts.${cfg.domain} = {
+      reverseProxyHost = cfg.host;
+      reverseProxyPort = cfg.port;
     };
   };
 }

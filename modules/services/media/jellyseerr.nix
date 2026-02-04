@@ -36,12 +36,8 @@ in
     };
 
     # Caddy virtual host (supports multiple domains)
-    services.caddy.virtualHosts."${concatStringsSep " " cfg.domains}" = mkIf config.modules.services.infrastructure.caddy.enable {
-      extraConfig = ''
-        reverse_proxy http://localhost:${toString cfg.port}
-        import cloudflare_tls
-      '';
+    modules.services.vHosts."${concatStringsSep " " cfg.domains}" = {
+      reverseProxyPort = cfg.port;
     };
   };
 }
-

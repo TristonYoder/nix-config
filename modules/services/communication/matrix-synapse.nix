@@ -228,14 +228,13 @@ in
     # Optional: Caddy virtual host if running on same machine
     # Note: For split deployments (david running Synapse, pits running Caddy),
     # configure Caddy in pits/configuration.nix instead
-    services.caddy.virtualHosts."matrix.${cfg.serverName}" = mkIf config.modules.services.infrastructure.caddy.enable {
+    modules.services.vHosts."matrix.${cfg.serverName}" = {
+      managedProxy = false;
       extraConfig = ''
         reverse_proxy /_matrix/* http://localhost:${toString cfg.clientPort}
         reverse_proxy /_synapse/client/* http://localhost:${toString cfg.clientPort}
-        import cloudflare_tls
       '';
     };
     
   };
 }
-

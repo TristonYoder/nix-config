@@ -135,7 +135,8 @@ in
     networking.firewall.allowedTCPPorts = [ cfg.listenPort ];
     
     # Caddy reverse proxy configuration
-    services.caddy.virtualHosts.${cfg.domain} = mkIf config.modules.services.infrastructure.caddy.enable {
+    modules.services.vHosts.${cfg.domain} = {
+      managedProxy = false;
       extraConfig = ''
         reverse_proxy https://localhost:${toString cfg.listenPort} {
           transport http {
@@ -149,9 +150,7 @@ in
           header_up X-Forwarded-Proto {scheme}
           header_up X-Forwarded-Host {host}
         }
-        import cloudflare_tls
       '';
     };
   };
 }
-

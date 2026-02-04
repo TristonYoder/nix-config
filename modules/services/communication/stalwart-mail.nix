@@ -232,11 +232,8 @@ in
     };
 
     # Caddy virtual host for webmail interface
-    services.caddy.virtualHosts.${cfg.webmailDomain} = mkIf config.modules.services.infrastructure.caddy.enable {
-      extraConfig = ''
-        reverse_proxy http://localhost:8080
-        import cloudflare_tls
-      '';
+    modules.services.vHosts.${cfg.webmailDomain} = {
+      reverseProxyPort = 8080;
       serverAliases = [
         # MTA-STS for mail security policy
         "mta-sts.${cfg.domain}"
@@ -247,11 +244,8 @@ in
     };
     
     # Caddy virtual host for admin interface
-    services.caddy.virtualHosts."admin.mail.7andco.dev" = mkIf config.modules.services.infrastructure.caddy.enable {
-      extraConfig = ''
-        reverse_proxy http://localhost:8081
-        import cloudflare_tls
-      '';
+    modules.services.vHosts."admin.mail.7andco.dev" = {
+      reverseProxyPort = 8081;
     };
 
     # Open additional firewall ports if needed
@@ -264,4 +258,3 @@ in
     };
   };
 }
-

@@ -192,7 +192,8 @@ in
     };
 
     # Caddy virtual hosts
-    services.caddy.virtualHosts.${cfg.domain} = mkIf config.modules.services.infrastructure.caddy.enable {
+    modules.services.vHosts.${cfg.domain} = {
+      managedProxy = false;
       extraConfig = ''
         handle_path /share* {
           reverse_proxy http://localhost:${toString cfg.publicProxyPort}
@@ -200,16 +201,14 @@ in
         handle {
           reverse_proxy http://localhost:${toString cfg.port}
         }
-        import cloudflare_tls
       '';
     };
 
-    services.caddy.virtualHosts.${cfg.publicProxyDomain} = mkIf config.modules.services.infrastructure.caddy.enable {
+    modules.services.vHosts.${cfg.publicProxyDomain} = {
+      managedProxy = false;
       extraConfig = ''
         reverse_proxy http://localhost:${toString cfg.publicProxyPort}
-        import cloudflare_tls
       '';
     };
   };
 }
-

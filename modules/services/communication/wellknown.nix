@@ -27,7 +27,9 @@ in
     # Well-Known Delegation - Serve on base domain for federation discovery
     # Works for both host server (localhost routing) and edge servers (remote routing to host)
     # Note: On edge servers uses HTTPS with Cloudflare DNS-01, on host server uses HTTP (internal)
-    services.caddy.virtualHosts.${if isHostServer then "http://${cfg.domain}" else cfg.domain} = mkIf config.modules.services.infrastructure.caddy.enable {
+    modules.services.vHosts.${if isHostServer then "http://${cfg.domain}" else cfg.domain} = {
+      managedProxy = false;
+      dnsChallenge = !isHostServer;
       extraConfig = ''
         # Matrix well-known endpoints - serve directly
         ${if matrixCfg.enable || !isHostServer then ''
@@ -64,10 +66,7 @@ in
           respond 404
           ''}
         }
-        
-        ${if !isHostServer then "import cloudflare_tls" else ""}
       '';
     };
   };
 }
-
