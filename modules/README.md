@@ -162,12 +162,9 @@ in
     };
     
     # Optional: Caddy reverse proxy integration
-    services.caddy.virtualHosts.${cfg.domain} = 
-      mkIf config.modules.services.infrastructure.caddy.enable {
-        extraConfig = ''
-          reverse_proxy http://localhost:${toString cfg.port}
-        '';
-      };
+    modules.services.vHosts.${cfg.domain} = {
+      reverseProxyPort = cfg.port;
+    };
     
     # Optional: Firewall rules
     networking.firewall.allowedTCPPorts = [ cfg.port ];
@@ -213,6 +210,21 @@ sudo nixos-rebuild switch --flake .
 ```
 
 ## Common Patterns
+
+### Managed Caddy Virtual Hosts
+
+The Caddy module supports a reusable virtual host submodule for consistent, self-contained reverse proxy configs:
+
+```nix
+modules.services.infrastructure.caddy.enable = true;
+
+modules.services.vHosts."service.theyoder.family" = {
+  reverseProxyPort = 8080;
+  public = false; # restrict to internal IP ranges
+};
+```
+
+Each virtual host supports `public`, `reverseProxyAddress`, `reverseProxyHost`, `reverseProxyPort`, `reverseProxySSL`, `managedProxy`, `virtualHost` (defaults to the attribute key), `dnsRecord`, `dnsChallenge`, `serverAliases`, and `extraConfig` overrides. When `reverseProxyAddress` is set, it takes precedence over host/port/SSL settings.
 
 ### Enable with Defaults
 

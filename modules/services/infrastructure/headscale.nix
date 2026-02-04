@@ -347,22 +347,20 @@ in
     };
 
     # Caddy reverse proxy for headscale API and admin UI
-    services.caddy.virtualHosts.${cfg.domain} =
-      mkIf config.modules.services.infrastructure.caddy.enable {
-        extraConfig = ''
-          ${optionalString (cfg.adminUI.type != "none") ''
-          # Admin UI at /admin path
-          handle /admin* {
-            reverse_proxy http://localhost:${toString cfg.adminUI.port}
-          }
+    modules.services.vHosts.${cfg.domain} = {
+      managedProxy = false;
+      extraConfig = ''
+        ${optionalString (cfg.adminUI.type != "none") ''
+        # Admin UI at /admin path
+        handle /admin* {
+          reverse_proxy http://localhost:${toString cfg.adminUI.port}
+        }
 
-          ''}# Headscale API for all other paths
-          handle {
-            reverse_proxy http://localhost:${toString cfg.port}
-          }
-
-          import cloudflare_tls
-        '';
-      };
+        ''}# Headscale API for all other paths
+        handle {
+          reverse_proxy http://localhost:${toString cfg.port}
+        }
+      '';
+    };
   };
 }

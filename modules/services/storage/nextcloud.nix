@@ -391,7 +391,8 @@ in
 
     # Caddy virtual host on David
     # Caddy serves Nextcloud directly via PHP-FPM Unix socket
-    services.caddy.virtualHosts.${cfg.domain} = mkIf config.modules.services.infrastructure.caddy.enable {
+    modules.services.vHosts.${cfg.domain} = {
+      managedProxy = false;
       extraConfig = ''
         # Serve Nextcloud via PHP-FPM
         root * ${config.services.nextcloud.package}
@@ -420,11 +421,7 @@ in
         # Redirect CalDAV/CardDAV well-known endpoints
         redir /.well-known/carddav /remote.php/dav 301
         redir /.well-known/caldav /remote.php/dav 301
-        
-        # Cloudflare TLS with DNS-01 challenge
-        import cloudflare_tls
       '';
     };
   };
 }
-
