@@ -38,6 +38,11 @@
     };
     preStart = ''
       echo "OPENCLAW_GATEWAY_TOKEN=$(cat ${config.age.secrets.openclaw-gateway-token.path})" > /run/openclaw-env
+
+      # Ensure OpenClaw data directories exist with correct permissions
+      mkdir -p /data/docker-appdata/openclaw/config
+      mkdir -p /data/docker-appdata/openclaw/workspace
+      chmod -R 777 /data/docker-appdata/openclaw
     '';
     after = [
       "docker-network-openclaw_default.service"
