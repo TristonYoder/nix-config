@@ -19,4 +19,12 @@
         import cloudflare_tls
       '';
     };
+
+    # OpenClaw - AI assistant gateway
+    services.caddy.virtualHosts."openclaw.theyoder.family" = {
+      extraConfig = ''
+        reverse_proxy http://localhost:18789
+        import cloudflare_tls
+      '';
+    };
   }
