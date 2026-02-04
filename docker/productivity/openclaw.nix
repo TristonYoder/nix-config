@@ -21,7 +21,7 @@
     ports = [
       "18789:18789/tcp"
     ];
-    cmd = [ "gateway" "start" "--foreground" ];
+    cmd = [ "gateway" "run" ];
     log-driver = "journald";
     extraOptions = [
       "--network-alias=openclaw"
