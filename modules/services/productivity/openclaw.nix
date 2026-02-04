@@ -7,6 +7,7 @@ let
   openclawModule =
     inputs.nix-openclaw.nixosModule
       or (nixosModules.openclaw or (nixosModules.default or null));
+  moduleAvailable = openclawModule != null;
   matrixConfig =
     cfg.matrix.config
     // optionalAttrs (cfg.matrix.accessTokenFile != null) {
@@ -14,7 +15,7 @@ let
     };
 in
 {
-  imports = lib.optional (openclawModule != null) openclawModule;
+  imports = lib.optional moduleAvailable openclawModule;
 
   options.modules.services.productivity.openclaw = {
     enable = mkEnableOption "OpenClaw gateway";
@@ -48,22 +49,27 @@ in
     };
   };
 
-  config = mkIf cfg.enable (lib.throwIf (openclawModule == null)
-    "nix-openclaw does not expose a NixOS module. Check the flake outputs for nixosModule/nixosModules."
-    {
-    programs.openclaw = {
-      enable = true;
-      config = {
-        gateway = {
-          mode = "local";
-          bind = cfg.bind;
-          auth.allowTailscale = cfg.allowTailscale;
-        };
+  config = mkIf cfg.enable (lib.mkMerge [
+    (lib.optionalAttrs (!moduleAvailable) {
+      warnings = [
+        "nix-openclaw does not expose a NixOS module. Check the flake outputs for nixosModule/nixosModules."
+      ];
+    })
+    (lib.optionalAttrs moduleAvailable {
+      programs.openclaw = {
+        enable = true;
+        config = {
+          gateway = {
+            mode = "local";
+            bind = cfg.bind;
+            auth.allowTailscale = cfg.allowTailscale;
+          };
 
-        channels = mkIf cfg.matrix.enable {
-          matrix = matrixConfig;
+          channels = mkIf cfg.matrix.enable {
+            matrix = matrixConfig;
+          };
         };
       };
-    };
-  });
+    })
+  ]);
 }
