@@ -9,11 +9,7 @@ let
       or (homeManagerModules.openclaw or (homeManagerModules.default or null));
 in
 {
-  imports = [
-    (lib.throwIf (openclawModule == null)
-      "nix-openclaw does not expose a Home Manager module. Check the flake outputs for homeManagerModule/homeManagerModules."
-      openclawModule)
-  ];
+  imports = lib.optional (openclawModule != null) openclawModule;
 
   options.modules.openclaw = {
     enable = mkEnableOption "OpenClaw node client";
@@ -31,7 +27,9 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
+  config = mkIf cfg.enable (lib.throwIf (openclawModule == null)
+    "nix-openclaw does not expose a Home Manager module. Check the flake outputs for homeManagerModule/homeManagerModules."
+    {
     programs.openclaw = {
       enable = true;
       config = {
@@ -49,5 +47,5 @@ in
         camsnap.enable = cfg.firstParty.camsnap;
       };
     };
-  };
+  });
 }

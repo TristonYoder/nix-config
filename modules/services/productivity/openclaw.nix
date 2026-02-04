@@ -14,11 +14,7 @@ let
     };
 in
 {
-  imports = [
-    (lib.throwIf (openclawModule == null)
-      "nix-openclaw does not expose a NixOS module. Check the flake outputs for nixosModule/nixosModules."
-      openclawModule)
-  ];
+  imports = lib.optional (openclawModule != null) openclawModule;
 
   options.modules.services.productivity.openclaw = {
     enable = mkEnableOption "OpenClaw gateway";
@@ -52,7 +48,9 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
+  config = mkIf cfg.enable (lib.throwIf (openclawModule == null)
+    "nix-openclaw does not expose a NixOS module. Check the flake outputs for nixosModule/nixosModules."
+    {
     programs.openclaw = {
       enable = true;
       config = {
@@ -67,5 +65,5 @@ in
         };
       };
     };
-  };
+  });
 }
