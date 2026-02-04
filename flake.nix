@@ -118,6 +118,7 @@
             ./docker/productivity/affine.nix
             ./docker/productivity/companion.nix
             ./docker/productivity/homarr.nix
+            ./docker/productivity/openclaw.nix
             # ./docker/productivity/outline.nix
             ./docker/productivity/planning-poker.nix
             ./docker/productivity/pocket-id.nix
