@@ -13,7 +13,7 @@
 
   # Containers
   virtualisation.oci-containers.containers."openclaw" = {
-    image = "phioranex/openclaw:latest";
+    image = "ghcr.io/phioranex/openclaw-docker:latest";
     volumes = [
       "/data/docker-appdata/openclaw/config:/home/node/.openclaw:rw"
       "/data/docker-appdata/openclaw/workspace:/home/node/.openclaw/workspace:rw"
