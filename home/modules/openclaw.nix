@@ -10,9 +10,9 @@ let
 in
 {
   imports = [
-    (lib.assertMsg (openclawModule != null)
-      "nix-openclaw does not expose a Home Manager module. Check the flake outputs for homeManagerModule/homeManagerModules.")
-    openclawModule
+    (lib.throwIf (openclawModule == null)
+      "nix-openclaw does not expose a Home Manager module. Check the flake outputs for homeManagerModule/homeManagerModules."
+      openclawModule)
   ];
 
   options.modules.openclaw = {

@@ -15,9 +15,9 @@ let
 in
 {
   imports = [
-    (lib.assertMsg (openclawModule != null)
-      "nix-openclaw does not expose a NixOS module. Check the flake outputs for nixosModule/nixosModules.")
-    openclawModule
+    (lib.throwIf (openclawModule == null)
+      "nix-openclaw does not expose a NixOS module. Check the flake outputs for nixosModule/nixosModules."
+      openclawModule)
   ];
 
   options.modules.services.productivity.openclaw = {
