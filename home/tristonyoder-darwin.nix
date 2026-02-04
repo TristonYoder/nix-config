@@ -14,6 +14,20 @@
     tailscale
     element-desktop
   ];
+
+  # =============================================================================
+  # OPENCLAW NODE CLIENT
+  # =============================================================================
+
+  modules.openclaw = {
+    enable = true;
+    gatewayHost = "david";
+    firstParty = {
+      peekaboo = true;
+      poltergeist = true;
+      camsnap = true;
+    };
+  };
   
   # =============================================================================
   # MACOS-SPECIFIC SHELL ALIASES

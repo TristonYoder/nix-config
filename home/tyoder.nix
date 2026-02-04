@@ -7,6 +7,7 @@
     ./common.nix
     ./modules/homebrew.nix
     ./modules/mas.nix
+    ./modules/openclaw.nix
     ./tristonyoder-darwin.nix
   ];
   
@@ -15,4 +16,3 @@
   home.homeDirectory = "/Users/tyoder";
   home.stateVersion = "25.05";
 }
-

@@ -6,6 +6,7 @@
 {
   imports = [
     ./common.nix
+    ./modules/openclaw.nix
   ];
   
   # User (platform-specific)
@@ -17,4 +18,3 @@
   
   home.stateVersion = "25.05";
 }
-

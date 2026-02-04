@@ -27,6 +27,20 @@
   
   # Example: Enable Syncthing for file sync
   # modules.services.storage.syncthing.enable = true;
+
+  # =============================================================================
+  # OPENCLAW NODE (HOME MANAGER)
+  # =============================================================================
+
+  home-manager.users.tristonyoder.modules.openclaw = {
+    enable = true;
+    gatewayHost = "david";
+    firstParty = {
+      peekaboo = true;
+      poltergeist = false;
+      camsnap = false;
+    };
+  };
   
   # =============================================================================
   # ADDITIONAL PACKAGES FOR DESKTOP
@@ -41,4 +55,3 @@
     vscode
   ];
 }
-

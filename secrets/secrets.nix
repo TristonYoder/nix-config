@@ -91,6 +91,9 @@ in
 
   # Cloudflare tunnel token
     "cloudflared-token-current.age".publicKeys = davidKeys;
+
+  # OpenClaw Matrix access token
+  "openclaw-matrix-token.age".publicKeys = davidKeys;
   
   # Nextcloud admin password (only on david)
   "nextcloud-admin-password.age".publicKeys = davidKeys;
@@ -125,4 +128,3 @@ in
   "postal-admin-email.age".publicKeys = pitsKeys;
   "postal-admin-password.age".publicKeys = pitsKeys;
 }
-
