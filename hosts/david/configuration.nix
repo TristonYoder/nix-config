@@ -40,6 +40,18 @@
   
   # Stalwart Mail Server
   modules.services.communication.stalwart-mail.enable = false;
+
+  # =============================================================================
+  # OPENCLAW GATEWAY
+  # =============================================================================
+
+  modules.services.productivity.openclaw = {
+    enable = true;
+    matrix = {
+      enable = true;
+      accessTokenFile = config.age.secrets.openclaw-matrix-token.path;
+    };
+  };
   
   # =============================================================================
   # CADDY CONFIGURATION FOR TECHNITIUM DNS

@@ -6,5 +6,6 @@
     ./n8n.nix
     ./actual.nix
     ./outline.nix
+    ./openclaw.nix
   ];
 }

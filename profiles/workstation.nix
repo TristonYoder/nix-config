@@ -59,4 +59,18 @@
   
   # Inherit all development services from desktop.nix
   # Add workstation-specific development tools here if needed
+
+  # =============================================================================
+  # OPENCLAW NODE (HOME MANAGER)
+  # =============================================================================
+
+  home-manager.users.tristonyoder.modules.openclaw = {
+    enable = true;
+    gatewayHost = "david";
+    firstParty = {
+      peekaboo = true;
+      poltergeist = false;
+      camsnap = false;
+    };
+  };
 }

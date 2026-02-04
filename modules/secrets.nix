@@ -50,6 +50,7 @@ with lib;
       "outline-secrets" = { file = ../secrets/outline-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
       "nextdns-link" = { file = ../secrets/nextdns-link.age; owner = "root"; group = "root"; mode = "0400"; };
       "pocket-id-encryption-key" = { file = ../secrets/pocket-id-encryption-key.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "openclaw-matrix-token" = { file = ../secrets/openclaw-matrix-token.age; owner = "openclaw"; group = "openclaw"; mode = "0400"; };
     })
 
     // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.infrastructure.cloudflared.enable) {

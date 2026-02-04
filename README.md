@@ -365,7 +365,7 @@ Custom NixOS modules organized by category in `modules/`:
 - `system/` - Core settings, networking, users, desktop
 - `services/infrastructure/` - Caddy, PostgreSQL, Tailscale
 - `services/media/` - Jellyfin, Immich, Jellyseerr
-- `services/productivity/` - Vaultwarden, n8n, Actual
+- `services/productivity/` - Vaultwarden, n8n, Actual, OpenClaw
 - `services/storage/` - ZFS, NFS, Samba, Syncthing
 - `services/development/` - vscode-server, GitHub Actions
 

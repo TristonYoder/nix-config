@@ -27,7 +27,7 @@
   
   # Example: Enable Syncthing for file sync
   # modules.services.storage.syncthing.enable = true;
-  
+
   # =============================================================================
   # ADDITIONAL PACKAGES FOR DESKTOP
   # =============================================================================
@@ -41,4 +41,3 @@
     vscode
   ];
 }
-

@@ -33,12 +33,16 @@
     nix-bitcoin.url = "github:fort-nix/nix-bitcoin/v0.0.117";
     nixos-vscode-server.url = "github:nix-community/nixos-vscode-server";
     agenix.url = "github:ryantm/agenix";
+    nix-openclaw = {
+      url = "github:openclaw/nix-openclaw";
+      inputs.nixpkgs.follows = "nixpkgs-unstable";
+    };
     
     # Flake utilities
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, flake-utils, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, flake-utils, ... }@inputs:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -134,12 +138,13 @@
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.backupFileExtension = "backup";
+              home-manager.extraSpecialArgs = { inherit inputs; };
               home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
             }
           ];
           
           specialArgs = {
-            inherit nixpkgs nixpkgs-unstable nix-bitcoin;
+            inherit nixpkgs nixpkgs-unstable nix-bitcoin inputs;
           };
         };
         
@@ -174,12 +179,13 @@
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.backupFileExtension = "backup";
+              home-manager.extraSpecialArgs = { inherit inputs; };
               home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
             }
           ];
           
           specialArgs = {
-            inherit nixpkgs nixpkgs-unstable;
+            inherit nixpkgs nixpkgs-unstable inputs;
           };
         };
         
@@ -214,12 +220,13 @@
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.backupFileExtension = "backup";
+              home-manager.extraSpecialArgs = { inherit inputs; };
               home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
             }
           ];
 
           specialArgs = {
-            inherit nixpkgs nixpkgs-unstable;
+            inherit nixpkgs nixpkgs-unstable inputs;
           };
         };
 
@@ -254,12 +261,13 @@
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.backupFileExtension = "backup";
+              home-manager.extraSpecialArgs = { inherit inputs; };
               home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
             }
           ];
           
           specialArgs = {
-            inherit nixpkgs nixpkgs-unstable;
+            inherit nixpkgs nixpkgs-unstable inputs;
           };
         };
       };
@@ -303,12 +311,13 @@
             {
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
+              home-manager.extraSpecialArgs = { inherit inputs; };
               home-manager.users.tyoder = import ./home/tyoder.nix;
             }
           ];
           
           specialArgs = {
-            inherit nixpkgs nixpkgs-unstable;
+            inherit nixpkgs nixpkgs-unstable inputs;
           };
         };
         
@@ -346,6 +355,7 @@
             {
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
+              home-manager.extraSpecialArgs = { inherit inputs; };
               home-manager.users.tristonyoder = {
                 imports = [
                   ./home/tristonyoder.nix
