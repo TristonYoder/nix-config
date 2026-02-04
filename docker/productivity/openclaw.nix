@@ -21,7 +21,7 @@
     ports = [
       "18789:18789/tcp"
     ];
-    cmd = [ "gateway" "run" "--allow-unconfigured" ];
+    cmd = [ "gateway" "--allow-unconfigured" ];
     log-driver = "journald";
     extraOptions = [
       "--network-alias=openclaw"
