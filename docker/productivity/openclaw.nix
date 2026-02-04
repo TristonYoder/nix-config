@@ -1,7 +1,7 @@
 # OpenClaw (Clawbot) - AI assistant with automated updates
 # Pre-built Docker image providing AI assistant capabilities with support for multiple providers
 # Auto-updates daily and checks for new releases every 6 hours
-{ pkgs, lib, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   # Runtime
@@ -14,9 +14,7 @@
   # Containers
   virtualisation.oci-containers.containers."openclaw" = {
     image = "ghcr.io/phioranex/openclaw-docker:latest";
-    environment = {
-      OPENCLAW_GATEWAY_TOKEN = "changeme-configure-after-first-run";
-    };
+    environmentFiles = [ "/run/openclaw-env" ];
     volumes = [
       "/data/docker-appdata/openclaw/config:/home/node/.openclaw:rw"
       "/data/docker-appdata/openclaw/workspace:/home/node/.openclaw/workspace:rw"
@@ -38,6 +36,9 @@
       RestartSec = lib.mkOverride 90 "100ms";
       RestartSteps = lib.mkOverride 90 9;
     };
+    preStart = ''
+      echo "OPENCLAW_GATEWAY_TOKEN=$(cat ${config.age.secrets.openclaw-gateway-token.path})" > /run/openclaw-env
+    '';
     after = [
       "docker-network-openclaw_default.service"
     ];
