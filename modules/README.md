@@ -96,6 +96,7 @@ cat modules/services/media/immich.nix
 - **vaultwarden.nix** - Password manager
 - **n8n.nix** - Workflow automation
 - **actual.nix** - Budget application
+- **actual-http-api.nix** - Actual Budget HTTP API integration
 
 ### Storage (`services/storage/`)
 
