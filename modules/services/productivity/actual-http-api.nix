@@ -8,7 +8,7 @@ let
     if cfg.actualServerUrl != "" then
       cfg.actualServerUrl
     else
-      "http://127.0.0.1:${toString actualModule.port}";
+      "http://host.containers.internal:${toString actualModule.port}";
   baseEnvironment = cfg.environment
     // optionalAttrs (resolvedActualServerUrl != "") {
       ACTUAL_SERVER_URL = resolvedActualServerUrl;
