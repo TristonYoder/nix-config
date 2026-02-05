@@ -10,7 +10,7 @@ in
     
     domain = mkOption {
       type = types.str;
-      default = "media.theyoder.family";
+      default = "media.${config.networking.domain}";
       description = "Domain for Jellyfin";
     };
     

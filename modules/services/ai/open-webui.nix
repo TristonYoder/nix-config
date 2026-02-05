@@ -10,7 +10,7 @@ in
 
     domain = mkOption {
       type = types.str;
-      default = "chat.theyoder.family";
+      default = "chat.${config.networking.domain}";
       description = "Domain for Open WebUI";
     };
 

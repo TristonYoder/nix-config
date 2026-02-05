@@ -3,7 +3,6 @@
 # Designed for lightweight devices (Raspberry Pi, etc.) serving as entry points
 
 { config, pkgs, lib, ... }:
-
 {
   # =============================================================================
   # HARDWARE MODULES
@@ -38,11 +37,11 @@
   # Headscale coordination server (self-hosted Tailscale control plane)
   modules.services.infrastructure.headscale = {
     enable = lib.mkDefault true;
-    # Use vpn.theyoder.family as base_domain for MagicDNS
-    # This makes devices accessible as hostname.vpn.theyoder.family
-    baseDomain = lib.mkDefault "vpn.theyoder.family";
-    # Headscale control server at ts.theyoder.family
-    domain = lib.mkDefault "ts.theyoder.family";
+    # Use vpn.<baseDomain> as base_domain for MagicDNS
+    # This makes devices accessible as hostname.vpn.<baseDomain>
+    baseDomain = lib.mkDefault "vpn.${config.networking.domain}";
+    # Headscale control server at ts.<baseDomain>
+    domain = lib.mkDefault "ts.${config.networking.domain}";
 
     # API key from agenix
     apiKeyFile = lib.mkDefault config.age.secrets.headscale-api-key.path;
@@ -53,7 +52,7 @@
 
     oidc = {
       enable = lib.mkDefault true;
-      issuer = lib.mkDefault "https://id.theyoder.family";
+      issuer = lib.mkDefault "https://id.${config.networking.domain}";
       clientId = lib.mkDefault "fab17c4a-661a-4e5a-b6e0-eddcb9d9e06e";
       clientSecretFile = lib.mkDefault config.age.secrets.headscale-oidc-secret.path;
       allowedGroups = lib.mkDefault [ "vpn_user" ];
@@ -128,4 +127,3 @@
   # Configure DNS servers to use Cloudflare DNS
   networking.nameservers = [ "1.1.1.1" "1.0.0.1" ];
 }
-

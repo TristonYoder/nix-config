@@ -10,13 +10,13 @@ in
     
     serverName = mkOption {
       type = types.str;
-      default = "theyoder.family";
+      default = config.networking.domain;
       description = "The domain name of the homeserver (used for user IDs)";
     };
     
     publicBaseUrl = mkOption {
       type = types.str;
-      default = "https://matrix.theyoder.family";
+      default = "https://matrix.${config.networking.domain}";
       description = "Public URL for the homeserver";
     };
     

@@ -2,7 +2,6 @@
 # This profile is for the main server (david) that hosts all services
 
 { config, pkgs, lib, ... }:
-
 {
   # =============================================================================
   # HARDWARE MODULES
@@ -118,8 +117,7 @@
 
   modules.services.ai.open-webui = {
     enable = lib.mkDefault true;
-    domain = lib.mkDefault "chat.theyoder.family";
-    ollamaHost = lib.mkDefault "http://tristons-workstation.theyoder.family:11434";
+    ollamaHost = lib.mkDefault "http://tristons-workstation.${config.networking.domain}:11434";
   };
 
   # =============================================================================

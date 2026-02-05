@@ -10,13 +10,13 @@ in
     
     domain = mkOption {
       type = types.str;
-      default = "photos.theyoder.family";
+      default = "photos.${config.networking.domain}";
       description = "Primary domain for Immich";
     };
     
     publicProxyDomain = mkOption {
       type = types.str;
-      default = "share.photos.theyoder.family";
+      default = "share.photos.${config.networking.domain}";
       description = "Domain for public sharing proxy";
     };
     

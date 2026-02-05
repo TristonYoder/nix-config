@@ -10,7 +10,7 @@ in
 
     domain = mkOption {
       type = types.str;
-      default = "outline.theyoder.family";
+      default = "outline.${config.networking.domain}";
       description = "Domain for Outline";
     };
 
@@ -90,12 +90,12 @@ in
           };
           fromEmail = mkOption {
             type = types.str;
-            default = "noreply@theyoder.family";
+            default = "noreply@${config.networking.domain}";
             description = "From email address";
           };
           replyEmail = mkOption {
             type = types.str;
-            default = "support@theyoder.family";
+            default = "support@${config.networking.domain}";
             description = "Reply-to email address";
           };
           tlsCiphers = mkOption {
@@ -120,7 +120,7 @@ in
           };
           localRootDir = mkOption {
             type = types.str;
-            default = "/data/docker-appdata/wiki.theyoder.family/data";
+            default = "/data/docker-appdata/${cfg.domain}/data";
             description = "Local storage directory (for storageType=local)";
           };
           uploadMaxSize = mkOption {

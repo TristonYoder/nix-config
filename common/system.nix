@@ -15,6 +15,8 @@ in
   # NIX SETTINGS
   # =============================================================================
 
+  networking.domain = lib.mkDefault "theyoder.family";
+
   nix = {
     # Enable flakes and nix-command
     settings = {
