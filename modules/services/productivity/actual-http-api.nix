@@ -20,7 +20,7 @@ in
 
     domain = mkOption {
       type = types.str;
-      default = "actual-api.theyoder.family";
+      default = "api.budget.theyoder.family";
       description = "Domain for the Actual HTTP API";
     };
 
