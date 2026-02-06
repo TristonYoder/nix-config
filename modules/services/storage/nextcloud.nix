@@ -348,7 +348,7 @@ in
         overwriteProtocol = "https";
         default_phone_region = "US";
         # Trust proxies for reverse proxy chain (localhost + Tailscale ranges)
-        trusted_proxies = [ "127.0.0.1" "100.64.0.0/10" "fd7a:115c:a1e0::/48" ];
+        trusted_proxies = [ "127.0.0.1" "10.100.0.0/18" "100.64.0.0/10" "fd7a:115c:a1e0::/48" ];
         # Custom data directory
         datadirectory = cfg.dataDir;
       };
