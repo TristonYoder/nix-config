@@ -168,8 +168,8 @@ in
           esac
         done
 
-        if [[ "${#passthrough[@]}" -gt 0 ]]; then
-          case "${passthrough[0]}" in
+        if [[ "''${#passthrough[@]}" -gt 0 ]]; then
+          case "''${passthrough[0]}" in
             switch|boot|test|build|dry-run)
               action="${passthrough[0]}"
               passthrough=("${passthrough[@]:1}")
@@ -182,7 +182,7 @@ in
             echo "Remote rebuilds are not supported for darwin hosts." >&2
             return 1
           fi
-          sudo darwin-rebuild "$action" "${passthrough[@]}" --flake "$repo"
+          sudo darwin-rebuild "$action" "''${passthrough[@]}" --flake "$repo"
           exec zsh
         fi
 
@@ -191,10 +191,10 @@ in
           if [[ -n "$build_host" ]]; then
             cmd+=("--buildHost" "$build_host")
           fi
-          cmd+=("$action" "${passthrough[@]}")
+          cmd+=("$action" "''${passthrough[@]}")
           "''${cmd[@]}"
         else
-          sudo nixos-rebuild "$action" "${passthrough[@]}" --flake "$repo"
+          sudo nixos-rebuild "$action" "''${passthrough[@]}" --flake "$repo"
         fi
       }
     '';
