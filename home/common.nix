@@ -174,7 +174,7 @@ in
             cmd+=("--buildHost" "$build_host")
           fi
           cmd+=("$action")
-          "${cmd[@]}"
+          "''${cmd[@]}"
         else
           sudo nixos-rebuild "$action" --flake "$repo"
         fi
