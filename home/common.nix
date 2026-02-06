@@ -116,7 +116,6 @@ in
       weather = "curl -s wttr.in";
       
       # Nix rebuild aliases (with auto-reload for darwin)
-      rebuild = "sudo nixos-rebuild switch --flake ~/Projects/nix-config";
       rebuild-darwin = "sudo darwin-rebuild switch --flake ~/Projects/nix-config && exec zsh";
       rebuild-home = "home-manager switch --flake ~/Projects/nix-config && exec zsh";
     };
@@ -145,6 +144,41 @@ in
       
       # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
       [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+      rebuild() {
+        local repo="$HOME/Projects/nix-config"
+        local action="switch"
+        local remote=0
+        local build_host=""
+
+        while [[ $# -gt 0 ]]; do
+          case "$1" in
+            -r|--remote)
+              remote=1
+              shift
+              ;;
+            --buildHost)
+              build_host="$2"
+              shift 2
+              ;;
+            *)
+              action="$1"
+              shift
+              ;;
+          esac
+        done
+
+        if [[ "$remote" -eq 1 ]]; then
+          local cmd=("$repo/scripts/remote-build.sh")
+          if [[ -n "$build_host" ]]; then
+            cmd+=("--buildHost" "$build_host")
+          fi
+          cmd+=("$action")
+          "${cmd[@]}"
+        else
+          sudo nixos-rebuild "$action" --flake "$repo"
+        fi
+      }
     '';
   };
   
@@ -201,4 +235,3 @@ in
     fi
   '';
 }
-
