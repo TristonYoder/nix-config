@@ -171,7 +171,7 @@ in
         if [[ "''${#passthrough[@]}" -gt 0 ]]; then
           case "''${passthrough[0]}" in
             switch|boot|test|build|dry-run)
-              action="${passthrough[0]}"
+              action="''${passthrough[0]}"
               passthrough=("''${passthrough[@]:1}")
               ;;
           esac
