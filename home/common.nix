@@ -149,6 +149,7 @@ in
         local action="switch"
         local remote=0
         local build_host=""
+        local -a passthrough=()
 
         while [[ $# -gt 0 ]]; do
           case "$1" in
@@ -161,18 +162,27 @@ in
               shift 2
               ;;
             *)
-              action="$1"
+              passthrough+=("$1")
               shift
               ;;
           esac
         done
+
+        if [[ "${#passthrough[@]}" -gt 0 ]]; then
+          case "${passthrough[0]}" in
+            switch|boot|test|build|dry-run)
+              action="${passthrough[0]}"
+              passthrough=("${passthrough[@]:1}")
+              ;;
+          esac
+        fi
 
         if [[ "$(uname -s)" == "Darwin" ]]; then
           if [[ "$remote" -eq 1 ]]; then
             echo "Remote rebuilds are not supported for darwin hosts." >&2
             return 1
           fi
-          sudo darwin-rebuild "$action" --flake "$repo"
+          sudo darwin-rebuild "$action" "${passthrough[@]}" --flake "$repo"
           exec zsh
         fi
 
@@ -181,10 +191,10 @@ in
           if [[ -n "$build_host" ]]; then
             cmd+=("--buildHost" "$build_host")
           fi
-          cmd+=("$action")
+          cmd+=("$action" "${passthrough[@]}")
           "''${cmd[@]}"
         else
-          sudo nixos-rebuild "$action" --flake "$repo"
+          sudo nixos-rebuild "$action" "${passthrough[@]}" --flake "$repo"
         fi
       }
     '';
