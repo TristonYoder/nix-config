@@ -115,9 +115,7 @@ in
       myip = "curl -s https://ipinfo.io/ip";
       weather = "curl -s wttr.in";
       
-      # Nix rebuild aliases (with auto-reload for darwin)
-      rebuild = "sudo nixos-rebuild switch --flake ~/Projects/nix-config";
-      rebuild-darwin = "sudo darwin-rebuild switch --flake ~/Projects/nix-config && exec zsh";
+      # Nix rebuild aliases
       rebuild-home = "home-manager switch --flake ~/Projects/nix-config && exec zsh";
     };
     
@@ -145,6 +143,60 @@ in
       
       # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
       [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+
+      rebuild() {
+        local repo="$HOME/Projects/nix-config"
+        local action="switch"
+        local remote=0
+        local build_host=""
+        local -a passthrough=()
+
+        while [[ $# -gt 0 ]]; do
+          case "$1" in
+            -r|--remote)
+              remote=1
+              shift
+              ;;
+            --buildHost)
+              build_host="$2"
+              shift 2
+              ;;
+            *)
+              passthrough+=("$1")
+              shift
+              ;;
+          esac
+        done
+
+        if [[ "''${#passthrough[@]}" -gt 0 ]]; then
+          case "''${passthrough[0]}" in
+            switch|boot|test|build|dry-run)
+              action="''${passthrough[0]}"
+              passthrough=("''${passthrough[@]:1}")
+              ;;
+          esac
+        fi
+
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+          if [[ "$remote" -eq 1 ]]; then
+            echo "Remote rebuilds are not supported for darwin hosts." >&2
+            return 1
+          fi
+          sudo darwin-rebuild "$action" "''${passthrough[@]}" --flake "$repo"
+          exec zsh
+        fi
+
+        if [[ "$remote" -eq 1 ]]; then
+          local cmd=("$repo/scripts/remote-build.sh")
+          if [[ -n "$build_host" ]]; then
+            cmd+=("--buildHost" "$build_host")
+          fi
+          cmd+=("$action" "''${passthrough[@]}")
+          "''${cmd[@]}"
+        else
+          sudo nixos-rebuild "$action" "''${passthrough[@]}" --flake "$repo"
+        fi
+      }
     '';
   };
   
@@ -201,4 +253,3 @@ in
     fi
   '';
 }
-

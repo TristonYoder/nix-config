@@ -349,6 +349,24 @@ nixos-rebuild switch --flake .#hostname \
 ssh user@hostname "echo success"
 ```
 
+### Remote Builds via David (Tailscale)
+
+To offload builds from a slower machine (like a laptop), build on `david` and push
+the compiled closure to the target host over Tailscale:
+
+```bash
+# Build on david, deploy to target host over Tailscale
+scripts/remote-build.sh tristons-nixbook
+
+# Run a test build without switching on the target
+scripts/remote-build.sh tristons-desk test
+```
+
+Requirements:
+- SSH access to `david` and the target host over Tailscale
+- Tailscale DNS names resolvable (e.g., `david`, `tristons-nixbook`)
+- `nixos-rebuild` available on your local machine
+
 ### macOS System Defaults Not Applying
 
 ```bash
