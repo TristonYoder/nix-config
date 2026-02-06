@@ -115,8 +115,7 @@ in
       myip = "curl -s https://ipinfo.io/ip";
       weather = "curl -s wttr.in";
       
-      # Nix rebuild aliases (with auto-reload for darwin)
-      rebuild-darwin = "sudo darwin-rebuild switch --flake ~/Projects/nix-config && exec zsh";
+      # Nix rebuild aliases
       rebuild-home = "home-manager switch --flake ~/Projects/nix-config && exec zsh";
     };
     
@@ -167,6 +166,15 @@ in
               ;;
           esac
         done
+
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+          if [[ "$remote" -eq 1 ]]; then
+            echo "Remote rebuilds are not supported for darwin hosts." >&2
+            return 1
+          fi
+          sudo darwin-rebuild "$action" --flake "$repo"
+          exec zsh
+        fi
 
         if [[ "$remote" -eq 1 ]]; then
           local cmd=("$repo/scripts/remote-build.sh")
