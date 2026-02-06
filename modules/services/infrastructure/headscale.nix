@@ -291,9 +291,9 @@ in
 
         # Default IP prefixes for Tailscale network
         prefixes = {
-          v4 = "100.64.0.0/10";
+          v4 = "10.100.0.0/18";
           v6 = "fd7a:115c:a1e0::/48";
-          allocation = "sequential";
+          allocation = "random";
         };
 
         # Disable logtail (Tailscale telemetry)
