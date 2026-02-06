@@ -13,7 +13,6 @@
   # =============================================================================
   
   networking.hostName = "pits";
-  networking.domain = lib.mkDefault "theyoder.family";
   system.stateVersion = "25.05";
   
   # =============================================================================
@@ -70,8 +69,8 @@
   # CADDY CONFIGURATION FOR TECHNITIUM DNS
   # =============================================================================
   
-  # Technitium DNS Web UI and DoH - dns02.theyoder.family
-  services.caddy.virtualHosts."dns02.theyoder.family" =
+  # Technitium DNS Web UI and DoH - dns02.<baseDomain>
+  services.caddy.virtualHosts."dns02.${config.networking.domain}" =
     lib.mkIf config.modules.services.infrastructure.technitium.enable {
       extraConfig = ''
         # Define matchers for allowed IP ranges (internal networks + Tailscale)
@@ -117,7 +116,7 @@
   
   # Matrix Synapse - Reverse proxy to david
   # Uses Cloudflare DNS-01 challenge for automatic HTTPS
-  services.caddy.virtualHosts."matrix.theyoder.family" = {
+  services.caddy.virtualHosts."matrix.${config.networking.domain}" = {
     extraConfig = ''
       reverse_proxy /_matrix/* http://david:8448
       reverse_proxy /_synapse/client/* http://david:8448

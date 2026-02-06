@@ -12,7 +12,6 @@
   # =============================================================================
   
   networking.hostName = "david";
-  networking.domain = "theyoder.family";
   system.stateVersion = "23.11"; # Did you read the comment?
   system.autoUpgrade.channel = "https://nixos.org/channels/nixos-23.11/";
 
@@ -26,7 +25,7 @@
   # GroupMe Bridge - Whitelist user for provisioning
   modules.services.communication.mautrix-groupme = {
     provisioningWhitelist = [
-      "@triston:theyoder.family"
+      "@triston:${config.networking.domain}"
     ];
   };
   
@@ -34,7 +33,7 @@
   modules.services.communication.mautrix-imessage = {
     blueBubblesUrl = "http://macservices:1234";
     provisioningWhitelist = [
-      "@triston:theyoder.family"
+      "@triston:${config.networking.domain}"
     ];
   };
   
@@ -45,8 +44,8 @@
   # CADDY CONFIGURATION FOR TECHNITIUM DNS
   # =============================================================================
   
-  # Technitium DNS Web UI and DoH - dns01.theyoder.family
-  services.caddy.virtualHosts."dns01.theyoder.family" = {
+  # Technitium DNS Web UI and DoH - dns01.<baseDomain>
+  services.caddy.virtualHosts."dns01.${config.networking.domain}" = {
     extraConfig = ''
       # Define matchers for allowed IP ranges (internal networks + Tailscale)
       @internal {
@@ -90,7 +89,7 @@
   };
 
   # Affine
-  services.caddy.virtualHosts."notes.theyoder.family" = {
+  services.caddy.virtualHosts."notes.${config.networking.domain}" = {
     extraConfig = ''
       reverse_proxy http://localhost:3010
       import cloudflare_tls
@@ -104,7 +103,7 @@
   };
 
   # Dispatcharr - IPTV and stream management
-  services.caddy.virtualHosts."tv.theyoder.family" = {
+  services.caddy.virtualHosts."tv.${config.networking.domain}" = {
     extraConfig = ''
       reverse_proxy http://localhost:9191
       import cloudflare_tls
@@ -112,7 +111,7 @@
   };
 
   # Threadfin - IPTV EPG proxy and M3U playlist management
-  services.caddy.virtualHosts."local-epg.tv.theyoder.family" = {
+  services.caddy.virtualHosts."local-epg.tv.${config.networking.domain}" = {
     extraConfig = ''
       reverse_proxy http://localhost:34400
       import cloudflare_tls
@@ -120,9 +119,9 @@
   };
 
   # InvokeAI
-  services.caddy.virtualHosts."invoke.theyoder.family" = {
+  services.caddy.virtualHosts."invoke.${config.networking.domain}" = {
     extraConfig = ''
-      reverse_proxy http://tristons-workstation.theyoder.family:9090
+      reverse_proxy http://tristons-workstation.${config.networking.domain}:9090
       import cloudflare_tls
     '';
   };

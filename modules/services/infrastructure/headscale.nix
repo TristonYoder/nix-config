@@ -19,7 +19,7 @@ in
     # Domain Configuration
     baseDomain = mkOption {
       type = types.str;
-      default = "theyoder.family";
+      default = config.networking.domain;
       description = "Base domain for MagicDNS and service domains";
     };
 
@@ -46,9 +46,9 @@ in
         options = {
           searchDomains = mkOption {
             type = types.listOf types.str;
-            default = [
+            default = unique [
               cfg.baseDomain
-              "theyoder.family"
+              config.networking.domain
               "7andco.studio"
               "7co.dev"
               "7andco.dev"

@@ -14,7 +14,7 @@ in
 
     domain = mkOption {
       type = types.str;
-      default = "budget.theyoder.family";
+      default = "budget.${config.networking.domain}";
       description = "Domain for Actual Budget";
     };
 

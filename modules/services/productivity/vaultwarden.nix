@@ -10,7 +10,7 @@ in
     
     domain = mkOption {
       type = types.str;
-      default = "vault.theyoder.family";
+      default = "vault.${config.networking.domain}";
       description = "Domain for Vaultwarden";
     };
     
@@ -34,7 +34,7 @@ in
     
     signupDomainsWhitelist = mkOption {
       type = types.str;
-      default = "7andco.studio, elizabethallen.photography, theyoder.family";
+      default = "7andco.studio, elizabethallen.photography, ${config.networking.domain}";
       description = "Comma-separated list of allowed signup domains";
     };
   };

@@ -10,7 +10,7 @@ in
     
     domain = mkOption {
       type = types.str;
-      default = "kasm.theyoder.family";
+      default = "kasm.${config.networking.domain}";
       description = "Domain for Kasm Workspaces";
     };
     

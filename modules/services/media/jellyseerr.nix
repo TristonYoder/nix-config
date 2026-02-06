@@ -10,7 +10,7 @@ in
     
     domains = mkOption {
       type = types.listOf types.str;
-      default = [ "request.theyoder.family" "requests.theyoder.family" ];
+      default = [ "request.${config.networking.domain}" "requests.${config.networking.domain}" ];
       description = "Domains for Jellyseerr (space-separated in Caddy config)";
     };
     

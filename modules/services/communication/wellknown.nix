@@ -18,7 +18,7 @@ in
     
     domain = mkOption {
       type = types.str;
-      default = "theyoder.family";
+      default = config.networking.domain;
       description = "Root domain for well-known endpoints";
     };
   };
