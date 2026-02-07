@@ -25,6 +25,12 @@ in
       default = true;
       description = "Advertise as exit node";
     };
+
+    loginServer = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      description = "Custom login server URL (e.g., Headscale server URL)";
+    };
     
     enableIPForwarding = mkOption {
       type = types.bool;
@@ -40,6 +46,7 @@ in
       useRoutingFeatures = "both";
       extraUpFlags = [
         (optionalString cfg.enableSSH "--ssh")
+        (optionalString (cfg.loginServer != null) "--login-server=${cfg.loginServer}")
         "--advertise-routes=${cfg.advertiseRoutes}"
         (optionalString cfg.advertiseExitNode "--advertise-exit-node")
         "--snat-subnet-routes=false"
@@ -59,4 +66,3 @@ in
     };
   };
 }
-

@@ -30,6 +30,7 @@
   
   # Tailscale for secure networking back to main infrastructure
   modules.services.infrastructure.tailscale.enable = lib.mkDefault true;
+  modules.services.infrastructure.tailscale.loginServer = lib.mkDefault "https://${config.modules.services.infrastructure.headscale.domain}";
   
   # Technitium DNS Server for edge DNS resolution
   modules.services.infrastructure.technitium.enable = lib.mkDefault true;
