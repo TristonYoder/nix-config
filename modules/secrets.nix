@@ -73,6 +73,6 @@ with lib;
     })
 
     // (optionalAttrs (config.networking.hostName == "pits") {
-      # PITS secrets here
+      "nextdns-link" = { file = ../secrets/nextdns-link.age; owner = "headscale"; group = "headscale"; mode = "0400"; };
     });
 }

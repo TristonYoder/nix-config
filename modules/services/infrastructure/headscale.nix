@@ -315,6 +315,23 @@ in
       };
     };
 
+    # Inject NextDNS server from secret into headscale config
+    systemd.services.headscale = {
+      preStart = mkIf (config.age.secrets ? nextdns-link) ''
+        # Read NextDNS URL from secret file
+        NEXTDNS_URL=$(cat ${config.age.secrets.nextdns-link.path})
+
+        # Get the headscale config file path
+        CONFIG_FILE="/var/lib/headscale/config.yaml"
+
+        # Add NextDNS to nameservers if not already present
+        if [ -f "$CONFIG_FILE" ] && ! grep -q "$NEXTDNS_URL" "$CONFIG_FILE"; then
+          # Use yq to append to the global nameservers array
+          ${pkgs.yq-go}/bin/yq eval ".dns.nameservers.global += [\"$NEXTDNS_URL\"]" -i "$CONFIG_FILE"
+        fi
+      '';
+    };
+
     # API key generation service (only if apiKeyFile is null)
     systemd.services.headscale-api-key-init = mkIf (cfg.apiKeyFile == null) {
       description = "Generate headscale API key on first run";
