@@ -218,7 +218,7 @@ jobs:
         authkey: ${{ secrets.HEADSCALE_AUTHKEY }}
         tags: tag:github-actions
         version: 1.78.1
-        args: --login-server ${{ secrets.HEADSCALE_LOGIN_SERVER }} --accept-dns
+        args: --login-server ${{ secrets.HEADSCALE_LOGIN_SERVER }}
 
     - name: Wait for Tailscale connection
       run: sleep 10
@@ -239,7 +239,7 @@ jobs:
       # Typical dry-runs: 3-5 minutes; updates with downloads: 10-30 minutes
       timeout-minutes: 60
       run: |
-        HOST="${{ matrix.host.hostname }}"
+        HOST="${{ matrix.host.hostname }}.vpn.theyoder.family"
         echo "Testing configuration on ${{ matrix.host.name }} at $HOST..."
 
         # Verify SSH connection with retry logic
@@ -287,7 +287,7 @@ jobs:
     - name: Cleanup test directory
       if: always()
       run: |
-        ssh ${{ secrets.NIXOS_SERVER_USER }}@${{ matrix.host.hostname }} \
+        ssh ${{ secrets.NIXOS_SERVER_USER }}@${{ matrix.host.hostname }}.vpn.theyoder.family \
           "rm -rf /tmp/nixos-flake-update-test-${{ matrix.host.name }}" || true
 
   # Create PR if all tests passed

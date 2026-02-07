@@ -124,7 +124,7 @@ jobs:
         authkey: ${{ secrets.HEADSCALE_AUTHKEY }}
         tags: tag:github-actions
         version: 1.78.1
-        args: --login-server ${{ secrets.HEADSCALE_LOGIN_SERVER }} --accept-dns
+        args: --login-server ${{ secrets.HEADSCALE_LOGIN_SERVER }}
 
     - name: Wait for Tailscale connection
       run: sleep 10
@@ -132,7 +132,7 @@ jobs:
     - name: Deploy to ${{ matrix.host }}
       run: |
         # Connect to server via Tailscale
-        SERVER_HOSTNAME="${{ matrix.host }}"
+        SERVER_HOSTNAME="${{ matrix.host }}.vpn.theyoder.family"
         echo "Deploying configuration to ${{ matrix.host }} at $SERVER_HOSTNAME"
         
         # Configure SSH to bypass host key verification
