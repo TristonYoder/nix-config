@@ -290,8 +290,10 @@ in
         };
 
         # Default IP prefixes for Tailscale network
+        # Using 100.64.0.0/10 (CGNAT range) instead of 10.x.x.x to avoid firewall conflicts
+        # Many Linux firewalls treat 10.0.0.0/8 as LAN traffic and block it on VPN interfaces
         prefixes = {
-          v4 = "10.100.0.0/18";
+          v4 = "100.64.0.0/10";
           v6 = "fd7a:115c:a1e0::/48";
           allocation = "random";
         };
