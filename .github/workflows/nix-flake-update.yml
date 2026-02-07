@@ -19,8 +19,8 @@ name: NixOS Flake Updater
 #   - GITHUB_TOKEN: For PR/issue creation (automatically provided)
 #   - SSH_PRIVATE_KEY: SSH key for connecting to NixOS hosts
 #   - NIXOS_SERVER_USER: Username for SSH connections
-#   - TAILSCALE_OAUTH_CLIENT_ID: Tailscale OAuth credentials
-#   - TAILSCALE_OAUTH_SECRET: Tailscale OAuth credentials
+#   - HEADSCALE_LOGIN_SERVER: Headscale coordination server URL
+#   - HEADSCALE_AUTHKEY: Headscale preauth key for node registration
 #   - MATRIX_HOMESERVER_URL: Matrix notification server
 #   - MATRIX_ROOM_ID: Matrix room for notifications
 #   - MATRIX_ACCESS_TOKEN: Matrix authentication token
@@ -212,12 +212,12 @@ jobs:
       with:
         ref: ${{ needs.update-flake.outputs.branch_name }}
 
-    - name: Setup Tailscale
+    - name: Setup Tailscale (Headscale)
       uses: tailscale/github-action@v2
       with:
-        oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
-        oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+        authkey: ${{ secrets.HEADSCALE_AUTHKEY }}
         tags: tag:github-actions
+        args: --login-server ${{ secrets.HEADSCALE_LOGIN_SERVER }}
 
     - name: Wait for Tailscale connection
       run: sleep 10

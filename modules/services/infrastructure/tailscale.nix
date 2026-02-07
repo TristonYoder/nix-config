@@ -31,6 +31,12 @@ in
       default = true;
       description = "Enable kernel-level IP forwarding for routing";
     };
+
+    loginServer = mkOption {
+      type = types.str;
+      default = "https://ts.theyoder.family";
+      description = "Headscale login server URL (empty uses default Tailscale coordination)";
+    };
   };
 
   config = mkIf cfg.enable {
@@ -39,6 +45,7 @@ in
       enable = true;
       useRoutingFeatures = "both";
       extraUpFlags = [
+        (optionalString (cfg.loginServer != "") "--login-server=${cfg.loginServer}")
         (optionalString cfg.enableSSH "--ssh")
         "--advertise-routes=${cfg.advertiseRoutes}"
         (optionalString cfg.advertiseExitNode "--advertise-exit-node")
