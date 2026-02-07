@@ -11,6 +11,7 @@
   nix.settings = {
     # Enable store optimization (safe on NixOS)
     auto-optimise-store = true;
+    trusted-substituters = [ "ssh-ng://david" ];
   };
   
   # =============================================================================
@@ -100,4 +101,3 @@
     loader.timeout = 2;
   };
 }
-
