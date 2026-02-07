@@ -163,6 +163,7 @@ jobs:
       with:
         authkey: ${{ secrets.HEADSCALE_AUTHKEY }}
         tags: tag:github-actions
+        version: 1.78.1
         args: --login-server ${{ secrets.HEADSCALE_LOGIN_SERVER }}
 
     - name: Wait for Tailscale connection
