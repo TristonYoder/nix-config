@@ -132,7 +132,7 @@ jobs:
     - name: Deploy to ${{ matrix.host }}
       run: |
         # Connect to server via Tailscale
-        SERVER_HOSTNAME="${{ matrix.host }}"
+        SERVER_HOSTNAME="${{ matrix.host }}.vpn.theyoder.family"
         echo "Deploying configuration to ${{ matrix.host }} at $SERVER_HOSTNAME"
         
         # Configure SSH to bypass host key verification

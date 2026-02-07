@@ -172,7 +172,7 @@ jobs:
     - name: Test ${{ matrix.host.name }} Configuration
       run: |
         # Connect to server via Tailscale
-        SERVER_HOSTNAME="${{ matrix.host.hostname }}"
+        SERVER_HOSTNAME="${{ matrix.host.hostname }}.vpn.theyoder.family"
         echo "Testing configuration for ${{ matrix.host.name }} on $SERVER_HOSTNAME"
         
         # Configure SSH to bypass host key verification
