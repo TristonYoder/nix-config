@@ -37,12 +37,18 @@ in
     TERM = "xterm-256color";
     LC_ALL = "en_US.UTF-8";
     LANG = "en_US.UTF-8";
-    
+
     # Oh My Zsh settings
     DISABLE_UPDATE_PROMPT = "true";
-    
+
     # Editor
     EDITOR = "code";
+
+    # 1Password SSH agent
+    SSH_AUTH_SOCK = if isDarwin then
+      "${config.home.homeDirectory}/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock"
+    else
+      "${config.home.homeDirectory}/.1password/agent.sock";
   };
   
   # Add local bin to PATH
@@ -206,29 +212,24 @@ in
   # =============================================================================
   # SSH CONFIGURATION
   # =============================================================================
-  
+
   programs.ssh = {
     enable = true;
   } // (if isDarwin then {
     # Darwin uses home-manager-unstable which supports the new matchBlocks format
     enableDefaultConfig = false;
     matchBlocks."*" = {
-      # home-manager expects a string (e.g. "yes") or null for addKeysToAgent in this
-      # compatible configuration; avoid a bare boolean which fails type-checking.
-      addKeysToAgent = "yes";
-      identityFile = "~/.ssh/id_ed25519";
       extraOptions = {
-        UseKeychain = "yes";
+        # Use 1Password SSH agent
+        IdentityAgent = "\"${config.home.homeDirectory}/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock\"";
       };
     };
   } else {
     # NixOS uses home-manager release-25.05 which may not support matchBlocks yet
     # Using deprecated format for backward compatibility
-    addKeysToAgent = "yes";
     extraConfig = ''
       Host *
-        AddKeysToAgent yes
-        IdentityFile ~/.ssh/id_ed25519
+        IdentityAgent ${config.home.homeDirectory}/.1password/agent.sock
     '';
   });
   
