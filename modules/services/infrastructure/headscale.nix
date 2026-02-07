@@ -47,7 +47,6 @@ in
           searchDomains = mkOption {
             type = types.listOf types.str;
             default = unique [
-              cfg.baseDomain
               config.networking.domain
               "7andco.studio"
               "7co.dev"
@@ -266,7 +265,12 @@ in
           base_domain = cfg.baseDomain;
           magic_dns = true;
           nameservers = {
-            global = [ "1.1.1.1" "1.0.0.1" ];
+            global = [
+              "100.75.81.4"
+              "fd7a:115c:a1e0:7cfc:118d:7504:ea5e:8cc0"
+              "100.85.170.40"
+              "fd7a:115c:a1e0:be1:14a9:7bf2:55ce:615c"
+            ];
           };
           search_domains = unique cfg.dns.searchDomains;
         };
