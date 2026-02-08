@@ -88,20 +88,6 @@
     '';
   };
 
-  # Affine
-  services.caddy.virtualHosts."notes.${config.networking.domain}" = {
-    extraConfig = ''
-      reverse_proxy http://localhost:3010
-      import cloudflare_tls
-    '';
-  };
-  services.caddy.virtualHosts."notes.7andco.studio" = {
-    extraConfig = ''
-      reverse_proxy http://localhost:3010
-      import cloudflare_tls
-    '';
-  };
-
   # Dispatcharr - IPTV and stream management
   services.caddy.virtualHosts."tv.${config.networking.domain}" = {
     extraConfig = ''

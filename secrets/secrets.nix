@@ -71,6 +71,9 @@ in
   
   # Affine Database Password
   "affine-db-password.age".publicKeys = davidKeys;
+
+  # Affine OIDC Client Secret (Pocket ID)
+  "affine-oidc-secret.age".publicKeys = davidKeys;
   
   # Tandoor Secrets
   "tandoor-secrets.age".publicKeys = davidKeys;

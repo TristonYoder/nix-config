@@ -39,6 +39,7 @@ with lib;
       "outline-google-secret" = { file = ../secrets/outline-google-secret.age; owner = "root"; group = "docker"; mode = "0440"; };
       "affine-db-password" = { file = ../secrets/affine-db-password.age; owner = "root"; group = "docker"; mode = "0440"; };
       "affine-postgres-password" = { file = ../secrets/affine-postgres-password.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "affine-oidc-secret" = { file = ../secrets/affine-oidc-secret.age; owner = "root"; group = "docker"; mode = "0440"; };
       "tandoor-secrets" = { file = ../secrets/tandoor-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
       "docmost-secrets" = { file = ../secrets/docmost-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
       "wordpress-studio-mysql" = { file = ../secrets/wordpress-studio-mysql.age; owner = "root"; group = "docker"; mode = "0440"; };
