@@ -270,6 +270,8 @@ in
               "fd7a:115c:a1e0:7cfc:118d:7504:ea5e:8cc0"
               "100.85.170.40"
               "fd7a:115c:a1e0:be1:14a9:7bf2:55ce:615c"
+              "45.90.28.160"
+              "45.90.30.160"
             ];
           };
           search_domains = unique cfg.dns.searchDomains;
