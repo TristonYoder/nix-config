@@ -19,13 +19,8 @@
       fsType = "ext4";
     };
 
-  fileSystems."/efi" =
-    { device = "systemd-1";
-      fsType = "autofs";
-    };
-  
   fileSystems."/boot" = {
-    device = "UUID=C5BA-E894";
+    device = "/dev/disk/by-id/nvme-WD_Green_SN350_1TB_223736802830-part1";
     fsType = "vfat";
     options = [ "fmask=0077" "dmask=0077" ];
   };

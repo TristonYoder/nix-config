@@ -22,8 +22,10 @@ in
         configurationLimit = cfg.configurationLimit;
       };
       
-      efi.canTouchEfiVariables = true;
+      efi = {
+        canTouchEfiVariables = true;
+        efiSysMountPoint = "/boot";
+      };
     };
   };
 }
-
