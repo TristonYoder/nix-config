@@ -158,20 +158,21 @@ jobs:
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
         thread_id: ${{ needs.check-flake-syntax.outputs.parent_event_id }}
       
-    - name: Setup Tailscale
+    - name: Setup Tailscale (Headscale)
       uses: tailscale/github-action@v2
       with:
-        oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
-        oauth-secret: ${{ secrets.TAILSCALE_OAUTH_SECRET }}
+        authkey: ${{ secrets.HEADSCALE_AUTHKEY }}
         tags: tag:github-actions
-        
+        version: 1.78.1
+        args: --login-server ${{ secrets.HEADSCALE_LOGIN_SERVER }}
+
     - name: Wait for Tailscale connection
       run: sleep 10
       
     - name: Test ${{ matrix.host.name }} Configuration
       run: |
         # Connect to server via Tailscale
-        SERVER_HOSTNAME="${{ matrix.host.hostname }}"
+        SERVER_HOSTNAME="${{ matrix.host.hostname }}.vpn.theyoder.family"
         echo "Testing configuration for ${{ matrix.host.name }} on $SERVER_HOSTNAME"
         
         # Configure SSH to bypass host key verification
