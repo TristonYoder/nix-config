@@ -56,6 +56,14 @@ in
       firewallUDPPorts = cfg.firewallUDPPorts;
       firewallTCPPorts = cfg.firewallTCPPorts;
     };
+
+    # Work around BindPaths conflict with DynamicUser + StateDirectory on systemd 257.
+    # The auto-generated BindPaths override breaks directory permissions for the
+    # dynamic user, causing "Access to the path 'blocklists' is denied" on startup.
+    systemd.services.technitium-dns-server.serviceConfig = {
+      BindPaths = lib.mkForce "";
+      WorkingDirectory = lib.mkForce "";
+    };
   };
 }
 
