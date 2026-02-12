@@ -37,8 +37,8 @@ in
     # Create media group for shared access to /data/media
     users.groups.media = { };
 
-    # Add Jellyfin user to media group for write access
-    users.users.jellyfin.extraGroups = [ "media" ];
+    # Add Jellyfin user to required groups for media access and GPU
+    users.users.jellyfin.extraGroups = [ "media" "video" "render" ];
 
     # Add tristonyoder user to media group (for Docker containers)
     users.users.tristonyoder.extraGroups = [ "media" ];
@@ -48,10 +48,33 @@ in
       "d /data/media 0775 tristonyoder media -"
     ];
 
-    # Workaround for jellyfin hardware transcode
+    # Workaround for jellyfin hardware transcode (NVIDIA NVENC)
+    # Minimal hardening overrides required for CUDA
     systemd.services.jellyfin.serviceConfig = mkIf cfg.enableHardwareTranscode {
-      DeviceAllow = [ "char-drm rw" "char-nvidia-frontend rw" "char-nvidia-uvm rw" ];
       PrivateDevices = mkForce false;
+      DevicePolicy = mkForce "closed";
+      DeviceAllow = mkForce [
+        # DRM/GPU render nodes
+        "char-drm rw"
+        # NVIDIA devices (major 195, 238-242)
+        "/dev/nvidia0 rw"
+        "/dev/nvidiactl rw"
+        "/dev/nvidia-modeset rw"
+        "/dev/nvidia-uvm rw"
+        "/dev/nvidia-uvm-tools rw"
+      ];
+      NoNewPrivileges = mkForce false;
+      SystemCallFilter = mkForce [ ];
+      ProtectKernelModules = mkForce false;
+      MemoryDenyWriteExecute = mkForce false;
+      # Keep these enabled for security:
+      # PrivateTmp, ProtectHome, ProtectSystem, ProtectKernelTunables,
+      # ProtectKernelLogs, RestrictSUIDSGID, LockPersonality
+    };
+
+    # Add NVIDIA library path for CUDA/NVENC
+    systemd.services.jellyfin.environment = mkIf cfg.enableHardwareTranscode {
+      LD_LIBRARY_PATH = "/run/opengl-driver/lib";
     };
 
     # Caddy virtual host
