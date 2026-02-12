@@ -52,8 +52,17 @@ in
     # Minimal hardening overrides required for CUDA
     systemd.services.jellyfin.serviceConfig = mkIf cfg.enableHardwareTranscode {
       PrivateDevices = mkForce false;
-      DeviceAllow = mkForce [ ];
-      DevicePolicy = mkForce "auto";
+      DevicePolicy = mkForce "closed";
+      DeviceAllow = mkForce [
+        # DRM/GPU render nodes
+        "char-drm rw"
+        # NVIDIA devices (major 195, 238-242)
+        "/dev/nvidia0 rw"
+        "/dev/nvidiactl rw"
+        "/dev/nvidia-modeset rw"
+        "/dev/nvidia-uvm rw"
+        "/dev/nvidia-uvm-tools rw"
+      ];
       NoNewPrivileges = mkForce false;
       SystemCallFilter = mkForce [ ];
       ProtectKernelModules = mkForce false;
