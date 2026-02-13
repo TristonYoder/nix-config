@@ -2,6 +2,7 @@
 {
   # Import communication service modules
   imports = [
+    ./mattermost.nix
     ./matrix-synapse.nix
     ./mautrix-groupme.nix
     ./mautrix-imessage.nix
