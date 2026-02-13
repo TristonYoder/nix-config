@@ -7,5 +7,6 @@
     ./actual.nix
     ./actual-http-api.nix
     ./outline.nix
+    ./tandoor.nix
   ];
 }
