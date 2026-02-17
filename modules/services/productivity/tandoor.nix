@@ -69,7 +69,7 @@ in
         "${cfg.dataDir}/staticfiles:/opt/recipes/staticfiles:rw"
       ];
       ports = [
-        "${toString cfg.port}:8080/tcp"
+        "${toString cfg.port}:80/tcp"
       ];
       dependsOn = [ "tandoor-db_tandoor" ];
       log-driver = "journald";
