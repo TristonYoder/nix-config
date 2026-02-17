@@ -63,6 +63,7 @@ in
         POSTGRES_HOST = "db_tandoor";
         POSTGRES_PORT = "5432";
         POSTGRES_USER = cfg.dbUser;
+        GUNICORN_TIMEOUT = "300";
       };
       volumes = [
         "${cfg.dataDir}/mediafiles:/opt/recipes/mediafiles:rw"
