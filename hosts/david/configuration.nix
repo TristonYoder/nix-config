@@ -46,35 +46,23 @@
 
   # Technitium DNS Web UI and DoH - dns01.<baseDomain>
   modules.services.vHosts."dns01.${config.networking.domain}" = {
-    managedProxy = false;  # Disable auto-generated reverse proxy
+    managedProxy = false;  # Use custom routing for multi-backend setup
+    public = false;  # Restrict to internal networks (auto-applied by module)
     extraConfig = ''
-      # Define matchers for allowed IP ranges (internal networks + Tailscale)
-      @internal {
-        remote_ip 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 10.100.0.0/18 100.64.0.0/10
-      }
-
-      # Handle requests from allowed internal IPs
-      handle @internal {
-        # DNS over HTTPS endpoint - Technitium runs DoH on port 5353
-        handle /dns-query* {
-          reverse_proxy http://localhost:5353 {
-            header_up Host {upstream_hostport}
-            header_up X-Real-IP {remote_host}
-          }
-        }
-
-        # Web UI for all other paths
-        handle {
-          reverse_proxy http://localhost:5380 {
-            header_up Host {upstream_hostport}
-            header_up X-Real-IP {remote_host}
-          }
+      # DNS over HTTPS endpoint - Technitium runs DoH on port 5353
+      handle /dns-query* {
+        reverse_proxy http://localhost:5353 {
+          header_up Host {upstream_hostport}
+          header_up X-Real-IP {remote_host}
         }
       }
 
-      # Handle requests from disallowed IPs (external access)
+      # Web UI for all other paths
       handle {
-        respond "Access Forbidden - Internal Network Only" 403
+        reverse_proxy http://localhost:5380 {
+          header_up Host {upstream_hostport}
+          header_up X-Real-IP {remote_host}
+        }
       }
     '';
   };
