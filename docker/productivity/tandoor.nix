@@ -31,7 +31,7 @@
       "/data/docker-appdata/tandoor/staticfiles:/opt/recipes/staticfiles:rw"
     ];
     ports = [
-      "6780:8080/tcp"
+      "6780:80/tcp"
     ];
     dependsOn = [
       "tandoor-db_tandoor"
