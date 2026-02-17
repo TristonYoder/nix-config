@@ -29,6 +29,7 @@ in
     # Note: On edge servers uses HTTPS with Cloudflare DNS-01, on host server uses HTTP (internal)
     modules.services.vHosts.${if isHostServer then "http://${cfg.domain}" else cfg.domain} = {
       managedProxy = false;
+      public = !isHostServer;  # Public on edge servers for federation, internal on host server
       dnsChallenge = !isHostServer;
       extraConfig = ''
         # Matrix well-known endpoints - serve directly

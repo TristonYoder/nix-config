@@ -68,41 +68,28 @@
   # =============================================================================
   # CADDY CONFIGURATION FOR TECHNITIUM DNS
   # =============================================================================
-  
+
   # Technitium DNS Web UI and DoH - dns02.<baseDomain>
-  services.caddy.virtualHosts."dns02.${config.networking.domain}" =
+  modules.services.vHosts."dns02.${config.networking.domain}" =
     lib.mkIf config.modules.services.infrastructure.technitium.enable {
+      managedProxy = false;  # Use custom routing for multi-backend setup
+      public = false;  # Restrict to internal networks (auto-applied by module)
       extraConfig = ''
-        # Define matchers for allowed IP ranges (internal networks + Tailscale)
-        @internal {
-          remote_ip 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 10.100.0.0/18 100.64.0.0/10
-        }
-        
-        # Handle requests from allowed internal IPs
-        handle @internal {
-          # DNS over HTTPS endpoint - Technitium runs DoH on port 5353
-          handle /dns-query* {
-            reverse_proxy http://localhost:5353 {
-              header_up Host {upstream_hostport}
-              header_up X-Real-IP {remote_host}
-            }
-          }
-          
-          # Web UI for all other paths
-          handle {
-            reverse_proxy http://localhost:5380 {
-              header_up Host {upstream_hostport}
-              header_up X-Real-IP {remote_host}
-            }
+        # DNS over HTTPS endpoint - Technitium runs DoH on port 5353
+        handle /dns-query* {
+          reverse_proxy http://localhost:5353 {
+            header_up Host {upstream_hostport}
+            header_up X-Real-IP {remote_host}
           }
         }
-        
-        # Handle requests from disallowed IPs (external access)
+
+        # Web UI for all other paths
         handle {
-          respond "Access Forbidden - Internal Network Only" 403
+          reverse_proxy http://localhost:5380 {
+            header_up Host {upstream_hostport}
+            header_up X-Real-IP {remote_host}
+          }
         }
-        
-        import cloudflare_tls
       '';
     };
 
@@ -116,30 +103,29 @@
   
   # Matrix Synapse - Reverse proxy to david
   # Uses Cloudflare DNS-01 challenge for automatic HTTPS
-  services.caddy.virtualHosts."matrix.${config.networking.domain}" = {
+  modules.services.vHosts."matrix.${config.networking.domain}" = {
+    public = true;
+    managedProxy = false;
     extraConfig = ''
       reverse_proxy /_matrix/* http://david:8448
       reverse_proxy /_synapse/client/* http://david:8448
-      import cloudflare_tls
     '';
   };
   
   # Pixelfed - Reverse proxy to david's nginx
   # Uses Cloudflare DNS-01 challenge for automatic HTTPS
-  services.caddy.virtualHosts."loveinfocus.photos" = {
-    extraConfig = ''
-      reverse_proxy http://david:8085
-      import cloudflare_tls
-    '';
+  modules.services.vHosts."loveinfocus.photos" = {
+    public = true;
+    reverseProxyHost = "david";
+    reverseProxyPort = 8085;
   };
   
   # Stalwart Mail Webmail Interface - Reverse proxy to david
   # Uses Cloudflare DNS-01 challenge for automatic HTTPS
-  services.caddy.virtualHosts."mail.7andco.dev" = {
-    extraConfig = ''
-      reverse_proxy http://david:8080
-      import cloudflare_tls
-    '';
+  modules.services.vHosts."mail.7andco.dev" = {
+    public = true;
+    reverseProxyHost = "david";
+    reverseProxyPort = 8080;
     serverAliases = [
       # MTA-STS for mail security policy
       "mta-sts.7andco.dev"
@@ -151,20 +137,17 @@
   
   # Stalwart Mail Admin Interface - Reverse proxy to david
   # Uses Cloudflare DNS-01 challenge for automatic HTTPS
-  services.caddy.virtualHosts."admin.mail.7andco.dev" = {
-    extraConfig = ''
-      reverse_proxy http://david:8081
-      import cloudflare_tls
-    '';
+  modules.services.vHosts."admin.mail.7andco.dev" = {
+    public = true;
+    reverseProxyHost = "david";
+    reverseProxyPort = 8081;
   };
   
   # Postal Mail Server Web UI - Local service on PITS
   # Uses Cloudflare DNS-01 challenge for automatic HTTPS
-  services.caddy.virtualHosts."postal.7andco.dev" = {
-    extraConfig = ''
-      reverse_proxy http://localhost:5000
-      import cloudflare_tls
-    '';
+  modules.services.vHosts."postal.7andco.dev" = {
+    public = true;
+    reverseProxyPort = 5000;
     serverAliases = [
       "postal.mail.7andco.dev"
     ];
@@ -173,16 +156,17 @@
   # Nextcloud - Reverse proxy to david
   # Uses Cloudflare DNS-01 challenge for automatic HTTPS
   # PITS terminates SSL for external access, forwards to David over Tailscale
-    services.caddy.virtualHosts."cloud.7andco.dev" = {
-      extraConfig = ''
-        reverse_proxy https://david {
-          transport http {
-            tls_insecure_skip_verify
-          }
+  modules.services.vHosts."cloud.7andco.dev" = {
+    public = true;
+    managedProxy = false;
+    extraConfig = ''
+      reverse_proxy https://david {
+        transport http {
+          tls_insecure_skip_verify
         }
-        import cloudflare_tls
-      '';
-    };
+      }
+    '';
+  };
   
   # Well-Known Delegation for Federation is handled by the wellknown module
   # (modules/services/communication/wellknown.nix)

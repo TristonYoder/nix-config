@@ -214,7 +214,18 @@ in
               else
                 ''
                   ${optionalString hostCfg.dnsChallenge "import cloudflare_tls"}
-                  ${hostCfg.extraConfig}
+                  ${optionalString (!hostCfg.public) ''
+                    @internal {
+                      remote_ip ${concatStringsSep " " cfg.internalIpRanges}
+                    }
+                    handle @internal {
+                      ${hostCfg.extraConfig}
+                    }
+                    handle {
+                      respond "Access Forbidden" 403
+                    }
+                  ''}
+                  ${optionalString hostCfg.public hostCfg.extraConfig}
                 '';
           };
         })
