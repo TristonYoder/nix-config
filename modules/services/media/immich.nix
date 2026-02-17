@@ -206,6 +206,7 @@ in
 
     modules.services.vHosts.${cfg.publicProxyDomain} = {
       managedProxy = false;
+      public = true;  # Public proxy for sharing photos externally
       extraConfig = ''
         reverse_proxy http://localhost:${toString cfg.publicProxyPort}
       '';
