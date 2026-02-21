@@ -303,17 +303,24 @@ in
         };
 
         # OIDC configuration (if enabled)
-        oidc = mkIf cfg.oidc.enable {
-          issuer = cfg.oidc.issuer;
-          client_id = cfg.oidc.clientId;
-          client_secret_path = cfg.oidc.clientSecretFile;
-          scope = cfg.oidc.scope;
-          allowed_groups = cfg.oidc.allowedGroups;
-          pkce = {
-            enabled = cfg.oidc.pkce.enabled;
-            method = cfg.oidc.pkce.method;
-          };
-        };
+        oidc = mkIf cfg.oidc.enable (
+          # Use mkForce when unstable to prevent NixOS module from adding strip_email_domain
+          (if cfg.unstable then mkForce else lib.id) {
+            issuer = cfg.oidc.issuer;
+            client_id = cfg.oidc.clientId;
+            client_secret_path = cfg.oidc.clientSecretFile;
+            scope = cfg.oidc.scope;
+            allowed_groups = cfg.oidc.allowedGroups;
+            allowed_users = [];
+            allowed_domains = [];
+            extra_params = {};
+            pkce = {
+              enabled = cfg.oidc.pkce.enabled;
+              method = cfg.oidc.pkce.method;
+            };
+            # Explicitly do NOT set strip_email_domain for v0.27+
+          }
+        );
 
         # Default IP prefixes for Tailscale network
         # Using 100.64.0.0/10 (CGNAT range) instead of 10.x.x.x to avoid firewall conflicts
