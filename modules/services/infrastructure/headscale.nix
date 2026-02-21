@@ -1,15 +1,8 @@
-{ config, lib, pkgs, nixpkgs-unstable, ... }:
+{ config, lib, pkgs, ... }:
 
 with lib;
 let
   cfg = config.modules.services.infrastructure.headscale;
-  # Get unstable packages with unfree allowed
-  unstable = import nixpkgs-unstable {
-    system = pkgs.system;
-    config = {
-      allowUnfree = true;
-    };
-  };
 in
 {
   # Admin UI imports (unconditional - each module has its own enable logic)
@@ -22,12 +15,6 @@ in
 
   options.modules.services.infrastructure.headscale = {
     enable = mkEnableOption "Headscale coordination server for Tailscale";
-
-    unstable = mkOption {
-      type = types.bool;
-      default = false;
-      description = "Use headscale from nixpkgs-unstable (recommended for latest version v0.28.0+)";
-    };
 
     # Domain Configuration
     baseDomain = mkOption {
@@ -246,13 +233,6 @@ in
   };
 
   config = mkIf cfg.enable {
-    # Use headscale from unstable if enabled
-    nixpkgs.overlays = mkIf cfg.unstable [
-      (final: prev: {
-        headscale = unstable.headscale;
-      })
-    ];
-
     # Native NixOS headscale service
     services.headscale = {
       enable = true;
@@ -313,7 +293,6 @@ in
             enabled = cfg.oidc.pkce.enabled;
             method = cfg.oidc.pkce.method;
           };
-          # Note: strip_email_domain added by NixOS module is filtered out at runtime when unstable=true
         };
 
         # Default IP prefixes for Tailscale network
@@ -336,21 +315,6 @@ in
           format = "text";
         };
       };
-    };
-
-    # Workaround for v0.27+ compatibility: Filter out strip_email_domain at runtime
-    # The NixOS module hardcodes this in the YAML generation, so we filter it before starting
-    systemd.services.headscale = mkIf cfg.unstable {
-      script = mkForce ''
-        # Create runtime directory
-        mkdir -p /run/headscale
-
-        # Filter out strip_email_domain from the generated config
-        ${pkgs.gnused}/bin/sed '/strip_email_domain:/d' /etc/headscale/config.yaml > /run/headscale/config-filtered.yaml
-
-        # Start headscale with filtered config
-        exec ${config.services.headscale.package}/bin/headscale serve --config /run/headscale/config-filtered.yaml
-      '';
     };
 
     # API key generation service (only if apiKeyFile is null)
