@@ -17,7 +17,7 @@ in
     port = mkOption {
       type = types.port;
       default = 32400;
-      description = "Plex port";
+      description = "Plex port (service listens on 32400; this only affects reverse proxy settings)";
     };
 
     plexPass = mkOption {
@@ -76,6 +76,12 @@ in
   };
 
   config = mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = cfg.port == 32400;
+        message = "modules.services.media.plex.port must be 32400 (Plex listens on a fixed port).";
+      }
+    ];
     services.plex = {
       enable = true;
       user = cfg.user;
@@ -83,7 +89,6 @@ in
       package = cfg.package;
       dataDir = cfg.dataDir;
       openFirewall = cfg.openFirewall;
-      port = cfg.port;
       extraScanners = cfg.extraScanners;
       extraPlugins = cfg.extraPlugins;
       accelerationDevices = cfg.accelerationDevices;
