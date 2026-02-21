@@ -37,7 +37,7 @@
   # Headscale coordination server (self-hosted Tailscale control plane)
   modules.services.infrastructure.headscale = {
     enable = lib.mkDefault true;
-    unstable = lib.mkDefault true;  # Use v0.28.0+ from nixpkgs-unstable
+    unstable = lib.mkDefault true;  # Use v0.27+ from nixpkgs-unstable with compatibility fix
     # Use vpn.<baseDomain> as base_domain for MagicDNS
     # This makes devices accessible as hostname.vpn.<baseDomain>
     baseDomain = lib.mkDefault "vpn.${config.networking.domain}";
