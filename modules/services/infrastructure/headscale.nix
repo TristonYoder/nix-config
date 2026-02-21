@@ -303,24 +303,18 @@ in
         };
 
         # OIDC configuration (if enabled)
-        oidc = mkIf cfg.oidc.enable (
-          # Use mkForce when unstable to prevent NixOS module from adding strip_email_domain
-          (if cfg.unstable then mkForce else lib.id) {
-            issuer = cfg.oidc.issuer;
-            client_id = cfg.oidc.clientId;
-            client_secret_path = cfg.oidc.clientSecretFile;
-            scope = cfg.oidc.scope;
-            allowed_groups = cfg.oidc.allowedGroups;
-            allowed_users = [];
-            allowed_domains = [];
-            extra_params = {};
-            pkce = {
-              enabled = cfg.oidc.pkce.enabled;
-              method = cfg.oidc.pkce.method;
-            };
-            # Explicitly do NOT set strip_email_domain for v0.27+
-          }
-        );
+        oidc = mkIf cfg.oidc.enable {
+          issuer = cfg.oidc.issuer;
+          client_id = cfg.oidc.clientId;
+          client_secret_path = cfg.oidc.clientSecretFile;
+          scope = cfg.oidc.scope;
+          allowed_groups = cfg.oidc.allowedGroups;
+          pkce = {
+            enabled = cfg.oidc.pkce.enabled;
+            method = cfg.oidc.pkce.method;
+          };
+          # Note: strip_email_domain added by NixOS module is filtered out at runtime when unstable=true
+        };
 
         # Default IP prefixes for Tailscale network
         # Using 100.64.0.0/10 (CGNAT range) instead of 10.x.x.x to avoid firewall conflicts
@@ -342,6 +336,21 @@ in
           format = "text";
         };
       };
+    };
+
+    # Workaround for v0.27+ compatibility: Filter out strip_email_domain at runtime
+    # The NixOS module hardcodes this in the YAML generation, so we filter it before starting
+    systemd.services.headscale = mkIf cfg.unstable {
+      script = mkForce ''
+        # Create runtime directory
+        mkdir -p /run/headscale
+
+        # Filter out strip_email_domain from the generated config
+        ${pkgs.gnused}/bin/sed '/strip_email_domain:/d' /etc/headscale/config.yaml > /run/headscale/config-filtered.yaml
+
+        # Start headscale with filtered config
+        exec ${config.services.headscale.package}/bin/headscale serve --config /run/headscale/config-filtered.yaml
+      '';
     };
 
     # API key generation service (only if apiKeyFile is null)
