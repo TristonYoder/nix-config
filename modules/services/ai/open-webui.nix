@@ -33,6 +33,7 @@ in
       host = "127.0.0.1";
       port = cfg.port;
       environment = {
+        TZ = config.time.timeZone;
         OLLAMA_BASE_URL = cfg.ollamaHost;
         WEBUI_AUTH = "True";
         ENABLE_SIGNUP = "True";

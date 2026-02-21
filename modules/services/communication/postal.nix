@@ -154,6 +154,7 @@ in
     # Override the generated container configurations to use proper paths and environment files
     virtualisation.oci-containers.containers."postal_mariadb" = {
       environment = lib.mkForce {
+        TZ = config.time.timeZone;
         MARIADB_ALLOW_EMPTY_ROOT_PASSWORD = "no";
         MARIADB_DATABASE = "postal";
         MARIADB_ROOT_PASSWORD = "PLACEHOLDER";  # Will be overridden by environmentFile
@@ -168,6 +169,7 @@ in
     
     virtualisation.oci-containers.containers."postal_runner" = {
       environment = lib.mkForce {
+        TZ = config.time.timeZone;
         MAIN_DB_DATABASE = "postal";
         MAIN_DB_HOST = "mariadb";
         MAIN_DB_PASSWORD = "PLACEHOLDER";  # Will be overridden by environmentFile
@@ -195,6 +197,7 @@ in
     
     virtualisation.oci-containers.containers."postal_worker" = {
       environment = lib.mkForce {
+        TZ = config.time.timeZone;
         MAIN_DB_DATABASE = "postal";
         MAIN_DB_HOST = "mariadb";
         MAIN_DB_PASSWORD = "PLACEHOLDER";  # Will be overridden by environmentFile
@@ -220,6 +223,7 @@ in
     
     virtualisation.oci-containers.containers."postal_smtp" = {
       environment = lib.mkForce {
+        TZ = config.time.timeZone;
         MAIN_DB_DATABASE = "postal";
         MAIN_DB_HOST = "mariadb";
         MAIN_DB_PASSWORD = "PLACEHOLDER";  # Will be overridden by environmentFile
