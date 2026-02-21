@@ -64,6 +64,7 @@
 
   # Ensure Technitium DNS is enabled on pits (edge DNS host)
   modules.services.infrastructure.technitium.enable = true;
+  modules.services.infrastructure.technitium.useUnstablePackage = true;
   
   # =============================================================================
   # CADDY CONFIGURATION FOR TECHNITIUM DNS

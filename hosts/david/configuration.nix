@@ -44,6 +44,9 @@
   # CADDY CONFIGURATION FOR TECHNITIUM DNS
   # =============================================================================
 
+  # Use unstable Technitium package on david (main server DNS host)
+  modules.services.infrastructure.technitium.useUnstablePackage = true;
+
   # Technitium DNS Web UI and DoH - dns01.<baseDomain>
   modules.services.vHosts."dns01.${config.networking.domain}" = {
     managedProxy = false;  # Use custom routing for multi-backend setup
