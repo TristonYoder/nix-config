@@ -58,6 +58,7 @@ in
       image = "vabene1111/recipes";
       environmentFiles = [ cfg.secretsFile ];
       environment = {
+        TZ = config.time.timeZone;
         DB_ENGINE = "django.db.backends.postgresql";
         POSTGRES_DB = cfg.dbName;
         POSTGRES_HOST = "db_tandoor";

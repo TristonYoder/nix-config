@@ -12,6 +12,9 @@ let
   baseEnvironment = cfg.environment
     // optionalAttrs (resolvedActualServerUrl != "") {
       ACTUAL_SERVER_URL = resolvedActualServerUrl;
+    }
+    // {
+      TZ = config.time.timeZone;
     };
 in
 {
