@@ -1,8 +1,15 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, nixpkgs-unstable, ... }:
 
 with lib;
 let
   cfg = config.modules.services.infrastructure.headscale;
+  # Get unstable packages with unfree allowed
+  unstable = import nixpkgs-unstable {
+    system = pkgs.system;
+    config = {
+      allowUnfree = true;
+    };
+  };
 in
 {
   # Admin UI imports (unconditional - each module has its own enable logic)
@@ -15,6 +22,12 @@ in
 
   options.modules.services.infrastructure.headscale = {
     enable = mkEnableOption "Headscale coordination server for Tailscale";
+
+    unstable = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Use headscale from nixpkgs-unstable (recommended for latest version v0.28.0+)";
+    };
 
     # Domain Configuration
     baseDomain = mkOption {
@@ -233,6 +246,13 @@ in
   };
 
   config = mkIf cfg.enable {
+    # Use headscale from unstable if enabled
+    nixpkgs.overlays = mkIf cfg.unstable [
+      (final: prev: {
+        headscale = unstable.headscale;
+      })
+    ];
+
     # Native NixOS headscale service
     services.headscale = {
       enable = true;
