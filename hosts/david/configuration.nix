@@ -45,6 +45,7 @@
     enable = true;
     plexTokenFile = config.age.secrets.plex-token.path;
     jellyfinTokenFile = config.age.secrets.jellyfin-token.path;
+    debugLevel = "DEBUG";
     extraEnv = {
       # Map Plex users to Jellyfin users when names don't match
       # Format: "plex_user1 > jellyfin_user1, plex_user2 > jellyfin_user2"
