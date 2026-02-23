@@ -7,12 +7,15 @@
   # =============================================================================
   # MACOS-SPECIFIC PACKAGES
   # =============================================================================
-  
+
   home.packages = with pkgs; [
     # macOS-specific tools
     syncthing
     tailscale
     element-desktop
+
+    # Emulators
+    dolphin-emu  # GameCube and Wii emulator
   ];
   
   # =============================================================================
