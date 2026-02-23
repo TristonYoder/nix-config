@@ -56,8 +56,8 @@
   # CADDY CONFIGURATION FOR TECHNITIUM DNS
   # =============================================================================
 
-  # Technitium DNS Web UI and DoH - ns1.<baseDomain>
-  modules.services.vHosts."ns1.${config.networking.domain}" = {
+  # Technitium DNS Web UI and DoH - dns01.<baseDomain>
+  modules.services.vHosts."dns01.${config.networking.domain}" = {
     managedProxy = false;  # Use custom routing for multi-backend setup
     public = false;  # Restrict to internal networks (auto-applied by module)
     extraConfig = ''

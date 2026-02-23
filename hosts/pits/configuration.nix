@@ -69,8 +69,8 @@
   # CADDY CONFIGURATION FOR TECHNITIUM DNS
   # =============================================================================
 
-  # Technitium DNS Web UI and DoH - ns2.<baseDomain>
-  modules.services.vHosts."ns2.${config.networking.domain}" =
+  # Technitium DNS Web UI and DoH - dns02.<baseDomain>
+  modules.services.vHosts."dns02.${config.networking.domain}" =
     lib.mkIf config.modules.services.infrastructure.technitium.enable {
       managedProxy = false;  # Use custom routing for multi-backend setup
       public = false;  # Restrict to internal networks (auto-applied by module)
