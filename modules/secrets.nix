@@ -73,6 +73,11 @@ with lib;
       "nextcloud-admin-password" = { file = ../secrets/nextcloud-admin-password.age; owner = "nextcloud"; group = "nextcloud"; mode = "0400"; };
     })
 
+    // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.media.jellyplexWatched.enable) {
+      "plex-token" = { file = ../secrets/plex-token.age; owner = "jellyplex-watched"; group = "jellyplex-watched"; mode = "0400"; };
+      "jellyfin-token" = { file = ../secrets/jellyfin-token.age; owner = "jellyplex-watched"; group = "jellyplex-watched"; mode = "0400"; };
+    })
+
     // (optionalAttrs (config.networking.hostName == "pits") {
       # PITS secrets here
     });

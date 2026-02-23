@@ -14,6 +14,12 @@ in
       description = "Domain for Jellyfin";
     };
     
+    port = mkOption {
+      type = types.port;
+      default = 8096;
+      description = "Jellyfin port (reverse proxy target)";
+    };
+
     openFirewall = mkOption {
       type = types.bool;
       default = true;
@@ -79,7 +85,7 @@ in
 
     # Caddy virtual host
     modules.services.vHosts.${cfg.domain} = {
-      reverseProxyPort = 8096;
+      reverseProxyPort = cfg.port;
     };
   };
 }

@@ -103,6 +103,12 @@ in
   
   # Pocket ID Encryption Key
   "pocket-id-encryption-key.age".publicKeys = davidKeys;
+
+  # Plex token for JellyPlex-Watched
+  "plex-token.age".publicKeys = davidKeys;
+
+  # Jellyfin token for JellyPlex-Watched
+  "jellyfin-token.age".publicKeys = davidKeys;
   
   # =============================================================================
   # SHARED SECRETS (All Servers)
@@ -128,4 +134,3 @@ in
   "postal-admin-email.age".publicKeys = pitsKeys;
   "postal-admin-password.age".publicKeys = pitsKeys;
 }
-

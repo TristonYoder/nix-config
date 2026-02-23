@@ -39,6 +39,13 @@
   
   # Stalwart Mail Server
   modules.services.communication.stalwart-mail.enable = false;
+
+  # JellyPlex-Watched sync (continuous)
+  modules.services.media.jellyplexWatched = {
+    enable = true;
+    plexTokenFile = config.age.secrets.plex-token.path;
+    jellyfinTokenFile = config.age.secrets.jellyfin-token.path;
+  };
   
   # =============================================================================
   # CADDY CONFIGURATION FOR TECHNITIUM DNS
