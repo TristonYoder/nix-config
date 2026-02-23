@@ -54,14 +54,19 @@ darwin-rebuild build --flake .
 
 ### Validation & Testing
 
-```bash
-# Validate flake syntax
-nix flake check
+**IMPORTANT**: Do NOT run `nix flake check` or NixOS builds locally on the macOS laptop - it's too resource-intensive. Always test builds on the target NixOS host instead.
 
-# Update flake inputs
+```bash
+# Remote testing on david (PREFERRED for NixOS builds)
+ssh github-actions@david "cd /home/github-actions/nix-config && git fetch origin && git checkout <branch> && git pull origin <branch> && sudo nixos-rebuild dry-run --flake .#david"
+
+# Or test build without activation
+ssh github-actions@david "cd /home/github-actions/nix-config && sudo nixos-rebuild build --flake .#david"
+
+# Update flake inputs (safe to run locally)
 nix flake update
 
-# View flake outputs
+# View flake outputs (safe to run locally)
 nix flake show
 
 # Enter development shell (includes agenix, compose2nix)
