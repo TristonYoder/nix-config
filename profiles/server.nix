@@ -40,6 +40,7 @@
   
   modules.services.media.immich.enable = lib.mkDefault true;
   modules.services.media.jellyfin.enable = lib.mkDefault true;
+  modules.services.media.plex.enable = lib.mkDefault true;
   modules.services.media.jellyseerr.enable = lib.mkDefault true;
   modules.services.media.sunshine.enable = lib.mkDefault true;
 

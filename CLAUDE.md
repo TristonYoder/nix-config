@@ -54,10 +54,47 @@ darwin-rebuild build --flake .
 
 ### Validation & Testing
 
-```bash
-# Validate flake syntax
-nix flake check
+**IMPORTANT**: Detect which host you're running on to adjust build/test behavior:
 
+**Current host detection**:
+```bash
+hostname  # Returns: tyoder-mbp, Tristons-MacBook-Pro, david, tristons-desk, or pits
+```
+
+**Testing policy by host**:
+
+- **On macOS hosts** (tyoder-mbp, Tristons-MacBook-Pro):
+  - Do NOT run `nix flake check` or NixOS builds locally - too resource-intensive
+  - SSH to target NixOS host for testing instead
+  - Can safely run: `nix flake update`, `nix flake show`, `darwin-rebuild build`
+
+- **On NixOS hosts** (david, tristons-desk, pits):
+  - Can run builds and tests directly on the local host
+  - No need to SSH elsewhere
+
+**Remote testing from macOS** (when NOT on target host):
+```bash
+# Test on david (most common - server with all services)
+ssh github-actions@david "cd /home/github-actions/nix-config && git fetch origin && git checkout <branch> && git pull origin <branch> && sudo nixos-rebuild dry-run --flake .#david"
+
+# Or build without activation
+ssh github-actions@david "cd /home/github-actions/nix-config && sudo nixos-rebuild build --flake .#david"
+```
+
+**Local testing on NixOS** (when already on target host):
+```bash
+# Dry-run rebuild
+sudo nixos-rebuild dry-run --flake .
+
+# Build without activation
+sudo nixos-rebuild build --flake .
+
+# Test without activation
+sudo nixos-rebuild test --flake .
+```
+
+**Safe to run on any host**:
+```bash
 # Update flake inputs
 nix flake update
 
