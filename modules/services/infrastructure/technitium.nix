@@ -1,8 +1,12 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, nixpkgs-unstable, ... }:
 
 with lib;
 let
   cfg = config.modules.services.infrastructure.technitium;
+  pkgs-unstable = import nixpkgs-unstable {
+    system = pkgs.system;
+    config.allowUnfree = true;
+  };
 in
 {
   options.modules.services.infrastructure.technitium = {
@@ -10,7 +14,7 @@ in
     
     package = mkOption {
       type = types.package;
-      default = pkgs.technitium-dns-server;
+      default = pkgs-unstable.technitium-dns-server;
       description = "Technitium DNS Server package to use";
     };
     
@@ -43,7 +47,7 @@ in
   config = mkIf cfg.enable {
     # Apply shared configuration by default
     modules.services.infrastructure.technitium = mkIf cfg.sharedConfig {
-      package = pkgs.technitium-dns-server;
+      package = pkgs-unstable.technitium-dns-server;
       openFirewall = true;
       firewallUDPPorts = [ 53 ];
       firewallTCPPorts = [ 53 5353 5380 53443 ];
