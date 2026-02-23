@@ -17,19 +17,22 @@ in
     git
     gh
     compose2nix
-    
+
     # Utilities
     wget
     curl
     ffmpeg
     zsh
-    
+
     # Optional: 1Password CLI
     _1password-cli
   ] ++ (if isDarwin then [
     # macOS-only packages
     mas  # Mac App Store CLI
-  ] else []);
+  ] else [
+    # Linux-only packages (workstations)
+    dolphin-emu  # GameCube and Wii emulator
+  ]);
   
   # Common environment variables
   home.sessionVariables = {
