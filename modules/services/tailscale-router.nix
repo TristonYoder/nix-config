@@ -110,9 +110,9 @@
     };
   };
 
-  # Kernel-level IP forwarding for the host
+  # Kernel-level IP forwarding (use mkDefault to avoid conflict with tailscale module)
   boot.kernel.sysctl = {
-    "net.ipv4.ip_forward" = 1;
-    "net.ipv6.conf.all.forwarding" = 1;
+    "net.ipv4.ip_forward" = lib.mkDefault 1;
+    "net.ipv6.conf.all.forwarding" = lib.mkDefault 1;
   };
 }
