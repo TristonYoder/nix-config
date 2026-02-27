@@ -69,16 +69,10 @@ EOF
       "${dataDir}/data:/home/node/.openclaw:rw"
     ];
 
-    ports = [
-      "${toString gatewayPort}:${toString gatewayPort}/tcp"
-      "${toString oauthPort}:${toString oauthPort}/tcp"
-    ];
-
     log-driver = "journald";
 
     extraOptions = [
-      "--network-alias=openclaw"
-      "--network=openclaw_default"
+      "--network=host"
     ];
   };
 
@@ -119,23 +113,9 @@ EOF
       fi
     '';
 
-    after = [ "docker-network-openclaw_default.service" "openclaw-image-builder.service" ];
-    requires = [ "docker-network-openclaw_default.service" "openclaw-image-builder.service" ];
-    partOf = [ "docker-compose-openclaw-root.target" ];
-    wantedBy = [ "docker-compose-openclaw-root.target" ];
-  };
-
-  # Network
-  systemd.services."docker-network-openclaw_default" = {
-    path = [ pkgs.docker ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      ExecStop = "docker network rm -f openclaw_default";
-    };
-    script = ''
-      docker network inspect openclaw_default || docker network create openclaw_default
-    '';
+    after = [ "openclaw-image-builder.service" "tailscaled.service" ];
+    requires = [ "openclaw-image-builder.service" ];
+    wants = [ "tailscaled.service" ];
     partOf = [ "docker-compose-openclaw-root.target" ];
     wantedBy = [ "docker-compose-openclaw-root.target" ];
   };
