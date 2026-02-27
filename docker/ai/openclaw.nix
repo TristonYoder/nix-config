@@ -62,6 +62,27 @@ in
       mkdir -p ${dataDir}/{config,workspace,data}
       chown -R 1000:1000 ${dataDir}
       chmod -R 755 ${dataDir}
+
+      # Create OpenClaw config with Matrix enabled
+      cat > ${dataDir}/config/openclaw.json <<'EOF'
+{
+  "gateway": {
+    "mode": "local"
+  },
+  "plugins": {
+    "allow": ["matrix"]
+  },
+  "channels": {
+    "matrix": {
+      "enabled": true,
+      "dm": {
+        "policy": "pairing"
+      }
+    }
+  }
+}
+EOF
+      chown 1000:1000 ${dataDir}/config/openclaw.json
     '';
 
     after = [ "docker-network-openclaw_default.service" ];
@@ -82,6 +103,31 @@ in
       docker network inspect openclaw_default || docker network create openclaw_default
     '';
     partOf = [ "docker-compose-openclaw-root.target" ];
+    wantedBy = [ "docker-compose-openclaw-root.target" ];
+  };
+
+  # Matrix plugin dependency installer
+  systemd.services."openclaw-matrix-deps" = {
+    description = "Install OpenClaw Matrix plugin dependencies";
+    after = [ "docker-openclaw.service" ];
+    requires = [ "docker-openclaw.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      # Wait for container to be fully started
+      sleep 10
+
+      # Install Matrix plugin dependencies if not already installed
+      ${pkgs.docker}/bin/docker exec openclaw sh -c "
+        if [ ! -d /app/extensions/matrix/node_modules/@vector-im ]; then
+          cd /app/extensions/matrix && npm install @vector-im/matrix-bot-sdk @matrix-org/matrix-sdk-crypto-nodejs --no-save 2>&1 | tail -5
+          echo 'Matrix dependencies installed, restarting gateway...'
+          pkill -SIGHUP -f openclaw-gateway || true
+        fi
+      " || true
+    '';
     wantedBy = [ "docker-compose-openclaw-root.target" ];
   };
 
