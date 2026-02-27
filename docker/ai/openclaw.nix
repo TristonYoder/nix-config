@@ -17,9 +17,42 @@ in
   };
   virtualisation.oci-containers.backend = "docker";
 
+  # Custom image builder
+  systemd.services."openclaw-image-builder" = {
+    description = "Build custom OpenClaw Docker image with Matrix dependencies";
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    path = [ pkgs.docker ];
+    script = ''
+      # Copy Dockerfile to a build context
+      BUILD_DIR=$(mktemp -d)
+      cat > "$BUILD_DIR/Dockerfile" <<'EOF'
+FROM ghcr.io/openclaw/openclaw:latest
+USER root
+WORKDIR /app/extensions/matrix
+RUN npm install --no-save @vector-im/matrix-bot-sdk @matrix-org/matrix-sdk-crypto-nodejs
+USER node
+WORKDIR /home/node
+EOF
+
+      # Build the image if it doesn't exist or needs updating
+      if ! docker image inspect openclaw-matrix:latest >/dev/null 2>&1; then
+        echo "Building custom OpenClaw image with Matrix dependencies..."
+        docker build -t openclaw-matrix:latest "$BUILD_DIR"
+      fi
+
+      rm -rf "$BUILD_DIR"
+    '';
+    before = [ "docker-openclaw.service" ];
+    wantedBy = [ "docker-compose-openclaw-root.target" ];
+  };
+
   # Container
   virtualisation.oci-containers.containers."openclaw" = {
-    image = "ghcr.io/openclaw/openclaw:latest";
+    image = "openclaw-matrix:latest";
+    imageFile = null;  # Use locally built image
 
     environmentFiles = [
       config.age.secrets.openclaw-env.path
@@ -62,10 +95,33 @@ in
       mkdir -p ${dataDir}/{config,workspace,data}
       chown -R 1000:1000 ${dataDir}
       chmod -R 755 ${dataDir}
+
+      # Create default config with Matrix enabled if it doesn't exist
+      if [ ! -f ${dataDir}/config/openclaw.json ]; then
+        cat > ${dataDir}/config/openclaw.json <<'EOF'
+{
+  "gateway": {
+    "mode": "local"
+  },
+  "plugins": {
+    "allow": ["matrix"]
+  },
+  "channels": {
+    "matrix": {
+      "enabled": true,
+      "dm": {
+        "policy": "pairing"
+      }
+    }
+  }
+}
+EOF
+        chown 1000:1000 ${dataDir}/config/openclaw.json
+      fi
     '';
 
-    after = [ "docker-network-openclaw_default.service" ];
-    requires = [ "docker-network-openclaw_default.service" ];
+    after = [ "docker-network-openclaw_default.service" "openclaw-image-builder.service" ];
+    requires = [ "docker-network-openclaw_default.service" "openclaw-image-builder.service" ];
     partOf = [ "docker-compose-openclaw-root.target" ];
     wantedBy = [ "docker-compose-openclaw-root.target" ];
   };
