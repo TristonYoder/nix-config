@@ -3,10 +3,19 @@
 
 { config, pkgs, lib, nixpkgs, nixpkgs-unstable, nix-bitcoin, ... }:
 {
-  # Import common configuration and server profile
-  # Note: Module imports (./modules, ./docker, etc.) are handled by flake.nix
-  # The server profile (../../profiles/server.nix) enables all server services
-  
+  imports = [
+    ../../modules/services/tailscale-router.nix
+  ];
+
+  # =============================================================================
+  # NETWORK: Bridge for Tailscale router container
+  # =============================================================================
+  # tailscale-router.nix creates br0 on enp4s0f0 with static 10.150.100.30/23
+  # and a container at 10.150.100.31/23 via macvlan.
+  # Disable DHCP so the second NIC doesn't conflict.
+  networking.useDHCP = lib.mkForce false;
+  networking.interfaces.enp4s0f1.useDHCP = false;
+
   # =============================================================================
   # SYSTEM IDENTIFICATION
   # =============================================================================
