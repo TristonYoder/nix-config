@@ -53,6 +53,10 @@ with lib;
       "pocket-id-encryption-key" = { file = ../secrets/pocket-id-encryption-key.age; owner = "root"; group = "docker"; mode = "0440"; };
     })
 
+    // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.ai.openclaw.enable) {
+      "openclaw-env" = { file = ../secrets/openclaw-env.age; owner = "root"; group = "docker"; mode = "0440"; };
+    })
+
     // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.infrastructure.cloudflared.enable) {
       "cloudflared-token-current" = { file = ../secrets/cloudflared-token-current.age; owner = "cloudflared"; group = "cloudflared"; mode = "0400"; };
     })

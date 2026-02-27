@@ -60,7 +60,14 @@
       USER_MAPPING = ''{ "tristonyoder": "Triston Yoder" }'';
     };
   };
-  
+
+  # OpenClaw personal AI assistant
+  modules.services.ai.openclaw = {
+    enable = true;
+    public = false;  # Internal only
+    channels = [ "matrix" ];  # Matrix integration with local homeserver
+  };
+
   # =============================================================================
   # CADDY CONFIGURATION FOR TECHNITIUM DNS
   # =============================================================================
