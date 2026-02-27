@@ -38,11 +38,9 @@ RUN cd /app/extensions/matrix && \
 USER node
 EOF
 
-      # Build the image if it doesn't exist or needs updating
-      if ! docker image inspect openclaw-matrix:latest >/dev/null 2>&1; then
-        echo "Building custom OpenClaw image with Matrix dependencies..."
-        docker build -t openclaw-matrix:latest "$BUILD_DIR"
-      fi
+      # Build the image
+      echo "Building custom OpenClaw image with Matrix dependencies..."
+      docker build --no-cache -t openclaw-matrix:latest "$BUILD_DIR"
 
       rm -rf "$BUILD_DIR"
     '';
