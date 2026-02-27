@@ -30,11 +30,12 @@ in
       BUILD_DIR=$(mktemp -d)
       cat > "$BUILD_DIR/Dockerfile" <<'EOF'
 FROM ghcr.io/openclaw/openclaw:latest
+# Install Matrix dependencies as root without changing working directory
 USER root
-WORKDIR /app/extensions/matrix
-RUN npm install --no-save @vector-im/matrix-bot-sdk @matrix-org/matrix-sdk-crypto-nodejs
+RUN cd /app/extensions/matrix && \
+    npm install --no-save @vector-im/matrix-bot-sdk @matrix-org/matrix-sdk-crypto-nodejs && \
+    chown -R node:node node_modules
 USER node
-WORKDIR /home/node
 EOF
 
       # Build the image if it doesn't exist or needs updating

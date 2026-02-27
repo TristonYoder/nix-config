@@ -1,17 +1,11 @@
 # Custom OpenClaw image with Matrix plugin dependencies
 FROM ghcr.io/openclaw/openclaw:latest
 
-# Switch to root to install dependencies
+# Install Matrix dependencies as root without changing working directory
 USER root
-
-# Install Matrix plugin dependencies in the bundled extension
-WORKDIR /app/extensions/matrix
-RUN npm install --no-save \
-    @vector-im/matrix-bot-sdk \
-    @matrix-org/matrix-sdk-crypto-nodejs
-
-# Switch back to node user
+RUN cd /app/extensions/matrix && \
+    npm install --no-save @vector-im/matrix-bot-sdk @matrix-org/matrix-sdk-crypto-nodejs && \
+    chown -R node:node node_modules
 USER node
-WORKDIR /home/node
 
-# Image is ready - entrypoint from base image will be used
+# Image is ready - entrypoint and workdir from base image will be used
