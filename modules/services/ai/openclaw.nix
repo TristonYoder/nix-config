@@ -46,9 +46,9 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
-    imports = [ ../../../docker/ai/openclaw.nix ];
+  imports = [ ../../../docker/ai/openclaw.nix ];
 
+  config = mkIf cfg.enable {
     assertions = [
       {
         assertion = config.virtualisation.docker.enable;
