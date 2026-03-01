@@ -71,9 +71,6 @@ in
     dig
     nmap
 
-    # Media tools
-    tidal-dl
-
     # AI tools (from unstable for latest features)
     pkgs-unstable.gemini-cli
     pkgs-unstable.claude-code

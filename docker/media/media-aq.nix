@@ -5,6 +5,7 @@
 # Transmission, Deluge - BitTorrent clients for downloads
 # Gluetun - VPN client providing network privacy for torrent clients
 # TubeSync - YouTube channel synchronization and download manager
+# Tidarr - Tidal music downloader with web UI
 # Dispatcharr - Content request and notification manager
 # Auto-generated using compose2nix v0.2.3-pre.
 { config, pkgs, lib, ... }:
@@ -452,6 +453,52 @@
       RestartMaxDelaySec = lib.mkOverride 500 "1m";
       RestartSec = lib.mkOverride 500 "100ms";
       RestartSteps = lib.mkOverride 500 9;
+    };
+    after = [
+      "docker-network-media-aq_default.service"
+    ];
+    requires = [
+      "docker-network-media-aq_default.service"
+    ];
+    partOf = [
+      "docker-compose-media-aq-root.target"
+    ];
+    wantedBy = [
+      "docker-compose-media-aq-root.target"
+    ];
+  };
+
+  virtualisation.oci-containers.containers."tidarr" = {
+    image = "cstaelen/tidarr:latest";
+    environment = {
+      "PGID" = "1000";
+      "PUID" = "1000";
+      "UMASK" = "0022";
+      "TZ" = config.time.timeZone;
+      "JELLYFIN_URL" = "http://localhost:8096";
+    };
+    volumes = [
+      "/data/docker-appdata/tidarr:/shared:rw"
+      "/data/media/Music:/music:rw"
+    ];
+    ports = [
+      "8484:8484/tcp"
+    ];
+    log-driver = "journald";
+    extraOptions = [
+      "--network-alias=tidarr"
+      "--network=media-aq_default"
+    ];
+  };
+  systemd.services."docker-tidarr" = {
+    serviceConfig = {
+      Restart = lib.mkOverride 500 "always";
+      RestartMaxDelaySec = lib.mkOverride 500 "1m";
+      RestartSec = lib.mkOverride 500 "100ms";
+      RestartSteps = lib.mkOverride 500 9;
+      ExecStartPre = [
+        "+${pkgs.bash}/bin/bash -c 'mkdir -p /data/docker-appdata/tidarr/.tiddl && chown -R 1000:1000 /data/docker-appdata/tidarr'"
+      ];
     };
     after = [
       "docker-network-media-aq_default.service"

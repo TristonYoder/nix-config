@@ -104,6 +104,11 @@
     reverseProxyPort = 34400;
   };
 
+  # Tidarr - Tidal music downloader
+  modules.services.vHosts."tidal.${config.networking.domain}" = {
+    reverseProxyPort = 8484;
+  };
+
   # InvokeAI
   modules.services.vHosts."invoke.${config.networking.domain}" = {
     reverseProxyHost = "tristons-workstation.${config.networking.domain}";
