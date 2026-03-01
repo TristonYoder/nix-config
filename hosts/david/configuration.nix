@@ -10,7 +10,7 @@
   # =============================================================================
   # NETWORK: Bridge for Tailscale router container
   # =============================================================================
-  # tailscale-router.nix creates br0 on enp4s0f0 with static 10.150.100.30/23
+  # tailscale-router.nix creates br0 on enp4s0f0 with static 10.150.100.30/23,
   # and a container at 10.150.100.31/23 via macvlan.
   # Disable DHCP so the second NIC doesn't conflict.
   networking.useDHCP = lib.mkForce false;

@@ -6,7 +6,7 @@
   # =============================================================================
 
   # Container configuration
-  containers.tailscale-router = {
+  containers.ts-router = {
     autoStart = true;
     ephemeral = true;
     privateNetwork = true;
@@ -106,7 +106,7 @@
     nat = {
       enable = true;
       enableIPv6 = true;
-      internalInterfaces = [ "ve-tailscale-router" ];
+      internalInterfaces = [ "ve-ts-router" ];
     };
   };
 
