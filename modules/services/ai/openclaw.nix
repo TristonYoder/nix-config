@@ -5,6 +5,10 @@ let
   cfg = config.modules.services.ai.openclaw;
 in
 {
+  imports = [
+    ../../../docker/ai/openclaw.nix
+  ];
+
   options.modules.services.ai.openclaw = {
     enable = mkEnableOption "OpenClaw personal AI assistant";
 
@@ -45,8 +49,6 @@ in
       description = "List of messaging channels to enable (configured separately)";
     };
   };
-
-  imports = [ ../../../docker/ai/openclaw.nix ];
 
   config = mkIf cfg.enable {
     assertions = [

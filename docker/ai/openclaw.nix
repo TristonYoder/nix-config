@@ -9,7 +9,7 @@ let
   oauthPort = 1455;
   dataDir = "/data/docker-appdata/openclaw";
 in
-{
+lib.mkIf config.modules.services.ai.openclaw.enable {
   # Runtime
   virtualisation.docker = {
     enable = true;
@@ -17,41 +17,9 @@ in
   };
   virtualisation.oci-containers.backend = "docker";
 
-  # Custom image builder
-  systemd.services."openclaw-image-builder" = {
-    description = "Build custom OpenClaw Docker image with Matrix dependencies";
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-    };
-    path = [ pkgs.docker ];
-    script = ''
-      # Copy Dockerfile to a build context
-      BUILD_DIR=$(mktemp -d)
-      cat > "$BUILD_DIR/Dockerfile" <<'EOF'
-FROM ghcr.io/openclaw/openclaw:latest
-# Install Matrix dependencies as root without changing working directory
-USER root
-RUN cd /app/extensions/matrix && \
-    npm install --no-save @vector-im/matrix-bot-sdk @matrix-org/matrix-sdk-crypto-nodejs && \
-    chown -R node:node node_modules
-USER node
-EOF
-
-      # Build the image
-      echo "Building custom OpenClaw image with Matrix dependencies..."
-      docker build --no-cache -t openclaw-matrix:latest "$BUILD_DIR"
-
-      rm -rf "$BUILD_DIR"
-    '';
-    before = [ "docker-openclaw.service" ];
-    wantedBy = [ "docker-compose-openclaw-root.target" ];
-  };
-
   # Container
   virtualisation.oci-containers.containers."openclaw" = {
-    image = "openclaw-matrix:latest";
-    imageFile = null;  # Use locally built image
+    image = "openclaw-custom:latest";
 
     environmentFiles = [
       config.age.secrets.openclaw-env.path
@@ -85,6 +53,7 @@ EOF
     };
 
     preStart = ''
+      docker build -t openclaw-custom:latest -f ${./openclaw.Dockerfile} ${./.}
       mkdir -p ${dataDir}/{config,workspace,data}
       chown -R 1000:1000 ${dataDir}
       chmod -R 755 ${dataDir}
@@ -113,8 +82,7 @@ EOF
       fi
     '';
 
-    after = [ "openclaw-image-builder.service" "tailscaled.service" ];
-    requires = [ "openclaw-image-builder.service" ];
+    after = [ "tailscaled.service" ];
     wants = [ "tailscaled.service" ];
     partOf = [ "docker-compose-openclaw-root.target" ];
     wantedBy = [ "docker-compose-openclaw-root.target" ];
