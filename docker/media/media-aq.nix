@@ -470,12 +470,17 @@
 
   virtualisation.oci-containers.containers."tidarr" = {
     image = "cstaelen/tidarr:latest";
+    environmentFiles = [
+      "/run/tidarr/tidarr.env"
+    ];
     environment = {
       "PGID" = "1000";
       "PUID" = "1000";
       "UMASK" = "0022";
       "TZ" = config.time.timeZone;
-      "JELLYFIN_URL" = "http://localhost:8096";
+      "JELLYFIN_URL" = "http://localhost:${toString config.modules.services.media.jellyfin.port}";
+      "PLEX_URL" = "http://localhost:${toString config.modules.services.media.plex.port}";
+      "PLEX_PATH" = "/data/media/Music";
     };
     volumes = [
       "/data/docker-appdata/tidarr:/shared:rw"
@@ -497,7 +502,14 @@
       RestartSec = lib.mkOverride 500 "100ms";
       RestartSteps = lib.mkOverride 500 9;
       ExecStartPre = [
-        "+${pkgs.bash}/bin/bash -c 'mkdir -p /data/docker-appdata/tidarr/.tiddl && chown -R 1000:1000 /data/docker-appdata/tidarr'"
+        "+${pkgs.bash}/bin/bash -c '${lib.concatStringsSep " && " [
+          "mkdir -p /data/docker-appdata/tidarr/.tiddl"
+          "chown -R 1000:1000 /data/docker-appdata/tidarr"
+          "mkdir -p /run/tidarr"
+          "echo \"PLEX_TOKEN=$(cat ${config.age.secrets.plex-token.path})\" > /run/tidarr/tidarr.env"
+          "echo \"JELLYFIN_API_KEY=$(cat ${config.age.secrets.jellyfin-token.path})\" >> /run/tidarr/tidarr.env"
+          "chmod 0400 /run/tidarr/tidarr.env"
+        ]}'"
       ];
     };
     after = [
