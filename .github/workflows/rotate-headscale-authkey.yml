@@ -1,0 +1,104 @@
+name: Rotate Headscale Auth Key
+
+# Generates a new Headscale preauthkey for GitHub Actions runners and updates
+# the HEADSCALE_AUTHKEY repo secret. Runs weekly to ensure the key never expires
+# (keys are created with 3-week expiry, rotated every week = 2 weeks buffer).
+#
+# Required Secrets:
+#   - GH_PAT: Personal access token with repo scope (for updating secrets)
+#   - SSH_PRIVATE_KEY: SSH key for connecting to pits as github-actions
+#   - HEADSCALE_AUTHKEY: Current auth key (used to connect via Tailscale)
+#   - HEADSCALE_LOGIN_SERVER: Headscale coordination server URL
+#   - NIXOS_SERVER_USER: SSH username (github-actions)
+#   - MATRIX_*: Optional Matrix notification secrets
+
+on:
+  schedule:
+    # Every Monday at 6 AM UTC (1 AM EST), before the flake update at 7 AM
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+env:
+  MATRIX_HOMESERVER_URL: ${{ secrets.MATRIX_HOMESERVER_URL }}
+  MATRIX_ROOM_ID: ${{ secrets.MATRIX_ROOM_ID }}
+  MATRIX_ACCESS_TOKEN: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+
+jobs:
+  rotate-key:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Tailscale (Headscale)
+      uses: tailscale/github-action@v2
+      with:
+        authkey: ${{ secrets.HEADSCALE_AUTHKEY }}
+        tags: tag:github-actions
+        version: 1.78.1
+        args: --login-server ${{ secrets.HEADSCALE_LOGIN_SERVER }}
+
+    - name: Wait for Tailscale connection
+      run: sleep 10
+
+    - name: Configure SSH
+      run: |
+        mkdir -p ~/.ssh
+        cat > ~/.ssh/config << 'SSHEOF'
+        Host *
+          StrictHostKeyChecking no
+          UserKnownHostsFile /dev/null
+        SSHEOF
+        chmod 600 ~/.ssh/config
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+
+    - name: Generate new auth key on pits
+      id: generate-key
+      run: |
+        PITS_HOST="pits.vpn.theyoder.family"
+
+        # Generate a new ephemeral preauthkey (3 weeks = 504h)
+        NEW_KEY=$(ssh ${{ secrets.NIXOS_SERVER_USER }}@$PITS_HOST \
+          "sudo headscale preauthkeys create -u github-actions --ephemeral --reusable -e 504h --tags tag:github-actions -o json" \
+          | jq -r '.key')
+
+        if [ -z "$NEW_KEY" ] || [ "$NEW_KEY" = "null" ]; then
+          echo "Failed to generate new auth key"
+          exit 1
+        fi
+
+        echo "::add-mask::$NEW_KEY"
+        echo "new_key=$NEW_KEY" >> $GITHUB_OUTPUT
+        echo "New auth key generated successfully"
+
+    - name: Update HEADSCALE_AUTHKEY secret
+      env:
+        GH_TOKEN: ${{ secrets.GH_PAT }}
+      run: |
+        echo "${{ steps.generate-key.outputs.new_key }}" | gh secret set HEADSCALE_AUTHKEY -R ${{ github.repository }}
+        echo "HEADSCALE_AUTHKEY secret updated"
+
+    - name: Notify success
+      if: success()
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          🔑 Headscale auth key rotated successfully
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+
+    - name: Notify failure
+      if: failure()
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ❌ Headscale auth key rotation failed
+          ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
