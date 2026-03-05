@@ -65,7 +65,13 @@ in
     
     services.samba = {
       enable = true;
-      settings = cfg.shares;
+      openFirewall = true;
+      settings = {
+        global = {
+          "map to guest" = "bad user";
+          "guest account" = "nobody";
+        };
+      } // cfg.shares;
     };
   };
 }
