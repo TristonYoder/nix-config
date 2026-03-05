@@ -17,8 +17,12 @@
   # All module enables are set in ../../profiles/desktop.nix
   # Override any profile settings here if needed for this specific host
 
-  # Example: Enable Syncthing for file sync
-  # modules.services.storage.syncthing.enable = true;
+  # Syncthing for bidirectional home directory sync with david
+  modules.services.storage.syncthing = {
+    enable = true;
+    dataDir = "/home/tristonyoder";
+    configDir = "/home/tristonyoder/.config/syncthing";
+  };
 
   # =============================================================================
   # ADDITIONAL PACKAGES FOR LAPTOP
