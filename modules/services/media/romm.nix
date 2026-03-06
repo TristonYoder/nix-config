@@ -32,6 +32,12 @@ in
       description = "Data directory for RomM";
     };
 
+    steamGridDbKeyFile = mkOption {
+      type = types.path;
+      default = config.age.secrets.romm-steamgriddb-key.path;
+      description = "Path to file containing SteamGridDB API key";
+    };
+
     authSecretKeyFile = mkOption {
       type = types.path;
       default = config.age.secrets.romm-auth-secret-key.path;
@@ -42,12 +48,6 @@ in
       type = types.path;
       default = config.age.secrets.romm-db-password.path;
       description = "Path to file containing MariaDB password";
-    };
-
-    steamGridDbKeyFile = mkOption {
-      type = types.path;
-      default = config.age.secrets.romm-steamgriddb-key.path;
-      description = "Path to file containing SteamGridDB API key";
     };
 
     oidc = mkOption {
