@@ -57,6 +57,7 @@ with lib;
       "romm-auth-secret-key" = { file = ../secrets/romm-auth-secret-key.age; owner = "root"; group = "docker"; mode = "0440"; };
       "romm-db-password" = { file = ../secrets/romm-db-password.age; owner = "root"; group = "docker"; mode = "0440"; };
       "romm-oidc-secret" = { file = ../secrets/romm-oidc-secret.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "romm-steamgriddb-key" = { file = ../secrets/romm-steamgriddb-key.age; owner = "root"; group = "docker"; mode = "0440"; };
     })
 
     // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.infrastructure.cloudflared.enable) {

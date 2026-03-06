@@ -44,6 +44,12 @@ in
       description = "Path to file containing MariaDB password";
     };
 
+    steamGridDbKeyFile = mkOption {
+      type = types.path;
+      default = config.age.secrets.romm-steamgriddb-key.path;
+      description = "Path to file containing SteamGridDB API key";
+    };
+
     oidc = mkOption {
       type = types.submodule {
         options = {
@@ -222,6 +228,8 @@ in
             "DB_PASS=$(cat ${cfg.dbPasswordFile})"
             "echo \"ROMM_AUTH_SECRET_KEY=$AUTH_KEY\" > /run/romm/romm.env"
             "echo \"DB_PASSWD=$DB_PASS\" >> /run/romm/romm.env"
+            "SGDB_KEY=$(cat ${cfg.steamGridDbKeyFile})"
+            "echo \"STEAMGRIDDB_API_KEY=$SGDB_KEY\" >> /run/romm/romm.env"
           ] ++ (optionals cfg.oidc.enable [
             "OIDC_SECRET=$(cat ${cfg.oidc.clientSecretFile})"
             "echo \"OIDC_CLIENT_SECRET=$OIDC_SECRET\" >> /run/romm/romm.env"
