@@ -38,6 +38,18 @@ in
       description = "Path to file containing SteamGridDB API key";
     };
 
+    igdbClientIdFile = mkOption {
+      type = types.path;
+      default = config.age.secrets.romm-igdb-client-id.path;
+      description = "Path to file containing IGDB/Twitch client ID";
+    };
+
+    igdbClientSecretFile = mkOption {
+      type = types.path;
+      default = config.age.secrets.romm-igdb-client-secret.path;
+      description = "Path to file containing IGDB/Twitch client secret";
+    };
+
     authSecretKeyFile = mkOption {
       type = types.path;
       default = config.age.secrets.romm-auth-secret-key.path;
@@ -230,6 +242,10 @@ in
             "echo \"DB_PASSWD=$DB_PASS\" >> /run/romm/romm.env"
             "SGDB_KEY=$(cat ${cfg.steamGridDbKeyFile})"
             "echo \"STEAMGRIDDB_API_KEY=$SGDB_KEY\" >> /run/romm/romm.env"
+            "IGDB_ID=$(cat ${cfg.igdbClientIdFile})"
+            "IGDB_SECRET=$(cat ${cfg.igdbClientSecretFile})"
+            "echo \"IGDB_CLIENT_ID=$IGDB_ID\" >> /run/romm/romm.env"
+            "echo \"IGDB_CLIENT_SECRET=$IGDB_SECRET\" >> /run/romm/romm.env"
           ] ++ (optionals cfg.oidc.enable [
             "OIDC_SECRET=$(cat ${cfg.oidc.clientSecretFile})"
             "echo \"OIDC_CLIENT_SECRET=$OIDC_SECRET\" >> /run/romm/romm.env"
