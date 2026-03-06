@@ -7,6 +7,7 @@
     ./jellyplex-watched.nix
     ./jellyseerr.nix
     ./plex.nix
+    ./romm.nix
     ./sunshine.nix
   ];
 }
