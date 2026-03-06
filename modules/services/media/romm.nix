@@ -22,7 +22,7 @@ in
 
     libraryPath = mkOption {
       type = types.str;
-      default = "/data/media/Games/Emulation/roms";
+      default = "/data/media/Games/Emulation";
       description = "Path to ROM library directory";
     };
 
@@ -190,7 +190,7 @@ in
         "/run/romm/romm.env"
       ];
       volumes = [
-        "${cfg.libraryPath}:/romm/library:ro"
+        "${cfg.libraryPath}:/romm/library:rw"
         "${cfg.dataDir}/assets:/romm/assets:rw"
         "${cfg.dataDir}/config:/romm/config:rw"
         "${cfg.dataDir}/resources:/romm/resources:rw"
@@ -217,6 +217,7 @@ in
           "+${pkgs.bash}/bin/bash -c '${lib.concatStringsSep " && " ([
             "mkdir -p /run/romm"
             "mkdir -p ${cfg.dataDir}/{assets,config,resources,redis_data,mysql}"
+            "touch ${cfg.dataDir}/config/config.yml"
             "AUTH_KEY=$(cat ${cfg.authSecretKeyFile})"
             "DB_PASS=$(cat ${cfg.dbPasswordFile})"
             "echo \"ROMM_AUTH_SECRET_KEY=$AUTH_KEY\" > /run/romm/romm.env"
