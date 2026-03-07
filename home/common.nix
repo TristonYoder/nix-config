@@ -30,8 +30,7 @@ in
     # macOS-only packages
     mas  # Mac App Store CLI
   ] else [
-    # Linux-only packages (workstations)
-    dolphin-emu  # GameCube and Wii emulator
+    # Linux-only packages
   ]);
   
   # Common environment variables

@@ -33,14 +33,6 @@
   
   modules.services.infrastructure.tailscale.enable = lib.mkDefault true;
 
-  # =============================================================================
-  # Desktop Applications
-  # =============================================================================
-
-  environment.systemPackages = with pkgs; [
-    dolphin-emu  # GameCube and Wii emulator
-  ];
-
   # All other services disabled by default
   # Individual desktops can enable specific services in their host config
 }

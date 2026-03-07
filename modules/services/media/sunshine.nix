@@ -36,13 +36,6 @@ in
       openFirewall = cfg.openFirewall;
     };
 
-    # Steam gaming platform (typically used with Sunshine)
-    programs.steam = {
-      enable = true;
-      remotePlay.openFirewall = true;
-      dedicatedServer.openFirewall = true;
-      localNetworkGameTransfers.openFirewall = true;
-    };
-  };
+};
 }
 

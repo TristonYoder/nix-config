@@ -45,18 +45,16 @@
     # Crypto & Hardware Wallets
     trezor-suite
     
-    # Gaming
-    steam
-    gfn-electron
-    
     # Communication
     element-desktop
   ];
   
   # =============================================================================
-  # ADDITIONAL DEVELOPMENT SERVICES
+  # GAMING
   # =============================================================================
-  
-  # Inherit all development services from desktop.nix
-  # Add workstation-specific development tools here if needed
+
+  modules.services.gaming = {
+    enable = lib.mkDefault true;
+    steam.steamRomManager = true;
+  };
 }
