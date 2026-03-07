@@ -25,6 +25,46 @@
   };
 
   # =============================================================================
+  # NFS MOUNTS
+  # =============================================================================
+
+  # Mount david's /data directory via NFS
+  # Uses automount so it doesn't block boot if david is unreachable
+  fileSystems."/data" = {
+    device = "david.theyoder.family:/data";
+    fsType = "nfs";
+    options = [
+      "noauto"
+      "x-systemd.automount"
+      "x-systemd.idle-timeout=600"
+      "x-systemd.mount-timeout=10"
+      "soft"
+      "timeo=50"
+      "retrans=3"
+    ];
+  };
+
+  # =============================================================================
+  # KEYBOARD LAYOUT - SWAP COMMAND AND CONTROL
+  # =============================================================================
+
+  # MacBook keyboard has Command (Super) next to spacebar where Ctrl
+  # would be on a PC keyboard. Use keyd to swap at the kernel level
+  # so it works in Wayland, X11, and TTY.
+  services.keyd = {
+    enable = true;
+    keyboards.default = {
+      ids = [ "*" ];
+      settings.main = {
+        leftmeta = "leftcontrol";
+        leftcontrol = "leftmeta";
+        rightmeta = "rightcontrol";
+        rightcontrol = "rightmeta";
+      };
+    };
+  };
+
+  # =============================================================================
   # ADDITIONAL PACKAGES FOR LAPTOP
   # =============================================================================
 
@@ -35,5 +75,8 @@
 
     # Development tools
     vscode
+
+    # NFS client support
+    nfs-utils
   ];
 }
