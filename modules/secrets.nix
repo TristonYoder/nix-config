@@ -53,6 +53,15 @@ with lib;
       "pocket-id-encryption-key" = { file = ../secrets/pocket-id-encryption-key.age; owner = "root"; group = "docker"; mode = "0440"; };
     })
 
+    // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.gaming.romm.enable) {
+      "romm-auth-secret-key" = { file = ../secrets/romm-auth-secret-key.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "romm-db-password" = { file = ../secrets/romm-db-password.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "romm-oidc-secret" = { file = ../secrets/romm-oidc-secret.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "romm-steamgriddb-key" = { file = ../secrets/romm-steamgriddb-key.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "romm-igdb-client-id" = { file = ../secrets/romm-igdb-client-id.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "romm-igdb-client-secret" = { file = ../secrets/romm-igdb-client-secret.age; owner = "root"; group = "docker"; mode = "0440"; };
+    })
+
     // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.infrastructure.cloudflared.enable) {
       "cloudflared-token-current" = { file = ../secrets/cloudflared-token-current.age; owner = "cloudflared"; group = "cloudflared"; mode = "0400"; };
     })

@@ -10,5 +10,6 @@
     ./development
     ./communication
     ./ai
+    ./gaming
   ];
 }
