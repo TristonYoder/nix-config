@@ -260,10 +260,115 @@ jobs:
             }
           }' || echo "Reaction failed, continuing..."
         
+  # Build closures for offline hosts (nixbook) on david after deployment
+  build-offline-closures:
+    runs-on: ubuntu-latest
+    needs: [prepare-deployment, deploy-configurations]
+    if: needs.deploy-configurations.result == 'success'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Notify building offline closures
+      id: notify-offline-start
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          🔵 Building offline closures
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
+
+    - name: Setup Tailscale (Headscale)
+      uses: tailscale/github-action@v2
+      with:
+        authkey: ${{ secrets.HEADSCALE_AUTHKEY }}
+        tags: tag:github-actions
+        version: 1.78.1
+        args: --login-server ${{ secrets.HEADSCALE_LOGIN_SERVER }}
+
+    - name: Wait for Tailscale connection
+      run: sleep 10
+
+    - name: Build tristons-nixbook closure on david
+      run: |
+        SERVER_HOSTNAME="david.vpn.theyoder.family"
+
+        # Configure SSH
+        mkdir -p ~/.ssh
+        echo "Host *" >> ~/.ssh/config
+        echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+        echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
+        chmod 600 ~/.ssh/config
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+
+        # Copy configuration to david
+        rsync -avz --delete \
+          --exclude='.git' \
+          --exclude='.github' \
+          --exclude='*.save' \
+          --exclude='nextcloud/admin-pass' \
+          ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME:/tmp/nixos-config-offline-build/
+
+        # Build nixbook closure and store in binary cache on NFS
+        ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << 'EOF'
+          set -e
+          cd /tmp/nixos-config-offline-build
+
+          # Ensure the nix-builds directory exists
+          sudo mkdir -p /data/nix-builds/cache
+
+          echo "Building tristons-nixbook closure..."
+          sudo nix build .#nixosConfigurations.tristons-nixbook.config.system.build.toplevel \
+            -o /data/nix-builds/tristons-nixbook
+
+          # Get the store path
+          STORE_PATH=$(readlink -f /data/nix-builds/tristons-nixbook)
+          echo "Built closure: $STORE_PATH"
+
+          # Write store path for nixbook to read
+          echo "$STORE_PATH" | sudo tee /data/nix-builds/tristons-nixbook.path > /dev/null
+
+          # Copy closure to binary cache on NFS-accessible volume
+          echo "Copying closure to binary cache..."
+          sudo nix copy --to "file:///data/nix-builds/cache" "$STORE_PATH"
+
+          echo "Offline closure built and cached for tristons-nixbook"
+        EOF
+
+    - name: Notify offline closures success
+      if: success()
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ✅ Offline closures built
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
+
+    - name: Notify offline closures failure
+      if: failure()
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ⚠️ Offline closure build failed
+          ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
+
   # Summary job to report overall deployment status
   deployment-summary:
     runs-on: ubuntu-latest
-    needs: [prepare-deployment, deploy-configurations]
+    needs: [prepare-deployment, deploy-configurations, build-offline-closures]
     if: always()
     
     steps:

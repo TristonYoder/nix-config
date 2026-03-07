@@ -34,6 +34,7 @@ in
         /data/media             10.150.10.0/23(rw,fsid=1002,no_subtree_check,crossmnt) 10.150.100.0/23(ro,fsid=1002,no_subtree_check,crossmnt) 10.100.0.0/18(rw,fsid=1002,no_subtree_check,crossmnt) 100.64.0.0/10(rw,fsid=1002,no_subtree_check,crossmnt)
         /data/tristonyoder      10.150.10.0/23(rw,fsid=1003,no_subtree_check,crossmnt) 10.150.100.0/23(ro,fsid=1003,no_subtree_check,crossmnt) 10.100.0.0/18(rw,fsid=1003,no_subtree_check,crossmnt) 100.64.0.0/10(rw,fsid=1003,no_subtree_check,crossmnt)
         /data/backups           10.150.10.0/23(rw,fsid=1004,no_subtree_check,crossmnt) 10.150.100.0/23(ro,fsid=1004,no_subtree_check,crossmnt) 10.100.0.0/18(rw,fsid=1004,no_subtree_check,crossmnt) 100.64.0.0/10(rw,fsid=1004,no_subtree_check,crossmnt)
+        /data/nix-builds        10.150.10.0/23(ro,fsid=1005,no_subtree_check,crossmnt) 10.150.100.0/23(ro,fsid=1005,no_subtree_check,crossmnt) 10.100.0.0/18(ro,fsid=1005,no_subtree_check,crossmnt) 100.64.0.0/10(ro,fsid=1005,no_subtree_check,crossmnt)
       '';
       description = "NFS exports configuration";
     };
