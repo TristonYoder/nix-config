@@ -45,6 +45,15 @@
   };
 
   # =============================================================================
+  # KEYBOARD LAYOUT - SWAP COMMAND AND CONTROL
+  # =============================================================================
+
+  # MacBook keyboard has Command (Super) next to spacebar where Ctrl
+  # would be on a PC keyboard. Swap them so the familiar Command key
+  # position acts as Ctrl.
+  services.xserver.xkb.options = "ctrl:swap_lwin_lctl,ctrl:swap_rwin_rctl";
+
+  # =============================================================================
   # ADDITIONAL PACKAGES FOR LAPTOP
   # =============================================================================
 
