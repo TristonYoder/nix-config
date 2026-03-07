@@ -49,9 +49,20 @@
   # =============================================================================
 
   # MacBook keyboard has Command (Super) next to spacebar where Ctrl
-  # would be on a PC keyboard. Swap them so the familiar Command key
-  # position acts as Ctrl.
-  services.xserver.xkb.options = "ctrl:swap_lwin_lctl,ctrl:swap_rwin_rctl";
+  # would be on a PC keyboard. Use keyd to swap at the kernel level
+  # so it works in Wayland, X11, and TTY.
+  services.keyd = {
+    enable = true;
+    keyboards.default = {
+      ids = [ "*" ];
+      settings.main = {
+        leftmeta = "leftcontrol";
+        leftcontrol = "leftmeta";
+        rightmeta = "rightcontrol";
+        rightcontrol = "rightmeta";
+      };
+    };
+  };
 
   # =============================================================================
   # ADDITIONAL PACKAGES FOR LAPTOP
