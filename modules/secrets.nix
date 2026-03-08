@@ -87,6 +87,14 @@ with lib;
       "jellyfin-token" = { file = ../secrets/jellyfin-token.age; owner = "jellyplex-watched"; group = "jellyplex-watched"; mode = "0400"; };
     })
 
+    // (optionalAttrs config.modules.services.infrastructure.nix-cache.enable {
+      "nix-cache-signing-key" = { file = ../secrets/nix-cache-signing-key.age; owner = "harmonia"; group = "harmonia"; mode = "0400"; };
+    })
+
+    // (optionalAttrs config.modules.system.remote-builder.enable {
+      "nix-builder-key" = { file = ../secrets/nix-builder-key.age; owner = "root"; group = "root"; mode = "0400"; };
+    })
+
     // (optionalAttrs (config.networking.hostName == "pits") {
       # PITS secrets here
     });

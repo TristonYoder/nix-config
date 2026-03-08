@@ -33,9 +33,12 @@ let
   
   # Secrets for david only
   davidKeys = [ david ] ++ adminKeys;
-  
+
   # Secrets for pits only
   pitsKeys = [ pits ] ++ adminKeys;
+
+  # Secrets for nixbook only
+  nixbookKeys = [ tristons-nixbook ] ++ adminKeys;
 in
 {
   # =============================================================================
@@ -115,6 +118,20 @@ in
   # =============================================================================
 
   
+  # =============================================================================
+  # NIXBOOK-SPECIFIC SECRETS
+  # =============================================================================
+
+  # SSH private key for distributed builds (nixbook -> david)
+  "nix-builder-key.age".publicKeys = nixbookKeys;
+
+  # =============================================================================
+  # NIX CACHE SECRETS (on david)
+  # =============================================================================
+
+  # Signing private key for Harmonia binary cache
+  "nix-cache-signing-key.age".publicKeys = davidKeys;
+
   # =============================================================================
   # PITS-SPECIFIC SECRETS
   # =============================================================================

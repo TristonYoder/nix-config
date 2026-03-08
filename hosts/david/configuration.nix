@@ -116,6 +116,25 @@
   };
 
   # =============================================================================
+  # NIX BUILD SERVER
+  # =============================================================================
+
+  # Binary cache via Harmonia
+  modules.services.infrastructure.nix-cache.enable = true;
+
+  # Allow nixbook to offload builds via ssh-ng
+  # The nix-builder public key must be added here after generating the keypair
+  nix.sshServe = {
+    enable = true;
+    protocol = "ssh-ng";
+    keys = [
+      # nix-builder@tristons-nixbook - add the public key after generating with:
+      # ssh-keygen -t ed25519 -f /tmp/nix-builder-key -C "nix-builder@tristons-nixbook" -N ""
+      # Then paste the contents of /tmp/nix-builder-key.pub here
+    ];
+  };
+
+  # =============================================================================
   # ADDITIONAL SERVICES
   # =============================================================================
   

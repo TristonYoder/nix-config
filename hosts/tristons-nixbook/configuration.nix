@@ -25,6 +25,22 @@
   };
 
   # =============================================================================
+  # NIX BUILD OFFLOADING
+  # =============================================================================
+
+  # Use david's binary cache as a substituter
+  modules.system.nix-cache-client = {
+    enable = true;
+    # Public key must be set after generating the signing keypair on david:
+    # nix key generate-secret --key-name david-cache > /tmp/key
+    # nix key convert-secret-to-public < /tmp/key
+    publicKey = "david-cache:REPLACE_WITH_PUBLIC_KEY_AFTER_GENERATION";
+  };
+
+  # Offload builds to david via ssh-ng
+  modules.system.remote-builder.enable = true;
+
+  # =============================================================================
   # AUTO-UPDATE FROM DAVID
   # =============================================================================
 
