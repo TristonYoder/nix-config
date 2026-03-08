@@ -29,6 +29,23 @@ in
     services.displayManager.sddm.enable = true;
     services.desktopManager.plasma6.enable = true;
 
+    # Force XWayland to start eagerly at login so DISPLAY is always set.
+    # Without this, NVIDIA proprietary drivers leave XWayland on-demand,
+    # causing Qt apps with hardcoded QT_QPA_PLATFORM=xcb to crash.
+    systemd.tmpfiles.rules = [
+      "d /tmp/.X11-unix 1777 root root -"
+    ];
+    systemd.user.services.xwayland-init = {
+      description = "Force XWayland initialization";
+      wantedBy = [ "graphical-session.target" ];
+      after = [ "plasma-kwin_wayland.service" ];
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = "${pkgs.xorg.xdpyinfo}/bin/xdpyinfo -display :0";
+        SuccessExitStatus = "0 1";
+      };
+    };
+
     # Sound configuration with PipeWire
     services.pulseaudio.enable = mkIf cfg.enableSound false;
     security.rtkit.enable = mkIf cfg.enableSound true;
