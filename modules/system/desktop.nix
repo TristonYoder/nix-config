@@ -7,13 +7,13 @@ in
 {
   options.modules.system.desktop = {
     enable = mkEnableOption "Desktop environment (KDE Plasma 6)";
-    
+
     enableX11 = mkOption {
       type = types.bool;
       default = true;
       description = "Enable X11 windowing system";
     };
-    
+
     enableSound = mkOption {
       type = types.bool;
       default = true;
@@ -29,6 +29,9 @@ in
     services.displayManager.sddm.enable = true;
     services.desktopManager.plasma6.enable = true;
 
+    # Bluetooth
+    hardware.bluetooth.enable = true;
+
     # Sound configuration with PipeWire
     services.pulseaudio.enable = mkIf cfg.enableSound false;
     security.rtkit.enable = mkIf cfg.enableSound true;
@@ -40,4 +43,3 @@ in
     };
   };
 }
-
