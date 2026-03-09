@@ -21,6 +21,7 @@ Per-host NixOS and macOS configurations managed through this flake.
 - **User:** tristonyoder
 - **Auto-Deploy:** ✅ GitHub Actions enabled
 - **Services:** Full stack (infrastructure, media, productivity, storage, development)
+- **Special Config:** Multiseat setup (KVM host + gaming/media center) - see [Multiseat Guide](../docs/MULTISEAT.md)
 
 #### pits (Edge Server / Pi in the Sky)
 - **Profile:** [edge](../profiles/edge.nix)

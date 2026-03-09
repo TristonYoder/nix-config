@@ -27,9 +27,80 @@
   # =============================================================================
   # HOST-SPECIFIC SETTINGS
   # =============================================================================
-  
+
   # All module enables are set in ../../profiles/server.nix
   # You can override any profile settings here if needed for this specific host
+
+  # =============================================================================
+  # MULTISEAT CONFIGURATION
+  # =============================================================================
+  # Multiseat setup: Seat0 (integrated GPU) for KVM admin, Seat1 (discrete GPU) for gaming/media
+  #
+  # SETUP INSTRUCTIONS:
+  # 1. Run hardware detection on david:
+  #    sudo /path/to/nix-config/scripts/detect-multiseat-hardware.sh
+  # 2. Identify GPU PCI paths, DRM devices, and input devices from output
+  # 3. Update the configuration below with actual device paths
+  # 4. Uncomment the modules.system.multiseat block
+  # 5. Rebuild: sudo nixos-rebuild switch --flake .#david
+  #
+  # DISABLE: Set modules.system.multiseat.enable = false to disable multiseat
+
+  # Virtualization/KVM Support
+  modules.system.virtualization = {
+    enable = true;
+    enableGUI = true;
+    enableLookingGlass = true;
+    users = [ "tristonyoder" ];
+  };
+
+  # Multiseat Configuration (DISABLED by default - enable after hardware detection)
+  modules.system.multiseat = {
+    enable = false;  # Set to true after configuring device paths below
+
+    # Seat 0: Integrated GPU - KVM Host / Admin Console
+    seat0 = {
+      enable = true;
+      gpu = "pci-0000:00:00.0";  # REPLACE: Run detection script to find integrated GPU PCI path
+      autologin = null;  # Set to "tristonyoder" for autologin, or null for manual login
+      session = "plasma";
+
+      # Device assignments for seat0 (admin workstation)
+      devices = [
+        # Example DRM device for integrated GPU
+        # { subsystem = "drm"; kernel = "card0"; }
+
+        # Example input devices (keyboard/mouse for admin seat)
+        # { subsystem = "input"; kernel = "event3"; }  # Keyboard
+        # { subsystem = "input"; kernel = "event4"; }  # Mouse
+
+        # Example audio device
+        # { subsystem = "sound"; kernel = "card0"; }
+      ];
+    };
+
+    # Seat 1: Discrete NVIDIA GPU - Gaming / Media Center
+    seat1 = {
+      enable = true;
+      gpu = "pci-0000:01:00.0";  # REPLACE: Run detection script to find NVIDIA GPU PCI path
+      autologin = null;  # Set to "tristonyoder" for autologin, or null for manual login
+      session = "plasma";
+
+      # Device assignments for seat1 (gaming/media)
+      devices = [
+        # Example DRM device for NVIDIA GPU
+        # { subsystem = "drm"; kernel = "card1"; }
+
+        # Example input devices (keyboard/mouse/controllers for gaming seat)
+        # { subsystem = "input"; kernel = "event5"; }  # Gaming keyboard
+        # { subsystem = "input"; kernel = "event6"; }  # Gaming mouse
+        # { subsystem = "input"; kernel = "event7"; }  # Game controller
+
+        # Example NVIDIA HDMI audio
+        # { subsystem = "sound"; kernel = "card1"; }
+      ];
+    };
+  };
   
   # GroupMe Bridge - Whitelist user for provisioning
   modules.services.communication.mautrix-groupme = {

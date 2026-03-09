@@ -7,5 +7,7 @@
     ./networking.nix
     ./users.nix
     ./desktop.nix
+    ./multiseat.nix
+    ./virtualization.nix
   ];
 }
