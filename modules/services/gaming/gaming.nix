@@ -83,5 +83,13 @@ in
       ++ (optional cfg.emulators.scummvm pkgs.scummvm)
       ++ (optional cfg.emulators.mame pkgs.mame)
       ++ (optional cfg.cloudGaming.enable pkgs.gfn-electron);
+
+    # Add udev rules for DolphinBar when dolphin is enabled
+    # The idVendor and idProduct might need to be adjusted based on your specific DolphinBar.
+    # You can find them by running `lsusb` with the DolphinBar plugged in.
+    services.udev.extraRules = lib.mkIf cfg.emulators.dolphin ''
+      # Mayflash DolphinBar (likely ID 057e:0306 or similar)
+      SUBSYSTEM=="hidraw*", ATTRS{idVendor}=="057e", ATTRS{idProduct}=="0306", MODE="0666"
+    '';
   };
 }
