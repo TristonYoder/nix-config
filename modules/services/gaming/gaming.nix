@@ -50,6 +50,11 @@ in
         default = true;
         description = "Enable cloud gaming clients (GeForce NOW)";
       };
+      moonlight = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Enable Moonlight streaming client";
+      };
     };
   };
 
@@ -82,7 +87,8 @@ in
       ++ (optional cfg.emulators.retroarch pkgs.retroarchFull)
       ++ (optional cfg.emulators.scummvm pkgs.scummvm)
       ++ (optional cfg.emulators.mame pkgs.mame)
-      ++ (optional cfg.cloudGaming.enable pkgs.gfn-electron);
+      ++ (optional cfg.cloudGaming.enable pkgs.gfn-electron)
+      ++ (optional cfg.cloudGaming.moonlight pkgs.moonlight-qt);
 
     # Add udev rules for DolphinBar when dolphin is enabled
     # The idVendor and idProduct might need to be adjusted based on your specific DolphinBar.
