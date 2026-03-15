@@ -94,6 +94,10 @@ in
       accelerationDevices = cfg.accelerationDevices;
     };
 
+    # Ensure media group exists and plex user has access
+    users.groups.media = { };
+    users.users.plex.extraGroups = [ "media" "video" "render" ];
+
     modules.services.vHosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
     };

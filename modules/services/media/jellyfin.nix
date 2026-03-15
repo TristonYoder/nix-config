@@ -20,12 +20,24 @@ in
       description = "Jellyfin port (reverse proxy target)";
     };
 
+    mediaDir = mkOption {
+      type = types.str;
+      default = "/data/media";
+      description = "Root media directory";
+    };
+
+    mediaSubDirs = mkOption {
+      type = types.listOf types.str;
+      default = [ "Movies" "TV" "DVR" "Music" "Books" "Audiobooks" "Downloads" "Podcasts" "Games" "youtube" "Unsorted" "Plex" ];
+      description = "Subdirectories under mediaDir to create with correct permissions";
+    };
+
     openFirewall = mkOption {
       type = types.bool;
       default = true;
       description = "Open firewall ports for Jellyfin";
     };
-    
+
     enableHardwareTranscode = mkOption {
       type = types.bool;
       default = true;
@@ -49,10 +61,10 @@ in
     # Add tristonyoder user to media group (for Docker containers)
     users.users.tristonyoder.extraGroups = [ "media" ];
 
-    # Set proper permissions on /data/media directory
-    systemd.tmpfiles.rules = [
-      "d /data/media 0775 tristonyoder media -"
-    ];
+    # Set proper permissions on media directory and subdirectories
+    systemd.tmpfiles.rules =
+      [ "d ${cfg.mediaDir} 0775 tristonyoder media -" ]
+      ++ map (sub: "d ${cfg.mediaDir}/${sub} 0775 tristonyoder media -") cfg.mediaSubDirs;
 
     # Workaround for jellyfin hardware transcode (NVIDIA NVENC)
     # Minimal hardening overrides required for CUDA
