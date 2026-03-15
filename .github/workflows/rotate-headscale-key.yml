@@ -1,0 +1,110 @@
+name: Rotate Headscale Preauthkey
+
+on:
+  schedule:
+    - cron: '0 6 * * *'  # Daily at 6 AM UTC (1 hour before Monday flake update)
+  workflow_dispatch:
+
+env:
+  MATRIX_HOMESERVER_URL: ${{ secrets.MATRIX_HOMESERVER_URL }}
+  MATRIX_ROOM_ID: ${{ secrets.MATRIX_ROOM_ID }}
+  MATRIX_ACCESS_TOKEN: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+
+jobs:
+  rotate-key:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Tailscale (Headscale)
+      uses: tailscale/github-action@v2
+      with:
+        authkey: ${{ secrets.HEADSCALE_AUTHKEY }}
+        tags: tag:github-actions
+        version: 1.78.1
+        args: --login-server ${{ secrets.HEADSCALE_LOGIN_SERVER }}
+
+    - name: Wait for Tailscale connection
+      run: sleep 10
+
+    - name: Configure SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "Host *" >> ~/.ssh/config
+        echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+        echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
+        chmod 600 ~/.ssh/config
+
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+
+    - name: Generate new preauthkey
+      id: generate-key
+      run: |
+        HOST="pits.vpn.theyoder.family"
+
+        # SSH with retry logic
+        MAX_RETRIES=3
+        RETRY_COUNT=0
+        RETRY_DELAY=5
+
+        while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+          if timeout 10s ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST "echo 'SSH connection successful'"; then
+            echo "SSH connection established successfully"
+            break
+          else
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+              echo "SSH connection attempt $RETRY_COUNT failed, retrying in ${RETRY_DELAY}s..."
+              sleep $RETRY_DELAY
+              RETRY_DELAY=$((RETRY_DELAY * 2))
+            else
+              echo "Failed to establish SSH connection to $HOST after $MAX_RETRIES attempts"
+              exit 1
+            fi
+          fi
+        done
+
+        # Generate new 7-day reusable preauthkey
+        NEW_KEY=$(ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST \
+          "sudo headscale preauthkeys create --user github-actions --reusable --expiration 168h" | tail -1)
+
+        if [ -z "$NEW_KEY" ]; then
+          echo "Failed to generate new preauthkey"
+          exit 1
+        fi
+
+        # Mask key in logs
+        echo "::add-mask::$NEW_KEY"
+        echo "new_key=$NEW_KEY" >> $GITHUB_OUTPUT
+
+    - name: Update GitHub secret
+      env:
+        GH_TOKEN: ${{ secrets.GH_PAT }}
+      run: |
+        echo "${{ steps.generate-key.outputs.new_key }}" | gh secret set HEADSCALE_AUTHKEY
+
+    - name: Notify success
+      if: success()
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          🔑 Headscale preauthkey rotated successfully
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+
+    - name: Notify failure
+      if: failure()
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ❌ Headscale preauthkey rotation failed
+          ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
