@@ -58,7 +58,7 @@ jobs:
 
         # Generate new 7-day reusable preauthkey
         NEW_KEY=$(tailscale ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST \
-          "sudo headscale preauthkeys create --user github-actions --reusable --ephemeral --expiration 168h" | tail -1)
+          "sudo headscale preauthkeys create --user github-actions --reusable --ephemeral --expiration 168h --tags tag:github-actions" | tail -1)
 
         if [ -z "$NEW_KEY" ]; then
           echo "Failed to generate new preauthkey"
