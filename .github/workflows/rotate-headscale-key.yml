@@ -29,6 +29,17 @@ jobs:
     - name: Wait for Tailscale connection
       run: sleep 10
 
+    - name: Configure SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "Host *" >> ~/.ssh/config
+        echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+        echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
+        chmod 600 ~/.ssh/config
+
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+
     - name: Generate new preauthkey
       id: generate-key
       run: |
@@ -40,7 +51,7 @@ jobs:
         RETRY_DELAY=5
 
         while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-          if timeout 10s tailscale ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST "echo 'SSH connection successful'"; then
+          if timeout 10s ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST "echo 'SSH connection successful'"; then
             echo "SSH connection established successfully"
             break
           else
@@ -57,7 +68,7 @@ jobs:
         done
 
         # Generate new 7-day reusable preauthkey
-        NEW_KEY=$(tailscale ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST \
+        NEW_KEY=$(ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST \
           "sudo headscale preauthkeys create --user github-actions --reusable --ephemeral --expiration 168h --tags tag:github-actions" | tail -1)
 
         if [ -z "$NEW_KEY" ]; then

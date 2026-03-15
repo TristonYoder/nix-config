@@ -135,9 +135,19 @@ jobs:
         SERVER_HOSTNAME="${{ matrix.host }}.vpn.theyoder.family"
         echo "Deploying configuration to ${{ matrix.host }} at $SERVER_HOSTNAME"
         
+        # Configure SSH to bypass host key verification
+        mkdir -p ~/.ssh
+        echo "Host *" >> ~/.ssh/config
+        echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+        echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
+        chmod 600 ~/.ssh/config
+
+        # Setup SSH key
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+
         # Copy configuration to server
         rsync -avz --delete \
-          -e "tailscale ssh" \
           --exclude='.git' \
           --exclude='.github' \
           --exclude='*.save' \
@@ -145,7 +155,7 @@ jobs:
           ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME:/tmp/nixos-config-deploy-${{ matrix.host }}/
 
         # Deploy flake configuration on server
-        tailscale ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << EOF
+        ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << EOF
           set -e
           
           # Navigate to deploy directory
@@ -186,7 +196,7 @@ jobs:
         EOF
         
         # Get deployment result
-        DEPLOY_RESULT=$(tailscale ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME "cat /tmp/nixos-deploy-result-${{ matrix.host }}.txt")
+        DEPLOY_RESULT=$(ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME "cat /tmp/nixos-deploy-result-${{ matrix.host }}.txt")
         
         if [ "$DEPLOY_RESULT" = "SUCCESS" ]; then
           echo "✅ NixOS configuration deployed successfully to ${{ matrix.host }}!"
@@ -287,9 +297,17 @@ jobs:
       run: |
         SERVER_HOSTNAME="david.vpn.theyoder.family"
 
+        # Configure SSH
+        mkdir -p ~/.ssh
+        echo "Host *" >> ~/.ssh/config
+        echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+        echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
+        chmod 600 ~/.ssh/config
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+
         # Copy configuration to david
         rsync -avz --delete \
-          -e "tailscale ssh" \
           --exclude='.git' \
           --exclude='.github' \
           --exclude='*.save' \
@@ -297,7 +315,7 @@ jobs:
           ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME:/tmp/nixos-config-offline-build/
 
         # Build nixbook closure and store in binary cache on NFS
-        tailscale ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << 'EOF'
+        ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << 'EOF'
           set -e
           cd /tmp/nixos-config-offline-build
 

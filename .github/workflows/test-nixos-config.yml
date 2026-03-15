@@ -175,9 +175,19 @@ jobs:
         SERVER_HOSTNAME="${{ matrix.host.hostname }}.vpn.theyoder.family"
         echo "Testing configuration for ${{ matrix.host.name }} on $SERVER_HOSTNAME"
         
+        # Configure SSH to bypass host key verification
+        mkdir -p ~/.ssh
+        echo "Host *" >> ~/.ssh/config
+        echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+        echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
+        chmod 600 ~/.ssh/config
+
+        # Setup SSH key
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+
         # Copy configuration to server
         rsync -avz --delete \
-          -e "tailscale ssh" \
           --exclude='.git' \
           --exclude='.github' \
           --exclude='*.save' \
@@ -185,7 +195,7 @@ jobs:
           ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME:/tmp/nixos-config-test-${{ matrix.host.name }}/
 
         # Test configuration on server
-        tailscale ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << EOF
+        ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << EOF
           set -e
           
           # Navigate to test directory
@@ -204,7 +214,7 @@ jobs:
         EOF
         
         # Get test result
-        TEST_RESULT=$(tailscale ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME "cat /tmp/nixos-test-result-${{ matrix.host.name }}.txt")
+        TEST_RESULT=$(ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME "cat /tmp/nixos-test-result-${{ matrix.host.name }}.txt")
         
         if [ "$TEST_RESULT" = "SUCCESS" ]; then
           echo "✅ NixOS configuration test passed for ${{ matrix.host.name }}!"
