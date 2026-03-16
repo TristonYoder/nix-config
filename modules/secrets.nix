@@ -34,7 +34,7 @@ with lib;
       };
     })
 
-    // (optionalAttrs (config.modules.services.infrastructure.dnsSync.enable) {
+    // (optionalAttrs config.modules.services.infrastructure.dnsSync.enable {
       "technitium-api-token" = { file = ../secrets/technitium-api-token.age; owner = "root"; group = "root"; mode = "0400"; };
     })
 
