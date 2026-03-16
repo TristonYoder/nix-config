@@ -75,6 +75,9 @@ in
   # Affine OIDC Client Secret (Pocket ID)
   "affine-oidc-secret.age".publicKeys = davidKeys;
   
+  # Baby Buddy Secrets
+  "babybuddy-secrets.age".publicKeys = davidKeys;
+
   # Tandoor Secrets
   "tandoor-secrets.age".publicKeys = davidKeys;
   

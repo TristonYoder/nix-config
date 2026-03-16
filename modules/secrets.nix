@@ -36,6 +36,7 @@ with lib;
 
     // (optionalAttrs (config.networking.hostName == "david") {
       # Unconditional david secrets
+      "babybuddy-secrets" = { file = ../secrets/babybuddy-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
       "outline-google-secret" = { file = ../secrets/outline-google-secret.age; owner = "root"; group = "docker"; mode = "0440"; };
       "affine-db-password" = { file = ../secrets/affine-db-password.age; owner = "root"; group = "docker"; mode = "0440"; };
       "affine-postgres-password" = { file = ../secrets/affine-postgres-password.age; owner = "root"; group = "docker"; mode = "0440"; };
