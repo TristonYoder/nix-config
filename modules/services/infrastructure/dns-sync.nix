@@ -89,12 +89,21 @@ in
         # Strip first label to infer zone (baby.theyoder.family -> theyoder.family)
         get_zone() { echo "''${1#*.}"; }
 
+        COMMENT="Auto-managed by dns-sync on ${cfg.targetFqdn}"
+
         technitium_add() {
           local domain="$1" zone
           zone=$(get_zone "$domain")
           echo "  + $domain"
-          $CURL --retry 5 --retry-delay 3 --retry-connrefused -sf \
-            "$TECHNITIUM_URL/api/zones/records/add?token=$TOKEN&domain=$domain&zone=$zone&type=CNAME&cname=$TARGET&overwrite=true" \
+          $CURL --retry 5 --retry-delay 3 --retry-connrefused -sfG \
+            --data-urlencode "token=$TOKEN" \
+            --data-urlencode "domain=$domain" \
+            --data-urlencode "zone=$zone" \
+            --data-urlencode "type=CNAME" \
+            --data-urlencode "cname=$TARGET" \
+            --data-urlencode "overwrite=true" \
+            --data-urlencode "comments=$COMMENT" \
+            "$TECHNITIUM_URL/api/zones/records/add" \
             | $JQ -r 'if .status == "ok" then "    ok" else "    error: \(.errorMessage)" end' || true
         }
 
