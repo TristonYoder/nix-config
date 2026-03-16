@@ -89,7 +89,7 @@ in
         # Strip first label to infer zone (baby.theyoder.family -> theyoder.family)
         get_zone() { echo "''${1#*.}"; }
 
-        COMMENT="Auto-managed by dns-sync on ${cfg.targetFqdn}"
+        COMMENT="Managed by vHost on ${cfg.targetFqdn}"
 
         technitium_add() {
           local domain="$1" zone
