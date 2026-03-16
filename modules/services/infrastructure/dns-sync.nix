@@ -158,9 +158,9 @@ in
           else
             echo "  + $domain"
           fi
-          # At zone apex, use @ as the record name
+          # At zone apex, use @.zone syntax (full notation Technitium accepts)
           if [ "$domain" = "$zone" ]; then
-            record_domain="@"
+            record_domain="@.$zone"
           else
             record_domain="$domain"
           fi
