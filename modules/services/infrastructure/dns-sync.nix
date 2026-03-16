@@ -39,27 +39,6 @@ in
       description = "State file tracking registered DNS records for declarative cleanup";
     };
 
-    cloudflare = {
-      enable = mkEnableOption "Cloudflare tunnel route sync for public vHosts (Level 3)";
-
-      apiTokenFile = mkOption {
-        type = types.nullOr types.path;
-        default = null;
-        description = "Path to file containing the Cloudflare API token (needs Tunnel:Edit permission)";
-      };
-
-      tunnelId = mkOption {
-        type = types.str;
-        default = "";
-        description = "Cloudflare tunnel UUID";
-      };
-
-      accountId = mkOption {
-        type = types.str;
-        default = "";
-        description = "Cloudflare account ID";
-      };
-    };
   };
 
   config = mkIf cfg.enable (
@@ -233,28 +212,6 @@ in
         fi
         printf '%s\n' "''${ALL_DOMAINS[@]-}" > "$STATE_FILE"
 
-        ${optionalString cfg.cloudflare.enable ''
-        # --- Level 3: Cloudflare tunnel routes for public vHosts ---
-
-        echo "=== dns-sync: syncing Cloudflare tunnel routes ==="
-        CF_TOKEN=$(cat "$CF_TOKEN_FILE")
-
-        PUBLIC_DOMAINS_JSON=$(printf '%s\n' "''${PUBLIC_DOMAINS[@]-}" \
-          | grep -v '^$' \
-          | ${pkgs.jq}/bin/jq -Rs '[split("\n")[] | select(. != "")]')
-
-        INGRESS_JSON=$(${pkgs.jq}/bin/jq -n \
-          --argjson domains "$PUBLIC_DOMAINS_JSON" \
-          '[ $domains[] | { hostname: ., service: "https://localhost:443", originRequest: { noTLSVerify: true } } ]
-           + [{ service: "http_status:404" }]')
-
-        $CURL -sf -X PUT \
-          "https://api.cloudflare.com/client/v4/accounts/${cfg.cloudflare.accountId}/cfd_tunnel/${cfg.cloudflare.tunnelId}/configurations" \
-          -H "Authorization: Bearer $CF_TOKEN" \
-          -H "Content-Type: application/json" \
-          -d "{\"config\": {\"ingress\": $INGRESS_JSON}}" \
-          | ${pkgs.jq}/bin/jq -r 'if .success then "  Cloudflare tunnel updated." else "  Cloudflare error: \(.errors)" end'
-        ''}
 
         echo "=== dns-sync: complete ==="
       '';
@@ -272,8 +229,6 @@ in
           RemainAfterExit = true;
           ExecStart = "${dnsSyncScript}";
           StateDirectory = "dns-sync";
-        } // optionalAttrs cfg.cloudflare.enable {
-          Environment = [ "CF_TOKEN_FILE=${toString cfg.cloudflare.apiTokenFile}" ];
         };
       };
     }
