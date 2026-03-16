@@ -25,6 +25,7 @@
   # =============================================================================
   
   modules.services.infrastructure.caddy.enable = lib.mkDefault true;
+  modules.services.infrastructure.dnsSync.enable = lib.mkDefault true;
   # Cloudflared for Cloudflare tunnel
   modules.services.infrastructure.cloudflared = {
     enable = lib.mkDefault true;
