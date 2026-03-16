@@ -158,12 +158,7 @@ in
           else
             echo "  + $domain"
           fi
-          # At zone apex, use @.zone syntax (full notation Technitium accepts)
-          if [ "$domain" = "$zone" ]; then
-            record_domain="@.$zone"
-          else
-            record_domain="$domain"
-          fi
+          record_domain="$domain"
           $CURL --retry 5 --retry-delay 3 --retry-connrefused -sfG \
             --data-urlencode "token=$TOKEN" \
             --data-urlencode "domain=$record_domain" \
