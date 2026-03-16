@@ -75,6 +75,9 @@ in
   # Affine OIDC Client Secret (Pocket ID)
   "affine-oidc-secret.age".publicKeys = davidKeys;
   
+  # Technitium DNS API token (for dns-sync — both david and pits)
+  "technitium-api-token.age".publicKeys = [ david pits ] ++ adminKeys;
+
   # Baby Buddy Secrets
   "babybuddy-secrets.age".publicKeys = davidKeys;
 

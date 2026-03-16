@@ -17,7 +17,7 @@ in
 
     internalIpRanges = mkOption {
       type = types.listOf types.str;
-      default = [ "10.0.0.0/8" "172.16.0.0/12" "192.168.0.0/16" "10.100.0.0/18" "100.64.0.0/10" "fd7a:115c:a1e0::/48" ];
+      default = [ "127.0.0.1" "::1" "10.0.0.0/8" "172.16.0.0/12" "192.168.0.0/16" "10.100.0.0/18" "100.64.0.0/10" "fd7a:115c:a1e0::/48" ];
       description = "IP ranges considered internal for private virtual hosts.";
     };
     

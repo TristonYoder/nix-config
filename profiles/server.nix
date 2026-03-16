@@ -25,6 +25,10 @@
   # =============================================================================
   
   modules.services.infrastructure.caddy.enable = lib.mkDefault true;
+  modules.services.infrastructure.dnsSync = {
+    enable = lib.mkDefault true;
+    technitiumUrl = lib.mkDefault "https://dns01.${config.networking.domain}";
+  };
   # Cloudflared for Cloudflare tunnel
   modules.services.infrastructure.cloudflared = {
     enable = lib.mkDefault true;
