@@ -64,11 +64,22 @@ in
 
   config = mkIf cfg.enable (
     let
+      # Normalize a raw virtualHost string into a list of valid DNS names:
+      # - strips http:// / https:// prefixes
+      # - splits on whitespace (Caddy multi-domain syntax)
+      # - drops empty strings
+      normalizeDomains = vhost:
+        let
+          stripped = removePrefix "https://" (removePrefix "http://" vhost);
+          parts    = splitString " " stripped;
+        in filter (s: s != "") parts;
+
       # Collect vHosts from service modules — filter to DNS-enabled, active hosts
-      allVHosts = filter (h: h.enable && h.dnsRecord) (attrValues config.modules.services.vHosts);
-      internalDomains = map (h: h.virtualHost) (filter (h: !h.public) allVHosts);
-      publicDomains   = map (h: h.virtualHost) (filter (h:  h.public) allVHosts);
-      allDomains      = map (h: h.virtualHost) allVHosts;
+      # Include serverAliases so every domain served gets a record
+      allVHosts       = filter (h: h.enable && h.dnsRecord) (attrValues config.modules.services.vHosts);
+      internalDomains = concatMap (h: normalizeDomains h.virtualHost ++ h.serverAliases) (filter (h: !h.public) allVHosts);
+      publicDomains   = concatMap (h: normalizeDomains h.virtualHost ++ h.serverAliases) (filter (h:  h.public) allVHosts);
+      allDomains      = internalDomains ++ publicDomains;
 
       # Generate a bash array body from a list of domain strings
       toBashArray = domains:
@@ -86,15 +97,53 @@ in
         CURL="${pkgs.curl}/bin/curl"
         JQ="${pkgs.jq}/bin/jq"
 
-        # Strip first label to infer zone (baby.theyoder.family -> theyoder.family)
-        get_zone() { echo "''${1#*.}"; }
-
         COMMENT="Managed by vHost on ${cfg.targetFqdn}"
+
+        # Fetch all known zones from Technitium, sorted longest-first for best-match lookup
+        refresh_zones() {
+          ZONE_LIST=$($CURL -sfG \
+            --data-urlencode "token=$TOKEN" \
+            "$TECHNITIUM_URL/api/zones/list" \
+            | $JQ -r '[.response.zones[].name] | sort_by(length) | reverse | .[]')
+        }
+        refresh_zones
+
+        # Find the longest existing zone that is a suffix of domain
+        find_zone() {
+          local domain="$1"
+          while IFS= read -r zone; do
+            if [[ "$domain" == "$zone" ]] || [[ "$domain" == *".$zone" ]]; then
+              echo "$zone"
+              return
+            fi
+          done <<< "$ZONE_LIST"
+          echo ""
+        }
+
+        # Create a Primary zone using last-two-labels as zone name (TLD+1 heuristic)
+        create_zone() {
+          local domain="$1"
+          local zone
+          zone=$(echo "$domain" | rev | cut -d. -f1-2 | rev)
+          echo "    creating zone: $zone"
+          $CURL -sfG \
+            --data-urlencode "token=$TOKEN" \
+            --data-urlencode "zone=$zone" \
+            --data-urlencode "type=Primary" \
+            "$TECHNITIUM_URL/api/zones/create" | $JQ -r '.status' || true
+          refresh_zones
+          echo "$zone"
+        }
 
         technitium_add() {
           local domain="$1" zone
-          zone=$(get_zone "$domain")
-          echo "  + $domain"
+          zone=$(find_zone "$domain")
+          if [ -z "$zone" ]; then
+            echo "  + $domain (no zone found — creating)"
+            zone=$(create_zone "$domain")
+          else
+            echo "  + $domain"
+          fi
           $CURL --retry 5 --retry-delay 3 --retry-connrefused -sfG \
             --data-urlencode "token=$TOKEN" \
             --data-urlencode "domain=$domain" \
@@ -109,10 +158,15 @@ in
 
         technitium_delete() {
           local domain="$1" zone
-          zone=$(get_zone "$domain")
+          zone=$(find_zone "$domain")
+          [ -z "$zone" ] && return
           echo "  - $domain (stale)"
-          $CURL --retry 3 --retry-delay 2 -sf \
-            "$TECHNITIUM_URL/api/zones/records/delete?token=$TOKEN&domain=$domain&zone=$zone&type=CNAME" \
+          $CURL --retry 3 --retry-delay 2 -sfG \
+            --data-urlencode "token=$TOKEN" \
+            --data-urlencode "domain=$domain" \
+            --data-urlencode "zone=$zone" \
+            --data-urlencode "type=CNAME" \
+            "$TECHNITIUM_URL/api/zones/records/delete" \
             | $JQ -r 'if .status == "ok" then "    removed" else "    error: \(.errorMessage)" end' || true
         }
 
