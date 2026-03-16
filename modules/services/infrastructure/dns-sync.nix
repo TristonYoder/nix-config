@@ -133,23 +133,24 @@ in
           fi
         }
 
-        # Create a Primary zone using TLD+1 heuristic
+        # Create a Forwarder zone (TLD+1 heuristic), forwarding to 1.1.1.1
         create_zone() {
           local domain="$1"
           local zone
           zone=$(tld_plus_one "$domain")
-          echo "    creating zone: $zone"
+          echo "    creating forwarder zone: $zone -> 1.1.1.1"
           $CURL -sfG \
             --data-urlencode "token=$TOKEN" \
             --data-urlencode "zone=$zone" \
-            --data-urlencode "type=Primary" \
+            --data-urlencode "type=Forwarder" \
+            --data-urlencode "forwarder=1.1.1.1" \
             "$TECHNITIUM_URL/api/zones/create" | $JQ -r '.status' || true
           refresh_zones
           echo "$zone"
         }
 
         technitium_add() {
-          local domain="$1" zone
+          local domain="$1" zone record_domain
           zone=$(find_zone "$domain")
           if [ -z "$zone" ]; then
             echo "  + $domain (no zone found — creating)"
@@ -157,14 +158,15 @@ in
           else
             echo "  + $domain"
           fi
-          # Zone apex CNAMEs are not valid DNS — skip
+          # At zone apex, use @ as the record name
           if [ "$domain" = "$zone" ]; then
-            echo "    skipped (zone apex)"
-            return
+            record_domain="@"
+          else
+            record_domain="$domain"
           fi
           $CURL --retry 5 --retry-delay 3 --retry-connrefused -sfG \
             --data-urlencode "token=$TOKEN" \
-            --data-urlencode "domain=$domain" \
+            --data-urlencode "domain=$record_domain" \
             --data-urlencode "zone=$zone" \
             --data-urlencode "type=CNAME" \
             --data-urlencode "cname=$TARGET" \
