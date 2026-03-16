@@ -158,17 +158,30 @@ in
           else
             echo "  + $domain"
           fi
-          record_domain="$domain"
-          $CURL --retry 5 --retry-delay 3 --retry-connrefused -sfG \
-            --data-urlencode "token=$TOKEN" \
-            --data-urlencode "domain=$record_domain" \
-            --data-urlencode "zone=$zone" \
-            --data-urlencode "type=CNAME" \
-            --data-urlencode "cname=$TARGET" \
-            --data-urlencode "overwrite=true" \
-            --data-urlencode "comments=$COMMENT" \
-            "$TECHNITIUM_URL/api/zones/records/add" \
-            | $JQ -r 'if .status == "ok" then "    ok" else "    error: \(.errorMessage)" end' || true
+          # At zone apex CNAME is forbidden by DNS RFC; use ANAME (alias) instead
+          if [ "$domain" = "$zone" ]; then
+            $CURL --retry 5 --retry-delay 3 --retry-connrefused -sfG \
+              --data-urlencode "token=$TOKEN" \
+              --data-urlencode "domain=$domain" \
+              --data-urlencode "zone=$zone" \
+              --data-urlencode "type=ANAME" \
+              --data-urlencode "aname=$TARGET" \
+              --data-urlencode "overwrite=true" \
+              --data-urlencode "comments=$COMMENT" \
+              "$TECHNITIUM_URL/api/zones/records/add" \
+              | $JQ -r 'if .status == "ok" then "    ok (ANAME)" else "    error: \(.errorMessage)" end' || true
+          else
+            $CURL --retry 5 --retry-delay 3 --retry-connrefused -sfG \
+              --data-urlencode "token=$TOKEN" \
+              --data-urlencode "domain=$domain" \
+              --data-urlencode "zone=$zone" \
+              --data-urlencode "type=CNAME" \
+              --data-urlencode "cname=$TARGET" \
+              --data-urlencode "overwrite=true" \
+              --data-urlencode "comments=$COMMENT" \
+              "$TECHNITIUM_URL/api/zones/records/add" \
+              | $JQ -r 'if .status == "ok" then "    ok" else "    error: \(.errorMessage)" end' || true
+          fi
         }
 
         technitium_delete() {
