@@ -49,9 +49,6 @@
   # Stalwart Mail Server
   modules.services.communication.stalwart-mail.enable = false;
 
-  # dns-sync: use local Technitium directly (avoids Caddy loopback for the API)
-  modules.services.infrastructure.dnsSync.technitiumUrl = "http://localhost:5380";
-
   # JellyPlex-Watched sync (continuous)
   modules.services.media.jellyplexWatched = {
     enable = true;
