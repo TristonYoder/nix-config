@@ -120,11 +120,24 @@ in
           echo ""
         }
 
-        # Create a Primary zone using last-two-labels as zone name (TLD+1 heuristic)
+        # Extract TLD+1 using pure bash (e.g. sub.foo.bar -> foo.bar)
+        tld_plus_one() {
+          local domain="$1"
+          local IFS='.'
+          read -ra labels <<< "$domain"
+          local n=''${#labels[@]}
+          if [ "$n" -ge 2 ]; then
+            echo "''${labels[$((n-2))]}.''${labels[$((n-1))]}"
+          else
+            echo "$domain"
+          fi
+        }
+
+        # Create a Primary zone using TLD+1 heuristic
         create_zone() {
           local domain="$1"
           local zone
-          zone=$(echo "$domain" | rev | cut -d. -f1-2 | rev)
+          zone=$(tld_plus_one "$domain")
           echo "    creating zone: $zone"
           $CURL -sfG \
             --data-urlencode "token=$TOKEN" \
@@ -143,6 +156,11 @@ in
             zone=$(create_zone "$domain")
           else
             echo "  + $domain"
+          fi
+          # Zone apex CNAMEs are not valid DNS — skip
+          if [ "$domain" = "$zone" ]; then
+            echo "    skipped (zone apex)"
+            return
           fi
           $CURL --retry 5 --retry-delay 3 --retry-connrefused -sfG \
             --data-urlencode "token=$TOKEN" \
