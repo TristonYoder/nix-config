@@ -482,6 +482,7 @@
       "JELLYFIN_PUBLIC_URL" = "https://${config.modules.services.media.jellyfin.domain}";
       "PLEX_URL" = "http://localhost:${toString config.modules.services.media.plex.port}";
       "PLEX_PUBLIC_URL" = "https://${config.modules.services.media.plex.domain}";
+      "PLEX_LIBRARY" = "3";
       "PLEX_PATH" = "/data/media/Music";
     };
     volumes = [
