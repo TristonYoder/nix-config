@@ -298,7 +298,7 @@ in
     in
     {
       systemd.services.dns-sync = {
-        description = "Sync vHost DNS records to Technitium";
+        description = "vHost Technitium DNS";
         wantedBy = [ "multi-user.target" ];
         after = [ "network-online.target" "agenix.service" "technitium-dns-server.service" ];
         wants = [ "network-online.target" "agenix.service" ];
