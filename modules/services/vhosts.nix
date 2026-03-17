@@ -198,13 +198,13 @@ in
           local domain="$1"
           local zone
           zone=$(tld_plus_one "$domain")
-          echo "    creating forwarder zone: $zone -> 1.1.1.1"
+          echo "    creating forwarder zone: $zone -> 1.1.1.1" >&2
           $CURL -sfG \
             --data-urlencode "token=$TOKEN" \
             --data-urlencode "zone=$zone" \
             --data-urlencode "type=Forwarder" \
             --data-urlencode "forwarder=1.1.1.1" \
-            "$TECHNITIUM_URL/api/zones/create" | $JQ -r '.status' || true
+            "$TECHNITIUM_URL/api/zones/create" | $JQ -r '.status' >&2 || true
           refresh_zones
           echo "$zone"
         }
