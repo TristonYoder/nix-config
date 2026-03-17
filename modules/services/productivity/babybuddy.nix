@@ -45,7 +45,6 @@ in
       environmentFiles = [ cfg.secretsFile ];
       environment = {
         TZ = config.time.timeZone;
-        TIME_ZONE = config.time.timeZone;
         PUID = "1000";
         PGID = "1000";
         ALLOWED_HOSTS = cfg.domain;
