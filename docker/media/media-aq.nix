@@ -484,6 +484,8 @@
       "PLEX_PUBLIC_URL" = "https://${config.modules.services.media.plex.domain}";
       "PLEX_LIBRARY" = "3";
       "PLEX_PATH" = "/data/media/Music";
+      "ENABLE_HISTORY" = "true";
+      "PLAYLIST_ALBUMS" = "true";
     };
     volumes = [
       "/data/docker-appdata/tidarr:/shared:rw"
