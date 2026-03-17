@@ -70,7 +70,7 @@
   # =============================================================================
 
   # Technitium DNS Web UI and DoH - dns02.<baseDomain>
-  modules.services.vHosts."dns02.${config.networking.domain}" =
+  modules.services.vHosts.hosts."dns02.${config.networking.domain}" =
     lib.mkIf config.modules.services.infrastructure.technitium.enable {
       managedProxy = false;  # Use custom routing for multi-backend setup
       public = false;  # Restrict to internal networks (auto-applied by module)
@@ -103,7 +103,7 @@
   
   # Matrix Synapse - Reverse proxy to david
   # Uses Cloudflare DNS-01 challenge for automatic HTTPS
-  modules.services.vHosts."matrix.${config.networking.domain}" = {
+  modules.services.vHosts.hosts."matrix.${config.networking.domain}" = {
     public = true;
     managedProxy = false;
     extraConfig = ''
@@ -114,7 +114,7 @@
   
   # Pixelfed - Reverse proxy to david's nginx
   # Uses Cloudflare DNS-01 challenge for automatic HTTPS
-  modules.services.vHosts."loveinfocus.photos" = {
+  modules.services.vHosts.hosts."loveinfocus.photos" = {
     public = true;
     reverseProxyHost = "david";
     reverseProxyPort = 8085;
@@ -122,7 +122,7 @@
   
   # Stalwart Mail Webmail Interface - Reverse proxy to david
   # Uses Cloudflare DNS-01 challenge for automatic HTTPS
-  modules.services.vHosts."mail.7andco.dev" = {
+  modules.services.vHosts.hosts."mail.7andco.dev" = {
     public = true;
     reverseProxyHost = "david";
     reverseProxyPort = 8080;
@@ -137,7 +137,7 @@
   
   # Stalwart Mail Admin Interface - Reverse proxy to david
   # Uses Cloudflare DNS-01 challenge for automatic HTTPS
-  modules.services.vHosts."admin.mail.7andco.dev" = {
+  modules.services.vHosts.hosts."admin.mail.7andco.dev" = {
     public = true;
     reverseProxyHost = "david";
     reverseProxyPort = 8081;
@@ -145,7 +145,7 @@
   
   # Postal Mail Server Web UI - Local service on PITS
   # Uses Cloudflare DNS-01 challenge for automatic HTTPS
-  modules.services.vHosts."postal.7andco.dev" = {
+  modules.services.vHosts.hosts."postal.7andco.dev" = {
     public = true;
     reverseProxyPort = 5000;
     serverAliases = [
@@ -156,7 +156,7 @@
   # Nextcloud - Reverse proxy to david
   # Uses Cloudflare DNS-01 challenge for automatic HTTPS
   # PITS terminates SSL for external access, forwards to David over Tailscale
-  modules.services.vHosts."cloud.7andco.dev" = {
+  modules.services.vHosts.hosts."cloud.7andco.dev" = {
     public = true;
     managedProxy = false;
     extraConfig = ''

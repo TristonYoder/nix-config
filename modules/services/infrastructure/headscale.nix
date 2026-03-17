@@ -353,7 +353,7 @@ in
     };
 
     # Caddy reverse proxy for headscale API and admin UI
-    modules.services.vHosts.${cfg.domain} = {
+    modules.services.vHosts.hosts.${cfg.domain} = {
       managedProxy = false;
       public = true;  # Headscale API must be public for Tailscale clients
       extraConfig = ''

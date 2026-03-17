@@ -27,9 +27,9 @@
   
   # Caddy for reverse proxy and public-facing services
   modules.services.infrastructure.caddy.enable = lib.mkDefault true;
-  modules.services.infrastructure.dnsSync = {
+  modules.services.vHosts.technitium = {
     enable = lib.mkDefault true;
-    technitiumUrl = lib.mkDefault "https://dns01.${config.networking.domain}";
+    url = lib.mkDefault "https://dns01.${config.networking.domain}";
   };
   
   # Tailscale for secure networking back to main infrastructure

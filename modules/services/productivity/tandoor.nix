@@ -152,7 +152,7 @@ in
     };
 
     # Caddy virtual host using new vHosts system
-    modules.services.vHosts.${cfg.domain} = {
+    modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
     };
   };

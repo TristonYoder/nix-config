@@ -135,7 +135,7 @@ in
     networking.firewall.allowedTCPPorts = [ cfg.listenPort ];
     
     # Caddy reverse proxy configuration
-    modules.services.vHosts.${cfg.domain} = {
+    modules.services.vHosts.hosts.${cfg.domain} = {
       managedProxy = false;
       extraConfig = ''
         reverse_proxy https://localhost:${toString cfg.listenPort} {

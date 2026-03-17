@@ -98,7 +98,7 @@ in
     users.groups.media = { };
     users.users.plex.extraGroups = [ "media" "video" "render" ];
 
-    modules.services.vHosts.${cfg.domain} = {
+    modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
     };
   };

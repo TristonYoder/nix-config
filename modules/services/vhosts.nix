@@ -3,11 +3,11 @@
 with lib;
 
 let
-  dnsSync = config.modules.services.infrastructure.dnsSync;
+  dns = config.modules.services.vHosts.technitium;
 in
 {
-  options = {
-    modules.services.vHosts = mkOption {
+  options.modules.services.vHosts = {
+    hosts = mkOption {
       type = types.attrsOf (types.submodule ({ name, ... }: {
         options = {
           enable = mkOption {
@@ -87,16 +87,16 @@ in
       description = "Agnostic virtual host definitions used by reverse proxy and DNS sync modules.";
     };
 
-    modules.services.infrastructure.dnsSync = {
+    technitium = {
       enable = mkEnableOption "Auto-register vHost DNS records in Technitium on rebuild";
 
-      technitiumUrl = mkOption {
+      url = mkOption {
         type = types.str;
         default = "http://localhost:5380";
         description = "Technitium DNS Server API base URL";
       };
 
-      technitiumTokenFile = mkOption {
+      tokenFile = mkOption {
         type = types.path;
         default = config.age.secrets.technitium-api-token.path;
         description = "Path to file containing the Technitium API token";
@@ -122,7 +122,7 @@ in
     };
   };
 
-  config = mkIf dnsSync.enable (
+  config = mkIf dns.enable (
     let
       # Normalize a raw virtualHost string into a list of valid DNS names:
       # - strips http:// / https:// prefixes
@@ -136,7 +136,7 @@ in
 
       # Collect vHosts from service modules — filter to DNS-enabled, active hosts
       # Include serverAliases so every domain served gets a record
-      allVHosts       = filter (h: h.enable && h.dnsRecord) (attrValues config.modules.services.vHosts);
+      allVHosts       = filter (h: h.enable && h.dnsRecord) (attrValues config.modules.services.vHosts.hosts);
       internalDomains = concatMap (h: normalizeDomains h.virtualHost ++ h.serverAliases) (filter (h: !h.public) allVHosts);
       publicDomains   = concatMap (h: normalizeDomains h.virtualHost ++ h.serverAliases) (filter (h:  h.public) allVHosts);
       allDomains      = internalDomains ++ publicDomains;
@@ -150,14 +150,14 @@ in
       dnsSyncScript = pkgs.writeShellScript "dns-sync" ''
         set -eo pipefail
 
-        TECHNITIUM_URL="${dnsSync.technitiumUrl}"
-        TOKEN=$(cat "${dnsSync.technitiumTokenFile}")
-        TARGET="${dnsSync.targetFqdn}"
-        STATE_FILE="${dnsSync.stateFile}"
+        TECHNITIUM_URL="${dns.url}"
+        TOKEN=$(cat "${dns.tokenFile}")
+        TARGET="${dns.targetFqdn}"
+        STATE_FILE="${dns.stateFile}"
         CURL="${pkgs.curl}/bin/curl"
         JQ="${pkgs.jq}/bin/jq"
 
-        COMMENT="Managed by vHost on ${dnsSync.targetFqdn}"
+        COMMENT="Managed by vHost on ${dns.targetFqdn}"
 
         # Fetch all known zones from Technitium, sorted longest-first for best-match lookup
         refresh_zones() {

@@ -3,7 +3,7 @@
 with lib;
 let
   cfg = config.modules.services.infrastructure.caddy;
-  vHosts = recursiveUpdate cfg.virtualHosts config.modules.services.vHosts;
+  vHosts = recursiveUpdate cfg.virtualHosts config.modules.services.vHosts.hosts;
 in
 {
   options.modules.services.infrastructure.caddy = {

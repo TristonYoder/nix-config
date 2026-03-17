@@ -192,7 +192,7 @@ in
     };
 
     # Caddy virtual hosts
-    modules.services.vHosts.${cfg.domain} = {
+    modules.services.vHosts.hosts.${cfg.domain} = {
       managedProxy = false;
       extraConfig = ''
         handle_path /share* {
@@ -204,7 +204,7 @@ in
       '';
     };
 
-    modules.services.vHosts.${cfg.publicProxyDomain} = {
+    modules.services.vHosts.hosts.${cfg.publicProxyDomain} = {
       managedProxy = false;
       public = true;  # Public proxy for sharing photos externally
       extraConfig = ''
