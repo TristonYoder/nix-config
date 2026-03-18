@@ -116,7 +116,6 @@
             
             # Productivity services
             ./docker/productivity/affine.nix
-            ./docker/productivity/companion.nix
             ./docker/productivity/homarr.nix
             # ./docker/productivity/outline.nix
             ./docker/productivity/planning-poker.nix

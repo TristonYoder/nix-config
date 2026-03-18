@@ -9,5 +9,6 @@
     ./outline.nix
     ./tandoor.nix
     ./babybuddy.nix
+    ./companion.nix
   ];
 }
