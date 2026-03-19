@@ -229,7 +229,7 @@ in
     # Optional: Caddy virtual host if running on same machine
     # Note: For split deployments (david running Synapse, pits running Caddy),
     # configure Caddy in pits/configuration.nix instead
-    modules.services.vHosts."matrix.${cfg.serverName}" = {
+    modules.services.vHosts.hosts."matrix.${cfg.serverName}" = {
       managedProxy = false;
       extraConfig = ''
         reverse_proxy /_matrix/* http://localhost:${toString cfg.clientPort}

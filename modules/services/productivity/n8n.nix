@@ -47,7 +47,7 @@ in
     };
 
     # Caddy virtual host
-    modules.services.vHosts.${cfg.domain} = {
+    modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = 5678;
     };
   };

@@ -232,7 +232,7 @@ in
     };
 
     # Caddy virtual host for webmail interface
-    modules.services.vHosts.${cfg.webmailDomain} = {
+    modules.services.vHosts.hosts.${cfg.webmailDomain} = {
       reverseProxyPort = 8080;
       serverAliases = [
         # MTA-STS for mail security policy
@@ -244,7 +244,7 @@ in
     };
     
     # Caddy virtual host for admin interface
-    modules.services.vHosts."admin.mail.7andco.dev" = {
+    modules.services.vHosts.hosts."admin.mail.7andco.dev" = {
       reverseProxyPort = 8081;
     };
 

@@ -49,6 +49,9 @@
   # Stalwart Mail Server
   modules.services.communication.stalwart-mail.enable = false;
 
+  # dns-sync: use local Technitium directly (avoids Caddy loopback for the API)
+  modules.services.vHosts.technitium.url = "http://localhost:5380";
+
   # JellyPlex-Watched sync (continuous)
   modules.services.media.jellyplexWatched = {
     enable = true;
@@ -66,7 +69,7 @@
   # =============================================================================
 
   # Technitium DNS Web UI and DoH - dns01.<baseDomain>
-  modules.services.vHosts."dns01.${config.networking.domain}" = {
+  modules.services.vHosts.hosts."dns01.${config.networking.domain}" = {
     managedProxy = false;  # Use custom routing for multi-backend setup
     public = false;  # Restrict to internal networks (auto-applied by module)
     extraConfig = ''
@@ -89,28 +92,28 @@
   };
 
   # Elizabeth Allen Photography - WordPress site
-  modules.services.vHosts."elizabethallen.photography" = {
+  modules.services.vHosts.hosts."elizabethallen.photography" = {
     public = true;
     reverseProxyPort = 1996;
   };
 
   # Dispatcharr - IPTV and stream management
-  modules.services.vHosts."tv.${config.networking.domain}" = {
+  modules.services.vHosts.hosts."tv.${config.networking.domain}" = {
     reverseProxyPort = 9191;
   };
 
   # Threadfin - IPTV EPG proxy and M3U playlist management
-  modules.services.vHosts."local-epg.tv.${config.networking.domain}" = {
+  modules.services.vHosts.hosts."local-epg.tv.${config.networking.domain}" = {
     reverseProxyPort = 34400;
   };
 
   # Tidarr - Tidal music downloader
-  modules.services.vHosts."tidal.${config.networking.domain}" = {
+  modules.services.vHosts.hosts."tidal.${config.networking.domain}" = {
     reverseProxyPort = 8484;
   };
 
   # InvokeAI
-  modules.services.vHosts."invoke.${config.networking.domain}" = {
+  modules.services.vHosts.hosts."invoke.${config.networking.domain}" = {
     reverseProxyHost = "tristons-workstation.${config.networking.domain}";
     reverseProxyPort = 9090;
   };

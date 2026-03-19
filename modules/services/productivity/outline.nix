@@ -602,7 +602,7 @@ in
     };
 
     # Caddy virtual host for reverse proxy
-    modules.services.vHosts.${cfg.domain} = {
+    modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
     };
   };

@@ -36,7 +36,7 @@ in
     };
 
     # Caddy virtual host (supports multiple domains)
-    modules.services.vHosts."${concatStringsSep " " cfg.domains}" = {
+    modules.services.vHosts.hosts."${concatStringsSep " " cfg.domains}" = {
       reverseProxyPort = cfg.port;
     };
   };

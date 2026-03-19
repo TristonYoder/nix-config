@@ -34,6 +34,10 @@ with lib;
       };
     })
 
+    // (optionalAttrs config.modules.services.vHosts.technitium.enable {
+      "technitium-api-token" = { file = ../secrets/technitium-api-token.age; owner = "root"; group = "root"; mode = "0400"; };
+    })
+
     // (optionalAttrs (config.networking.hostName == "david") {
       # Unconditional david secrets
       "babybuddy-secrets" = { file = ../secrets/babybuddy-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };

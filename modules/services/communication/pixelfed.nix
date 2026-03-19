@@ -116,7 +116,7 @@ in
     # Caddy reverse proxy to nginx (for local/internal access)
     # Nginx runs on custom port (configured in services.pixelfed.nginx.listen above)
     # Note: External access via PITS goes directly to nginx:8085, this is just for local Caddy access
-    modules.services.vHosts.${cfg.domain} = {
+    modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.nginxPort;
     };
 

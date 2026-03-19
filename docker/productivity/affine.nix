@@ -275,7 +275,7 @@ in
   };
 
   # Caddy reverse proxy
-  modules.services.vHosts.${domain} = {
+  modules.services.vHosts.hosts.${domain} = {
     reverseProxyPort = 3010;
   };
 }
