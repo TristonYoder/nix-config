@@ -61,10 +61,11 @@ in
     # Add tristonyoder user to media group (for Docker containers)
     users.users.tristonyoder.extraGroups = [ "media" ];
 
-    # Set proper permissions on media directory and subdirectories
+    # Set proper permissions on media directory and subdirectories.
+    # Mode 2775 sets setgid so new subdirectories inherit the media group automatically.
     systemd.tmpfiles.rules =
-      [ "d ${cfg.mediaDir} 0775 tristonyoder media -" ]
-      ++ map (sub: "d ${cfg.mediaDir}/${sub} 0775 tristonyoder media -") cfg.mediaSubDirs;
+      [ "d ${cfg.mediaDir} 2775 tristonyoder media -" ]
+      ++ map (sub: "d ${cfg.mediaDir}/${sub} 2775 tristonyoder media -") cfg.mediaSubDirs;
 
     # Workaround for jellyfin hardware transcode (NVIDIA NVENC)
     # Minimal hardening overrides required for CUDA
