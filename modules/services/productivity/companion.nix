@@ -75,7 +75,7 @@ in
       wantedBy = [ "multi-user.target" ];
     };
 
-    modules.services.vHosts.${cfg.domain} = {
+    modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
     };
   };
