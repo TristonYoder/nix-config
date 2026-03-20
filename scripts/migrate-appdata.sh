@@ -170,12 +170,18 @@ switch_phase() {
   stop_services
   echo
 
-  log "Running final rsync..."
-  do_rsync
-  echo
-
+  # Rebuild first so appdata-init creates the per-service ZFS datasets,
+  # then rsync data into the freshly mounted datasets.
   log "Switching NixOS configuration to feat/appdata-module..."
   nixos-rebuild switch --flake "${FLAKE_DIR}#david"
+  echo
+
+  log "Waiting for appdata-init to complete..."
+  systemctl start appdata-init.service
+  echo
+
+  log "Running final rsync into new ZFS datasets..."
+  do_rsync
   echo
 
   start_services

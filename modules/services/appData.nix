@@ -7,6 +7,15 @@ let
   helpers = import ../lib.nix { inherit lib; };
 
   activeServices = filterAttrs (_: s: s.enable) cfg.services;
+
+  # Build the encryption flag for a per-service zfs create call.
+  # null  = inherit from parent dataset (no flag)
+  # "off" = explicitly disable
+  # "on"  = explicitly enable (aes-256-gcm; requires key management)
+  encFlag = s:
+    if      s.encryption == null  then ""
+    else if s.encryption == "off" then "-o encryption=off"
+    else                               "-o encryption=aes-256-gcm";
 in
 {
   options.modules.services.appData = {
@@ -21,7 +30,7 @@ in
     provider = mkOption {
       type        = types.enum [ "plain" "zfs" ];
       default     = "plain";
-      description = "Storage backend. 'plain' creates directories only. 'zfs' additionally provisions a ZFS dataset.";
+      description = "Storage backend. 'plain' creates directories only. 'zfs' provisions a ZFS dataset per service.";
     };
 
     # ZFS-specific — no defaults; must be set explicitly when provider = "zfs".
@@ -34,13 +43,13 @@ in
     dataset = mkOption {
       type        = types.nullOr types.str;
       default     = null;
-      description = "ZFS dataset name (relative to pool). Required when provider = \"zfs\".";
+      description = "ZFS parent dataset (relative to pool). Required when provider = \"zfs\". Each service gets a child dataset under this.";
     };
 
     disableEncryption = mkOption {
       type        = types.bool;
       default     = false;
-      description = "Create the ZFS dataset with encryption=off. Set true when the pool is encrypted but this dataset should not inherit it.";
+      description = "Create the parent ZFS dataset with encryption=off. Set true when the pool is encrypted but appData should not inherit it.";
     };
 
     services = mkOption {
@@ -54,7 +63,7 @@ in
           appID = mkOption {
             type        = types.str;
             default     = helpers.toCamelCase name;
-            description = "Filesystem-safe identifier derived from the service name. Becomes the directory name under mount.";
+            description = "Filesystem-safe identifier. Becomes the ZFS child dataset name and directory name under mount.";
           };
 
           owner = mkOption {
@@ -71,10 +80,21 @@ in
             type    = types.str;
             default = "0755";
           };
+
+          encryption = mkOption {
+            type        = types.nullOr (types.enum [ "off" "on" ]);
+            default     = null;
+            description = ''
+              Per-service ZFS dataset encryption override. Only applies when provider = "zfs".
+              null = inherit from parent dataset (default: off when disableEncryption = true on server).
+              "off" = explicitly disable encryption.
+              "on"  = explicitly enable encryption (aes-256-gcm; requires manual key management).
+            '';
+          };
         };
       }));
       default     = {};
-      description = "Service volumes registered by service modules. Each entry creates a subdirectory under mount.";
+      description = "Service volumes registered by service modules. Each entry creates a ZFS child dataset (zfs) or subdirectory (plain) under mount.";
     };
   };
 
@@ -87,7 +107,7 @@ in
     ];
 
     systemd.services."appdata-init" = {
-      description     = "Initialize appData storage and service directories";
+      description     = "Initialize appData storage and per-service ZFS datasets / directories";
       wantedBy        = [ "multi-user.target" ];
       after           = [ "local-fs.target" ]
         ++ optional (cfg.provider == "zfs") "zfs_load_data.service";
@@ -98,17 +118,30 @@ in
       path   = [ pkgs.coreutils ] ++ optional (cfg.provider == "zfs") pkgs.zfs;
       script = ''
         ${optionalString (cfg.provider == "zfs") ''
+          # Ensure parent dataset exists and is mounted
           zfs create -p ${optionalString cfg.disableEncryption "-o encryption=off"} -o mountpoint=${cfg.mount} ${cfg.pool}/${cfg.dataset} 2>/dev/null || true
           zfs mount ${cfg.pool}/${cfg.dataset} 2>/dev/null || true
         ''}
 
         mkdir -p ${escapeShellArg cfg.mount}
 
-        ${concatStringsSep "\n" (mapAttrsToList (_: s: ''
-          mkdir -p ${escapeShellArg "${cfg.mount}/${s.appID}"}
-          chmod ${s.mode} ${escapeShellArg "${cfg.mount}/${s.appID}"}
-          chown ${s.owner}:${s.group} ${escapeShellArg "${cfg.mount}/${s.appID}"}
-        '') activeServices)}
+        ${concatStringsSep "\n" (mapAttrsToList (_: s:
+          let
+            mountPath   = "${cfg.mount}/${s.appID}";
+            datasetPath = "${cfg.pool}/${cfg.dataset}/${s.appID}";
+          in
+          (optionalString (cfg.provider == "zfs") ''
+            # ${s.appID}: create child dataset if it doesn't exist
+            zfs create -p ${encFlag s} -o mountpoint=${mountPath} ${datasetPath} 2>/dev/null || true
+            zfs mount ${datasetPath} 2>/dev/null || true
+          '') +
+          (optionalString (cfg.provider != "zfs") ''
+            mkdir -p ${escapeShellArg mountPath}
+          '') + ''
+            chmod ${s.mode} ${escapeShellArg mountPath}
+            chown ${s.owner}:${s.group} ${escapeShellArg mountPath}
+          ''
+        ) activeServices)}
       '';
     };
 
