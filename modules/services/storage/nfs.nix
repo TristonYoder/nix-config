@@ -31,6 +31,7 @@ in
       default = ''
         /data                   10.150.10.0/23(ro,fsid=0,no_subtree_check,crossmnt) 10.150.100.0/23(ro,fsid=0,no_subtree_check,crossmnt) 10.100.0.0/18(ro,fsid=0,no_subtree_check,crossmnt) 100.64.0.0/10(ro,fsid=0,no_subtree_check,crossmnt)
         /data/docker-appdata    10.150.10.0/23(rw,fsid=1001,no_subtree_check,crossmnt) 10.150.100.0/23(ro,fsid=1001,no_subtree_check,crossmnt) 10.100.0.0/18(rw,fsid=1001,no_subtree_check,crossmnt) 100.64.0.0/10(rw,fsid=1001,no_subtree_check,crossmnt)
+        /data/appData           10.150.10.0/23(rw,fsid=1006,no_subtree_check,crossmnt) 10.150.100.0/23(ro,fsid=1006,no_subtree_check,crossmnt) 10.100.0.0/18(rw,fsid=1006,no_subtree_check,crossmnt) 100.64.0.0/10(rw,fsid=1006,no_subtree_check,crossmnt)
         /data/media             10.150.10.0/23(rw,fsid=1002,no_subtree_check,crossmnt) 10.150.100.0/23(ro,fsid=1002,no_subtree_check,crossmnt) 10.100.0.0/18(rw,fsid=1002,no_subtree_check,crossmnt) 100.64.0.0/10(rw,fsid=1002,no_subtree_check,crossmnt)
         /data/tristonyoder      10.150.10.0/23(rw,fsid=1003,no_subtree_check,crossmnt) 10.150.100.0/23(ro,fsid=1003,no_subtree_check,crossmnt) 10.100.0.0/18(rw,fsid=1003,no_subtree_check,crossmnt) 100.64.0.0/10(rw,fsid=1003,no_subtree_check,crossmnt)
         /data/backups           10.150.10.0/23(rw,fsid=1004,no_subtree_check,crossmnt) 10.150.100.0/23(ro,fsid=1004,no_subtree_check,crossmnt) 10.100.0.0/18(rw,fsid=1004,no_subtree_check,crossmnt) 100.64.0.0/10(rw,fsid=1004,no_subtree_check,crossmnt)

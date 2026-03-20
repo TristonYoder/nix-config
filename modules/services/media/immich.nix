@@ -3,11 +3,18 @@
 with lib;
 let
   cfg = config.modules.services.media.immich;
+  helpers = import ../../lib.nix { inherit lib; };
 in
 {
   options.modules.services.media.immich = {
     enable = mkEnableOption "Immich photo management";
-    
+
+    serviceName = mkOption {
+      type = types.str;
+      default = "immich";
+      description = "Service name used for appData registration";
+    };
+
     domain = mkOption {
       type = types.str;
       default = "photos.${config.networking.domain}";
@@ -34,7 +41,7 @@ in
     
     mediaLocation = mkOption {
       type = types.str;
-      default = "/data/docker-appdata/immich/media";
+      default = "${config.modules.services.appData.mount}/${config.modules.services.appData.services.${cfg.serviceName}.appID}/media";
       description = "Location for media files";
     };
 
@@ -152,6 +159,11 @@ in
   };
 
   config = mkIf cfg.enable {
+    modules.services.appData.services.${cfg.serviceName} = {
+      owner = "root";
+      group = "root";
+    };
+
     # Immich service
     services.immich = {
       enable = true;

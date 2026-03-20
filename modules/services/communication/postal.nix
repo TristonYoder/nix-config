@@ -76,12 +76,18 @@ let
     clamav:
       enabled: false
   '';
-  
+  helpers = import ../../lib.nix { inherit lib; };
 in
 {
   options.modules.services.communication.postal = {
     enable = mkEnableOption "Postal mail server";
-    
+
+    serviceName = mkOption {
+      type = types.str;
+      default = "postal";
+      description = "Service name used for appData registration";
+    };
+
     hostname = mkOption {
       type = types.str;
       default = "postal.7andco.dev";
@@ -96,7 +102,7 @@ in
     
     dataDir = mkOption {
       type = types.str;
-      default = "/data/docker-appdata/postal";
+      default = "${config.modules.services.appData.mount}/${config.modules.services.appData.services.${cfg.serviceName}.appID}";
       description = "Base directory for Postal data";
     };
   };
@@ -107,6 +113,11 @@ in
     
     # Our customizations
     {
+    modules.services.appData.services.${cfg.serviceName} = {
+      owner = "root";
+      group = "root";
+    };
+
     # Agenix secrets - all secrets managed declaratively
     age.secrets.postal-db-password = {
       file = ../../../secrets/postal-db-password.age;
@@ -145,7 +156,6 @@ in
     
     # Ensure data directories exist with correct permissions
     systemd.tmpfiles.rules = [
-      "d ${cfg.dataDir} 0755 root root -"
       "d ${cfg.dataDir}/config 0755 root root -"
       "d ${cfg.dataDir}/data 0750 root root -"
       "d ${cfg.dataDir}/mariadb 0750 999 999 -"  # MariaDB UID

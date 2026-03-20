@@ -3,11 +3,18 @@
 with lib;
 let
   cfg = config.modules.services.communication.pixelfed;
+  helpers = import ../../lib.nix { inherit lib; };
 in
 {
   options.modules.services.communication.pixelfed = {
     enable = mkEnableOption "Pixelfed federated photo sharing";
-    
+
+    serviceName = mkOption {
+      type = types.str;
+      default = "Pixelfed";
+      description = "Service name used for appData registration";
+    };
+
     domain = mkOption {
       type = types.str;
       default = "loveinfocus.photos";
@@ -28,7 +35,7 @@ in
     
     dataDir = mkOption {
       type = types.str;
-      default = "/data/docker-appdata/pixelfed";
+      default = "${config.modules.services.appData.mount}/${config.modules.services.appData.services.${cfg.serviceName}.appID}";
       description = "Directory for Pixelfed data storage";
     };
     
@@ -46,6 +53,11 @@ in
   };
 
   config = mkIf cfg.enable {
+    modules.services.appData.services.${cfg.serviceName} = {
+      owner = "pixelfed";
+      group = "pixelfed";
+    };
+
     # Declare agenix secret for Pixelfed
     age.secrets.pixelfed-env = mkIf (cfg.secretFile == null) {
       file = ../../../secrets/pixelfed-env.age;
@@ -107,11 +119,6 @@ in
         LOG_CHANNEL = "stack";
       };
     };
-
-    # Ensure data directory exists with correct permissions  
-    systemd.tmpfiles.rules = [
-      "d ${cfg.dataDir} 0750 pixelfed pixelfed -"
-    ];
 
     # Caddy reverse proxy to nginx (for local/internal access)
     # Nginx runs on custom port (configured in services.pixelfed.nginx.listen above)

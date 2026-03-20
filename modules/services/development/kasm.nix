@@ -3,14 +3,21 @@
 with lib;
 let
   cfg = config.modules.services.development.kasm;
+  helpers = import ../../lib.nix { inherit lib; };
 in
 {
   options.modules.services.development.kasm = {
     enable = mkEnableOption "Kasm Workspaces";
-    
+
+    serviceName = mkOption {
+      type = types.str;
+      default = "kasm";
+      description = "Service name used for appData registration";
+    };
+
     domain = mkOption {
       type = types.str;
-      default = "kasm.${config.networking.domain}";
+      default = "${helpers.toSlug cfg.serviceName}.${config.networking.domain}";
       description = "Domain for Kasm Workspaces";
     };
     
@@ -28,7 +35,7 @@ in
     
     datastorePath = mkOption {
       type = types.str;
-      default = "/data/docker-appdata/kasm";
+      default = "${config.modules.services.appData.mount}/${config.modules.services.appData.services.${cfg.serviceName}.appID}";
       description = "Path for Kasm data storage";
     };
     
@@ -96,6 +103,11 @@ in
   };
 
   config = mkIf cfg.enable {
+    modules.services.appData.services.${cfg.serviceName} = {
+      owner = "root";
+      group = "root";
+    };
+
     # Warnings
     warnings = optional (cfg.adminPassword == "changeme123")
       "Kasm admin password is using default value 'changeme123'. Change it after first login or set a custom password in configuration.";
@@ -125,11 +137,6 @@ in
     
     # Ensure Docker is enabled for Kasm containers
     virtualisation.docker.enable = true;
-    
-    # Ensure data directory exists
-    systemd.tmpfiles.rules = [
-      "d ${cfg.datastorePath} 0755 root root -"
-    ];
     
     # Open firewall for Kasm
     networking.firewall.allowedTCPPorts = [ cfg.listenPort ];

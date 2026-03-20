@@ -3,6 +3,7 @@
 with lib;
 let
   cfg = config.modules.services.productivity.actualHttpApi;
+  helpers = import ../../lib.nix { inherit lib; };
   actualModule = config.modules.services.productivity.actual;
   resolvedActualServerUrl =
     if cfg.actualServerUrl != "" then
@@ -20,6 +21,12 @@ in
 {
   options.modules.services.productivity.actualHttpApi = {
     enable = mkEnableOption "Actual Budget HTTP API";
+
+    serviceName = mkOption {
+      type = types.str;
+      default = "Actual Budget API";
+      description = "Service name used for appData registration";
+    };
 
     domain = mkOption {
       type = types.str;
@@ -47,7 +54,7 @@ in
 
     dataDir = mkOption {
       type = types.str;
-      default = "/data/docker-appdata/actual-http-api";
+      default = "${config.modules.services.appData.mount}/${config.modules.services.appData.services.${cfg.serviceName}.appID}";
       description = "Data directory for the Actual HTTP API container";
     };
 
@@ -77,9 +84,10 @@ in
   };
 
   config = mkIf cfg.enable {
-    systemd.tmpfiles.rules = [
-      "d ${cfg.dataDir} 0755 root root -"
-    ];
+    modules.services.appData.services.${cfg.serviceName} = {
+      owner = "root";
+      group = "root";
+    };
 
     networking.firewall = mkIf cfg.openFirewall {
       allowedTCPPorts = [ cfg.port ];

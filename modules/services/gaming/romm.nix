@@ -3,14 +3,21 @@
 with lib;
 let
   cfg = config.modules.services.gaming.romm;
+  helpers = import ../../lib.nix { inherit lib; };
 in
 {
   options.modules.services.gaming.romm = {
     enable = mkEnableOption "RomM - ROM manager and game library";
 
+    serviceName = mkOption {
+      type = types.str;
+      default = "romm";
+      description = "Service name used for appData registration";
+    };
+
     domain = mkOption {
       type = types.str;
-      default = "romm.${config.networking.domain}";
+      default = "${helpers.toSlug cfg.serviceName}.${config.networking.domain}";
       description = "Domain for RomM";
     };
 
@@ -28,7 +35,7 @@ in
 
     dataDir = mkOption {
       type = types.str;
-      default = "/data/docker-appdata/romm";
+      default = "${config.modules.services.appData.mount}/${config.modules.services.appData.services.${cfg.serviceName}.appID}";
       description = "Data directory for RomM";
     };
 
@@ -110,6 +117,11 @@ in
   };
 
   config = mkIf cfg.enable {
+    modules.services.appData.services.${cfg.serviceName} = {
+      owner = "1000";
+      group = "1000";
+    };
+
     # Ensure Docker is enabled
     virtualisation.docker = {
       enable = true;

@@ -3,10 +3,17 @@
 with lib;
 let
   cfg = config.modules.services.productivity.tandoor;
+  helpers = import ../../lib.nix { inherit lib; };
 in
 {
   options.modules.services.productivity.tandoor = {
     enable = mkEnableOption "Tandoor Recipes - Recipe manager and meal planner";
+
+    serviceName = mkOption {
+      type = types.str;
+      default = "Tandoor";
+      description = "Service name used for appData registration";
+    };
 
     domain = mkOption {
       type = types.str;
@@ -22,7 +29,7 @@ in
 
     dataDir = mkOption {
       type = types.str;
-      default = "/data/docker-appdata/tandoor";
+      default = "${config.modules.services.appData.mount}/${config.modules.services.appData.services.${cfg.serviceName}.appID}";
       description = "Data directory for Tandoor";
     };
 
@@ -46,6 +53,11 @@ in
   };
 
   config = mkIf cfg.enable {
+    modules.services.appData.services.${cfg.serviceName} = {
+      owner = "1000";
+      group = "1000";
+    };
+
     # Ensure Docker is enabled
     virtualisation.docker = {
       enable = true;

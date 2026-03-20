@@ -3,10 +3,17 @@
 with lib;
 let
   cfg = config.modules.services.ai.open-webui;
+  helpers = import ../../lib.nix { inherit lib; };
 in
 {
   options.modules.services.ai.open-webui = {
     enable = mkEnableOption "Open WebUI for Ollama";
+
+    serviceName = mkOption {
+      type = types.str;
+      default = "Open WebUI";
+      description = "Service name used for appData registration";
+    };
 
     domain = mkOption {
       type = types.str;
@@ -28,6 +35,11 @@ in
   };
 
   config = mkIf cfg.enable {
+    modules.services.appData.services.${cfg.serviceName} = {
+      owner = "root";
+      group = "root";
+    };
+
     services.open-webui = {
       enable = true;
       host = "127.0.0.1";

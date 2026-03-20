@@ -3,11 +3,18 @@
 with lib;
 let
   cfg = config.modules.services.communication.stalwart-mail;
+  helpers = import ../../lib.nix { inherit lib; };
 in
 {
   options.modules.services.communication.stalwart-mail = {
     enable = mkEnableOption "Stalwart mail server";
-    
+
+    serviceName = mkOption {
+      type = types.str;
+      default = "Stalwart Mail";
+      description = "Service name used for appData registration";
+    };
+
     domain = mkOption {
       type = types.str;
       default = "7andco.dev";
@@ -40,7 +47,7 @@ in
     
     dataDir = mkOption {
       type = types.str;
-      default = "/data/docker-appdata/stalwart";
+      default = "${config.modules.services.appData.mount}/${config.modules.services.appData.services.${cfg.serviceName}.appID}";
       description = "Base directory for Stalwart mail data storage";
     };
     
@@ -65,9 +72,14 @@ in
   };
 
   config = mkIf cfg.enable {
-    # Ensure data directory exists with correct permissions
+    modules.services.appData.services.${cfg.serviceName} = {
+      owner = "stalwart-mail";
+      group = "stalwart-mail";
+      mode = "0750";
+    };
+
+    # Ensure data subdirectory exists with correct permissions
     systemd.tmpfiles.rules = [
-      "d ${cfg.dataDir} 0750 stalwart-mail stalwart-mail -"
       "d ${cfg.dataDir}/data 0750 stalwart-mail stalwart-mail -"
     ];
     

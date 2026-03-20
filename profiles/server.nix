@@ -79,6 +79,14 @@
   # STORAGE SERVICES
   # =============================================================================
   
+  modules.services.appData = {
+    enable   = lib.mkDefault true;
+    provider = lib.mkDefault "zfs";
+    pool     = lib.mkDefault "data";
+    dataset  = lib.mkDefault "appData";
+    mount    = lib.mkDefault "/data/appData";
+  };
+
   modules.services.storage.zfs.enable = lib.mkDefault true;
   modules.services.storage.nfs.enable = lib.mkDefault true;
   modules.services.storage.samba.enable = lib.mkDefault true;

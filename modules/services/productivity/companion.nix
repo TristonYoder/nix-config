@@ -5,35 +5,41 @@
 
 with lib;
 let
-  cfg = config.modules.services.productivity.companion;
+  cfg     = config.modules.services.productivity.companion;
+  helpers = import ../../lib.nix { inherit lib; };
 in
 {
   options.modules.services.productivity.companion = {
     enable = mkEnableOption "Bitfocus Companion - Streamdeck control software";
 
+    serviceName = mkOption {
+      type        = types.str;
+      default     = "companion";
+      description = "Service name used for appData volume and vHost domain derivation.";
+    };
+
     domain = mkOption {
-      type = types.str;
-      default = "companion.${config.networking.domain}";
-      description = "Domain for Bitfocus Companion";
+      type    = types.str;
+      default = "${helpers.toSlug cfg.serviceName}.${config.networking.domain}";
     };
 
     port = mkOption {
-      type = types.port;
+      type    = types.port;
       default = 8880;
-      description = "External port for Bitfocus Companion web interface";
     };
 
     dataDir = mkOption {
-      type = types.str;
-      default = "/data/docker-appdata/companion";
-      description = "Data directory for Bitfocus Companion config";
+      type        = types.str;
+      default     = "${config.modules.services.appData.mount}/${config.modules.services.appData.services.${cfg.serviceName}.appID}";
+      description = "Data directory. Override to take full control — appData module will not manage this path.";
     };
   };
 
   config = mkIf cfg.enable {
-    systemd.tmpfiles.rules = [
-      "d ${cfg.dataDir} 0755 1000 1000 -"
-    ];
+    modules.services.appData.services.${cfg.serviceName} = {
+      owner = "1000";
+      group = "1000";
+    };
 
     virtualisation.oci-containers.containers."companion" = {
       image = "ghcr.io/bitfocus/companion/companion:latest";

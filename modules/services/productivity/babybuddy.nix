@@ -2,28 +2,32 @@
 
 with lib;
 let
-  cfg = config.modules.services.productivity.babybuddy;
+  cfg     = config.modules.services.productivity.babybuddy;
+  helpers = import ../../lib.nix { inherit lib; };
 in
 {
   options.modules.services.productivity.babybuddy = {
     enable = mkEnableOption "Baby Buddy - baby and child care tracking";
 
+    serviceName = mkOption {
+      type    = types.str;
+      default = "Baby Buddy";
+    };
+
     domain = mkOption {
-      type = types.str;
+      type    = types.str;
       default = "baby.${config.networking.domain}";
-      description = "Domain for Baby Buddy";
     };
 
     port = mkOption {
-      type = types.port;
+      type    = types.port;
       default = 8110;
-      description = "External port for Baby Buddy";
     };
 
     dataDir = mkOption {
-      type = types.str;
-      default = "/data/docker-appdata/babybuddy";
-      description = "Data directory for Baby Buddy config and database";
+      type        = types.str;
+      default     = "${config.modules.services.appData.mount}/${config.modules.services.appData.services.${cfg.serviceName}.appID}";
+      description = "Data directory. Override to take full control — appData module will not manage this path.";
     };
 
     secretsFile = mkOption {
@@ -34,6 +38,11 @@ in
   };
 
   config = mkIf cfg.enable {
+    modules.services.appData.services.${cfg.serviceName} = {
+      owner = "1000";
+      group = "1000";
+    };
+
     virtualisation.docker = {
       enable = true;
       autoPrune.enable = true;

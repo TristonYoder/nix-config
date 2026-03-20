@@ -3,14 +3,21 @@
 with lib;
 let
   cfg = config.modules.services.productivity.outline;
+  helpers = import ../../lib.nix { inherit lib; };
 in
 {
   options.modules.services.productivity.outline = {
     enable = mkEnableOption "Outline wiki and knowledge management system";
 
+    serviceName = mkOption {
+      type = types.str;
+      default = "outline";
+      description = "Service name used for appData registration";
+    };
+
     domain = mkOption {
       type = types.str;
-      default = "outline.${config.networking.domain}";
+      default = "${helpers.toSlug cfg.serviceName}.${config.networking.domain}";
       description = "Domain for Outline";
     };
 
@@ -120,7 +127,7 @@ in
           };
           localRootDir = mkOption {
             type = types.str;
-            default = "/data/docker-appdata/${cfg.domain}/data";
+            default = "${config.modules.services.appData.mount}/${config.modules.services.appData.services.${cfg.serviceName}.appID}/data";
             description = "Local storage directory (for storageType=local)";
           };
           uploadMaxSize = mkOption {
@@ -465,6 +472,11 @@ in
   };
 
   config = mkIf cfg.enable {
+    modules.services.appData.services.${cfg.serviceName} = {
+      owner = "root";
+      group = "root";
+    };
+
     # Create user and group
     users.users.${cfg.user} = mkIf (cfg.user != "root") {
       isSystemUser = true;

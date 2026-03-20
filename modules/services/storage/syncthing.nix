@@ -3,11 +3,18 @@
 with lib;
 let
   cfg = config.modules.services.storage.syncthing;
+  helpers = import ../../lib.nix { inherit lib; };
 in
 {
   options.modules.services.storage.syncthing = {
     enable = mkEnableOption "Syncthing file synchronization";
-    
+
+    serviceName = mkOption {
+      type = types.str;
+      default = "syncthing";
+      description = "Service name used for appData registration";
+    };
+
     user = mkOption {
       type = types.str;
       default = "tristonyoder";
@@ -22,7 +29,7 @@ in
     
     configDir = mkOption {
       type = types.str;
-      default = "/data/docker-appdata/syncthing";
+      default = "${config.modules.services.appData.mount}/${config.modules.services.appData.services.${cfg.serviceName}.appID}";
       description = "Folder for Syncthing's settings and keys";
     };
     
@@ -40,6 +47,11 @@ in
   };
 
   config = mkIf cfg.enable {
+    modules.services.appData.services.${cfg.serviceName} = {
+      owner = "tristonyoder";
+      group = "tristonyoder";
+    };
+
     # Syncthing service
     services.syncthing = {
       enable = true;

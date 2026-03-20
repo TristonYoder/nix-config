@@ -3,14 +3,21 @@
 with lib;
 let
   cfg = config.modules.services.infrastructure.postgresql;
+  helpers = import ../../lib.nix { inherit lib; };
 in
 {
   options.modules.services.infrastructure.postgresql = {
     enable = mkEnableOption "PostgreSQL database server";
-    
+
+    serviceName = mkOption {
+      type = types.str;
+      default = "postgres";
+      description = "Service name used for appData registration";
+    };
+
     dataDir = mkOption {
       type = types.str;
-      default = "/data/docker-appdata/postgres";
+      default = "${config.modules.services.appData.mount}/${config.modules.services.appData.services.${cfg.serviceName}.appID}";
       description = "PostgreSQL data directory";
     };
     
@@ -22,6 +29,11 @@ in
   };
 
   config = mkIf cfg.enable {
+    modules.services.appData.services.${cfg.serviceName} = {
+      owner = "postgres";
+      group = "postgres";
+    };
+
     services.postgresql = {
       enable = true;
       dataDir = cfg.dataDir;

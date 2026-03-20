@@ -3,14 +3,21 @@
 with lib;
 let
   cfg = config.modules.services.productivity.vaultwarden;
+  helpers = import ../../lib.nix { inherit lib; };
 in
 {
   options.modules.services.productivity.vaultwarden = {
     enable = mkEnableOption "Vaultwarden password manager";
-    
+
+    serviceName = mkOption {
+      type = types.str;
+      default = "Vaultwarden";
+      description = "Service name used for appData registration";
+    };
+
     domain = mkOption {
       type = types.str;
-      default = "vault.${config.networking.domain}";
+      default = "${helpers.toSlug cfg.serviceName}.${config.networking.domain}";
       description = "Domain for Vaultwarden";
     };
     
@@ -22,7 +29,7 @@ in
     
     backupDir = mkOption {
       type = types.str;
-      default = "/data/docker-appdata/vaultwarden/backups";
+      default = "${config.modules.services.appData.mount}/${config.modules.services.appData.services.${cfg.serviceName}.appID}/backups";
       description = "Backup directory";
     };
     
@@ -40,6 +47,11 @@ in
   };
 
   config = mkIf cfg.enable {
+    modules.services.appData.services.${cfg.serviceName} = {
+      owner = "vaultwarden";
+      group = "vaultwarden";
+    };
+
     # Vaultwarden service
     services.vaultwarden = {
       enable = true;
