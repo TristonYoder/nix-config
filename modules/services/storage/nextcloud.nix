@@ -13,7 +13,13 @@ in
       default = "cloud.7andco.dev";
       description = "Domain for Nextcloud web interface";
     };
-    
+
+    domainAliases = mkOption {
+      type    = types.listOf types.str;
+      default = [ ];
+      description = "Additional domains served by this virtual host. Each gets a DNS record and Caddy alias.";
+    };
+
     package = mkOption {
       type = types.package;
       default = pkgs.nextcloud31;
@@ -392,7 +398,8 @@ in
     # Caddy virtual host on David
     # Caddy serves Nextcloud directly via PHP-FPM Unix socket
     modules.services.vHosts.hosts.${cfg.domain} = {
-      managedProxy = false;
+      managedProxy  = false;
+      serverAliases = cfg.domainAliases;
       extraConfig = ''
         # Serve Nextcloud via PHP-FPM
         root * ${config.services.nextcloud.package}

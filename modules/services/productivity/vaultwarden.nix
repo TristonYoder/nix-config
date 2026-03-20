@@ -20,7 +20,13 @@ in
       default = "${helpers.toSlug cfg.serviceName}.${config.networking.domain}";
       description = "Domain for Vaultwarden";
     };
-    
+
+    domainAliases = mkOption {
+      type    = types.listOf types.str;
+      default = [ ];
+      description = "Additional domains served by this virtual host. Each gets a DNS record and Caddy alias.";
+    };
+
     port = mkOption {
       type = types.port;
       default = 8222;
@@ -77,6 +83,7 @@ in
     # Caddy virtual host
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
+      serverAliases    = cfg.domainAliases;
     };
   };
 }

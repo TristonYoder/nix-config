@@ -18,6 +18,12 @@ in
       description = "Domain for code-server";
     };
 
+    domainAliases = mkOption {
+      type    = types.listOf types.str;
+      default = [ ];
+      description = "Additional domains served by this virtual host. Each gets a DNS record and Caddy alias.";
+    };
+
     port = mkOption {
       type = types.port;
       default = 11010;
@@ -58,6 +64,7 @@ in
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyHost = cfg.host;
       reverseProxyPort = cfg.port;
+      serverAliases    = cfg.domainAliases;
     };
   };
 }

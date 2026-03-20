@@ -21,6 +21,12 @@ in
       description = "Domain for Tandoor";
     };
 
+    domainAliases = mkOption {
+      type    = types.listOf types.str;
+      default = [ ];
+      description = "Additional domains served by this virtual host. Each gets a DNS record and Caddy alias.";
+    };
+
     port = mkOption {
       type = types.port;
       default = 6780;
@@ -166,6 +172,7 @@ in
     # Caddy virtual host using new vHosts system
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
+      serverAliases    = cfg.domainAliases;
     };
   };
 }

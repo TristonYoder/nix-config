@@ -29,6 +29,12 @@ in
       description = "Domain for headscale server (defaults to ts.baseDomain)";
     };
 
+    domainAliases = mkOption {
+      type    = types.listOf types.str;
+      default = [ ];
+      description = "Additional domains served by this virtual host. Each gets a DNS record and Caddy alias.";
+    };
+
     port = mkOption {
       type = types.port;
       default = 8080;
@@ -354,8 +360,9 @@ in
 
     # Caddy reverse proxy for headscale API and admin UI
     modules.services.vHosts.hosts.${cfg.domain} = {
-      managedProxy = false;
-      public = true;  # Headscale API must be public for Tailscale clients
+      managedProxy  = false;
+      public        = true;  # Headscale API must be public for Tailscale clients
+      serverAliases = cfg.domainAliases;
       extraConfig = ''
         ${optionalString (cfg.adminUI.type != "none") ''
         # Admin UI at /admin path

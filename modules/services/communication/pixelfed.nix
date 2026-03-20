@@ -20,7 +20,13 @@ in
       default = "loveinfocus.photos";
       description = "Domain where Pixelfed web interface is accessible";
     };
-    
+
+    domainAliases = mkOption {
+      type    = types.listOf types.str;
+      default = [ ];
+      description = "Additional domains served by this virtual host. Each gets a DNS record and Caddy alias.";
+    };
+
     federationDomain = mkOption {
       type = types.str;
       default = "loveinfocus.photos";
@@ -125,6 +131,7 @@ in
     # Note: External access via PITS goes directly to nginx:8085, this is just for local Caddy access
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.nginxPort;
+      serverAliases    = cfg.domainAliases;
     };
 
 

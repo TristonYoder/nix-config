@@ -20,7 +20,13 @@ in
       default = "n8n.7andco.dev";
       description = "Domain for n8n";
     };
-    
+
+    domainAliases = mkOption {
+      type    = types.listOf types.str;
+      default = [ ];
+      description = "Additional domains served by this virtual host. Each gets a DNS record and Caddy alias.";
+    };
+
     openFirewall = mkOption {
       type = types.bool;
       default = true;
@@ -49,6 +55,7 @@ in
     # Caddy virtual host
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = 5678;
+      serverAliases    = cfg.domainAliases;
     };
   };
 }

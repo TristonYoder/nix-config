@@ -20,7 +20,13 @@ in
       default = "photos.${config.networking.domain}";
       description = "Primary domain for Immich";
     };
-    
+
+    domainAliases = mkOption {
+      type    = types.listOf types.str;
+      default = [ ];
+      description = "Additional domains served by this virtual host. Each gets a DNS record and Caddy alias.";
+    };
+
     publicProxyDomain = mkOption {
       type = types.str;
       default = "share.photos.${config.networking.domain}";
@@ -205,7 +211,8 @@ in
 
     # Caddy virtual hosts
     modules.services.vHosts.hosts.${cfg.domain} = {
-      managedProxy = false;
+      managedProxy  = false;
+      serverAliases = cfg.domainAliases;
       extraConfig = ''
         handle_path /share* {
           reverse_proxy http://localhost:${toString cfg.publicProxyPort}

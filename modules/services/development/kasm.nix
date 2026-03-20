@@ -20,7 +20,13 @@ in
       default = "${helpers.toSlug cfg.serviceName}.${config.networking.domain}";
       description = "Domain for Kasm Workspaces";
     };
-    
+
+    domainAliases = mkOption {
+      type    = types.listOf types.str;
+      default = [ ];
+      description = "Additional domains served by this virtual host. Each gets a DNS record and Caddy alias.";
+    };
+
     listenPort = mkOption {
       type = types.port;
       default = 5443;
@@ -143,7 +149,8 @@ in
     
     # Caddy reverse proxy configuration
     modules.services.vHosts.hosts.${cfg.domain} = {
-      managedProxy = false;
+      managedProxy  = false;
+      serverAliases = cfg.domainAliases;
       extraConfig = ''
         reverse_proxy https://localhost:${toString cfg.listenPort} {
           transport http {
