@@ -80,11 +80,12 @@
   # =============================================================================
   
   modules.services.appData = {
-    enable   = lib.mkDefault true;
-    provider = lib.mkDefault "zfs";
-    pool     = lib.mkDefault "data";
-    dataset  = lib.mkDefault "appData";
-    mount    = lib.mkDefault "/data/appData";
+    enable            = lib.mkDefault true;
+    provider          = lib.mkDefault "zfs";
+    pool              = lib.mkDefault "data";
+    dataset           = lib.mkDefault "appData";
+    mount             = lib.mkDefault "/data/appData";
+    disableEncryption = lib.mkDefault true;
   };
 
   modules.services.storage.zfs.enable = lib.mkDefault true;

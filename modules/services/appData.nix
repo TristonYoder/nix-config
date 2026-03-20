@@ -37,6 +37,12 @@ in
       description = "ZFS dataset name (relative to pool). Required when provider = \"zfs\".";
     };
 
+    disableEncryption = mkOption {
+      type        = types.bool;
+      default     = false;
+      description = "Create the ZFS dataset with encryption=off. Set true when the pool is encrypted but this dataset should not inherit it.";
+    };
+
     services = mkOption {
       type        = types.attrsOf (types.submodule ({ name, ... }: {
         options = {
@@ -92,7 +98,7 @@ in
       path   = [ pkgs.coreutils ] ++ optional (cfg.provider == "zfs") pkgs.zfs;
       script = ''
         ${optionalString (cfg.provider == "zfs") ''
-          zfs create -p -o encryption=off -o mountpoint=${cfg.mount} ${cfg.pool}/${cfg.dataset} 2>/dev/null || true
+          zfs create -p ${optionalString cfg.disableEncryption "-o encryption=off"} -o mountpoint=${cfg.mount} ${cfg.pool}/${cfg.dataset} 2>/dev/null || true
           zfs mount ${cfg.pool}/${cfg.dataset} 2>/dev/null || true
         ''}
 
