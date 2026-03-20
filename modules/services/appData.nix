@@ -92,7 +92,7 @@ in
       path   = [ pkgs.coreutils ] ++ optional (cfg.provider == "zfs") pkgs.zfs;
       script = ''
         ${optionalString (cfg.provider == "zfs") ''
-          zfs create -p -o mountpoint=${cfg.mount} ${cfg.pool}/${cfg.dataset} 2>/dev/null || true
+          zfs create -p -o encryption=off -o mountpoint=${cfg.mount} ${cfg.pool}/${cfg.dataset} 2>/dev/null || true
           zfs mount ${cfg.pool}/${cfg.dataset} 2>/dev/null || true
         ''}
 
