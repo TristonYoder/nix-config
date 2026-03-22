@@ -98,6 +98,10 @@ in
     users.groups.media = { };
     users.users.plex.extraGroups = [ "media" "video" "render" ];
 
+    # The plex package uses a bubblewrap FHS wrapper that drops supplementary groups
+    # from /etc/group. Explicitly set them here so DVR can write to media directories.
+    systemd.services.plex.serviceConfig.SupplementaryGroups = "media video render";
+
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
     };
