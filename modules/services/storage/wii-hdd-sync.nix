@@ -53,12 +53,12 @@ in
           echo "Syncing drive -> local..."
           ${pkgs.rsync}/bin/rsync -av --ignore-existing \
             --exclude='._*' \
-            "$MOUNT/wbfs/" "$LOCAL/"
+            "$MOUNT/wbfs/" "$LOCAL/" || { rc=$?; [ $rc -eq 23 ] || exit $rc; }
 
           echo "Syncing local -> drive..."
           ${pkgs.rsync}/bin/rsync -av --ignore-existing \
             --no-perms --no-owner --no-group \
-            "$LOCAL/" "$MOUNT/wbfs/"
+            "$LOCAL/" "$MOUNT/wbfs/" || { rc=$?; [ $rc -eq 23 ] || exit $rc; }
 
           echo "Sync complete."
         '';
