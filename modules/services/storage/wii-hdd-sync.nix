@@ -51,10 +51,14 @@ in
           trap cleanup EXIT
 
           echo "Syncing drive -> local..."
-          ${pkgs.rsync}/bin/rsync -av --ignore-existing "$MOUNT/wbfs/" "$LOCAL/"
+          ${pkgs.rsync}/bin/rsync -av --ignore-existing \
+            --exclude='._*' \
+            "$MOUNT/wbfs/" "$LOCAL/"
 
           echo "Syncing local -> drive..."
-          ${pkgs.rsync}/bin/rsync -av --ignore-existing "$LOCAL/" "$MOUNT/wbfs/"
+          ${pkgs.rsync}/bin/rsync -av --ignore-existing \
+            --no-perms --no-owner --no-group \
+            "$LOCAL/" "$MOUNT/wbfs/"
 
           echo "Sync complete."
         '';
