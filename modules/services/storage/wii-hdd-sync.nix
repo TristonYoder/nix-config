@@ -4,8 +4,6 @@ with lib;
 let
   cfg = config.modules.services.storage.wiiHddSync;
   mountPoint = "/mnt/wii-hdd";
-  # systemd escapes /mnt/wii-hdd as mnt-wii\x2dhdd
-  mountUnit = "mnt-wii\\x2dhdd.mount";
 in
 {
   options.modules.services.storage.wiiHddSync = {
@@ -25,46 +23,47 @@ in
   };
 
   config = mkIf cfg.enable {
-    # Mount point directory
+    # Ensure mount point exists
     systemd.tmpfiles.rules = [
       "d ${mountPoint} 0755 root root -"
     ];
 
-    # noauto so it doesn't mount on boot — udev triggers it on plug-in
-    fileSystems."${mountPoint}" = {
-      device = "/dev/disk/by-uuid/${cfg.uuid}";
-      fsType = "vfat";
-      options = [ "noauto" "nofail" "uid=1000" "gid=1000" "umask=002" "flush" ];
-    };
-
-    # Trigger the mount unit when the drive is plugged in
-    services.udev.extraRules = ''
-      ACTION=="add", SUBSYSTEM=="block", ENV{ID_FS_UUID}=="${cfg.uuid}", TAG+="systemd", ENV{SYSTEMD_WANTS}+="${mountUnit}"
-    '';
-
-    # Sync service: runs once after mount, stopped when drive unplugged
+    # Oneshot service: mount -> sync both ways -> unmount
     systemd.services.wii-hdd-sync = {
       description = "Sync Wii HDD wbfs <-> local storage";
-      after = [ mountUnit ];
-      bindsTo = [ mountUnit ];
-      wantedBy = [ mountUnit ];
+      after = [ "network.target" ];
 
       serviceConfig = {
         Type = "oneshot";
-        RemainAfterExit = true;
         ExecStart = pkgs.writeShellScript "wii-hdd-sync" ''
           set -euo pipefail
+          DEVICE="/dev/disk/by-uuid/${cfg.uuid}"
+          MOUNT="${mountPoint}"
+          LOCAL="${cfg.localWbfs}"
+
+          echo "Mounting $DEVICE -> $MOUNT..."
+          ${pkgs.util-linux}/bin/mount -t vfat -o uid=1000,gid=1000,umask=002,flush "$DEVICE" "$MOUNT"
+
+          cleanup() {
+            echo "Unmounting $MOUNT..."
+            ${pkgs.util-linux}/bin/umount "$MOUNT" || true
+          }
+          trap cleanup EXIT
+
           echo "Syncing drive -> local..."
-          ${pkgs.rsync}/bin/rsync -av --ignore-existing \
-            ${mountPoint}/wbfs/ ${cfg.localWbfs}/
+          ${pkgs.rsync}/bin/rsync -av --ignore-existing "$MOUNT/wbfs/" "$LOCAL/"
 
           echo "Syncing local -> drive..."
-          ${pkgs.rsync}/bin/rsync -av --ignore-existing \
-            ${cfg.localWbfs}/ ${mountPoint}/wbfs/
+          ${pkgs.rsync}/bin/rsync -av --ignore-existing "$LOCAL/" "$MOUNT/wbfs/"
 
           echo "Sync complete."
         '';
       };
     };
+
+    # Trigger the sync service when the drive is plugged in
+    services.udev.extraRules = ''
+      ACTION=="add", SUBSYSTEM=="block", ENV{ID_FS_UUID}=="${cfg.uuid}", TAG+="systemd", ENV{SYSTEMD_WANTS}+="wii-hdd-sync.service"
+    '';
   };
 }
