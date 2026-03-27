@@ -189,7 +189,6 @@
     enable = true;
     onActivation.autoUpdate = true;
     onActivation.cleanup = "none";
-    caskArgs.adopt = true;
     
     casks = [
       # Development & Productivity
