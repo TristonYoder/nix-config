@@ -12,7 +12,6 @@
     # macOS-specific tools
     syncthing
     tailscale
-    element-desktop
 
     # Emulators
     dolphin-emu  # GameCube and Wii emulator
@@ -260,7 +259,8 @@
       # Communication & Productivity
       "spotify"
       "mattermost"
-      
+      "element"
+
       # System & Utilities
       "trezor-suite"
       "logi-options-plus"
