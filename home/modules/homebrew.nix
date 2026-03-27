@@ -99,7 +99,7 @@ in
         for cask in ${concatStringsSep " " cfg.casks}; do
           if ! echo "$INSTALLED_CASKS" | grep -qx "$cask"; then
             $DRY_RUN_CMD echo "Installing cask: $cask"
-            $DRY_RUN_CMD "$BREW" install --cask --adopt "$cask"
+            $DRY_RUN_CMD "$BREW" install --cask --adopt "$cask" || $DRY_RUN_CMD echo "Warning: failed to install cask $cask, skipping"
           fi
         done
       '';
