@@ -11,7 +11,6 @@
   home.packages = with pkgs; [
     # macOS-specific tools
     syncthing
-    tailscale
 
     # Emulators
     dolphin-emu  # GameCube and Wii emulator
@@ -204,7 +203,6 @@
       # System Utilities
       "hazel"
       "lunar"
-      "tailscale"
 
       # Virtualization
       "parallels"
@@ -292,6 +290,8 @@
       { id = "1559269364"; name = "Notion Web Clipper"; }
       { id = "1246969117"; name = "Steam Link"; }
       { id = "1295203466"; name = "Windows App"; }
+      { id = "6470928235"; name = "Manet Music"; }
+      { id = "6593660679"; name = "Streamyfin"; }
     ];
   };
 }
