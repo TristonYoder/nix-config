@@ -130,6 +130,12 @@
 
   modules.services.storage.wiiHddSync.enable = true;
 
+  modules.services.storage.mp3PlayerSync = {
+    enable = true;
+    uuid = "EC95-4FBB";
+    playlistDir = "/data/media/Music/Playlists";
+  };
+
   # =============================================================================
   # ADDITIONAL SERVICES
   # =============================================================================
