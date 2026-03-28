@@ -33,7 +33,6 @@
   
   modules.services.infrastructure.tailscale.enable = lib.mkDefault true;
 
-  nixpkgs.config.permittedInsecurePackages = [ "electron-36.9.5" ];
   environment.systemPackages = [ pkgs.feishin ];
 
   # All other services disabled by default

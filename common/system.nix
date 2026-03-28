@@ -38,6 +38,7 @@ in
   # Allow insecure packages for specific applications
   nixpkgs.config.permittedInsecurePackages = [
     "electron-35.7.5"  # Required for gfn-electron (GeForce Now)
+    "electron-36.9.5"  # Required for feishin
     "olm-3.2.16"       # Required for Matrix communication bridges
   ];
 
