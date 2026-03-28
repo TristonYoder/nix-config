@@ -2,6 +2,7 @@
 {
   # Import media service modules
   imports = [
+    ./beets.nix
     ./feishin.nix
     ./immich.nix
     ./jellyfin.nix
