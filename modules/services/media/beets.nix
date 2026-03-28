@@ -41,10 +41,7 @@ in
 
     inboxDir = mkOption {
       type = types.str;
-      default =
-        if config.modules.services.media.jellyfin.enable
-        then "${config.modules.services.media.jellyfin.mediaDir}/Downloads"
-        else "/data/media/Downloads";
+      default = "${cfg.musicDir}/0. Import";
       description = "Directory to import new music from";
     };
 
