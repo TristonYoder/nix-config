@@ -25,4 +25,8 @@
   
   # Set primary user for system defaults
   system.primaryUser = "tristonyoder";
+
+  environment.systemPackages = [
+    pkgs.feishin
+  ];
 }

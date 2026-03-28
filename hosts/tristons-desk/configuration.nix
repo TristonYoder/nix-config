@@ -35,7 +35,8 @@
     # Desktop-specific packages
     firefox
     vlc
-    
+    feishin
+
     # Development tools
     vscode
   ];

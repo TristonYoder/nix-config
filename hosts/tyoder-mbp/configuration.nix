@@ -25,5 +25,9 @@
   
   # Set primary user for system defaults
   system.primaryUser = "tyoder";
+
+  environment.systemPackages = [
+    pkgs.feishin
+  ];
 }
 
