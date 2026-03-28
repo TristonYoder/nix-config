@@ -60,12 +60,14 @@ in
 
           # Build list of wanted files from each playlist in the configured list.
           # M3U entries may be absolute paths — strip the music library prefix to get relative paths.
-          echo "Building file list from playlists..."
+          # tr strips Windows-style \r so CRLF playlists don't corrupt filenames.
+          echo "Building file list from playlists..." >&2
           while IFS= read -r playlist; do
-            [ -f "$playlist" ] || { echo "Warning: playlist not found: $playlist"; continue; }
-            echo "  $playlist"
+            [ -f "$playlist" ] || { echo "Warning: playlist not found: $playlist" >&2; continue; }
+            echo "  $playlist" >&2
             grep -v '^#' "$playlist" | grep -v '^$'
           done < "${playlistsFile}" \
+            | tr -d '\r' \
             | ${pkgs.gnused}/bin/sed "s|^$MUSIC/||" \
             | sort -u \
             > "$WANTED_LIST"
