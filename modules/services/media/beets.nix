@@ -57,7 +57,7 @@ in
 
     user = mkOption {
       type = types.str;
-      default = "tristonyoder";
+      default = "jellyfin";
       description = "User to run beets as";
     };
 
