@@ -45,7 +45,9 @@ in
 
     remoteUrl = mkOption {
       type = types.str;
-      default = "";
+      default = if config.modules.services.media.jellyfin.enable
+        then "https://${config.modules.services.media.jellyfin.domain}"
+        else "";
       description = "Remote URL (http://address or https://address)";
     };
 
