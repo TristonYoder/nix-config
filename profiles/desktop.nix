@@ -33,6 +33,8 @@
   
   modules.services.infrastructure.tailscale.enable = lib.mkDefault true;
 
+  environment.systemPackages = [ pkgs.feishin ];
+
   # All other services disabled by default
   # Individual desktops can enable specific services in their host config
 }
