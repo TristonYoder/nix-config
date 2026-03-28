@@ -8,13 +8,16 @@ in
   options.modules.services.media.feishin = {
     enable = mkEnableOption "Feishin music player web app";
 
-    domains = mkOption {
+    domain = mkOption {
+      type = types.str;
+      default = "feishin.${config.networking.domain}";
+      description = "Primary domain for Feishin";
+    };
+
+    serverAliases = mkOption {
       type = types.listOf types.str;
-      default = [
-        "feishin.${config.networking.domain}"
-        "music.${config.networking.domain}"
-      ];
-      description = "Domains for Feishin";
+      default = [ "music.${config.networking.domain}" ];
+      description = "Additional domains for Feishin";
     };
 
     port = mkOption {
@@ -92,8 +95,9 @@ in
       wantedBy = [ "multi-user.target" ];
     };
 
-    modules.services.vHosts.hosts."${concatStringsSep " " cfg.domains}" = {
+    modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
+      serverAliases = cfg.serverAliases;
     };
   };
 }
