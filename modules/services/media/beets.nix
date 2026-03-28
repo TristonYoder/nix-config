@@ -57,7 +57,7 @@ in
 
     user = mkOption {
       type = types.str;
-      default = "jellyfin";
+      default = "tristonyoder";
       description = "User to run beets as";
     };
 
@@ -94,6 +94,7 @@ in
         Type = "oneshot";
         User = cfg.user;
         Group = cfg.group;
+        Environment = "HOME=${cfg.dataDir}";
         ExecStart = "${pkgs.beets}/bin/beet --config ${beetsConfig} import ${cfg.inboxDir}";
 
         NoNewPrivileges = true;
