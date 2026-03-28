@@ -55,6 +55,9 @@
   # Feishin - Web music player (Jellyfin/Navidrome/Subsonic client)
   modules.services.media.feishin.enable = true;
 
+  # Beets - Auto-organize music library from Downloads into Music
+  modules.services.media.beets.enable = true;
+
   # JellyPlex-Watched sync (continuous)
   modules.services.media.jellyplexWatched = {
     enable = true;
