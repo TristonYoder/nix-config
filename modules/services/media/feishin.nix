@@ -37,7 +37,9 @@ in
 
     serverUrl = mkOption {
       type = types.str;
-      default = "";
+      default = if config.modules.services.media.jellyfin.enable
+        then "https://${config.modules.services.media.jellyfin.domain}"
+        else "";
       description = "Server URL (http://address:port or https://address:port)";
     };
 
