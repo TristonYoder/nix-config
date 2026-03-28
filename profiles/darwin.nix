@@ -8,6 +8,8 @@
   # NIX-DARWIN SYSTEM SETTINGS
   # =============================================================================
   
+  nixpkgs.config.permittedInsecurePackages = [ "electron-36.9.5" ];
+
   # macOS system packages
   environment.systemPackages = with pkgs; [
     feishin
