@@ -56,7 +56,7 @@ in
 
     serverLock = mkOption {
       type = types.bool;
-      default = true;
+      default = false;
       description = "When true and server name/type/url are set, only username/password can be toggled";
     };
   };
