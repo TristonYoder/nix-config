@@ -66,7 +66,6 @@ in
     systemd.tmpfiles.rules =
       [ "d ${cfg.mediaDir} 2775 tristonyoder media -" ]
       ++ map (sub: "d ${cfg.mediaDir}/${sub} 2775 tristonyoder media -") cfg.mediaSubDirs
-      ++ [ "Z ${cfg.mediaDir}/Music - jellyfin media -" ];
 
     # Workaround for jellyfin hardware transcode (NVIDIA NVENC)
     # Minimal hardening overrides required for CUDA

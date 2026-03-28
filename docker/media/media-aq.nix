@@ -475,7 +475,7 @@
     ];
     environment = {
       "PGID" = "970";   # media group
-      "PUID" = "994";   # jellyfin user
+      "PUID" = "1000";  # tristonyoder
       "UMASK" = "0002"; # group-writable so media group members can modify
       "TZ" = config.time.timeZone;
       "JELLYFIN_URL" = "http://localhost:${toString config.modules.services.media.jellyfin.port}";
