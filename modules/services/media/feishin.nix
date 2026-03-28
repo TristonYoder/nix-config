@@ -28,7 +28,7 @@ in
 
     serverName = mkOption {
       type = types.str;
-      default = "jellyfin";
+      default = "feishin.${config.networking.domain}";
       description = "Pre-defined server name";
     };
 
