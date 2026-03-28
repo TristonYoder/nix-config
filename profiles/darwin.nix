@@ -10,6 +10,7 @@
   
   # macOS system packages
   environment.systemPackages = with pkgs; [
+    feishin
     # Development tools
     git
     gh
