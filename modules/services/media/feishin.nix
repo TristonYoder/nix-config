@@ -28,7 +28,7 @@ in
 
     serverName = mkOption {
       type = types.str;
-      default = "feishin.${config.networking.domain}";
+      default = "music.${config.networking.domain}";
       description = "Pre-defined server name";
     };
 
