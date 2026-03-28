@@ -14,7 +14,41 @@ This is a flake-based, multi-host Nix configuration managing NixOS servers, desk
 - **tyoder-mbp** (macOS Apple Silicon) - Work MacBook Pro
 - **Tristons-MacBook-Pro** (macOS Intel) - Personal MacBook Pro
 
+## Security — This Repo Is Public
+
+**CRITICAL: This repository is public on GitHub. Never write secrets, credentials, tokens, passwords, or any sensitive values anywhere in the repo — including CLAUDE.md, comments, commit messages, or documentation — unless they are encrypted via the `secrets/` agenix system.**
+
+If you encounter a secret value during a session (e.g. a user pastes a token or password), do NOT write it to any file in the repo. Direct the user to encrypt it with `encrypt-secret.sh` instead.
+
+Acceptable locations for secret material:
+- `secrets/*.age` — encrypted with agenix (SSH public keys), safe to commit
+- Runtime paths like `/run/agenix/<secret>` — decrypted on-host only, never in the repo
+
+## Knowledge Management
+
+CLAUDE.md is the primary knowledge store for this repo. It is committed to git and automatically synced across all machines via `git pull`.
+
+**What belongs here:** Architecture principles, design decisions, troubleshooting playbooks, and workflow rules — anything stable and worth carrying into every session. Never include secret values (see Security section above).
+
+**What belongs in `~/.claude/` memory:** In-progress work, open design questions, and transient session context. When something in memory stabilizes (a bug fix pattern, a finalized design), promote it to CLAUDE.md and delete the memory file. Never store secret values in memory files either.
+
+**Cross-machine sync for in-progress memory:**
+```bash
+# Sync from local to david (or reverse)
+rsync -av ~/.claude/projects/-Users-tyoder-Projects-nix-config/memory/ \
+  tristonyoder@david:~/.claude/projects/-data-tristonyoder-home-Projects-nix-config/memory/
+```
+
+Run this when switching machines if there's active in-progress memory that hasn't been promoted yet.
+
 ## Build & Rebuild Commands
+
+Use the `rebuild` shorthand — it auto-detects the host and runs the appropriate command:
+```bash
+rebuild
+```
+
+**Always commit changes before rebuilding.** This is a flake-based repo — the build reads from the git tree, not the working directory. Uncommitted changes are invisible to the builder.
 
 ### NixOS Hosts
 
@@ -201,6 +235,18 @@ Enable modules in host configurations:
 }
 ```
 
+### Agnostic Module Design
+
+Service modules declare their requirements through typed options. Provider modules consume those declarations and implement them. No service module should directly configure Caddy, nginx, ZFS, PostgreSQL, etc.
+
+**Why:** Swapping a provider (e.g. reverse proxy, DNS, storage) requires only a new consumer module — zero changes to the service modules that declare their needs. The vHosts module demonstrated this: 25+ service modules declare a domain/port, and Caddy + Technitium each consume that without the services knowing.
+
+**Rule:** When building a service module, ask "could this declaration be consumed by a different provider?" If yes, it belongs in the agnostic options layer. Provider-specific escape hatches (like `extraConfig`) are acceptable but should be treated as non-portable.
+
+**Established abstractions:**
+- `modules.services.vHosts.hosts` — reverse proxy + DNS (consumed by Caddy, Technitium)
+- `modules.services.appData` — service data directories (consumed by plain fs or ZFS provider)
+
 ### Configuration Hierarchy
 
 Hosts import configurations in this order:
@@ -281,6 +327,8 @@ Write concisely with technical accuracy.
 
 ### Managing Secrets (agenix)
 
+**This repo is public. All secrets must be encrypted before committing. Never commit plaintext credentials, tokens, or passwords — not even temporarily.**
+
 Secrets are encrypted with SSH public keys using agenix.
 
 **CRITICAL**: ALWAYS use `encrypt-secret.sh` for encrypting/re-encrypting secrets. DO NOT encrypt manually with age commands. Manual encryption often results in X25519 format which breaks agenix decryption on hosts.
@@ -326,6 +374,21 @@ age.secrets.my-secret = {
 ```
 
 Reference in modules: `config.age.secrets.my-secret.path`
+
+### Debugging GitHub Actions Failures
+
+```bash
+# List recent runs to find the failed run ID
+gh run list --branch main --limit 5
+
+# Fetch failed job logs
+gh run view <run-id> --log-failed
+
+# If output is too large it saves to a temp file — grep it directly
+grep -n "error\|Error\|failed\|Failed" <saved-log-file> | tail -60
+```
+
+The CI matrix runs jobs for each host (e.g. `test-configurations (david, david)`). The rsync file listing is verbose — skip past it to find the actual `nixos-rebuild dry-run` error.
 
 ### Docker Compose Services
 
@@ -415,6 +478,50 @@ journalctl -u servicename -f
 killall Dock && killall Finder
 
 # Some settings require logout/login
+```
+
+### SDDM Blinking Cursor (No Login Screen)
+**Host:** david — Plasma 6 + NVIDIA
+
+SDDM defaults to `DisplayServer=wayland`. The NVIDIA DRM driver rejects the `video=1920x1080` kernel param set by `modules/hardware/display-resolution.nix`, causing `kwin_wayland` to exit after ~1 second. SDDM never retries.
+
+**Quick fix:** `sudo systemctl restart display-manager`
+
+**Permanent fix options (not yet applied):**
+- Disable SDDM Wayland: `services.displayManager.sddm.wayland.enable = false;`
+- Remove the `video=` kernel param from `display-resolution.nix` — NVIDIA DRM doesn't support user-defined modes (only useful for simpledrm/efifb)
+
+**Diagnostics:**
+```bash
+systemctl status display-manager
+journalctl --grep="sddm|kwin"
+journalctl --grep="nvidia.*drm"
+ls /tmp/.X11-unix/   # empty = no display running
+```
+
+### Qt Apps Crash on Plasma 6 Wayland (SIGABRT / exit 134)
+**Host:** david — Plasma 6 Wayland + NVIDIA
+
+Exit code 134 (SIGABRT) at `init_platform` in libQt6Gui means Qt can't find a platform plugin. The nixpkgs dolphin-emu wrapper hardcodes `--set QT_QPA_PLATFORM xcb`. On Wayland, XWayland starts on-demand and `DISPLAY` is unset, so Qt aborts trying xcb.
+
+**Fix applied:** `modules/system/desktop.nix` — `xwayland-init` systemd user service forces KWin to start XWayland eagerly at login. This fixes all Qt xcb apps at once. `environment.sessionVariables` cannot override binary wrappers that use `--set`.
+
+**Diagnostics:**
+```bash
+coredumpctl list
+# Journal: look for init_platform in Qt stack trace
+cat $(which <app>)   # check for QT_QPA_PLATFORM hardcode
+loginctl show-session <id>   # Type=wayland = no native X11
+```
+
+### Headscale Preauthkeys Missing `--tags` Breaks CI SSH
+**Context:** GitHub Actions CI runners joining the Tailscale mesh via headscale
+
+Without `--tags tag:github-actions`, preauthkeys produce untagged nodes. The headscale SSH ACL requires `tag:github-actions` as source, so "failed to evaluate SSH policy" is returned (policy can't match — not an explicit deny).
+
+**Always create preauthkeys with:**
+```bash
+sudo headscale preauthkeys create --user github-actions --reusable --ephemeral --expiration 168h --tags tag:github-actions
 ```
 
 ### Port Conflicts
