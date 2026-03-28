@@ -38,6 +38,9 @@
   
   # nix-daemon is now managed unconditionally by nix-darwin when nix.enable is on
   
+  # Tailscale daemon (CLI mode, supports SSH and background operation)
+  services.tailscale.enable = true;
+
   # Enable Touch ID for sudo
   security.pam.services.sudo_local.touchIdAuth = true;
   
