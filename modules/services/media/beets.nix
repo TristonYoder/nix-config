@@ -83,6 +83,7 @@ in
   config = mkIf cfg.enable {
     systemd.tmpfiles.rules = [
       "d ${cfg.dataDir} 0750 ${cfg.user} ${cfg.group} -"
+      "d ${cfg.inboxDir} 2775 ${cfg.user} ${cfg.group} -"
     ];
 
     systemd.services.beets-import = {
@@ -95,7 +96,7 @@ in
         User = cfg.user;
         Group = cfg.group;
         Environment = "HOME=${cfg.dataDir}";
-        ExecStart = "${pkgs.beets}/bin/beet --config ${beetsConfig} import ${cfg.inboxDir}";
+        ExecStart = "${pkgs.beets}/bin/beet --config ${beetsConfig} import \"${cfg.inboxDir}\"";
 
         NoNewPrivileges = true;
         PrivateTmp = true;
