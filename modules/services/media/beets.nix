@@ -94,6 +94,7 @@ in
         Type = "oneshot";
         User = cfg.user;
         Group = cfg.group;
+        Environment = "HOME=${cfg.dataDir}";
         ExecStart = "${pkgs.beets}/bin/beet --config ${beetsConfig} import ${cfg.inboxDir}";
 
         NoNewPrivileges = true;

@@ -474,9 +474,9 @@
       "/run/tidarr/tidarr.env"
     ];
     environment = {
-      "PGID" = "1000";
-      "PUID" = "1000";
-      "UMASK" = "0022";
+      "PGID" = "970";   # media group
+      "PUID" = "1000";  # tristonyoder
+      "UMASK" = "0002"; # group-writable so media group members can modify
       "TZ" = config.time.timeZone;
       "JELLYFIN_URL" = "http://localhost:${toString config.modules.services.media.jellyfin.port}";
       "JELLYFIN_PUBLIC_URL" = "https://${config.modules.services.media.jellyfin.domain}";
