@@ -133,7 +133,11 @@
   modules.services.storage.mp3PlayerSync = {
     enable = true;
     uuid = "EC95-4FBB";
-    playlistDir = "/data/media/Music/Playlists";
+    playlists = [
+      "/data/media/Music/m3u/playlist/Judah Jams.m3u"
+      "/data/media/Music/m3u/playlist/Judah's Fav TOP.m3u"
+      "/data/media/Music/m3u/playlist/Judahstep.m3u"
+    ];
   };
 
   # =============================================================================

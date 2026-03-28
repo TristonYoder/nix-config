@@ -4,6 +4,7 @@ with lib;
 let
   cfg = config.modules.services.storage.mp3PlayerSync;
   mountPoint = "/mnt/mp3-player";
+  playlistsFile = pkgs.writeText "mp3-sync-playlists" (concatStringsSep "\n" cfg.playlists);
 in
 {
   options.modules.services.storage.mp3PlayerSync = {
@@ -20,15 +21,10 @@ in
       description = "Root of the local music library";
     };
 
-    playlistDir = mkOption {
-      type = types.str;
-      description = "Directory containing playlist files to sync";
-    };
-
-    playlistPattern = mkOption {
-      type = types.str;
-      default = "*.m3u";
-      description = "Glob pattern for playlist files within playlistDir";
+    playlists = mkOption {
+      type = types.listOf types.str;
+      description = "List of .m3u playlist file paths to sync to the player";
+      example = [ "/data/media/Music/m3u/playlist/Judah Jams.m3u" ];
     };
   };
 
@@ -50,7 +46,6 @@ in
           DEVICE="/dev/disk/by-uuid/${cfg.uuid}"
           MOUNT="${mountPoint}"
           MUSIC="${cfg.musicLibrary}"
-          PLAYLIST_DIR="${cfg.playlistDir}"
           WANTED_LIST="/tmp/mp3-sync-files.txt"
 
           echo "Mounting $DEVICE -> $MOUNT..."
@@ -63,12 +58,14 @@ in
           }
           trap cleanup EXIT
 
-          # Build list of wanted files from all matching playlists
-          # M3U entries may be absolute paths — strip the music library prefix to get relative paths
-          echo "Building file list from playlists in $PLAYLIST_DIR..."
-          ${pkgs.findutils}/bin/find "$PLAYLIST_DIR" -name "${cfg.playlistPattern}" -type f \
-            -exec grep -h -v '^#' {} + \
-            | grep -v '^$' \
+          # Build list of wanted files from each playlist in the configured list.
+          # M3U entries may be absolute paths — strip the music library prefix to get relative paths.
+          echo "Building file list from playlists..."
+          while IFS= read -r playlist; do
+            [ -f "$playlist" ] || { echo "Warning: playlist not found: $playlist"; continue; }
+            echo "  $playlist"
+            grep -v '^#' "$playlist" | grep -v '^$'
+          done < "${playlistsFile}" \
             | ${pkgs.gnused}/bin/sed "s|^$MUSIC/||" \
             | sort -u \
             > "$WANTED_LIST"
