@@ -65,7 +65,7 @@ in
     # Mode 2775 sets setgid so new subdirectories inherit the media group automatically.
     systemd.tmpfiles.rules =
       [ "d ${cfg.mediaDir} 2775 tristonyoder media -" ]
-      ++ map (sub: "d ${cfg.mediaDir}/${sub} 2775 tristonyoder media -") cfg.mediaSubDirs
+      ++ map (sub: "d ${cfg.mediaDir}/${sub} 2775 tristonyoder media -") cfg.mediaSubDirs;
 
     # Workaround for jellyfin hardware transcode (NVIDIA NVENC)
     # Minimal hardening overrides required for CUDA
