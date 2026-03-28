@@ -17,6 +17,10 @@ let
 
     plugins: fetchart embedart chroma
 
+    paths:
+      default: $albumartist/$album ($year)/$albumartist - $album - $track - $title
+      singleton: $albumartist/$title
+
     fetchart:
       auto: yes
 
