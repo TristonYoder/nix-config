@@ -135,7 +135,7 @@
     uuid = "EC95-4FBB";
     playlists = [
       "/data/media/Music/m3u/playlist/Judah Jams.m3u"
-      "/data/media/Music/m3u/playlist/Judah's Fav TOP.m3u"
+      "/data/media/Music/m3u/playlist/Judah\u2019s Fav TOP.m3u"
       "/data/media/Music/m3u/playlist/Judahstep.m3u"
     ];
   };

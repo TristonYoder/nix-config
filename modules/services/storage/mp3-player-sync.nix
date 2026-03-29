@@ -41,6 +41,7 @@ in
 
       serviceConfig = {
         Type = "oneshot";
+        TimeoutStartSec = "infinity";
         ExecStart = pkgs.writeShellScript "mp3-player-sync" ''
           set -euo pipefail
           DEVICE="/dev/disk/by-uuid/${cfg.uuid}"
