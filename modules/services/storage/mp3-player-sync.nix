@@ -69,7 +69,7 @@ in
             grep -v '^#' "$playlist" | grep -v '^$'
           done < "${playlistsFile}" \
             | tr -d '\r' \
-            | ${pkgs.gnused}/bin/sed "s|^$MUSIC/||" \
+            | ${pkgs.gnused}/bin/sed -e "s|^$MUSIC/||" -e "s|^\./||" \
             | sort -u \
             > "$WANTED_LIST"
 
