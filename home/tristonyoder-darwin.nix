@@ -203,6 +203,7 @@
       # System Utilities
       "hazel"
       "lunar"
+      "tailscale"
 
       # Virtualization
       "parallels"
