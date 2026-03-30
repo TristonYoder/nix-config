@@ -59,6 +59,7 @@ in
       environmentFiles = [ cfg.secretsFile ];
       environment = {
         TZ = config.time.timeZone;
+        ALLOWED_HOSTS = cfg.domain;
         DB_ENGINE = "django.db.backends.postgresql";
         POSTGRES_DB = cfg.dbName;
         POSTGRES_HOST = "db_tandoor";
