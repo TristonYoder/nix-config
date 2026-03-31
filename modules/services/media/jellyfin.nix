@@ -103,7 +103,7 @@ in
         jellyfinConfigDir = config.services.jellyfin.configDir;
       in ''
         mkdir -p ${jellyfinConfigDir}
-        cp ${reposXml} ${jellyfinConfigDir}/repositories.xml
+        install -m 644 ${reposXml} ${jellyfinConfigDir}/repositories.xml
       '';
 
     # Workaround for jellyfin hardware transcode (NVIDIA NVENC)
