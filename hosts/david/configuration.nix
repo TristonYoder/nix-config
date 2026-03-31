@@ -130,6 +130,15 @@
 
   modules.services.storage.wiiHddSync.enable = true;
 
+  modules.services.storage.mp3PlayerSync = {
+    enable = true;
+    uuid = "EC95-4FBB";
+    jellyfinApiKeyFile = config.age.secrets.jellyfin-api-key.path;
+    playlists = [
+      "Judah Jams 2"
+    ];
+  };
+
   # =============================================================================
   # ADDITIONAL SERVICES
   # =============================================================================

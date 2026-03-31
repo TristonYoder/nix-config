@@ -92,6 +92,10 @@ with lib;
       "jellyfin-token" = { file = ../secrets/jellyfin-token.age; owner = "jellyplex-watched"; group = "jellyplex-watched"; mode = "0400"; };
     })
 
+    // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.storage.mp3PlayerSync.enable) {
+      "jellyfin-api-key" = { file = ../secrets/jellyfin-api-key.age; mode = "0400"; };
+    })
+
     // (optionalAttrs (config.networking.hostName == "pits") {
       # PITS secrets here
     });
