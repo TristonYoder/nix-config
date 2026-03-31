@@ -38,6 +38,24 @@ in
       description = "Open firewall ports for Jellyfin";
     };
 
+    pluginRepositories = mkOption {
+      type = types.listOf (types.submodule {
+        options = {
+          name = mkOption { type = types.str; };
+          url = mkOption { type = types.str; };
+          enabled = mkOption { type = types.bool; default = true; };
+        };
+      });
+      default = [
+        {
+          name = "Jellyfin Stable";
+          url = "https://repo.jellyfin.org/releases/plugin/manifest-stable.json";
+          enabled = true;
+        }
+      ];
+      description = "Plugin repository manifests to configure in Jellyfin";
+    };
+
     enableHardwareTranscode = mkOption {
       type = types.bool;
       default = true;
@@ -66,6 +84,26 @@ in
     systemd.tmpfiles.rules =
       [ "d ${cfg.mediaDir} 2775 tristonyoder media -" ]
       ++ map (sub: "d ${cfg.mediaDir}/${sub} 2775 tristonyoder media -") cfg.mediaSubDirs;
+
+    # Write plugin repositories config on each Jellyfin start
+    systemd.services.jellyfin.preStart =
+      let
+        reposXml = pkgs.writeText "jellyfin-repositories.xml" ''
+          <?xml version="1.0" encoding="utf-8"?>
+          <ArrayOfRepositoryInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+            ${concatMapStrings (repo: ''
+              <RepositoryInfo>
+                <Name>${repo.name}</Name>
+                <Url>${repo.url}</Url>
+                <Enabled>${if repo.enabled then "true" else "false"}</Enabled>
+              </RepositoryInfo>
+            '') cfg.pluginRepositories}
+          </ArrayOfRepositoryInfo>
+        '';
+      in ''
+        mkdir -p /var/lib/jellyfin/config
+        cp ${reposXml} /var/lib/jellyfin/config/repositories.xml
+      '';
 
     # Workaround for jellyfin hardware transcode (NVIDIA NVENC)
     # Minimal hardening overrides required for CUDA

@@ -43,7 +43,26 @@
   # =============================================================================
   
   modules.services.media.immich.enable = lib.mkDefault true;
-  modules.services.media.jellyfin.enable = lib.mkDefault true;
+  modules.services.media.jellyfin = {
+    enable = lib.mkDefault true;
+    pluginRepositories = lib.mkDefault [
+      {
+        name = "Jellyfin Stable";
+        url = "https://repo.jellyfin.org/releases/plugin/manifest-stable.json";
+        enabled = true;
+      }
+      {
+        name = "n00bcodr Plugins";
+        url = "https://raw.githubusercontent.com/n00bcodr/jellyfin-plugins/main/10.11/manifest.json";
+        enabled = true;
+      }
+      {
+        name = "Streamyfin";
+        url = "https://raw.githubusercontent.com/streamyfin/jellyfin-plugin-streamyfin/main/manifest.json";
+        enabled = true;
+      }
+    ];
+  };
   modules.services.media.plex.enable = lib.mkDefault true;
   modules.services.media.jellyseerr.enable = lib.mkDefault true;
   modules.services.media.sunshine.enable = lib.mkDefault true;
