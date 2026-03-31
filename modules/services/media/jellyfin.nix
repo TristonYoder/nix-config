@@ -100,9 +100,10 @@ in
             '') cfg.pluginRepositories}
           </ArrayOfRepositoryInfo>
         '';
+        jellyfinConfigDir = config.services.jellyfin.configDir;
       in ''
-        mkdir -p /var/lib/jellyfin/config
-        cp ${reposXml} /var/lib/jellyfin/config/repositories.xml
+        mkdir -p ${jellyfinConfigDir}
+        cp ${reposXml} ${jellyfinConfigDir}/repositories.xml
       '';
 
     # Workaround for jellyfin hardware transcode (NVIDIA NVENC)
