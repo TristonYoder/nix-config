@@ -4,7 +4,7 @@ with lib;
 let
   cfg = config.modules.services.storage.mp3PlayerSync;
   mountPoint = "/mnt/mp3-player";
-  playlistNamesFile = pkgs.writeText "mp3-sync-playlist-names" (concatStringsSep "\n" cfg.playlists);
+  playlistNamesFile = pkgs.writeText "mp3-sync-playlist-names" (concatStringsSep "\n" cfg.playlists + "\n");
 in
 {
   options.modules.services.storage.mp3PlayerSync = {
