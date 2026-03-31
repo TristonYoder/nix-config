@@ -77,6 +77,18 @@ in
           echo "Resolving playlists from Jellyfin..."
           : > "$WANTED_LIST"
 
+          # Get admin user ID (required by the playlist items endpoint)
+          USER_ID=$(${pkgs.curl}/bin/curl -sf \
+            -H "X-Emby-Token: $API_KEY" \
+            "$JELLYFIN/Users?isAdministrator=true" \
+            | ${pkgs.jq}/bin/jq -r '.[0].Id')
+
+          if [ -z "$USER_ID" ] || [ "$USER_ID" = "null" ]; then
+            echo "Error: could not retrieve admin user ID from Jellyfin" >&2
+            exit 1
+          fi
+          echo "Using admin user ID: $USER_ID"
+
           while IFS= read -r PLAYLIST_NAME; do
             [ -z "$PLAYLIST_NAME" ] && continue
             echo "  Looking up: $PLAYLIST_NAME"
@@ -99,7 +111,7 @@ in
             # Get all items in the playlist and extract their file paths
             ${pkgs.curl}/bin/curl -sf \
               -H "X-Emby-Token: $API_KEY" \
-              "$JELLYFIN/Playlists/$PLAYLIST_ID/Items?Fields=Path&Limit=10000" \
+              "$JELLYFIN/Playlists/$PLAYLIST_ID/Items?userId=$USER_ID&Fields=Path&Limit=10000" \
               | ${pkgs.jq}/bin/jq -r '.Items[].Path' \
               | ${pkgs.gnused}/bin/sed "s|^$MUSIC/||" \
               >> "$WANTED_LIST"
