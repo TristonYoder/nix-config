@@ -115,6 +115,9 @@ in
 
   # Jellyfin token for JellyPlex-Watched
   "jellyfin-token.age".publicKeys = davidKeys;
+
+  # Jellyfin API key for mp3-player-sync
+  "jellyfin-api-key.age".publicKeys = davidKeys;
   
   # =============================================================================
   # SHARED SECRETS (All Servers)

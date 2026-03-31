@@ -4,11 +4,11 @@ with lib;
 let
   cfg = config.modules.services.storage.mp3PlayerSync;
   mountPoint = "/mnt/mp3-player";
-  playlistsFile = pkgs.writeText "mp3-sync-playlists" (concatStringsSep "\n" cfg.playlists);
+  playlistNamesFile = pkgs.writeText "mp3-sync-playlist-names" (concatStringsSep "\n" cfg.playlists);
 in
 {
   options.modules.services.storage.mp3PlayerSync = {
-    enable = mkEnableOption "USB MP3 player playlist sync";
+    enable = mkEnableOption "USB MP3 player Jellyfin playlist sync";
 
     uuid = mkOption {
       type = types.str;
@@ -18,13 +18,24 @@ in
     musicLibrary = mkOption {
       type = types.str;
       default = "/data/media/Music";
-      description = "Root of the local music library";
+      description = "Root of the local music library (used to derive relative paths for rsync)";
+    };
+
+    jellyfinUrl = mkOption {
+      type = types.str;
+      default = "http://localhost:8096";
+      description = "Base URL of the Jellyfin server";
+    };
+
+    jellyfinApiKeyFile = mkOption {
+      type = types.str;
+      description = "Path to file containing the Jellyfin API key";
     };
 
     playlists = mkOption {
       type = types.listOf types.str;
-      description = "List of .m3u playlist file paths to sync to the player";
-      example = [ "/data/media/Music/m3u/playlist/Judah Jams.m3u" ];
+      description = "Jellyfin playlist names to sync to the player";
+      example = [ "Judah Jams 2" ];
     };
   };
 
@@ -34,9 +45,9 @@ in
       "d ${mountPoint} 0755 root root -"
     ];
 
-    # Oneshot service: mount -> build file list from playlists -> sync -> delete removed tracks -> unmount
+    # Oneshot service: mount -> resolve playlists via Jellyfin API -> sync -> delete removed tracks -> unmount
     systemd.services.mp3-player-sync = {
-      description = "Sync playlists to USB MP3 player";
+      description = "Sync Jellyfin playlists to USB MP3 player";
       after = [ "network.target" ];
 
       serviceConfig = {
@@ -47,6 +58,8 @@ in
           DEVICE="/dev/disk/by-uuid/${cfg.uuid}"
           MOUNT="${mountPoint}"
           MUSIC="${cfg.musicLibrary}"
+          JELLYFIN="${cfg.jellyfinUrl}"
+          API_KEY=$(cat "${cfg.jellyfinApiKeyFile}")
           WANTED_LIST="/tmp/mp3-sync-files.txt"
 
           echo "Mounting $DEVICE -> $MOUNT..."
@@ -59,25 +72,48 @@ in
           }
           trap cleanup EXIT
 
-          # Build list of wanted files from each playlist in the configured list.
-          # M3U entries may be absolute paths — strip the music library prefix to get relative paths.
-          # tr strips Windows-style \r so CRLF playlists don't corrupt filenames.
-          echo "Building file list from playlists..." >&2
-          while IFS= read -r playlist; do
-            [ -f "$playlist" ] || { echo "Warning: playlist not found: $playlist" >&2; continue; }
-            echo "  $playlist" >&2
-            grep -v '^#' "$playlist" | grep -v '^$'
-          done < "${playlistsFile}" \
-            | tr -d '\r' \
-            | ${pkgs.gnused}/bin/sed -e "s|^$MUSIC/||" -e "s|^\./||" \
-            | sort -u \
-            > "$WANTED_LIST"
+          # Resolve each playlist name to file paths via the Jellyfin API.
+          # The Path field is admin-only, so this requires an admin API key.
+          echo "Resolving playlists from Jellyfin..."
+          : > "$WANTED_LIST"
+
+          while IFS= read -r PLAYLIST_NAME; do
+            [ -z "$PLAYLIST_NAME" ] && continue
+            echo "  Looking up: $PLAYLIST_NAME"
+
+            # Find playlist ID by name
+            PLAYLIST_ID=$(${pkgs.curl}/bin/curl -sf \
+              -H "X-Emby-Token: $API_KEY" \
+              "$JELLYFIN/Items?IncludeItemTypes=Playlist&Recursive=true&SearchTerm=$(${pkgs.python3}/bin/python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$PLAYLIST_NAME")" \
+              | ${pkgs.jq}/bin/jq -r --arg name "$PLAYLIST_NAME" \
+                  '.Items[] | select(.Name == $name) | .Id' \
+              | head -1)
+
+            if [ -z "$PLAYLIST_ID" ]; then
+              echo "  Warning: playlist not found in Jellyfin: $PLAYLIST_NAME" >&2
+              continue
+            fi
+
+            echo "  Found playlist ID: $PLAYLIST_ID"
+
+            # Get all items in the playlist and extract their file paths
+            ${pkgs.curl}/bin/curl -sf \
+              -H "X-Emby-Token: $API_KEY" \
+              "$JELLYFIN/Playlists/$PLAYLIST_ID/Items?Fields=Path&Limit=10000" \
+              | ${pkgs.jq}/bin/jq -r '.Items[].Path' \
+              | ${pkgs.gnused}/bin/sed "s|^$MUSIC/||" \
+              >> "$WANTED_LIST"
+
+          done < "${playlistNamesFile}"
+
+          # Deduplicate
+          sort -u -o "$WANTED_LIST" "$WANTED_LIST"
 
           COUNT=$(wc -l < "$WANTED_LIST")
           echo "Found $COUNT unique tracks across playlists."
 
           if [ "$COUNT" -eq 0 ]; then
-            echo "No tracks found in playlists — aborting to avoid wiping device."
+            echo "No tracks found — aborting to avoid wiping device."
             exit 1
           fi
 

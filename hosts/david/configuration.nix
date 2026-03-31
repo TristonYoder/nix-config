@@ -133,10 +133,9 @@
   modules.services.storage.mp3PlayerSync = {
     enable = true;
     uuid = "EC95-4FBB";
+    jellyfinApiKeyFile = config.age.secrets.jellyfin-api-key.path;
     playlists = [
-      "/data/media/Music/m3u/playlist/Judah Jams.m3u"
-      "/data/media/Music/m3u/playlist/Judah\u2019s Fav TOP.m3u"
-      "/data/media/Music/m3u/playlist/Judahstep.m3u"
+      "Judah Jams 2"
     ];
   };
 
