@@ -36,7 +36,7 @@ in
       settings = {
         MusicFolder = cfg.musicDir;
         Port = cfg.port;
-        Address = "127.0.0.1";
+        Address = "0.0.0.0";
       };
     };
 
