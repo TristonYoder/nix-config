@@ -52,6 +52,9 @@
   # dns-sync: use local Technitium directly (avoids Caddy loopback for the API)
   modules.services.vHosts.technitium.url = "http://localhost:5380";
 
+  # Navidrome - Music streaming server (Subsonic-compatible)
+  modules.services.media.navidrome.enable = true;
+
   # Feishin - Web music player (Jellyfin/Navidrome/Subsonic client)
   modules.services.media.feishin.enable = true;
 
