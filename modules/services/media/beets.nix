@@ -12,20 +12,39 @@ let
       move: true
       write: true
       quiet: true
+      timid: false
       incremental: true
       incremental_skip_later: true
 
-    plugins: fetchart embedart chroma
+    duplicate_action: skip
+
+    plugins: fetchart embedart chroma ftintitle
 
     paths:
-      default: $albumartist/$album ($year)/$albumartist - $album - $track - $title
-      singleton: $albumartist/$title
+      default: $albumartist/$album ($year)/$track - $title
+      singleton: $albumartist/$album ($year)/$title
+      comp: Compilations/$album ($year)/$track - $title
+
+    replace:
+      '[\/]': _
+      '^\.': _
+      '[\x00-\x1f]': _
+      '[<>:"\?\*\|]': _
+      '\.$': _
+      '\s+$': ""
 
     fetchart:
       auto: yes
 
     embedart:
       auto: yes
+
+    chroma:
+      auto: yes
+
+    ftintitle:
+      auto: yes
+      drop: no
 
     ${cfg.extraConfig}
   '';
