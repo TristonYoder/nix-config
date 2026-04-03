@@ -486,6 +486,7 @@
       "PLEX_PATH" = "/data/media/Music";
       "ENABLE_HISTORY" = "true";
       "PLAYLIST_ALBUMS" = "true";
+      "M3U_BASEPATH_FILE" = "/data/media/Music";
     };
     volumes = [
       "/data/docker-appdata/tidarr:/shared:rw"
