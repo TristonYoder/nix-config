@@ -356,6 +356,7 @@ in
     modules.services.vHosts.hosts.${cfg.domain} = {
       managedProxy = false;
       public = true;  # Headscale API must be public for Tailscale clients
+      dnsRecord = false;  # Omit from Technitium — let public DNS resolve this so local clients reach the public entry, not a Tailscale-redirected one
       extraConfig = ''
         ${optionalString (cfg.adminUI.type != "none") ''
         # Admin UI at /admin path
