@@ -21,6 +21,7 @@
     curl
     htop
     tree
+    nmap
     
     # Storage & Sync
     syncthing
