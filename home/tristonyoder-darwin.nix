@@ -214,6 +214,9 @@
       "vlc"
       "asana"
       
+      # Notes & Knowledge Management
+      "obsidian"
+
       # Creative & Design
       "affine"
       "sketchup"

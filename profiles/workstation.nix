@@ -47,6 +47,9 @@
     
     # Communication
     element-desktop
+
+    # Notes & Knowledge Management
+    obsidian
   ];
   
   # =============================================================================
