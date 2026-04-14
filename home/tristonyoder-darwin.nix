@@ -296,6 +296,7 @@
       { id = "1295203466"; name = "Windows App"; }
       { id = "6470928235"; name = "Manet Music"; }
       { id = "6593660679"; name = "Streamyfin"; }
+      { id = "1115567069"; name = "Health Auto Export - JSON+CSV"; }
     ];
   };
 }
