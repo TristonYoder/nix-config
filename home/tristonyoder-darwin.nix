@@ -11,6 +11,7 @@
   home.packages = with pkgs; [
     # macOS-specific tools
     syncthing
+    dockutil
 
     # Emulators
     dolphin-emu  # GameCube and Wii emulator
@@ -59,19 +60,35 @@
     done
   '';
   
+  # Declarative Dock item configuration via dockutil
+  home.activation.configureDock = lib.hm.dag.entryAfter ["linkApplications"] ''
+    verboseEcho "Configuring Dock items..."
+    DOCKUTIL="${pkgs.dockutil}/bin/dockutil"
+
+    run $DOCKUTIL --no-restart --remove all --allhomes 2>/dev/null || true
+
+    run $DOCKUTIL --no-restart --add /System/Library/CoreServices/Finder.app
+    run $DOCKUTIL --no-restart --add /System/Applications/Apps.app
+    run $DOCKUTIL --no-restart --add /Applications/Firefox.app
+    run $DOCKUTIL --no-restart --add /System/Applications/Messages.app
+    run $DOCKUTIL --no-restart --add /Applications/Element.app
+    run $DOCKUTIL --no-restart --add /Applications/Obsidian.app
+    run $DOCKUTIL --no-restart --add /Applications/iTerm.app
+    run $DOCKUTIL --no-restart --add '' --type spacer --section apps
+
+    run /usr/bin/killall Dock 2>/dev/null || true
+  '';
+
   # Desktop refresh after system configuration changes
-  home.activation.refreshDesktop = lib.hm.dag.entryAfter ["linkApplications"] ''
-    verboseEcho "Refreshing desktop and dock..."
-    
+  home.activation.refreshDesktop = lib.hm.dag.entryAfter ["configureDock"] ''
+    verboseEcho "Refreshing desktop..."
+
     # Refresh Launch Services database
     run /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -kill -r -domain local -domain system -domain user 2>/dev/null || true
-    
-    # Restart Dock to apply changes
-    run /usr/bin/killall Dock 2>/dev/null || true
-    
+
     # Restart Finder to refresh desktop
     run /usr/bin/killall Finder 2>/dev/null || true
-    
+
     verboseEcho "Desktop refresh complete"
   '';
   

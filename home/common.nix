@@ -143,16 +143,18 @@ in
       custom = "$HOME/.oh-my-zsh/custom";
     };
     
-    initContent = ''
-      # Powerlevel10k instant prompt
-      if [[ -r "''${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh" ]]; then
-        source "''${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh"
-      fi
-      
-      # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-      [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
+    initContent = lib.mkMerge [
+      (lib.mkOrder 100 ''
+        # Powerlevel10k instant prompt - must be sourced before oh-my-zsh
+        if [[ -r "''${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh" ]]; then
+          source "''${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh"
+        fi
+      '')
+      ''
+        # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
+        [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
-      rebuild() {
+        rebuild() {
         local repo="$HOME/Projects/nix-config"
         local action="switch"
         local remote=0
@@ -205,7 +207,8 @@ in
           sudo nixos-rebuild "$action" "''${passthrough[@]}" --flake "$repo"
         fi
       }
-    '';
+    ''];
+
   };
   
   # Powerlevel10k configuration
