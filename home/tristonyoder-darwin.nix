@@ -74,7 +74,7 @@
     run $DOCKUTIL --no-restart --add /Applications/Element.app
     run $DOCKUTIL --no-restart --add /Applications/Obsidian.app
     run $DOCKUTIL --no-restart --add /Applications/iTerm.app
-    run $DOCKUTIL --no-restart --add '' --type spacer --section apps
+    run $DOCKUTIL --no-restart --add '''' --type spacer --section apps
 
     run /usr/bin/killall Dock 2>/dev/null || true
   '';
