@@ -140,7 +140,7 @@ in
         "vscode"
       ];
       theme = "powerlevel10k/powerlevel10k";
-      custom = "$HOME/.oh-my-zsh/custom";
+      custom = "${config.home.homeDirectory}/.oh-my-zsh/custom";
     };
     
     initContent = lib.mkMerge [
