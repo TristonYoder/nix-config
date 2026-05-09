@@ -106,6 +106,11 @@
     reverseProxyPort = 1996;
   };
 
+  # Tunarr - Virtual IPTV tuner for Plex/Jellyfin
+  modules.services.vHosts.hosts."tunarr.${config.networking.domain}" = {
+    reverseProxyPort = 8000;
+  };
+
   # Dispatcharr - IPTV and stream management
   modules.services.vHosts.hosts."tv.${config.networking.domain}" = {
     reverseProxyPort = 9191;
