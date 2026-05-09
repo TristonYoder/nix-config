@@ -21,7 +21,7 @@
       "/data/media:/data/media:ro"
     ];
     ports = [
-      "8000:8000/tcp"
+      "8100:8000/tcp"
     ];
     log-driver = "journald";
     extraOptions = [
