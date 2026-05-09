@@ -100,6 +100,10 @@ with lib;
       "tidarr-oidc-secret" = { file = ../secrets/tidarr-oidc-secret.age; mode = "0400"; };
     })
 
+    // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.media.navidrome.oidc.enable) {
+      "navidrome-oidc-secret" = { file = ../secrets/navidrome-oidc-secret.age; mode = "0400"; };
+    })
+
     // (optionalAttrs (config.networking.hostName == "pits") {
       # PITS secrets here
     });

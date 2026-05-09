@@ -53,7 +53,14 @@
   modules.services.vHosts.technitium.url = "http://localhost:5380";
 
   # Navidrome - Music streaming server (Subsonic-compatible)
-  modules.services.media.navidrome.enable = true;
+  modules.services.media.navidrome = {
+    enable = true;
+    oidc = {
+      enable = true;
+      clientId = "026b6244-1513-4335-aeba-220af31c288e";
+      clientSecretFile = config.age.secrets.navidrome-oidc-secret.path;
+    };
+  };
 
   # Feishin - Web music player (Jellyfin/Navidrome/Subsonic client)
   modules.services.media.feishin.enable = true;
