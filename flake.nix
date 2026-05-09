@@ -107,6 +107,7 @@
             ./docker/media/media-aq.nix
             ./docker/media/ersatztv.nix
             ./docker/media/threadfin.nix
+            ./docker/media/tunarr.nix
             # ./docker/scrypted.nix
             
             # Website services

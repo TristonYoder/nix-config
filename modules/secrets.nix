@@ -96,6 +96,10 @@ with lib;
       "jellyfin-api-key" = { file = ../secrets/jellyfin-api-key.age; mode = "0400"; };
     })
 
+    // (optionalAttrs (config.networking.hostName == "david") {
+      "tidarr-oidc-secret" = { file = ../secrets/tidarr-oidc-secret.age; mode = "0400"; };
+    })
+
     // (optionalAttrs (config.networking.hostName == "pits") {
       # PITS secrets here
     });

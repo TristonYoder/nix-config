@@ -487,6 +487,9 @@
       "ENABLE_HISTORY" = "true";
       "PLAYLIST_ALBUMS" = "true";
       "M3U_BASEPATH_FILE" = "/data/media/Music";
+      "OIDC_ISSUER" = "https://id.${config.networking.domain}";
+      "OIDC_CLIENT_ID" = "tidarr";
+      "OIDC_REDIRECT_URI" = "https://tidal.${config.networking.domain}/api/auth/oidc/callback";
     };
     volumes = [
       "/data/docker-appdata/tidarr:/shared:rw"
@@ -514,6 +517,7 @@
           "mkdir -p /run/tidarr"
           "echo \"PLEX_TOKEN=$(cat ${config.age.secrets.plex-token.path})\" > /run/tidarr/tidarr.env"
           "echo \"JELLYFIN_API_KEY=$(cat ${config.age.secrets.jellyfin-token.path})\" >> /run/tidarr/tidarr.env"
+          "echo \"OIDC_CLIENT_SECRET=$(cat ${config.age.secrets.tidarr-oidc-secret.path})\" >> /run/tidarr/tidarr.env"
           "chmod 0400 /run/tidarr/tidarr.env"
         ]}'"
       ];
