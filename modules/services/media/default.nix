@@ -8,6 +8,7 @@
     ./jellyfin.nix
     ./jellyplex-watched.nix
     ./jellyseerr.nix
+    ./music-dedup.nix
     ./navidrome.nix
     ./plex.nix
     ./sunshine.nix

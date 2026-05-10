@@ -61,6 +61,9 @@
   # Beets - Auto-organize music library from Downloads into Music
   modules.services.media.beets.enable = true;
 
+  # Music dedup - Daily hard-link deduplication of the music library
+  modules.services.media.musicDedup.enable = true;
+
   # JellyPlex-Watched sync (continuous)
   modules.services.media.jellyplexWatched = {
     enable = true;
