@@ -18,7 +18,8 @@ in
 
       portalDomain = mkOption {
         type = types.str;
-        description = "Domain for the shared authentication portal (e.g. auth.theyoder.family).";
+        default = "auth.${config.networking.domain}";
+        description = "Domain for the shared authentication portal.";
       };
 
       cookieDomain = mkOption {
