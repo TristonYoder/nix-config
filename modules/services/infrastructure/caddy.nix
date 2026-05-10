@@ -3,7 +3,9 @@
 with lib;
 let
   cfg = config.modules.services.infrastructure.caddy;
+  ssoCfg = config.modules.services.vHosts.sso;
   vHosts = recursiveUpdate cfg.virtualHosts config.modules.services.vHosts.hosts;
+  ssoHosts = filterAttrs (_: h: h.enable && h.sso.enable) vHosts;
 in
 {
   options.modules.services.infrastructure.caddy = {
@@ -128,10 +130,46 @@ in
       };
       globalConfig = ''
         email ${cfg.email}
-        
+
         # Bind to both IPv4 and IPv6
         servers {
           protocols h1 h2 h3
+        }
+      '' + optionalString ssoCfg.enable ''
+
+        security {
+          oauth identity provider pocket_id {
+            realm pocket_id
+            driver generic
+            client_id ${ssoCfg.clientId}
+            client_secret {env.CADDY_SSO_CLIENT_SECRET}
+            scopes openid email profile groups
+            base_auth_url ${ssoCfg.pocketIdUrl}
+            metadata_url ${ssoCfg.pocketIdUrl}/.well-known/openid-configuration
+          }
+
+          authentication portal main {
+            crypto default token lifetime 86400
+            crypto key sign-verify {env.CADDY_SSO_JWT_SECRET}
+            enable identity provider pocket_id
+            cookie domain ${ssoCfg.cookieDomain}
+          }
+
+          ${concatStringsSep "\n\n          " (mapAttrsToList (_: hostCfg:
+            let
+              allowClause =
+                if hostCfg.sso.allowedGroups == []
+                then "allow roles authp/user authp/admin"
+                else concatStringsSep "\n          " (map (g: "allow groups ${g}") hostCfg.sso.allowedGroups);
+            in
+            ''
+              authorization policy ${hostCfg.sso.policyName}_policy {
+                set auth url https://${ssoCfg.portalDomain}
+                ${allowClause}
+                validate bearer header
+                inject headers with claims
+              }''
+          ) ssoHosts)}
         }
       '';
       extraConfig = ''
@@ -146,30 +184,39 @@ in
       '';
     };
 
-    # Create a systemd service that prepares the Cloudflare API token environment file
-    # The agenix secret contains only the raw token value (cleaner secret management)
-    # We wrap it in KEY=VALUE format at runtime for systemd's EnvironmentFile
     systemd.services.caddy-prepare-env = {
-      description = "Prepare Cloudflare API token for Caddy";
+      description = "Prepare Caddy environment secrets";
       before = [ "caddy.service" ];
       requiredBy = [ "caddy.service" ];
+      after = [ "agenix.service" ];
+      wants = [ "agenix.service" ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
       };
       script = ''
-        # Read the raw token from agenix secret and format it for systemd EnvironmentFile
-        TOKEN=$(cat ${config.age.secrets.cloudflare-api-token.path})
         mkdir -p /run/caddy
-        echo "CLOUDFLARE_API_TOKEN=$TOKEN" > /run/caddy/cloudflare.env
-        chmod 600 /run/caddy/cloudflare.env
-        chown caddy:caddy /run/caddy/cloudflare.env
+        echo "CLOUDFLARE_API_TOKEN=$(cat ${config.age.secrets.cloudflare-api-token.path})" > /run/caddy/caddy.env
+        ${optionalString ssoCfg.enable ''
+          echo "CADDY_SSO_CLIENT_SECRET=$(cat ${toString ssoCfg.clientSecretFile})" >> /run/caddy/caddy.env
+          echo "CADDY_SSO_JWT_SECRET=$(cat ${toString ssoCfg.jwtSecretFile})" >> /run/caddy/caddy.env
+        ''}
+        chmod 600 /run/caddy/caddy.env
+        chown caddy:caddy /run/caddy/caddy.env
       '';
     };
 
-    # Configure Caddy service to load the formatted environment file
     systemd.services.caddy.serviceConfig = {
-      EnvironmentFile = "/run/caddy/cloudflare.env";
+      EnvironmentFile = "/run/caddy/caddy.env";
+    };
+
+    # Auto-register the SSO auth portal as a vHost (DNS sync picks it up too)
+    modules.services.vHosts.hosts = mkIf ssoCfg.enable {
+      "${ssoCfg.portalDomain}" = {
+        managedProxy = false;
+        public = false;
+        extraConfig = "authenticate with main";
+      };
     };
 
     # Open firewall ports for HTTP and HTTPS
@@ -188,6 +235,13 @@ in
               hostCfg.reverseProxyAddress
             else
               "${if hostCfg.reverseProxySSL then "https" else "http"}://${hostCfg.reverseProxyHost}:${toString hostCfg.reverseProxyPort}";
+          proxyDirectives =
+            if hostCfg.sso.enable then ''
+              authorize with ${hostCfg.sso.policyName}_policy
+              reverse_proxy ${reverseProxyTarget}
+            '' else ''
+              reverse_proxy ${reverseProxyTarget}
+            '';
         in
         mkIf hostCfg.enable {
           "${hostCfg.virtualHost}" = {
@@ -200,15 +254,13 @@ in
                       remote_ip ${concatStringsSep " " cfg.internalIpRanges}
                     }
                     handle @internal {
-                      reverse_proxy ${reverseProxyTarget}
+                      ${proxyDirectives}
                     }
                     handle {
                       respond "Access Forbidden" 403
                     }
                   ''}
-                  ${optionalString hostCfg.public ''
-                    reverse_proxy ${reverseProxyTarget}
-                  ''}
+                  ${optionalString hostCfg.public proxyDirectives}
                   ${optionalString hostCfg.dnsChallenge "import cloudflare_tls"}
                   ${hostCfg.extraConfig}
                 ''

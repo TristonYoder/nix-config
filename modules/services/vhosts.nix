@@ -7,8 +7,47 @@ let
 in
 {
   options.modules.services.vHosts = {
+    sso = {
+      enable = mkEnableOption "Pocket ID SSO for protected vHosts via caddy-security";
+
+      pocketIdUrl = mkOption {
+        type = types.str;
+        default = "https://id.theyoder.family";
+        description = "Pocket ID OIDC issuer URL.";
+      };
+
+      portalDomain = mkOption {
+        type = types.str;
+        description = "Domain for the shared authentication portal (e.g. auth.theyoder.family).";
+      };
+
+      cookieDomain = mkOption {
+        type = types.str;
+        default = config.networking.domain;
+        description = "Cookie domain for cross-subdomain SSO session sharing.";
+      };
+
+      clientId = mkOption {
+        type = types.str;
+        default = "";
+        description = "OIDC client ID registered in Pocket ID. Required when enable = true.";
+      };
+
+      clientSecretFile = mkOption {
+        type = types.nullOr types.path;
+        default = null;
+        description = "Runtime path to OIDC client secret. Required when enable = true.";
+      };
+
+      jwtSecretFile = mkOption {
+        type = types.nullOr types.path;
+        default = null;
+        description = "Runtime path to JWT signing key for session tokens. Required when enable = true.";
+      };
+    };
+
     hosts = mkOption {
-      type = types.attrsOf (types.submodule ({ name, ... }: {
+      type = types.attrsOf (types.submodule ({ name, config, ... }: {
         options = {
           enable = mkOption {
             type = types.bool;
@@ -80,6 +119,25 @@ in
             type = types.lines;
             default = "";
             description = "Additional reverse proxy config appended to this virtual host.";
+          };
+
+          sso = {
+            enable = mkOption {
+              type = types.bool;
+              default = config.sso.allowedGroups != [];
+              description = "Require SSO for this vHost. Implied when allowedGroups is non-empty.";
+            };
+            allowedGroups = mkOption {
+              type = types.listOf types.str;
+              default = [];
+              description = "Pocket ID groups allowed access. Setting this implicitly enables SSO.";
+            };
+            policyName = mkOption {
+              type = types.str;
+              readOnly = true;
+              default = replaceStrings [ "." "-" ] [ "_" "_" ] name;
+              description = "Caddy authorization policy name, auto-derived from the vHost attribute key.";
+            };
           };
         };
       }));

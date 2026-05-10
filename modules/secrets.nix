@@ -34,6 +34,21 @@ with lib;
       };
     })
 
+    // (optionalAttrs config.modules.services.vHosts.sso.enable {
+      "caddy-sso-client-secret" = {
+        file = ../secrets/caddy-sso-client-secret.age;
+        owner = "caddy";
+        group = "caddy";
+        mode = "0400";
+      };
+      "caddy-sso-jwt-secret" = {
+        file = ../secrets/caddy-sso-jwt-secret.age;
+        owner = "caddy";
+        group = "caddy";
+        mode = "0400";
+      };
+    })
+
     // (optionalAttrs config.modules.services.vHosts.technitium.enable {
       "technitium-api-token" = { file = ../secrets/technitium-api-token.age; owner = "root"; group = "root"; mode = "0400"; };
     })
