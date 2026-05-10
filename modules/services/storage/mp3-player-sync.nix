@@ -35,7 +35,7 @@ in
     playlists = mkOption {
       type = types.listOf types.str;
       description = "Jellyfin playlist names to sync to the player";
-      example = [ "Judah Jams 2" ];
+      example = [ "Judah's MP3 Player" ];
     };
   };
 

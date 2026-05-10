@@ -143,7 +143,7 @@
     uuid = "EC95-4FBB";
     jellyfinApiKeyFile = config.age.secrets.jellyfin-api-key.path;
     playlists = [
-      "Judah Jams 2"
+      "Judah's MP3 Player"
     ];
   };
 
