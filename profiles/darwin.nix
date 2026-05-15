@@ -28,7 +28,8 @@
 
     # AI
     ollama
-    cherry-studio
+  ] ++ lib.optionals (pkgs.stdenv.hostPlatform.system == "aarch64-darwin") [
+    cherry-studio  # broken on x86_64-darwin (1.9.3+ build fails)
   ];
   
   # =============================================================================
