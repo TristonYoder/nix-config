@@ -33,7 +33,7 @@
     
     # Security & Password Management
     _1password-gui
-    bitwarden
+    bitwarden-desktop
     
     # Terminal
     kitty  # Modern terminal (iterm2 alternative)

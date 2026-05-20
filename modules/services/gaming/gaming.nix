@@ -83,10 +83,9 @@ in
       ++ (optional cfg.emulators.azahar pkgs.azahar)
       ++ (optional cfg.emulators.cemu pkgs.cemu)
       # Multi-system / Other
-      ++ (optional cfg.emulators.retroarch pkgs.retroarchFull)
+      ++ (optional cfg.emulators.retroarch pkgs.retroarch-full)
       ++ (optional cfg.emulators.scummvm pkgs.scummvm)
       ++ (optional cfg.emulators.mame pkgs.mame)
-      ++ (optional cfg.cloudGaming.enable pkgs.gfn-electron)
       ++ (optional cfg.cloudGaming.moonlight pkgs.moonlight-qt);
 
     # Add udev rules for DolphinBar when dolphin is enabled
