@@ -228,7 +228,7 @@
         # -----------------------------------------------------------------------------
         # tristons-nixbook-t2 - NixOS on T2 MacBook Pro (dual boot, x86_64-linux)
         # -----------------------------------------------------------------------------
-        tristons-nixbook-t2 = nixpkgs.lib.nixosSystem {
+        tristons-nixbook-t2 = nixpkgs-unstable.lib.nixosSystem {
           system = "x86_64-linux";
 
           modules = [
@@ -253,8 +253,8 @@
             nixos-vscode-server.nixosModules.default
             agenix.nixosModules.default
 
-            # Home Manager
-            home-manager.nixosModules.home-manager
+            # Home Manager (unstable to match nixpkgs-unstable)
+            home-manager-unstable.nixosModules.home-manager
             {
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
