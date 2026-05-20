@@ -24,7 +24,7 @@ in
 
     emulators = {
       # PlayStation
-      duckstation = mkEnableOption "DuckStation (PS1 emulator)" // { default = true; };
+      duckstation = mkEnableOption "DuckStation (PS1 emulator)" // { default = false; };
       pcsx2 = mkEnableOption "PCSX2 (PS2 emulator)" // { default = true; };
       rpcs3 = mkEnableOption "RPCS3 (PS3 emulator)" // { default = true; };
       ppsspp = mkEnableOption "PPSSPP (PSP emulator)" // { default = true; };
@@ -71,7 +71,6 @@ in
       (optional cfg.steam.enable pkgs.steam)
       ++ (optional cfg.steam.steamRomManager pkgs.steam-rom-manager)
       # PlayStation
-      ++ (optional cfg.emulators.duckstation pkgs.duckstation)
       ++ (optional cfg.emulators.pcsx2 pkgs.pcsx2)
       ++ (optional cfg.emulators.rpcs3 pkgs.rpcs3)
       ++ (optional cfg.emulators.ppsspp pkgs.ppsspp)
