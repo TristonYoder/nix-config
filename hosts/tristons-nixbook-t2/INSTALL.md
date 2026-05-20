@@ -17,58 +17,7 @@ Dual-boot setup alongside macOS. NixOS uses the same EFI partition that macOS cr
 
 This permanently disables Touch ID on Linux (T2 Secure Enclave is unavailable).
 
-### 1b. Extract WiFi firmware
-
-The Broadcom firmware cannot be redistributed in nixpkgs. Extract it from macOS now, before repartitioning.
-
-```bash
-# On macOS — run in Terminal
-BRCM_DIR="$HOME/brcm-firmware"
-mkdir -p "$BRCM_DIR"
-
-# Copy all Broadcom firmware files
-cp /usr/share/firmware/wifi/*.trx  "$BRCM_DIR/" 2>/dev/null || true
-cp /usr/share/firmware/wifi/*.bin  "$BRCM_DIR/" 2>/dev/null || true
-cp /usr/share/firmware/wifi/*.txt  "$BRCM_DIR/" 2>/dev/null || true
-cp /usr/share/firmware/wifi/*.clm_blob "$BRCM_DIR/" 2>/dev/null || true
-
-# Verify files are present
-ls -la "$BRCM_DIR"
-
-# Create tarball
-tar czf ~/t2-wifi-firmware.tar.gz -C "$BRCM_DIR" .
-
-echo "Firmware saved to ~/t2-wifi-firmware.tar.gz"
-```
-
-If the path above is empty, try the alternative location:
-```bash
-ioreg -l | grep RequestedFiles   # Shows firmware paths
-# Or check:
-ls /usr/share/firmware/
-```
-
-### 1c. Add firmware to agenix secrets
-
-From the nix-config repo on any machine with the correct SSH keys:
-
-```bash
-cd secrets
-
-# On macOS, add nix to PATH first
-export PATH="/nix/var/nix/profiles/default/bin:$PATH"
-
-# Encrypt the firmware tarball
-# (scp the tar.gz here first if needed)
-./encrypt-secret.sh -n t2-wifi-firmware.age -f /path/to/t2-wifi-firmware.tar.gz
-
-# Verify it was encrypted correctly (should show ssh-ed25519 recipients, not X25519)
-./encrypt-secret.sh -v t2-wifi-firmware.age
-```
-
-Commit and push the encrypted secret before proceeding.
-
-### 1d. Partition the disk
+### 1b. Partition the disk
 
 Use **Disk Utility** in macOS to shrink the APFS container:
 
@@ -93,12 +42,9 @@ Run these commands from the `nix-config` repo root on **tyoder-mbp**:
 ```bash
 export PATH="/nix/var/nix/profiles/default/bin:$PATH"
 
-# Decrypt the WiFi firmware (requires your agenix key)
-age -d -i ~/.ssh/agenix secrets/t2-wifi-firmware.age > /tmp/t2-wifi-firmware.tar.gz
-
 # Build the ISO on david (x86_64-linux builder)
+# WiFi firmware is fetched automatically from macOS Sonoma at build time.
 nix build .#nixosConfigurations.tristons-nixbook-t2-installer.config.system.build.isoImage \
-  --impure \
   --builders "ssh://tristonyoder@david x86_64-linux - 4 - - nixos-test,benchmark,big-parallel,kvm" \
   --option extra-substituters "https://cache.soopy.moe" \
   --option extra-trusted-public-keys "cache.soopy.moe:MzBsBVPllIlCwL2PVs3BQC3Bfbp9TIgakN1xFUDEm8E="

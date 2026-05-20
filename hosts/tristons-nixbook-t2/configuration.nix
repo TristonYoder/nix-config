@@ -14,12 +14,16 @@
   # HARDWARE
   # ===========================================================================
 
-  # T2 supplemental config: binary cache, WiFi firmware, suspend workaround,
-  # trackpad kernel param. nixos-hardware.nixosModules.apple-t2 (in flake.nix)
-  # handles the patched kernel and apple-bce driver.
-  modules.hardware.appleT2 = {
+  # T2 supplemental config: binary cache, suspend workaround, trackpad kernel param.
+  # nixos-hardware.nixosModules.apple-t2 (in flake.nix) handles the patched kernel
+  # and apple-bce driver.
+  modules.hardware.appleT2.enable = true;
+
+  # WiFi firmware fetched from macOS Sonoma installer via Asahi extraction scripts.
+  # Fully reproducible — no manual firmware extraction from macOS required.
+  hardware.apple-t2.firmware = {
     enable = true;
-    wifiFirmware = true;  # BCM4364-B2 (maui board), extracted from macOS 2026-05-20
+    version = "sonoma";
   };
 
   hardware.apple.touchBar.settings.MediaLayerDefault = true;

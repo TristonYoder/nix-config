@@ -104,11 +104,5 @@ with lib;
       # PITS secrets here
     })
 
-    // (optionalAttrs (config.networking.hostName == "tristons-nixbook-t2"
-                       && config.modules.hardware.appleT2.wifiFirmware) {
-      # Broadcom WiFi firmware tarball extracted from macOS.
-      # Only active after wifiFirmware = true and secrets/t2-wifi-firmware.age committed.
-      # See hosts/tristons-nixbook-t2/INSTALL.md for extraction steps.
-      "t2-wifi-firmware" = { file = ../secrets/t2-wifi-firmware.age; owner = "root"; group = "root"; mode = "0400"; };
-    });
+    ;
 }

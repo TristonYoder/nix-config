@@ -1,37 +1,30 @@
 # NixOS installer ISO for tristons-nixbook-t2 (T2 MacBook Pro)
 #
-# WiFi firmware is baked directly into the squashfs — no agenix, no ethernet needed.
-# The decrypted firmware tarball must exist at /tmp/t2-wifi-firmware.tar.gz
-# before building. See the build instructions in INSTALL.md.
+# WiFi firmware is fetched from a macOS Sonoma installer image at build time
+# using the Asahi Linux extraction scripts (via nixos-hardware). No manual
+# firmware extraction or --impure flag required.
 #
 # Build command (from nix-config root on tyoder-mbp):
 #
 #   export PATH="/nix/var/nix/profiles/default/bin:$PATH"
-#   age -d -i ~/.ssh/agenix secrets/t2-wifi-firmware.age > /tmp/t2-wifi-firmware.tar.gz
 #   nix build .#nixosConfigurations.tristons-nixbook-t2-installer.config.system.build.isoImage \
-#     --impure \
 #     --builders "ssh://tristonyoder@david x86_64-linux - 4 - - nixos-test,benchmark,big-parallel,kvm" \
 #     --option extra-substituters "https://cache.soopy.moe" \
 #     --option extra-trusted-public-keys "cache.soopy.moe:MzBsBVPllIlCwL2PVs3BQC3Bfbp9TIgakN1xFUDEm8E="
 
-{ pkgs, lib, modulesPath, ... }:
+{ lib, modulesPath, ... }:
 {
   imports = [
     # Minimal installer base: no GUI, gives a shell with nixos-install available
     (modulesPath + "/installer/cd-dvd/installation-cd-minimal.nix")
   ];
 
-  # WiFi firmware baked into the ISO image.
-  # --impure is required because this references a path outside the flake.
-  hardware.firmware = [
-    (pkgs.runCommandNoCC "brcm-t2-firmware" { } ''
-      mkdir -p $out/lib/firmware
-      tar xzf ${builtins.path {
-        path = /tmp/t2-wifi-firmware.tar.gz;
-        name = "t2-wifi-firmware.tar.gz";
-      }} -C $out/lib/firmware/
-    '')
-  ];
+  # WiFi firmware fetched from macOS Sonoma installer via Asahi extraction scripts.
+  # Fully reproducible — no manual firmware extraction or --impure required.
+  hardware.apple-t2.firmware = {
+    enable = true;
+    version = "sonoma";
+  };
 
   # Soopy.moe binary cache so the live environment can fetch T2 kernel packages
   # without compiling from source.
