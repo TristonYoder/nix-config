@@ -83,18 +83,42 @@ The new ExFAT partition will become the Linux root partition. You'll reformat it
 
 ---
 
-## 2. Boot NixOS ISO
+## 2. Build and write the custom installer ISO
 
-Download a recent NixOS minimal or graphical ISO (23.11 or newer). Write it to USB:
+The custom ISO has the T2 kernel and WiFi firmware baked in — WiFi works on first boot
+with no ethernet or USB adapter needed.
+
+Run these commands from the `nix-config` repo root on **tyoder-mbp**:
 
 ```bash
-# On macOS — find disk number first
+export PATH="/nix/var/nix/profiles/default/bin:$PATH"
+
+# Decrypt the WiFi firmware (requires your agenix key)
+age -d -i ~/.ssh/agenix secrets/t2-wifi-firmware.age > /tmp/t2-wifi-firmware.tar.gz
+
+# Build the ISO on david (x86_64-linux builder)
+nix build .#nixosConfigurations.tristons-nixbook-t2-installer.config.system.build.isoImage \
+  --impure \
+  --builders "ssh://tristonyoder@david x86_64-linux - 4 - - nixos-test,benchmark,big-parallel,kvm" \
+  --option extra-substituters "https://cache.soopy.moe" \
+  --option extra-trusted-public-keys "cache.soopy.moe:MzBsBVPllIlCwL2PVs3BQC3Bfbp9TIgakN1xFUDEm8E="
+
+# result/iso/nixos-t2-macbookpro16.iso is a symlink to the built ISO
+```
+
+Write to USB (replace `diskN` with the correct disk from `diskutil list`):
+
+```bash
 diskutil list
-# Then write (replace diskN):
-sudo dd if=nixos-*.iso of=/dev/rdiskN bs=4m status=progress
+sudo diskutil unmountDisk /dev/diskN
+sudo dd if=result/iso/nixos-t2-macbookpro16.iso of=/dev/rdiskN bs=4m status=progress
 ```
 
 Boot from USB: hold **Option (⌥)** at startup → select the orange EFI boot entry.
+
+> The ISO is built with `--impure`, meaning the firmware tarball is pulled from
+> `/tmp/t2-wifi-firmware.tar.gz` at evaluation time. Clean it up afterwards:
+> `rm /tmp/t2-wifi-firmware.tar.gz`
 
 ---
 

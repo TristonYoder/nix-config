@@ -269,6 +269,27 @@
         };
 
         # -----------------------------------------------------------------------------
+        # tristons-nixbook-t2-installer - Bootable ISO for T2 MacBook Pro install
+        # Build with --impure (firmware baked in from /tmp/t2-wifi-firmware.tar.gz)
+        # See hosts/tristons-nixbook-t2/installer.nix for the full build command.
+        # -----------------------------------------------------------------------------
+        tristons-nixbook-t2-installer = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+
+          modules = [
+            # Apple T2 patched kernel and apple-bce driver
+            nixos-hardware.nixosModules.apple-t2
+
+            # Installer-specific config (firmware, ISO name, binary cache)
+            ./hosts/tristons-nixbook-t2/installer.nix
+          ];
+
+          specialArgs = {
+            inherit nixpkgs nixpkgs-unstable;
+          };
+        };
+
+        # -----------------------------------------------------------------------------
         # pits - Pi in the Sky - Edge Server (Cloud VPS)
         # -----------------------------------------------------------------------------
         pits = nixpkgs.lib.nixosSystem {
