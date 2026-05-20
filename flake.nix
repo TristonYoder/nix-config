@@ -290,6 +290,24 @@
         };
 
         # -----------------------------------------------------------------------------
+        # tristons-nixbook-t2-installer-plasma - Plasma 6 ISO for T2 MacBook Pro
+        # Build with --impure (firmware baked in from /tmp/t2-wifi-firmware.tar.gz)
+        # See hosts/tristons-nixbook-t2/installer-plasma.nix for the full build command.
+        # -----------------------------------------------------------------------------
+        tristons-nixbook-t2-installer-plasma = nixpkgs-unstable.lib.nixosSystem {
+          system = "x86_64-linux";
+
+          modules = [
+            nixos-hardware.nixosModules.apple-t2
+            ./hosts/tristons-nixbook-t2/installer-plasma.nix
+          ];
+
+          specialArgs = {
+            inherit nixpkgs nixpkgs-unstable;
+          };
+        };
+
+        # -----------------------------------------------------------------------------
         # pits - Pi in the Sky - Edge Server (Cloud VPS)
         # -----------------------------------------------------------------------------
         pits = nixpkgs.lib.nixosSystem {
