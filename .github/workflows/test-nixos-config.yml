@@ -132,11 +132,13 @@ jobs:
       parent_event_id: ${{ needs.check-flake-syntax.outputs.parent_event_id }}
     strategy:
       matrix:
-        host: 
+        host:
           - name: david
             hostname: david
           - name: pits
             hostname: pits
+          - name: tristons-nixbook-t2
+            hostname: david  # dry-run builds on david (same x86_64-linux arch)
           # - name: tristons-desk
             # hostname: tristons-desk
       fail-fast: false  # Continue testing other hosts even if one fails

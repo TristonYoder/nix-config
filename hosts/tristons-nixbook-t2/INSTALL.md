@@ -1,0 +1,225 @@
+# Installing NixOS on the T2 MacBook Pro (tristons-nixbook-t2)
+
+Dual-boot setup alongside macOS. NixOS uses the same EFI partition that macOS created.
+
+---
+
+## 1. macOS pre-installation (do this first, while macOS still works)
+
+### 1a. Disable Secure Boot
+
+1. Shut down the Mac
+2. Boot into Recovery: hold **Power** while powering on (or **⌘R** on older T2 Macs)
+3. Open **Utilities → Startup Security Utility**
+4. Set **Secure Boot** → "No Security"
+5. Set **Allowed Boot Media** → "Allow booting from external or removable media"
+6. Restart
+
+This permanently disables Touch ID on Linux (T2 Secure Enclave is unavailable).
+
+### 1b. Extract WiFi firmware
+
+The Broadcom firmware cannot be redistributed in nixpkgs. Extract it from macOS now, before repartitioning.
+
+```bash
+# On macOS — run in Terminal
+BRCM_DIR="$HOME/brcm-firmware"
+mkdir -p "$BRCM_DIR"
+
+# Copy all Broadcom firmware files
+cp /usr/share/firmware/wifi/*.trx  "$BRCM_DIR/" 2>/dev/null || true
+cp /usr/share/firmware/wifi/*.bin  "$BRCM_DIR/" 2>/dev/null || true
+cp /usr/share/firmware/wifi/*.txt  "$BRCM_DIR/" 2>/dev/null || true
+cp /usr/share/firmware/wifi/*.clm_blob "$BRCM_DIR/" 2>/dev/null || true
+
+# Verify files are present
+ls -la "$BRCM_DIR"
+
+# Create tarball
+tar czf ~/t2-wifi-firmware.tar.gz -C "$BRCM_DIR" .
+
+echo "Firmware saved to ~/t2-wifi-firmware.tar.gz"
+```
+
+If the path above is empty, try the alternative location:
+```bash
+ioreg -l | grep RequestedFiles   # Shows firmware paths
+# Or check:
+ls /usr/share/firmware/
+```
+
+### 1c. Add firmware to agenix secrets
+
+From the nix-config repo on any machine with the correct SSH keys:
+
+```bash
+cd secrets
+
+# On macOS, add nix to PATH first
+export PATH="/nix/var/nix/profiles/default/bin:$PATH"
+
+# Encrypt the firmware tarball
+# (scp the tar.gz here first if needed)
+./encrypt-secret.sh -n t2-wifi-firmware.age -f /path/to/t2-wifi-firmware.tar.gz
+
+# Verify it was encrypted correctly (should show ssh-ed25519 recipients, not X25519)
+./encrypt-secret.sh -v t2-wifi-firmware.age
+```
+
+Commit and push the encrypted secret before proceeding.
+
+### 1d. Partition the disk
+
+Use **Disk Utility** in macOS to shrink the APFS container:
+
+1. Open **Disk Utility** → View → Show All Devices
+2. Select the APFS Container, click **Partition**
+3. Add a new partition: format **ExFAT**, size however much you want for Linux (≥40GB recommended)
+4. Click Apply
+
+> Do not use Disk Utility's "Erase" on the whole disk — that removes macOS.
+
+The new ExFAT partition will become the Linux root partition. You'll reformat it to ext4 during installation.
+
+---
+
+## 2. Boot NixOS ISO
+
+Download a recent NixOS minimal or graphical ISO (23.11 or newer). Write it to USB:
+
+```bash
+# On macOS — find disk number first
+diskutil list
+# Then write (replace diskN):
+sudo dd if=nixos-*.iso of=/dev/rdiskN bs=4m status=progress
+```
+
+Boot from USB: hold **Option (⌥)** at startup → select the orange EFI boot entry.
+
+---
+
+## 3. Partition setup in the live environment
+
+```bash
+# Identify your disks
+lsblk
+# NVMe SSD is typically /dev/nvme0n1
+# USB installer is typically /dev/sda or /dev/sdb
+
+# View current partition layout
+fdisk -l /dev/nvme0n1
+```
+
+The typical T2 Mac layout looks like:
+```
+nvme0n1p1  200MB   EFI  ← shared with macOS, mount at /boot
+nvme0n1p2  ...     macOS Recovery
+nvme0n1p3  ...     APFS (macOS)
+nvme0n1p4  ...     ExFAT ← the partition you created; reformat to ext4
+```
+
+```bash
+# Format the Linux partition to ext4 with label "nixos"
+mkfs.ext4 -L nixos /dev/nvme0n1p4
+
+# Mount the new root
+mount /dev/nvme0n1p4 /mnt
+
+# Mount the EFI partition (shared with macOS — do NOT format it)
+mkdir -p /mnt/boot
+mount /dev/nvme0n1p1 /mnt/boot
+```
+
+Verify the EFI partition already has macOS boot files:
+```bash
+ls /mnt/boot/EFI/    # Should show Apple/, boot/, or similar
+```
+
+---
+
+## 4. Install NixOS
+
+```bash
+# If /tmp fills up during kernel build, bind-mount the root fs
+mount --bind /mnt/tmp /tmp
+
+# Clone the nix-config repo
+nix-shell -p git --run "git clone https://github.com/TristonYoder/nix-config /mnt/etc/nixos/nix-config"
+
+# Generate hardware configuration (this produces the UUIDs you need)
+nixos-generate-config --root /mnt --show-hardware-config
+```
+
+Copy the generated `hardware-configuration.nix` output and update
+`hosts/tristons-nixbook-t2/hardware-configuration.nix` with the real UUIDs.
+Commit and push that change, then pull it in the live environment:
+
+```bash
+cd /mnt/etc/nixos/nix-config
+git pull
+```
+
+Install:
+```bash
+nixos-install --flake /mnt/etc/nixos/nix-config#tristons-nixbook-t2 --root /mnt
+```
+
+Set the root password when prompted, then reboot.
+
+---
+
+## 5. Post-installation
+
+### 5a. WiFi
+
+WiFi firmware is deployed by the `t2-wifi-firmware` activation script during rebuild.
+After first boot, run a rebuild to trigger activation (connect via ethernet or USB tethering):
+
+```bash
+sudo nixos-rebuild switch --flake /etc/nixos/nix-config#tristons-nixbook-t2
+```
+
+After the rebuild completes, WiFi should appear in network settings. If the firmware
+was already deployed before install, WiFi works immediately.
+
+### 5b. Verify hardware
+
+```bash
+# Keyboard and trackpad
+evtest   # should list apple-bce devices
+
+# WiFi
+ip link   # look for wlpXs0 or wlan0
+nmcli device wifi list
+
+# Audio
+pactl info
+aplay -l
+
+# Touch Bar
+# Appears as a function key row — no special configuration needed
+```
+
+### 5c. Known issues
+
+| Issue | Status | Fix |
+|-------|--------|-----|
+| Suspend/resume | Broken with macOS Sonoma firmware | Handled by `t2-apple-bce-suspend` systemd service (automatic) |
+| Touch ID | Not supported | T2 Secure Enclave unavailable on Linux |
+| Touch Bar gestures | Not supported | Functions as F1–F12 + media keys |
+| Trackpad force touch | Not supported | Left/right click work normally |
+
+---
+
+## Rebuilding after install
+
+Once installed, rebuild from the repo as normal:
+
+```bash
+sudo nixos-rebuild switch --flake /etc/nixos/nix-config#tristons-nixbook-t2
+```
+
+Or use the `rebuild` alias if it's been configured in the shell.
+
+The T2 kernel is cached at `https://cache.soopy.moe` — rebuilds fetch the
+pre-built kernel instead of compiling locally.
