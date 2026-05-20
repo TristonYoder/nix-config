@@ -12,6 +12,9 @@
     # Enable store optimization (safe on NixOS)
     auto-optimise-store = true;
     trusted-substituters = [ "ssh-ng://david" ];
+    # Allow vmTools (nixos-hardware brcm-firmware, nixpkgs VM tests) to use KVM
+    extra-sandbox-paths = [ "/dev/kvm" ];
+    system-features = [ "nixos-test" "benchmark" "big-parallel" "kvm" ];
   };
   
   # =============================================================================
