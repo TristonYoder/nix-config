@@ -26,6 +26,8 @@
     version = "sonoma";
   };
 
+  nixpkgs.config.allowUnfree = true;
+
   # Soopy.moe binary cache so the live environment can fetch T2 kernel packages
   # without compiling from source.
   nix.settings = {

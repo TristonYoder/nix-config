@@ -25,6 +25,8 @@
     version = "sonoma";
   };
 
+  nixpkgs.config.allowUnfree = true;
+
   nix.settings = {
     substituters = lib.mkAfter [ "https://cache.soopy.moe" ];
     trusted-public-keys = lib.mkAfter [
