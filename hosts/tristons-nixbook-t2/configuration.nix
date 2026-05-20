@@ -22,6 +22,8 @@
     wifiFirmware = true;  # BCM4364-B2 (maui board), extracted from macOS 2026-05-20
   };
 
+  hardware.apple.touchBar.settings.MediaLayerDefault = true;
+
   # systemd-boot on the shared EFI partition with macOS
   modules.hardware.boot.enable = true;
 
