@@ -32,7 +32,7 @@ in
 
       # Nintendo
       dolphin = mkEnableOption "Dolphin (GameCube/Wii emulator)" // { default = true; };
-      ryujinx = mkEnableOption "Ryujinx (Switch emulator)" // { default = true; };
+      ryujinx = mkEnableOption "Ryubing (Switch emulator, formerly Ryujinx)" // { default = true; };
       melonDS = mkEnableOption "melonDS (DS emulator)" // { default = true; };
       mgba = mkEnableOption "mGBA (GBA emulator)" // { default = true; };
       azahar = mkEnableOption "Azahar (3DS emulator)" // { default = true; };
@@ -77,7 +77,7 @@ in
       ++ (optional cfg.emulators.shadps4 pkgs.shadps4)
       # Nintendo
       ++ (optional cfg.emulators.dolphin pkgs.dolphin-emu)
-      ++ (optional cfg.emulators.ryujinx pkgs.ryujinx)
+      ++ (optional cfg.emulators.ryujinx pkgs.ryubing)
       ++ (optional cfg.emulators.melonDS pkgs.melonDS)
       ++ (optional cfg.emulators.mgba pkgs.mgba)
       ++ (optional cfg.emulators.azahar pkgs.azahar)
