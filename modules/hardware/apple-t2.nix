@@ -43,6 +43,11 @@ in
       '';
     };
 
+    # Touch Bar — tiny-dfr drives the display, shows F1–F12 by default.
+    # Hold Fn for media keys. Settings can be overridden per-host via
+    # hardware.apple.touchBar.settings (see nixos/modules/hardware/apple-touchbar.nix).
+    hardware.apple.touchBar.enable = true;
+
     # Unload apple-bce before suspend; macOS Sonoma firmware changes broke S3
     # resume and cause kernel oops without this workaround.
     systemd.services.t2-apple-bce-suspend = {
