@@ -273,7 +273,7 @@
         # Build with --impure (firmware baked in from /tmp/t2-wifi-firmware.tar.gz)
         # See hosts/tristons-nixbook-t2/installer.nix for the full build command.
         # -----------------------------------------------------------------------------
-        tristons-nixbook-t2-installer = nixpkgs.lib.nixosSystem {
+        tristons-nixbook-t2-installer = nixpkgs-unstable.lib.nixosSystem {
           system = "x86_64-linux";
 
           modules = [

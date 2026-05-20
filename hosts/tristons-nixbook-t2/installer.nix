@@ -14,11 +14,11 @@
 #     --option extra-substituters "https://cache.soopy.moe" \
 #     --option extra-trusted-public-keys "cache.soopy.moe:MzBsBVPllIlCwL2PVs3BQC3Bfbp9TIgakN1xFUDEm8E="
 
-{ pkgs, lib, ... }:
+{ pkgs, lib, modulesPath, ... }:
 {
   imports = [
     # Minimal installer base: no GUI, gives a shell with nixos-install available
-    <nixpkgs/nixos/modules/installer/cd-dvd/installation-cd-minimal.nix>
+    (modulesPath + "/installer/cd-dvd/installation-cd-minimal.nix")
   ];
 
   # WiFi firmware baked into the ISO image.
