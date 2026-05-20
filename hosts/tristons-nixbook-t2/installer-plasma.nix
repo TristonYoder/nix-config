@@ -23,11 +23,11 @@
   # --impure is required because this references a path outside the flake.
   hardware.firmware = [
     (pkgs.runCommandNoCC "brcm-t2-firmware" { } ''
-      mkdir -p $out/lib/firmware/brcm
+      mkdir -p $out/lib/firmware
       tar xzf ${builtins.path {
         path = /tmp/t2-wifi-firmware.tar.gz;
         name = "t2-wifi-firmware.tar.gz";
-      }} -C $out/lib/firmware/brcm/
+      }} -C $out/lib/firmware/
     '')
   ];
 

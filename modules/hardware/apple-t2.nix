@@ -37,8 +37,8 @@ in
       text = ''
         firmware_tar="${config.age.secrets.t2-wifi-firmware.path}"
         if [ -f "$firmware_tar" ]; then
-          mkdir -p /lib/firmware/brcm
-          ${pkgs.gnutar}/bin/tar xzf "$firmware_tar" -C /lib/firmware/brcm/ 2>/dev/null
+          mkdir -p /lib/firmware
+          ${pkgs.gnutar}/bin/tar xzf "$firmware_tar" -C /lib/firmware/ 2>/dev/null
         fi
       '';
     };
