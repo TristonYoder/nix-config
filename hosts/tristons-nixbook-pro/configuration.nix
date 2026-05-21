@@ -23,6 +23,18 @@
 
   hardware.apple.touchBar.settings.MediaLayerDefault = true;
 
+  # Intel UHD 630 graphics support.
+  # pressure-vessel (Steam's container runtime) uses ldconfig to detect host
+  # libraries, which breaks on NixOS. Adding mesa + intel-media-driver to
+  # extraPackages puts them directly into Steam's FHS env, bypassing the
+  # ldconfig detection so the 32-bit GBM driver is available inside the container.
+  hardware.graphics = {
+    extraPackages = with pkgs; [ intel-media-driver ];
+    extraPackages32 = with pkgs.pkgsi686Linux; [ intel-media-driver ];
+  };
+
+  programs.steam.extraPackages = with pkgs; [ mesa intel-media-driver ];
+
   # systemd-boot on the shared EFI partition with macOS
   modules.hardware.boot.enable = true;
 
