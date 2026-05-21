@@ -139,6 +139,11 @@ jobs:
             hostname: pits
           - name: tristons-nixbook-pro
             hostname: david  # dry-run builds on david (same x86_64-linux arch)
+          - name: tristons-nixbook
+            hostname: david  # dry-run builds on david (same x86_64-linux arch)
+          - name: tristons-desk
+            hostname: david  # dry-run builds on david (same x86_64-linux arch)
+            
           # - name: tristons-desk
             # hostname: tristons-desk
       fail-fast: false  # Continue testing other hosts even if one fails
