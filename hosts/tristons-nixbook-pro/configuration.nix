@@ -23,17 +23,18 @@
 
   hardware.apple.touchBar.settings.MediaLayerDefault = true;
 
-  # Intel UHD 630 graphics support.
-  # pressure-vessel (Steam's container runtime) uses ldconfig to detect host
-  # libraries, which breaks on NixOS. Adding mesa + intel-media-driver to
-  # extraPackages puts them directly into Steam's FHS env, bypassing the
-  # ldconfig detection so the 32-bit GBM driver is available inside the container.
+  # Intel UHD 630 VA-API support.
   hardware.graphics = {
     extraPackages = with pkgs; [ intel-media-driver ];
     extraPackages32 = with pkgs.pkgsi686Linux; [ intel-media-driver ];
   };
 
-  programs.steam.extraPackages = with pkgs; [ mesa intel-media-driver ];
+  # steamwebhelper (CEF) crashes on NixOS because pressure-vessel's ldconfig
+  # can't detect host library architecture and fails to overlay the 32-bit Mesa
+  # GBM driver into the container. Disabling browser HW acceleration in
+  # steamwebhelper avoids the GPU init path that hits the CHECK(false) crash.
+  # Games are unaffected — only Steam's own UI uses software rendering.
+  environment.sessionVariables.STEAM_DISABLE_BROWSER_HARDWARE_ACCELERATION = "1";
 
   # systemd-boot on the shared EFI partition with macOS
   modules.hardware.boot.enable = true;
