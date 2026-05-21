@@ -7,7 +7,7 @@
   # SYSTEM IDENTIFICATION
   # ===========================================================================
 
-  networking.hostName = "tristons-nixbook-t2";
+  networking.hostName = "tristons-nixbook-pro";
   system.stateVersion = "25.05";
 
   # ===========================================================================
