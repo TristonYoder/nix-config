@@ -1,4 +1,4 @@
-# NixOS installer ISO for tristons-nixbook-t2 (T2 MacBook Pro)
+# NixOS installer ISO for tristons-nixbook-pro (T2 MacBook Pro)
 #
 # WiFi firmware is fetched from a macOS Sonoma installer image at build time
 # using the Asahi Linux extraction scripts (via nixos-hardware). No manual
@@ -7,7 +7,7 @@
 # Build command (from nix-config root on tyoder-mbp):
 #
 #   export PATH="/nix/var/nix/profiles/default/bin:$PATH"
-#   nix build .#nixosConfigurations.tristons-nixbook-t2-installer.config.system.build.isoImage \
+#   nix build .#nixosConfigurations.tristons-nixbook-pro-installer.config.system.build.isoImage \
 #     --builders "ssh://tristonyoder@david x86_64-linux - 4 - - nixos-test,benchmark,big-parallel,kvm" \
 #     --option extra-substituters "https://cache.soopy.moe" \
 #     --option extra-trusted-public-keys "cache.soopy.moe:MzBsBVPllIlCwL2PVs3BQC3Bfbp9TIgakN1xFUDEm8E="
