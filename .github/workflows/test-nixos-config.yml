@@ -268,7 +268,7 @@ jobs:
       run: |
         PARENT_EVENT_ID="${{ needs.check-flake-syntax.outputs.parent_event_id }}"
         ROOM_ID_ENCODED=$(echo -n "${{ secrets.MATRIX_ROOM_ID }}" | jq -sRr @uri)
-        
+
         curl -X PUT "${{ secrets.MATRIX_HOMESERVER_URL }}/_matrix/client/r0/rooms/$ROOM_ID_ENCODED/send/m.reaction/$(openssl rand -hex 16)" \
           -H "Authorization: Bearer ${{ secrets.MATRIX_ACCESS_TOKEN }}" \
           -H "Content-Type: application/json" \
@@ -279,3 +279,105 @@ jobs:
               "key": "❌"
             }
           }' || echo "Reaction failed, continuing..."
+
+  # Build and cache offline closures for desktop hosts (main branch only)
+  build-offline-closures:
+    runs-on: ubuntu-latest
+    needs: test-configurations
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    strategy:
+      matrix:
+        host:
+          - tristons-desk
+          - tristons-nixbook-pro
+      fail-fast: false
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Notify start
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          🔵 Building offline closure: ${{ matrix.host }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.test-configurations.outputs.parent_event_id }}
+
+    - name: Setup Tailscale (Headscale)
+      uses: tailscale/github-action@v2
+      with:
+        authkey: ${{ secrets.HEADSCALE_AUTHKEY }}
+        tags: tag:github-actions
+        version: 1.78.1
+        args: --login-server ${{ secrets.HEADSCALE_LOGIN_SERVER }}
+
+    - name: Wait for Tailscale connection
+      run: sleep 10
+
+    - name: Build and cache closure for ${{ matrix.host }}
+      run: |
+        SERVER_HOSTNAME="david.vpn.theyoder.family"
+
+        mkdir -p ~/.ssh
+        echo "Host *" >> ~/.ssh/config
+        echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+        echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
+        chmod 600 ~/.ssh/config
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+
+        rsync -az --delete \
+          --exclude='.git' \
+          --exclude='.github' \
+          --exclude='*.save' \
+          ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME:/tmp/nixos-closure-${{ matrix.host }}/
+
+        ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << EOF
+          set -e
+          FLAKE_DIR="/tmp/nixos-closure-${{ matrix.host }}"
+          RESULT="/tmp/nix-result-${{ matrix.host }}"
+          CACHE_DIR="/data/nix-builds/cache"
+
+          echo "Building ${{ matrix.host }} closure..."
+          nix build "\$FLAKE_DIR#nixosConfigurations.${{ matrix.host }}.config.system.build.toplevel" \
+            --out-link "\$RESULT" \
+            --option extra-substituters "https://cache.soopy.moe" \
+            --option extra-trusted-public-keys "cache.soopy.moe:MzBsBVPllIlCwL2PVs3BQC3Bfbp9TIgakN1xFUDEm8E="
+
+          STORE_PATH=\$(readlink -f "\$RESULT")
+          echo "Built: \$STORE_PATH"
+
+          mkdir -p "\$CACHE_DIR"
+          nix copy --to "file://\$CACHE_DIR" "\$STORE_PATH"
+          echo "\$STORE_PATH" > "/data/nix-builds/${{ matrix.host }}.path"
+          echo "✅ Closure ready: ${{ matrix.host }}"
+        EOF
+
+    - name: Notify success
+      if: success()
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ✅ Offline closure ready: ${{ matrix.host }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.test-configurations.outputs.parent_event_id }}
+
+    - name: Notify failure
+      if: failure()
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ❌ Offline closure failed: ${{ matrix.host }}
+          ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.test-configurations.outputs.parent_event_id }}
