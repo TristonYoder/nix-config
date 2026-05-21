@@ -137,7 +137,7 @@ jobs:
             hostname: david
           - name: pits
             hostname: pits
-          - name: tristons-nixbook-t2
+          - name: tristons-nixbook-pro
             hostname: david  # dry-run builds on david (same x86_64-linux arch)
           # - name: tristons-desk
             # hostname: tristons-desk

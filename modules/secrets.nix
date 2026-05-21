@@ -102,7 +102,5 @@ with lib;
 
     // (optionalAttrs (config.networking.hostName == "pits") {
       # PITS secrets here
-    })
-
-    ;
+    });
 }

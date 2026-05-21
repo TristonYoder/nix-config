@@ -29,14 +29,14 @@
       url = "github:zhaofengli/nix-homebrew";
     };
     
+    # NixOS hardware support modules (T2, Raspberry Pi, etc.)
+    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+
     # External modules
     nix-bitcoin.url = "github:fort-nix/nix-bitcoin/v0.0.117";
     nixos-vscode-server.url = "github:nix-community/nixos-vscode-server";
     agenix.url = "github:ryantm/agenix";
     
-    # NixOS hardware support modules (T2, Raspberry Pi, etc.)
-    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
-
     # Flake utilities
     flake-utils.url = "github:numtide/flake-utils";
   };
@@ -226,34 +226,21 @@
         };
 
         # -----------------------------------------------------------------------------
-        # tristons-nixbook-t2 - NixOS on T2 MacBook Pro (dual boot, x86_64-linux)
+        # tristons-nixbook-pro - NixOS on T2 MacBook Pro 16,1 (dual boot, x86_64-linux)
         # -----------------------------------------------------------------------------
-        tristons-nixbook-t2 = nixpkgs-unstable.lib.nixosSystem {
+        tristons-nixbook-pro = nixpkgs-unstable.lib.nixosSystem {
           system = "x86_64-linux";
 
           modules = [
-            # Common configuration
             ./common/system.nix
             ./common/linux.nix
-
-            # Apple T2 hardware support (patched kernel, apple-bce, firmware)
             nixos-hardware.nixosModules.apple-t2
-
-            # Workstation profile (includes desktop profile)
             ./profiles/workstation.nix
-
-            # Host-specific configuration
-            ./hosts/tristons-nixbook-t2/configuration.nix
-            ./hosts/tristons-nixbook-t2/hardware-configuration.nix
-
-            # Custom modules (hardware, system, services)
+            ./hosts/tristons-nixbook-pro/configuration.nix
+            ./hosts/tristons-nixbook-pro/hardware-configuration.nix
             ./modules
-
-            # External modules
             nixos-vscode-server.nixosModules.default
             agenix.nixosModules.default
-
-            # Home Manager (unstable to match nixpkgs-unstable)
             home-manager-unstable.nixosModules.home-manager
             {
               home-manager.useGlobalPkgs = true;
@@ -269,19 +256,14 @@
         };
 
         # -----------------------------------------------------------------------------
-        # tristons-nixbook-t2-installer - Bootable ISO for T2 MacBook Pro install
-        # Build with --impure (firmware baked in from /tmp/t2-wifi-firmware.tar.gz)
-        # See hosts/tristons-nixbook-t2/installer.nix for the full build command.
+        # tristons-nixbook-pro-installer - Bootable minimal ISO for T2 MacBook Pro
         # -----------------------------------------------------------------------------
-        tristons-nixbook-t2-installer = nixpkgs-unstable.lib.nixosSystem {
+        tristons-nixbook-pro-installer = nixpkgs-unstable.lib.nixosSystem {
           system = "x86_64-linux";
 
           modules = [
-            # Apple T2 patched kernel and apple-bce driver
             nixos-hardware.nixosModules.apple-t2
-
-            # Installer-specific config (firmware, ISO name, binary cache)
-            ./hosts/tristons-nixbook-t2/installer.nix
+            ./hosts/tristons-nixbook-pro/installer.nix
           ];
 
           specialArgs = {
@@ -290,16 +272,14 @@
         };
 
         # -----------------------------------------------------------------------------
-        # tristons-nixbook-t2-installer-plasma - Plasma 6 ISO for T2 MacBook Pro
-        # Build with --impure (firmware baked in from /tmp/t2-wifi-firmware.tar.gz)
-        # See hosts/tristons-nixbook-t2/installer-plasma.nix for the full build command.
+        # tristons-nixbook-pro-installer-plasma - Plasma 6 ISO for T2 MacBook Pro
         # -----------------------------------------------------------------------------
-        tristons-nixbook-t2-installer-plasma = nixpkgs-unstable.lib.nixosSystem {
+        tristons-nixbook-pro-installer-plasma = nixpkgs-unstable.lib.nixosSystem {
           system = "x86_64-linux";
 
           modules = [
             nixos-hardware.nixosModules.apple-t2
-            ./hosts/tristons-nixbook-t2/installer-plasma.nix
+            ./hosts/tristons-nixbook-pro/installer-plasma.nix
           ];
 
           specialArgs = {
