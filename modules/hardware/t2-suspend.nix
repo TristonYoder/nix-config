@@ -51,7 +51,9 @@ in
 
       # apple_bce drives the T2 keyboard, Touch Bar, and audio. It wedges the
       # suspend path, so unload it before sleep and reload after resume.
-      # Resume takes ~30 s while the module reinitialises.
+      # Expected resume behaviour: screen returns first, then ~3 s later the
+      # keyboard, trackpad, and Touch Bar come back as apple_bce finishes
+      # reinitialising. This is normal — not a bug.
       systemd.services.t2-suspend-fix = {
         description = "Unload apple-bce before sleep, reload after resume";
         serviceConfig = {
