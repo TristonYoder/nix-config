@@ -29,6 +29,9 @@
       url = "github:zhaofengli/nix-homebrew";
     };
     
+    # NixOS hardware support modules (T2, Raspberry Pi, etc.)
+    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+
     # External modules
     nix-bitcoin.url = "github:fort-nix/nix-bitcoin/v0.0.117";
     nixos-vscode-server.url = "github:nix-community/nixos-vscode-server";
@@ -38,7 +41,7 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, flake-utils, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, flake-utils, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -215,6 +218,68 @@
               home-manager.backupFileExtension = "backup";
               home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
             }
+          ];
+
+          specialArgs = {
+            inherit nixpkgs nixpkgs-unstable;
+          };
+        };
+
+        # -----------------------------------------------------------------------------
+        # tristons-nixbook-pro - NixOS on T2 MacBook Pro 16,1 (dual boot, x86_64-linux)
+        # -----------------------------------------------------------------------------
+        tristons-nixbook-pro = nixpkgs-unstable.lib.nixosSystem {
+          system = "x86_64-linux";
+
+          modules = [
+            ./common/system.nix
+            ./common/linux.nix
+            nixos-hardware.nixosModules.apple-t2
+            ./profiles/workstation.nix
+            ./hosts/tristons-nixbook-pro/configuration.nix
+            ./hosts/tristons-nixbook-pro/hardware-configuration.nix
+            ./modules
+            nixos-vscode-server.nixosModules.default
+            agenix.nixosModules.default
+            home-manager-unstable.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.backupFileExtension = "backup";
+              home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
+            }
+          ];
+
+          specialArgs = {
+            inherit nixpkgs nixpkgs-unstable;
+          };
+        };
+
+        # -----------------------------------------------------------------------------
+        # tristons-nixbook-pro-installer - Bootable minimal ISO for T2 MacBook Pro
+        # -----------------------------------------------------------------------------
+        tristons-nixbook-pro-installer = nixpkgs-unstable.lib.nixosSystem {
+          system = "x86_64-linux";
+
+          modules = [
+            nixos-hardware.nixosModules.apple-t2
+            ./hosts/tristons-nixbook-pro/installer.nix
+          ];
+
+          specialArgs = {
+            inherit nixpkgs nixpkgs-unstable;
+          };
+        };
+
+        # -----------------------------------------------------------------------------
+        # tristons-nixbook-pro-installer-plasma - Plasma 6 ISO for T2 MacBook Pro
+        # -----------------------------------------------------------------------------
+        tristons-nixbook-pro-installer-plasma = nixpkgs-unstable.lib.nixosSystem {
+          system = "x86_64-linux";
+
+          modules = [
+            nixos-hardware.nixosModules.apple-t2
+            ./hosts/tristons-nixbook-pro/installer-plasma.nix
           ];
 
           specialArgs = {

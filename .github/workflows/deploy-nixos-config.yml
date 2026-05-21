@@ -293,7 +293,7 @@ jobs:
     - name: Wait for Tailscale connection
       run: sleep 10
 
-    - name: Build tristons-nixbook closure on david
+    - name: Build offline closures on david
       run: |
         SERVER_HOSTNAME="david.vpn.theyoder.family"
 
@@ -307,37 +307,38 @@ jobs:
         chmod 600 ~/.ssh/id_ed25519
 
         # Copy configuration to david
-        rsync -avz --delete \
+        rsync -az --delete \
           --exclude='.git' \
           --exclude='.github' \
           --exclude='*.save' \
           --exclude='nextcloud/admin-pass' \
           ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME:/tmp/nixos-config-offline-build/
 
-        # Build nixbook closure and store in binary cache on NFS
+        # Build closures for all offline hosts and store in binary cache on NFS
         ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << 'EOF'
           set -e
           cd /tmp/nixos-config-offline-build
 
-          # Ensure the nix-builds directory exists
           sudo mkdir -p /data/nix-builds/cache
 
-          echo "Building tristons-nixbook closure..."
-          sudo nix build .#nixosConfigurations.tristons-nixbook.config.system.build.toplevel \
-            -o /data/nix-builds/tristons-nixbook
+          build_closure() {
+            local host="$1"
+            local extra_args="${2:-}"
+            echo "Building $host closure..."
+            sudo nix build ".#nixosConfigurations.$host.config.system.build.toplevel" \
+              -o "/data/nix-builds/$host" \
+              $extra_args
+            STORE_PATH=$(readlink -f "/data/nix-builds/$host")
+            echo "Built: $STORE_PATH"
+            echo "$STORE_PATH" | sudo tee "/data/nix-builds/$host.path" > /dev/null
+            sudo nix copy --to "file:///data/nix-builds/cache" "$STORE_PATH"
+            echo "✅ $host closure cached"
+          }
 
-          # Get the store path
-          STORE_PATH=$(readlink -f /data/nix-builds/tristons-nixbook)
-          echo "Built closure: $STORE_PATH"
-
-          # Write store path for nixbook to read
-          echo "$STORE_PATH" | sudo tee /data/nix-builds/tristons-nixbook.path > /dev/null
-
-          # Copy closure to binary cache on NFS-accessible volume
-          echo "Copying closure to binary cache..."
-          sudo nix copy --to "file:///data/nix-builds/cache" "$STORE_PATH"
-
-          echo "Offline closure built and cached for tristons-nixbook"
+          build_closure tristons-nixbook
+          build_closure tristons-desk
+          build_closure tristons-nixbook-pro \
+            '--option extra-substituters https://cache.soopy.moe --option extra-trusted-public-keys cache.soopy.moe:MzBsBVPllIlCwL2PVs3BQC3Bfbp9TIgakN1xFUDEm8E='
         EOF
 
     - name: Notify offline closures success

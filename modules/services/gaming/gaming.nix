@@ -24,7 +24,7 @@ in
 
     emulators = {
       # PlayStation
-      duckstation = mkEnableOption "DuckStation (PS1 emulator)" // { default = true; };
+      duckstation = mkEnableOption "DuckStation (PS1 emulator)" // { default = false; };
       pcsx2 = mkEnableOption "PCSX2 (PS2 emulator)" // { default = true; };
       rpcs3 = mkEnableOption "RPCS3 (PS3 emulator)" // { default = true; };
       ppsspp = mkEnableOption "PPSSPP (PSP emulator)" // { default = true; };
@@ -32,7 +32,7 @@ in
 
       # Nintendo
       dolphin = mkEnableOption "Dolphin (GameCube/Wii emulator)" // { default = true; };
-      ryujinx = mkEnableOption "Ryujinx (Switch emulator)" // { default = true; };
+      ryujinx = mkEnableOption "Ryubing (Switch emulator, formerly Ryujinx)" // { default = true; };
       melonDS = mkEnableOption "melonDS (DS emulator)" // { default = true; };
       mgba = mkEnableOption "mGBA (GBA emulator)" // { default = true; };
       azahar = mkEnableOption "Azahar (3DS emulator)" // { default = true; };
@@ -71,23 +71,21 @@ in
       (optional cfg.steam.enable pkgs.steam)
       ++ (optional cfg.steam.steamRomManager pkgs.steam-rom-manager)
       # PlayStation
-      ++ (optional cfg.emulators.duckstation pkgs.duckstation)
       ++ (optional cfg.emulators.pcsx2 pkgs.pcsx2)
       ++ (optional cfg.emulators.rpcs3 pkgs.rpcs3)
       ++ (optional cfg.emulators.ppsspp pkgs.ppsspp)
       ++ (optional cfg.emulators.shadps4 pkgs.shadps4)
       # Nintendo
       ++ (optional cfg.emulators.dolphin pkgs.dolphin-emu)
-      ++ (optional cfg.emulators.ryujinx pkgs.ryujinx)
+      ++ (optional cfg.emulators.ryujinx pkgs.ryubing)
       ++ (optional cfg.emulators.melonDS pkgs.melonDS)
       ++ (optional cfg.emulators.mgba pkgs.mgba)
       ++ (optional cfg.emulators.azahar pkgs.azahar)
       ++ (optional cfg.emulators.cemu pkgs.cemu)
       # Multi-system / Other
-      ++ (optional cfg.emulators.retroarch pkgs.retroarchFull)
+      ++ (optional cfg.emulators.retroarch pkgs.retroarch-full)
       ++ (optional cfg.emulators.scummvm pkgs.scummvm)
       ++ (optional cfg.emulators.mame pkgs.mame)
-      ++ (optional cfg.cloudGaming.enable pkgs.gfn-electron)
       ++ (optional cfg.cloudGaming.moonlight pkgs.moonlight-qt);
 
     # Add udev rules for DolphinBar when dolphin is enabled

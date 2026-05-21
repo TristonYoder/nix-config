@@ -31,11 +31,13 @@
   # ADDITIONAL PACKAGES FOR DESKTOP
   # =============================================================================
   
+  modules.system.auto-update.enable = true;
+
   environment.systemPackages = with pkgs; [
     # Desktop-specific packages
     firefox
     vlc
-    
+
     # Development tools
     vscode
   ];

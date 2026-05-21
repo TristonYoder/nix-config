@@ -132,13 +132,17 @@ jobs:
       parent_event_id: ${{ needs.check-flake-syntax.outputs.parent_event_id }}
     strategy:
       matrix:
-        host: 
+        host:
           - name: david
             hostname: david
           - name: pits
             hostname: pits
-          # - name: tristons-desk
-            # hostname: tristons-desk
+          - name: tristons-nixbook-pro
+            hostname: david  # dry-run builds on david (same x86_64-linux arch)
+          - name: tristons-nixbook
+            hostname: david  # dry-run builds on david (same x86_64-linux arch)
+          - name: tristons-desk
+            hostname: david  # dry-run builds on david (same x86_64-linux arch)
       fail-fast: false  # Continue testing other hosts even if one fails
     
     steps:
@@ -264,7 +268,7 @@ jobs:
       run: |
         PARENT_EVENT_ID="${{ needs.check-flake-syntax.outputs.parent_event_id }}"
         ROOM_ID_ENCODED=$(echo -n "${{ secrets.MATRIX_ROOM_ID }}" | jq -sRr @uri)
-        
+
         curl -X PUT "${{ secrets.MATRIX_HOMESERVER_URL }}/_matrix/client/r0/rooms/$ROOM_ID_ENCODED/send/m.reaction/$(openssl rand -hex 16)" \
           -H "Authorization: Bearer ${{ secrets.MATRIX_ACCESS_TOKEN }}" \
           -H "Content-Type: application/json" \
