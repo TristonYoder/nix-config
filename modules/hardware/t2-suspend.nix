@@ -31,13 +31,11 @@ in
         AllowHybridSleep = false;
       };
 
-      services.logind = {
-        lidSwitch = "lock";
-        lidSwitchExternalPower = "lock";
-        settings.Login = {
-          HandleSuspendKey = "lock";
-          HandleHibernateKey = "ignore";
-        };
+      services.logind.settings.Login = {
+        HandleLidSwitch = "lock";
+        HandleLidSwitchExternalPower = "lock";
+        HandleSuspendKey = "lock";
+        HandleHibernateKey = "ignore";
       };
     })
 
@@ -74,13 +72,11 @@ in
         AllowHybridSleep = false;
       };
 
-      services.logind = {
-        lidSwitch = "suspend";
-        lidSwitchExternalPower = "suspend";
-        settings.Login = {
-          HandleSuspendKey = "suspend";
-          HandleHibernateKey = "ignore";
-        };
+      services.logind.settings.Login = {
+        HandleLidSwitch = "suspend";
+        HandleLidSwitchExternalPower = "suspend";
+        HandleSuspendKey = "suspend";
+        HandleHibernateKey = "ignore";
       };
     })
   ]);
