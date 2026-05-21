@@ -60,8 +60,12 @@ in
           ExecStart = "${pkgs.kmod}/bin/rmmod -f apple_bce";
           ExecStop = "${pkgs.kmod}/bin/modprobe apple_bce";
         };
+        # wantedBy: start this service when sleep.target activates (pre-sleep)
+        # partOf: stop this service when sleep.target deactivates (post-resume),
+        #         which triggers ExecStop = modprobe apple_bce
         wantedBy = [ "sleep.target" ];
         before = [ "sleep.target" ];
+        partOf = [ "sleep.target" ];
       };
 
       # Suspend works (with the service above); hibernate and hybrid-sleep do not.
