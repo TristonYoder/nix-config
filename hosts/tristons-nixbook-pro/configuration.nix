@@ -1,5 +1,5 @@
-# Configuration for tristons-nixbook-t2
-# NixOS on 2019 T2 MacBook Pro (dual boot alongside macOS)
+# Configuration for tristons-nixbook-pro
+# NixOS on 2019 T2 MacBook Pro 16,1 (dual boot alongside macOS)
 
 { config, pkgs, lib, ... }:
 {
@@ -13,11 +13,6 @@
   # ===========================================================================
   # HARDWARE
   # ===========================================================================
-
-  # T2 supplemental config: binary cache, suspend workaround, trackpad kernel param.
-  # nixos-hardware.nixosModules.apple-t2 (in flake.nix) handles the patched kernel
-  # and apple-bce driver.
-  modules.hardware.appleT2.enable = true;
 
   # WiFi firmware fetched from macOS Sonoma installer via Asahi extraction scripts.
   # Fully reproducible — no manual firmware extraction from macOS required.
