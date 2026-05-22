@@ -49,6 +49,10 @@
     
     # Communication
     element-desktop
+    bluebubbles
+
+    # Video Editing
+    davinci-resolve
 
     # Notes & Knowledge Management
     obsidian
