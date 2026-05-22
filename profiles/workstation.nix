@@ -24,7 +24,7 @@
   environment.systemPackages = with pkgs; [
     # Web browsers
     firefox
-    plasma-browser-integration
+    kdePackages.plasma-browser-integration
 
     # Media players
     vlc
