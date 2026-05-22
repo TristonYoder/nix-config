@@ -64,6 +64,10 @@
 
   services.flatpak.enable = true;
 
+  system.activationScripts.flatpak-flathub = lib.stringAfter [ "var" ] ''
+    ${pkgs.flatpak}/bin/flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
+  '';
+
   # =============================================================================
   # GAMING
   # =============================================================================
