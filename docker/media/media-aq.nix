@@ -10,6 +10,57 @@
 # Auto-generated using compose2nix v0.2.3-pre.
 { config, pkgs, lib, ... }:
 
+let
+  tiddlConfig = pkgs.writeText "tiddl-config.toml" ''
+    enable_cache = true
+    debug = false
+
+    [templates]
+    default = "{album.artist}/{album.title} ({album.date:%Y})/{item.number:02d} - {item.title_version}"
+    track = "{album.artist}/{album.title} ({album.date:%Y})/{item.number:02d} - {item.title_version}"
+    video = "{album.artist}/videos/{item.artist} - {item.title}"
+    album = "{album.artist}/{album.title} ({album.date:%Y})/{item.number:02d} - {item.title_version}"
+    playlist = "{album.artist}/{album.title} ({album.date:%Y})/{item.number:02d} - {item.title_version}"
+    mix = "{album.artist}/{album.title} ({album.date:%Y})/{item.number:02d} - {item.title_version}"
+
+    [download]
+    track_quality = "max"
+    video_quality = "fhd"
+    skip_existing = true
+    threads_count = 4
+    download_path = "/music"
+    scan_path = "/music"
+    singles_filter = "include"
+    videos_filter = "none"
+    # "none" skips Atmos tracks; "allow" downloads both regular and Atmos; "only" for Atmos only
+    atmos_filter = "allow"
+    update_mtime = false
+    rewrite_metadata = true
+
+    [metadata]
+    enable = true
+    lyrics = true
+    cover = true
+
+    [cover]
+    save = true
+    size = 1280
+    allowed = ["playlist"]
+
+    [cover.templates]
+    playlist = "playlists/{playlist.title}/cover"
+
+    [m3u]
+    save = true
+    allowed = ["mix", "playlist"]
+
+    [m3u.templates]
+    album = "m3u/{type}/{album.artist} - {album.title}"
+    playlist = "m3u/{type}/{playlist.title}"
+    mix = "m3u/{type}/{now:%x}"
+  '';
+in
+
 {
   # Runtime
   virtualisation.docker = {
@@ -513,6 +564,7 @@
       ExecStartPre = [
         "+${pkgs.bash}/bin/bash -c '${lib.concatStringsSep " && " [
           "mkdir -p /data/docker-appdata/tidarr/.tiddl"
+          "${pkgs.coreutils}/bin/cp ${tiddlConfig} /data/docker-appdata/tidarr/.tiddl/config.toml"
           "chown -R 1000:1000 /data/docker-appdata/tidarr"
           "mkdir -p /run/tidarr"
           "echo \"PLEX_TOKEN=$(cat ${config.age.secrets.plex-token.path})\" > /run/tidarr/tidarr.env"
