@@ -33,10 +33,11 @@ in
       serviceConfig = {
         Type = "oneshot";
         ExecStart = pkgs.writeShellScript "music-alac-sync" ''
-          set -euo pipefail
+          set -uo pipefail
           MUSIC="${cfg.musicDir}"
           APPLE_MUSIC="${cfg.appleMusicDir}"
           FFMPEG="${pkgs.ffmpeg}/bin/ffmpeg"
+          REALPATH="${pkgs.coreutils}/bin/realpath"
 
           echo "=== music-alac-sync: $(date) ==="
 
@@ -54,8 +55,9 @@ in
           echo "Forward sync: converting new audio files to ALAC..."
           converted=0
           copied=0
-          while IFS= read -r src; do
-            rel="''${src#$MUSIC/}"
+          errors=0
+          while IFS= read -r -d "" src; do
+            rel=$($REALPATH --relative-to="$MUSIC" "$src")
             dest_dir="$APPLE_MUSIC/$(dirname "$rel")"
             base="$(basename "$rel")"
             stem="''${base%.*}"
@@ -72,23 +74,28 @@ in
             mkdir -p "$dest_dir"
             if is_audio "$ext"; then
               echo "  Converting: $rel"
-              $FFMPEG -i "$src" -c:a alac -c:v copy -map_metadata 0 "$dest" -y -loglevel error
-              converted=$((converted + 1))
+              if ! $FFMPEG -i "$src" -c:a alac -c:v copy -map_metadata 0 "$dest" -y -loglevel error 2>&1; then
+                echo "  ERROR: failed to convert $rel"
+                rm -f "$dest"
+                errors=$((errors + 1))
+              else
+                converted=$((converted + 1))
+              fi
             else
               echo "  Copying: $rel"
               cp "$src" "$dest"
               copied=$((copied + 1))
             fi
-          done < <(find "$MUSIC" -type f | sort)
-          echo "  Converted $converted audio file(s), copied $copied other file(s)."
+          done < <(find "$MUSIC" -type f -print0)
+          echo "  Converted $converted audio file(s), copied $copied other file(s), $errors error(s)."
 
           # 2. Reverse sync: remove files from AppleMusic whose source no longer exists.
           #    For .m4a files, check for any audio source extension with the same stem.
           #    For all other files, check for the exact same relative path.
           echo "Reverse sync: removing orphaned files from AppleMusic..."
           removed=0
-          while IFS= read -r dest; do
-            rel="''${dest#$APPLE_MUSIC/}"
+          while IFS= read -r -d "" dest; do
+            rel=$($REALPATH --relative-to="$APPLE_MUSIC" "$dest")
             dir="$(dirname "$rel")"
             base="$(basename "$rel")"
             stem="''${base%.*}"
@@ -111,7 +118,7 @@ in
               rm "$dest"
               removed=$((removed + 1))
             fi
-          done < <(find "$APPLE_MUSIC" -type f | sort)
+          done < <(find "$APPLE_MUSIC" -type f -print0)
 
           # Clean up directories that became empty after removals
           find "$APPLE_MUSIC" -mindepth 1 -type d -empty -delete 2>/dev/null || true
