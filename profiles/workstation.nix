@@ -2,7 +2,7 @@
 # Shared desktop applications and development tools for all workstations
 # Imported by server.nix and individual workstation hosts
 
-{ config, pkgs, lib, nixpkgs-unstable, ... }:
+{ config, pkgs, lib, nixpkgs-unstable, iopenpod-flake, ... }:
 
 {
   # Import the base desktop profile for KDE and core desktop functionality
@@ -10,11 +10,13 @@
     ./desktop.nix
   ];
 
-  # Use rpi-imager from unstable to fix build issue
   nixpkgs.overlays = [
+    # Use rpi-imager from unstable to fix build issue
     (final: prev: {
       rpi-imager = nixpkgs-unstable.legacyPackages.${prev.system}.rpi-imager;
     })
+    # iOpenPod — third-party flake, packaged separately at TristonYoder/iopenpod-flake
+    iopenpod-flake.overlays.default
   ];
 
   # =============================================================================
@@ -60,6 +62,9 @@
     # AI
     ollama
     cherry-studio
+
+    # iPod management (packaged via TristonYoder/iopenpod-flake)
+    iopenpod
   ];
   
   # =============================================================================

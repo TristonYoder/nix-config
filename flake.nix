@@ -39,9 +39,12 @@
     
     # Flake utilities
     flake-utils.url = "github:numtide/flake-utils";
+
+    # External app flakes
+    iopenpod-flake.url = "github:TristonYoder/iopenpod-flake";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, flake-utils, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, flake-utils, iopenpod-flake, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -141,10 +144,10 @@
           ];
           
           specialArgs = {
-            inherit nixpkgs nixpkgs-unstable nix-bitcoin;
+            inherit nixpkgs nixpkgs-unstable nix-bitcoin iopenpod-flake;
           };
         };
-        
+
         # -----------------------------------------------------------------------------
         # tristons-desk - Desktop Workstation (x86_64-linux)
         # -----------------------------------------------------------------------------
@@ -181,10 +184,10 @@
           ];
           
           specialArgs = {
-            inherit nixpkgs nixpkgs-unstable;
+            inherit nixpkgs nixpkgs-unstable iopenpod-flake;
           };
         };
-        
+
         # -----------------------------------------------------------------------------
         # tristons-nixbook - NixOS Laptop (x86_64-linux)
         # -----------------------------------------------------------------------------
@@ -221,7 +224,7 @@
           ];
 
           specialArgs = {
-            inherit nixpkgs nixpkgs-unstable;
+            inherit nixpkgs nixpkgs-unstable iopenpod-flake;
           };
         };
 
@@ -251,7 +254,7 @@
           ];
 
           specialArgs = {
-            inherit nixpkgs nixpkgs-unstable;
+            inherit nixpkgs nixpkgs-unstable iopenpod-flake;
           };
         };
 
