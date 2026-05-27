@@ -77,12 +77,57 @@ in
             mkdir -p "$dest_dir"
             if is_audio "$ext"; then
               echo "  Converting: $rel"
-              if ! $FFMPEG -i "$src" -c:a alac -c:v copy -map_metadata 0 "$dest" -y -loglevel error 2>&1; then
-                echo "  ERROR: failed to convert $rel"
-                rm -f "$dest"
-                errors=$((errors + 1))
+
+              # Check whether the source already has an embedded image stream
+              src_has_cover=0
+              if ${pkgs.ffmpeg}/bin/ffprobe -i "$src" -show_streams -select_streams v \
+                  -loglevel error 2>/dev/null | grep -q "codec_type=video"; then
+                src_has_cover=1
+              fi
+
+              # If no embedded art, look for a cover image file alongside the source
+              cover_file=""
+              if [ "$src_has_cover" = "0" ]; then
+                for cover_name in cover.jpg cover.png folder.jpg folder.png; do
+                  if [ -f "$(dirname "$src")/$cover_name" ]; then
+                    cover_file="$(dirname "$src")/$cover_name"
+                    break
+                  fi
+                done
+              fi
+
+              # -map 0         — include all streams from source (audio + embedded art)
+              # -map_metadata 0 — copy all metadata tags (title, artist, album, year, genre, lyrics, ISRC…)
+              # -map_chapters 0 — copy chapter markers (useful for audiobooks)
+              # -c:a alac      — convert audio to Apple Lossless
+              # -c:v copy      — copy embedded image stream without re-encoding
+              if [ -n "$cover_file" ]; then
+                # Source has no embedded art but a cover file exists — inject it
+                if ! $FFMPEG -i "$src" -i "$cover_file" \
+                    -map 0:a -map 1:v \
+                    -map_metadata 0 -map_chapters 0 \
+                    -c:a alac -c:v mjpeg \
+                    -metadata:s:v:0 title="Album cover" \
+                    -metadata:s:v:0 comment="Cover (front)" \
+                    "$dest" -y -loglevel error 2>&1; then
+                  echo "  ERROR: failed to convert $rel"
+                  rm -f "$dest"
+                  errors=$((errors + 1))
+                else
+                  converted=$((converted + 1))
+                fi
               else
-                converted=$((converted + 1))
+                if ! $FFMPEG -i "$src" \
+                    -map 0 \
+                    -map_metadata 0 -map_chapters 0 \
+                    -c:a alac -c:v copy \
+                    "$dest" -y -loglevel error 2>&1; then
+                  echo "  ERROR: failed to convert $rel"
+                  rm -f "$dest"
+                  errors=$((errors + 1))
+                else
+                  converted=$((converted + 1))
+                fi
               fi
             else
               echo "  Copying: $rel"
