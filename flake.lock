@@ -226,11 +226,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1779913133,
-        "narHash": "sha256-I1f+TZgbfuxt/fOfijTwfJ7fCTVSHImLnqtiK1RTQxA=",
+        "lastModified": 1779913419,
+        "narHash": "sha256-/eN6IR9m0umwdP298JJzHSbWeuWlqGJHH0/fQHngYbM=",
         "owner": "TristonYoder",
         "repo": "iopenpod-flake",
-        "rev": "b4802a0f3b7eb4621719bad9a719f2f10d5aee33",
+        "rev": "c6d2ded67b8df2c7be098f86ff8cd19bf09abc1c",
         "type": "github"
       },
       "original": {
