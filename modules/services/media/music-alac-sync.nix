@@ -57,7 +57,8 @@ in
           copied=0
           errors=0
           cd "$MUSIC"
-          while IFS= read -r -d "" rel; do
+          # fd 3 carries the find stream so ffmpeg/cp don't consume stdin and corrupt the path stream
+          while IFS= read -r -d "" rel <&3; do
             rel="''${rel#./}"
             src="$MUSIC/$rel"
             dest_dir="$APPLE_MUSIC/$(dirname "$rel")"
@@ -88,7 +89,7 @@ in
               cp "$src" "$dest"
               copied=$((copied + 1))
             fi
-          done < <(find . -type f -print0)
+          done 3< <(find . -type f -print0)
           echo "  Converted $converted audio file(s), copied $copied other file(s), $errors error(s)."
 
           # 2. Reverse sync: remove files from AppleMusic whose source no longer exists.
@@ -97,7 +98,7 @@ in
           echo "Reverse sync: removing orphaned files from AppleMusic..."
           removed=0
           cd "$APPLE_MUSIC"
-          while IFS= read -r -d "" rel; do
+          while IFS= read -r -d "" rel <&3; do
             rel="''${rel#./}"
             dest="$APPLE_MUSIC/$rel"
             dir="$(dirname "$rel")"
@@ -122,7 +123,7 @@ in
               rm "$dest"
               removed=$((removed + 1))
             fi
-          done < <(find . -type f -print0)
+          done 3< <(find . -type f -print0)
 
           # Clean up directories that became empty after removals
           find "$APPLE_MUSIC" -mindepth 1 -type d -empty -delete 2>/dev/null || true
