@@ -24,18 +24,21 @@ in
   config = mkIf cfg.enable (mkMerge [
     # ── disabled ────────────────────────────────────────────────────────────
     (mkIf (cfg.mode == "disabled") {
-      systemd.sleep.settings.Sleep = {
-        AllowSuspend = false;
-        AllowHibernation = false;
-        AllowSuspendThenHibernate = false;
-        AllowHybridSleep = false;
-      };
+      systemd.sleep.extraConfig = ''
+        [Sleep]
+        AllowSuspend=no
+        AllowHibernation=no
+        AllowSuspendThenHibernate=no
+        AllowHybridSleep=no
+      '';
 
-      services.logind.settings.Login = {
-        HandleLidSwitch = "lock";
-        HandleLidSwitchExternalPower = "lock";
-        HandleSuspendKey = "lock";
-        HandleHibernateKey = "ignore";
+      services.logind = {
+        lidSwitch = "lock";
+        lidSwitchExternalPower = "lock";
+        extraConfig = ''
+          HandleSuspendKey=lock
+          HandleHibernateKey=ignore
+        '';
       };
     })
 
@@ -71,18 +74,21 @@ in
       };
 
       # Suspend works (with the service above); hibernate and hybrid-sleep do not.
-      systemd.sleep.settings.Sleep = {
-        AllowSuspend = true;
-        AllowHibernation = false;
-        AllowSuspendThenHibernate = false;
-        AllowHybridSleep = false;
-      };
+      systemd.sleep.extraConfig = ''
+        [Sleep]
+        AllowSuspend=yes
+        AllowHibernation=no
+        AllowSuspendThenHibernate=no
+        AllowHybridSleep=no
+      '';
 
-      services.logind.settings.Login = {
-        HandleLidSwitch = "suspend";
-        HandleLidSwitchExternalPower = "suspend";
-        HandleSuspendKey = "suspend";
-        HandleHibernateKey = "ignore";
+      services.logind = {
+        lidSwitch = "suspend";
+        lidSwitchExternalPower = "suspend";
+        extraConfig = ''
+          HandleSuspendKey=suspend
+          HandleHibernateKey=ignore
+        '';
       };
     })
   ]);
