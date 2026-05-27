@@ -37,7 +37,6 @@ in
           MUSIC="${cfg.musicDir}"
           APPLE_MUSIC="${cfg.appleMusicDir}"
           FFMPEG="${pkgs.ffmpeg}/bin/ffmpeg"
-          REALPATH="${pkgs.coreutils}/bin/realpath"
 
           echo "=== music-alac-sync: $(date) ==="
 
@@ -52,12 +51,15 @@ in
           # 1. Forward sync: for each file in Music, ensure AppleMusic is up to date.
           #    Audio files are converted to ALAC .m4a; all other files are copied as-is.
           #    Files whose destination already exists are skipped (no re-encoding).
+          #    Run find from within $MUSIC so paths are always relative — no stripping needed.
           echo "Forward sync: converting new audio files to ALAC..."
           converted=0
           copied=0
           errors=0
-          while IFS= read -r -d "" src; do
-            rel=$($REALPATH --relative-to="$MUSIC" "$src")
+          cd "$MUSIC"
+          while IFS= read -r -d "" rel; do
+            rel="''${rel#./}"
+            src="$MUSIC/$rel"
             dest_dir="$APPLE_MUSIC/$(dirname "$rel")"
             base="$(basename "$rel")"
             stem="''${base%.*}"
@@ -86,7 +88,7 @@ in
               cp "$src" "$dest"
               copied=$((copied + 1))
             fi
-          done < <(find "$MUSIC" -type f -print0)
+          done < <(find . -type f -print0)
           echo "  Converted $converted audio file(s), copied $copied other file(s), $errors error(s)."
 
           # 2. Reverse sync: remove files from AppleMusic whose source no longer exists.
@@ -94,8 +96,10 @@ in
           #    For all other files, check for the exact same relative path.
           echo "Reverse sync: removing orphaned files from AppleMusic..."
           removed=0
-          while IFS= read -r -d "" dest; do
-            rel=$($REALPATH --relative-to="$APPLE_MUSIC" "$dest")
+          cd "$APPLE_MUSIC"
+          while IFS= read -r -d "" rel; do
+            rel="''${rel#./}"
+            dest="$APPLE_MUSIC/$rel"
             dir="$(dirname "$rel")"
             base="$(basename "$rel")"
             stem="''${base%.*}"
@@ -118,7 +122,7 @@ in
               rm "$dest"
               removed=$((removed + 1))
             fi
-          done < <(find "$APPLE_MUSIC" -type f -print0)
+          done < <(find . -type f -print0)
 
           # Clean up directories that became empty after removals
           find "$APPLE_MUSIC" -mindepth 1 -type d -empty -delete 2>/dev/null || true
