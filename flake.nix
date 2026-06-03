@@ -39,9 +39,12 @@
     
     # Flake utilities
     flake-utils.url = "github:numtide/flake-utils";
+
+    # Campus Stage Displays
+    stage-display.url = "github:TristonYoder/stage-display-content";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, flake-utils, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, flake-utils, stage-display, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -119,6 +122,7 @@
             ./docker/websites/studio.7andco.nix
             
             # Productivity services
+            stage-display.nixosModules.default
             ./docker/productivity/affine.nix
             ./docker/productivity/homarr.nix
             # ./docker/productivity/outline.nix
