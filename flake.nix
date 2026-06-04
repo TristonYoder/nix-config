@@ -41,7 +41,7 @@
     flake-utils.url = "github:numtide/flake-utils";
 
     # Campus Stage Displays
-    stage-display.url = "github:TristonYoder/stage-display-content";
+    stage-display.url = "github:TristonYoder/multi-campus-stage-display";
   };
 
   outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, flake-utils, stage-display, ... }:
