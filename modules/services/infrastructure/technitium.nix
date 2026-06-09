@@ -68,6 +68,25 @@ in
       BindPaths = lib.mkForce "";
       WorkingDirectory = lib.mkForce "";
     };
+
+    # Prune Technitium logs (>7 days) and stats (>30 days) daily.
+    # Without retention these grow to gigabytes — observed 9GB of logs on pits.
+    systemd.services.technitium-prune = {
+      description = "Prune old Technitium DNS logs and stats";
+      serviceConfig.Type = "oneshot";
+      script = ''
+        find /var/lib/private/technitium-dns-server/logs -name '*.log' -mtime +7 -delete || true
+        find /var/lib/private/technitium-dns-server/stats -name '*.stat' -mtime +30 -delete || true
+      '';
+    };
+
+    systemd.timers.technitium-prune = {
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = "daily";
+        Persistent = true;
+      };
+    };
   };
 }
 

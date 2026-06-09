@@ -122,6 +122,23 @@
     options = lib.mkDefault "--delete-older-than 3d";
   };
 
+  # Prune unused Docker images daily (keeps disk free on space-constrained VPS)
+  systemd.services.docker-prune = {
+    description = "Prune unused Docker images";
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.docker}/bin/docker image prune -a -f";
+    };
+  };
+
+  systemd.timers.docker-prune = {
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "daily";
+      Persistent = true;
+    };
+  };
+
   # Auto-trigger GC when free space drops below 5GB; free up to 10GB at a time
   nix.settings.min-free = lib.mkDefault (5 * 1024 * 1024 * 1024);
   nix.settings.max-free = lib.mkDefault (10 * 1024 * 1024 * 1024);
