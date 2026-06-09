@@ -136,7 +136,7 @@ jobs:
           - name: david
             hostname: david
           - name: pits
-            hostname: pits
+            hostname: david  # dry-run builds on david to avoid filling pits' 50GB disk
           - name: tristons-nixbook-pro
             hostname: david  # dry-run builds on david (same x86_64-linux arch)
           - name: tristons-nixbook
