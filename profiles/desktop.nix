@@ -35,6 +35,30 @@
 
   environment.systemPackages = [ pkgs.feishin pkgs.nmap ];
 
+  # =============================================================================
+  # BOOT SPLASH (desktop only - servers/edge are headless)
+  # =============================================================================
+
+  modules.hardware.displayResolution.enable = lib.mkDefault true;
+
+  boot.plymouth = {
+    enable = true;
+    theme = "colorful";
+    themePackages = with pkgs; [
+      (adi1090x-plymouth-themes.override {
+        selected_themes = [ "colorful" ];
+      })
+    ];
+    extraConfig = ''
+      [Daemon]
+      Theme=colorful
+      ShowDelay=0
+      DeviceTimeout=5
+    '';
+  };
+
+  boot.kernelParams = [ "splash" ];
+
   # All other services disabled by default
   # Individual desktops can enable specific services in their host config
 }
