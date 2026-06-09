@@ -23,22 +23,9 @@ in
 
   config = mkIf cfg.enable (mkMerge [
     # ── disabled ────────────────────────────────────────────────────────────
+    # Note: logind and sleep settings are set in the host config, not here,
+    # because the option shape differs between nixpkgs stable and unstable.
     (mkIf (cfg.mode == "disabled") {
-      systemd.sleep.settings.Sleep = {
-        AllowSuspend = false;
-        AllowHibernation = false;
-        AllowSuspendThenHibernate = false;
-        AllowHybridSleep = false;
-      };
-
-      services.logind = {
-        lidSwitch = "lock";
-        lidSwitchExternalPower = "lock";
-        settings.Login = {
-          HandleSuspendKey = "lock";
-          HandleHibernateKey = "ignore";
-        };
-      };
     })
 
     # ── workaround ───────────────────────────────────────────────────────────
@@ -73,21 +60,8 @@ in
       };
 
       # Suspend works (with the service above); hibernate and hybrid-sleep do not.
-      systemd.sleep.settings.Sleep = {
-        AllowSuspend = true;
-        AllowHibernation = false;
-        AllowSuspendThenHibernate = false;
-        AllowHybridSleep = false;
-      };
-
-      services.logind = {
-        lidSwitch = "suspend";
-        lidSwitchExternalPower = "suspend";
-        settings.Login = {
-          HandleSuspendKey = "suspend";
-          HandleHibernateKey = "ignore";
-        };
-      };
+      # Note: logind and sleep settings live in the host config — see comment
+      # on the disabled branch above.
     })
   ]);
 }

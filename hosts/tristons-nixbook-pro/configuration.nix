@@ -96,6 +96,25 @@
     mode = "workaround";
   };
 
+  # logind/sleep settings for t2Suspend workaround mode.
+  # Kept here (not in the module) because settings.* only exists in nixpkgs-unstable;
+  # referencing it in a shared module breaks all stable-nixpkgs hosts at eval time.
+  systemd.sleep.settings.Sleep = {
+    AllowSuspend = true;
+    AllowHibernation = false;
+    AllowSuspendThenHibernate = false;
+    AllowHybridSleep = false;
+  };
+
+  services.logind = {
+    lidSwitch = "suspend";
+    lidSwitchExternalPower = "suspend";
+    settings.Login = {
+      HandleSuspendKey = "suspend";
+      HandleHibernateKey = "ignore";
+    };
+  };
+
   # ===========================================================================
   # PACKAGES
   # ===========================================================================
