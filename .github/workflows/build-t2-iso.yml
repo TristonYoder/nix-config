@@ -47,7 +47,10 @@ jobs:
             extra-substituters = ${{ env.SOOPY_CACHE }}
             extra-trusted-public-keys = ${{ env.SOOPY_KEY }}
 
-      - uses: DeterminateSystems/magic-nix-cache-action@v8
+      # magic-nix-cache-action is intentionally omitted: it proxies all NAR
+      # downloads through the GH Actions Cache API, which hits rate limits
+      # (HTTP 418 / ResourceExhausted) during large ISO builds and aborts
+      # mid-download. soopy.moe + cache.nixos.org handle substitution directly.
 
       - name: Build minimal ISO
         run: |
@@ -98,7 +101,7 @@ jobs:
             extra-substituters = ${{ env.SOOPY_CACHE }}
             extra-trusted-public-keys = ${{ env.SOOPY_KEY }}
 
-      - uses: DeterminateSystems/magic-nix-cache-action@v8
+      # magic-nix-cache-action omitted — see build-minimal comment.
 
       - name: Build Plasma ISO
         run: |
