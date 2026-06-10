@@ -231,7 +231,10 @@
         # -----------------------------------------------------------------------------
         # tristons-nixbook-pro - NixOS on T2 MacBook Pro 16,1 (dual boot, x86_64-linux)
         # -----------------------------------------------------------------------------
-        tristons-nixbook-pro = nixpkgs.lib.nixosSystem {
+        # Uses nixpkgs-unstable: nixos-hardware T2 patches and soopy.moe cache
+        # target unstable. Stable (25.05) has kernel 6.12.63 which the patches
+        # don't apply to and soopy.moe doesn't pre-build.
+        tristons-nixbook-pro = nixpkgs-unstable.lib.nixosSystem {
           system = "x86_64-linux";
 
           modules = [
