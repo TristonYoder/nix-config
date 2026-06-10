@@ -21,5 +21,5 @@
     ./installer-common.nix
   ];
 
-  isoImage.isoName = lib.mkForce "nixos-t2-macbookpro16.iso";
+  image.fileName = lib.mkForce "nixos-t2-macbookpro16.iso";
 }
