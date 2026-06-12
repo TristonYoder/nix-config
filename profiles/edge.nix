@@ -88,8 +88,9 @@
   # Well-known delegation for federation (Matrix, Pixelfed, etc.)
   modules.services.communication.wellknown.enable = lib.mkDefault true;
   
-  # Postal Mail Server (SMTP relay on edge servers with public IP)
-  modules.services.communication.postal.enable = lib.mkDefault true;
+  # Postal Mail Server - NOT enabled by default in edge profile.
+  # Enable explicitly in host config for hosts that need it (requires public IP for port 25).
+  # modules.services.communication.postal.enable = lib.mkDefault true;
   
   # =============================================================================
   # STORAGE (Optional)
@@ -114,13 +115,24 @@
     RuntimeMaxUse=50M
   '';
   
-  # Enable automatic garbage collection more aggressively
+  # Aggressive GC for space-constrained VPS (keep only last 3 days of generations)
   nix.gc = {
     automatic = lib.mkDefault true;
     dates = lib.mkDefault "daily";
-    options = lib.mkDefault "--delete-older-than 7d";
+    options = lib.mkDefault "--delete-older-than 3d";
   };
-  
+
+  # Prune unused Docker images daily (keeps disk free on space-constrained VPS)
+  virtualisation.docker.autoPrune = {
+    enable = lib.mkDefault true;
+    dates = lib.mkDefault "daily";
+    flags = lib.mkDefault [ "--all" ];  # includes unused images, not just dangling
+  };
+
+  # Auto-trigger GC when free space drops below 5GB; free up to 10GB at a time
+  nix.settings.min-free = lib.mkDefault (5 * 1024 * 1024 * 1024);
+  nix.settings.max-free = lib.mkDefault (10 * 1024 * 1024 * 1024);
+
   # Optimize nix store
   nix.settings.auto-optimise-store = lib.mkDefault true;
 

@@ -143,6 +143,9 @@
     reverseProxyPort = 8081;
   };
   
+  # Postal Mail Server - runs on pits (needs public IP for port 25 SMTP)
+  modules.services.communication.postal.enable = true;
+
   # Postal Mail Server Web UI - Local service on PITS
   # Uses Cloudflare DNS-01 challenge for automatic HTTPS
   modules.services.vHosts.hosts."postal.7andco.dev" = {

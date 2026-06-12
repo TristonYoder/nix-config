@@ -23,6 +23,19 @@
 
   hardware.apple.touchBar.settings.MediaLayerDefault = true;
 
+  # Intel UHD 630 VA-API support.
+  hardware.graphics = {
+    extraPackages = with pkgs; [ intel-media-driver ];
+    extraPackages32 = with pkgs.pkgsi686Linux; [ intel-media-driver ];
+  };
+
+  # steamwebhelper (CEF) crashes on NixOS because pressure-vessel's ldconfig
+  # can't detect host library architecture and fails to overlay the 32-bit Mesa
+  # GBM driver into the container. Disabling browser HW acceleration in
+  # steamwebhelper avoids the GPU init path that hits the CHECK(false) crash.
+  # Games are unaffected — only Steam's own UI uses software rendering.
+  environment.sessionVariables.STEAM_DISABLE_BROWSER_HARDWARE_ACCELERATION = "1";
+
   # systemd-boot on the shared EFI partition with macOS
   modules.hardware.boot.enable = true;
 
@@ -72,6 +85,35 @@
       "timeo=50"
       "retrans=3"
     ];
+  };
+
+  # ===========================================================================
+  # POWER MANAGEMENT
+  # ===========================================================================
+
+  modules.hardware.t2Suspend = {
+    enable = true;
+    mode = "workaround";
+  };
+
+  # logind/sleep settings for t2Suspend workaround mode.
+  # Kept here (not in the module) to avoid the shared module referencing
+  # version-sensitive option paths.
+  systemd.sleep.extraConfig = ''
+    [Sleep]
+    AllowSuspend=yes
+    AllowHibernation=no
+    AllowSuspendThenHibernate=no
+    AllowHybridSleep=no
+  '';
+
+  services.logind = {
+    lidSwitch = "suspend";
+    lidSwitchExternalPower = "suspend";
+    extraConfig = ''
+      HandleSuspendKey=suspend
+      HandleHibernateKey=ignore
+    '';
   };
 
   # ===========================================================================

@@ -2,7 +2,7 @@
 # Shared desktop applications and development tools for all workstations
 # Imported by server.nix and individual workstation hosts
 
-{ config, pkgs, lib, nixpkgs-unstable, ... }:
+{ config, pkgs, lib, nixpkgs-unstable, iopenpod-flake, ... }:
 
 {
   # Import the base desktop profile for KDE and core desktop functionality
@@ -10,11 +10,13 @@
     ./desktop.nix
   ];
 
-  # Use rpi-imager from unstable to fix build issue
   nixpkgs.overlays = [
+    # Use rpi-imager from unstable to fix build issue
     (final: prev: {
       rpi-imager = nixpkgs-unstable.legacyPackages.${prev.system}.rpi-imager;
     })
+    # iOpenPod — third-party flake, packaged separately at TristonYoder/iopenpod-flake
+    iopenpod-flake.overlays.default
   ];
 
   # =============================================================================
@@ -24,7 +26,9 @@
   environment.systemPackages = with pkgs; [
     # Web browsers
     firefox
-    
+    kdePackages.plasma-browser-integration
+    kdePackages.discover
+
     # Media players
     vlc
     
@@ -47,6 +51,10 @@
     
     # Communication
     element-desktop
+    bluebubbles
+
+    # Video Editing
+    davinci-resolve
 
     # Notes & Knowledge Management
     obsidian
@@ -54,8 +62,23 @@
     # AI
     ollama
     cherry-studio
+
+    # iPod management (packaged via TristonYoder/iopenpod-flake)
+    iopenpod
   ];
   
+  # =============================================================================
+  # FLATPAK
+  # =============================================================================
+
+  services.flatpak.enable = true;
+
+  system.activationScripts.flatpak-flathub = lib.mkIf config.services.flatpak.enable (
+    lib.stringAfter [ "var" ] ''
+      ${pkgs.flatpak}/bin/flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
+    ''
+  );
+
   # =============================================================================
   # GAMING
   # =============================================================================

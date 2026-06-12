@@ -176,6 +176,10 @@ jobs:
           # Keep only last 10 backups
           sudo find /var/backups/nixos -maxdepth 1 -type d -name "flake_config_*" | sort | head -n -10 | xargs -r sudo rm -rf
           
+          # Free space before deployment to avoid disk exhaustion
+          sudo nix-collect-garbage --delete-older-than 3d || true
+          sudo nix store optimise || true
+
           # Final test before deployment using flake
           echo "Running final configuration test for ${{ matrix.host }}..."
           if ! sudo nixos-rebuild dry-run --flake .#${{ matrix.host }}; then

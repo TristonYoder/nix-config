@@ -40,11 +40,14 @@
     # Flake utilities
     flake-utils.url = "github:numtide/flake-utils";
 
+    # External app flakes
+    iopenpod-flake.url = "github:TristonYoder/iopenpod-flake";
+
     # Campus Stage Displays
     stage-display.url = "github:TristonYoder/multi-campus-stage-display";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, flake-utils, stage-display, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, flake-utils, iopenpod-flake, stage-display, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -145,10 +148,10 @@
           ];
           
           specialArgs = {
-            inherit nixpkgs nixpkgs-unstable nix-bitcoin;
+            inherit nixpkgs nixpkgs-unstable nix-bitcoin iopenpod-flake;
           };
         };
-        
+
         # -----------------------------------------------------------------------------
         # tristons-desk - Desktop Workstation (x86_64-linux)
         # -----------------------------------------------------------------------------
@@ -185,10 +188,10 @@
           ];
           
           specialArgs = {
-            inherit nixpkgs nixpkgs-unstable;
+            inherit nixpkgs nixpkgs-unstable iopenpod-flake;
           };
         };
-        
+
         # -----------------------------------------------------------------------------
         # tristons-nixbook - NixOS Laptop (x86_64-linux)
         # -----------------------------------------------------------------------------
@@ -225,14 +228,14 @@
           ];
 
           specialArgs = {
-            inherit nixpkgs nixpkgs-unstable;
+            inherit nixpkgs nixpkgs-unstable iopenpod-flake;
           };
         };
 
         # -----------------------------------------------------------------------------
         # tristons-nixbook-pro - NixOS on T2 MacBook Pro 16,1 (dual boot, x86_64-linux)
         # -----------------------------------------------------------------------------
-        tristons-nixbook-pro = nixpkgs-unstable.lib.nixosSystem {
+        tristons-nixbook-pro = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
 
           modules = [
@@ -245,7 +248,7 @@
             ./modules
             nixos-vscode-server.nixosModules.default
             agenix.nixosModules.default
-            home-manager-unstable.nixosModules.home-manager
+            home-manager.nixosModules.home-manager
             {
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
@@ -255,7 +258,7 @@
           ];
 
           specialArgs = {
-            inherit nixpkgs nixpkgs-unstable;
+            inherit nixpkgs nixpkgs-unstable iopenpod-flake;
           };
         };
 
