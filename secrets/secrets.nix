@@ -110,6 +110,10 @@ in
   # Pocket ID Encryption Key
   "pocket-id-encryption-key.age".publicKeys = davidKeys;
 
+  # Caddy SSO via Pocket ID (caddy-security)
+  "caddy-sso-client-secret.age".publicKeys = davidKeys;
+  "caddy-sso-jwt-secret.age".publicKeys = davidKeys;
+
   # Tidarr OIDC Client Secret (Pocket ID)
   "tidarr-oidc-secret.age".publicKeys = davidKeys;
 

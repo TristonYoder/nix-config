@@ -52,6 +52,18 @@
   # dns-sync: use local Technitium directly (avoids Caddy loopback for the API)
   modules.services.vHosts.technitium.url = "http://localhost:5380";
 
+  # =============================================================================
+  # SSO: Pocket ID via caddy-security
+  # =============================================================================
+
+  modules.services.vHosts.sso = {
+    enable = true;
+    portalDomain = "auth.${config.networking.domain}";
+    clientId = "d194f6bf-22c4-4228-898e-e5539bf92535";
+    clientSecretFile = config.age.secrets.caddy-sso-client-secret.path;
+    jwtSecretFile = config.age.secrets.caddy-sso-jwt-secret.path;
+  };
+
   # Navidrome - Music streaming server (Subsonic-compatible)
   modules.services.media.navidrome.enable = true;
 
