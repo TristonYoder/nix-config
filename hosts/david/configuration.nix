@@ -150,6 +150,9 @@
     ];
   };
 
+  # Local binary cache — /data/nix-builds/cache is on david's own disk.
+  modules.system.nixCache.enable = true;
+
   # =============================================================================
   # ADDITIONAL SERVICES
   # =============================================================================
