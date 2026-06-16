@@ -41,6 +41,56 @@
   modules.system.users.useDataDrive = true;
 
   # =============================================================================
+  # NETWORKING — pin enp7s0 (10.150.100.x) as the default route
+  # =============================================================================
+
+  # Dual-NIC host: enp7s0 carries 10.150.100.x (the fast fiber path to david),
+  # eno1 carries 10.150.10.x. Both currently get DHCP-assigned route metrics
+  # that happen to favor enp7s0 (100 vs 101), but that's incidental, not
+  # declared -- a DHCP server change could silently flip default-route
+  # priority. This module is desktop-profile-wide (NetworkManager), which
+  # doesn't read the low-level networking.interfaces.* options, so pin the
+  # metric the way NetworkManager actually respects: a real connection
+  # profile file. environment.etc can't be used here -- NixOS's /etc entries
+  # are symlinks into /nix/store, and NetworkManager's keyfile plugin refuses
+  # to load symlinked connection files. systemd-tmpfiles' "C+" (force-copy)
+  # writes a real regular file instead, re-applied on every boot.
+  systemd.tmpfiles.rules =
+    let
+      mkConnection = { id, uuid, iface, metric }: pkgs.writeText "${id}.nmconnection" ''
+        [connection]
+        id=${id}
+        uuid=${uuid}
+        type=ethernet
+        interface-name=${iface}
+
+        [ipv4]
+        method=auto
+        route-metric=${toString metric}
+
+        [ipv6]
+        method=auto
+        addr-gen-mode=default
+      '';
+      enp7s0Conn = mkConnection {
+        id = "enp7s0-primary";
+        uuid = "8f3a1e2c-1b4d-4f6a-9c8e-1a2b3c4d5e6f";
+        iface = "enp7s0";
+        metric = 100;
+      };
+      eno1Conn = mkConnection {
+        id = "eno1-secondary";
+        uuid = "2b6c4d8e-3f5a-4b7c-9d1e-6f7a8b9c0d1e";
+        iface = "eno1";
+        metric = 200;
+      };
+    in
+    [
+      "C+ /etc/NetworkManager/system-connections/enp7s0-primary.nmconnection 0600 root root - ${enp7s0Conn}"
+      "C+ /etc/NetworkManager/system-connections/eno1-secondary.nmconnection 0600 root root - ${eno1Conn}"
+    ];
+
+  # =============================================================================
   # HARDWARE
   # =============================================================================
 
