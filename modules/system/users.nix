@@ -34,6 +34,26 @@ in
         description = "Main user account name";
       };
 
+      uid = mkOption {
+        type = types.int;
+        default = 1000;
+        description = ''
+          Fixed UID, pinned so it's identical on every host. Without this,
+          NixOS auto-assigns UIDs in user-creation order, which can silently
+          diverge per host (confirmed: tristons-workstation assigned 1001
+          while every other host has 1000) and breaks NFS (sec=sys checks
+          raw numeric UID, not username — a mismatch causes "permission
+          denied" reading a perfectly valid, correctly-owned directory).
+
+          Only affects NEW accounts: NixOS's user activation refuses to
+          change the UID of an account that already exists (logs a
+          "not applying UID change" warning instead). A host whose UID has
+          already drifted needs a one-time manual fix before rebuilding:
+          `sudo usermod -u <uid> <name>` (and chown any locally-owned files
+          if the account has real local data, not just an NFS-backed home).
+        '';
+      };
+
       description = mkOption {
         type = types.str;
         default = "Triston Yoder";
@@ -80,6 +100,7 @@ in
 
     users.users.${cfg.mainUser.name} = {
       isNormalUser = true;
+      uid = cfg.mainUser.uid;
       description = cfg.mainUser.description;
       extraGroups = cfg.mainUser.extraGroups;
       packages = cfg.mainUser.packages;
@@ -88,8 +109,10 @@ in
     };
 
     # Caroline Yoder user account (only on hosts with data drive)
+    # uid pinned to match david (1002) for the same NFS reason as mainUser.uid above.
     users.users.carolineyoder = mkIf cfg.useDataDrive {
       isNormalUser = true;
+      uid = 1002;
       description = "Caroline Yoder";
       extraGroups = [ "nextcloud" ];
       packages = with pkgs; [
