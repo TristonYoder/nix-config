@@ -78,11 +78,6 @@ in
 
     security.pam.services.sudo.sshAgentAuth = cfg.enableSshAgentSudo;
 
-    environment.etc."ssh/authorized_keys.d/${cfg.mainUser.name}" = mkIf cfg.enableSshAgentSudo {
-      text = concatStringsSep "\n" cfg.mainUser.sshKeys + "\n";
-      mode = "0444";
-    };
-
     users.users.${cfg.mainUser.name} = {
       isNormalUser = true;
       description = cfg.mainUser.description;
