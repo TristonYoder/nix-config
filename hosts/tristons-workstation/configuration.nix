@@ -44,6 +44,16 @@
   services.btrfs.autoScrub.enable = true;
 
   # =============================================================================
+  # GAMING — disabled for initial install, re-enable post-install via rebuild
+  # =============================================================================
+
+  # workstation.nix profile defaults this on with every emulator enabled.
+  # First install ran out of RAM building the full closure on a swapless
+  # live installer — trim it here, add back selectively once the base
+  # system is up and has its own swap.
+  modules.services.gaming.enable = false;
+
+  # =============================================================================
   # PACKAGES
   # =============================================================================
 
