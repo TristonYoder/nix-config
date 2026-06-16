@@ -141,7 +141,7 @@ jobs:
             hostname: david  # dry-run builds on david (same x86_64-linux arch)
           - name: tristons-nixbook
             hostname: david  # dry-run builds on david (same x86_64-linux arch)
-          - name: tristons-desk
+          - name: tristons-workstation
             hostname: david  # dry-run builds on david (same x86_64-linux arch)
       fail-fast: false  # Continue testing other hosts even if one fails
     

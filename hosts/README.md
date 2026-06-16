@@ -31,7 +31,7 @@ Per-host NixOS and macOS configurations managed through this flake.
 - **Purpose:** Public-facing reverse proxy optimized for low-resource devices
 - **Documentation:** [pits/README.md](pits/README.md)
 
-#### tristons-desk (Desktop Workstation)
+#### tristons-workstation (Desktop Workstation)
 - **Profile:** [desktop](../profiles/desktop.nix)
 - **Architecture:** x86_64-linux
 - **User:** tristonyoder
@@ -81,7 +81,7 @@ darwin-rebuild switch --flake .
 # NixOS
 sudo nixos-rebuild switch --flake .#david
 sudo nixos-rebuild switch --flake .#pits
-sudo nixos-rebuild switch --flake .#tristons-desk
+sudo nixos-rebuild switch --flake .#tristons-workstation
 sudo nixos-rebuild switch --flake .#tristons-nixbook
 
 # macOS
@@ -359,7 +359,7 @@ the compiled closure to the target host over Tailscale:
 scripts/remote-build.sh tristons-nixbook
 
 # Run a test build without switching on the target
-scripts/remote-build.sh tristons-desk test
+scripts/remote-build.sh tristons-workstation test
 ```
 
 Requirements:
@@ -386,6 +386,6 @@ killall Dock && killall Finder
 
 ---
 
-**Managed Hosts:** 6 (david, pits, tristons-desk, tristons-nixbook, tyoder-mbp, Tristons-MacBook-Pro)
+**Managed Hosts:** 6 (david, pits, tristons-workstation, tristons-nixbook, tyoder-mbp, Tristons-MacBook-Pro)
 **Auto-Deploy:** 4 NixOS hosts via GitHub Actions
 **Platforms:** NixOS (x86_64, aarch64) + macOS (aarch64, x86_64)

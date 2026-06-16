@@ -35,7 +35,7 @@
 |------|------|---------|-------------|---------|
 | **david** | NixOS Server | Server | ✅ | Full infrastructure stack |
 | **pits** | NixOS Edge (Pi) | Edge | ✅ | Public-facing reverse proxy |
-| **tristons-desk** | NixOS Desktop | Desktop | ✅ | Development workstation |
+| **tristons-workstation** | NixOS Desktop | Desktop | ✅ | Development workstation |
 | **tristons-nixbook** | NixOS Laptop | Desktop | ✅ | Laptop workstation |
 | **tyoder-mbp** | macOS (Apple Silicon) | Darwin | ➖ | Triston's TPCC MacBook Pro (work) |
 | **Tristons-MacBook-Pro** | macOS (Intel T2) | Darwin | ➖ | Triston's MacBook Pro |
@@ -496,7 +496,7 @@ git push origin main
 ```nix
 { config, pkgs, lib, ... }:
 {
-  networking.hostName = "tristons-desk";
+  networking.hostName = "tristons-workstation";
   system.stateVersion = "25.05";
   
   imports = [ ../../profiles/desktop.nix ];
@@ -631,7 +631,7 @@ sudo /nix/var/nix/profiles/system/bin/switch-to-configuration switch
 ## Status
 
 ✅ **Multi-host configuration active**
-✅ **5 hosts configured** (david, pits, tristons-desk, tristons-nixbook, tyoder-mbp)
+✅ **5 hosts configured** (david, pits, tristons-workstation, tristons-nixbook, tyoder-mbp)
 ✅ **Automated CI/CD** (GitHub Actions)
 ✅ **40+ custom modules**
 ✅ **Home Manager integrated**

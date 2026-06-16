@@ -77,7 +77,7 @@ jobs:
       id: set-hosts
       run: |
         # Define all available NixOS hosts
-        ALL_HOSTS='["david", "pits"]'  # tristons-desk excluded from auto-deployment
+        ALL_HOSTS='["david", "pits"]'  # tristons-workstation excluded from auto-deployment
         
         if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
           INPUT_HOSTS="${{ github.event.inputs.hosts }}"
@@ -340,7 +340,7 @@ jobs:
           }
 
           build_closure tristons-nixbook
-          build_closure tristons-desk
+          build_closure tristons-workstation
           build_closure tristons-nixbook-pro \
             '--option extra-substituters https://cache.soopy.moe --option extra-trusted-public-keys cache.soopy.moe:MzBsBVPllIlCwL2PVs3BQC3Bfbp9TIgakN1xFUDEm8E='
         EOF

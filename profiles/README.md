@@ -33,7 +33,7 @@ Complete infrastructure stack with all services enabled.
 
 Core system with KDE Plasma and essential development tools.
 
-**Used by:** `tristons-desk` (desktop workstation)
+**Used by:** `tristons-workstation` (desktop workstation)
 
 **Includes:**
 - ✅ Core system modules
@@ -271,4 +271,4 @@ Add to this README with:
 ---
 
 **Available Profiles:** 4 (server, desktop, edge, darwin)  
-**Hosts Using Profiles:** 4 (david, pits, tristons-desk, tyoder-mbp)
+**Hosts Using Profiles:** 4 (david, pits, tristons-workstation, tyoder-mbp)

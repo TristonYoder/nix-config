@@ -52,7 +52,7 @@ Settings shared across all NixOS machines.
 - Git system-wide enablement
 - Sudo configuration
 
-**Used by:** david, tristons-desk, pits (all NixOS hosts)
+**Used by:** david, tristons-workstation, pits (all NixOS hosts)
 
 **Complements:** system.nix with Linux-specific settings
 
@@ -202,7 +202,7 @@ environment.systemPackages = with pkgs; [
 ```
 common/
 ├── system.nix     → Imported by ALL hosts (NixOS & Darwin)
-├── linux.nix      → Imported by NixOS hosts only (david, tristons-desk, pits)
+├── linux.nix      → Imported by NixOS hosts only (david, tristons-workstation, pits)
 └── darwin.nix     → Imported by Darwin hosts only (tyoder-mbp)
 ```
 
@@ -229,5 +229,5 @@ Host Configuration (flake.nix)
 ---
 
 **Configuration Files:** 3 (system, linux, darwin)  
-**Hosts Using These:** All (3 NixOS hosts: david, tristons-desk, pits; 1 Darwin host: tyoder-mbp)
+**Hosts Using These:** All (3 NixOS hosts: david, tristons-workstation, pits; 1 Darwin host: tyoder-mbp)
 

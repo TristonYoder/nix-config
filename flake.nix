@@ -149,9 +149,9 @@
         };
 
         # -----------------------------------------------------------------------------
-        # tristons-desk - Desktop Workstation (x86_64-linux)
+        # tristons-workstation - Desktop Workstation (x86_64-linux)
         # -----------------------------------------------------------------------------
-        tristons-desk = nixpkgs.lib.nixosSystem {
+        tristons-workstation = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
           
           modules = [
@@ -163,8 +163,8 @@
             ./profiles/workstation.nix
             
             # Host-specific configuration
-            ./hosts/tristons-desk/configuration.nix
-            ./hosts/tristons-desk/hardware-configuration.nix
+            ./hosts/tristons-workstation/configuration.nix
+            ./hosts/tristons-workstation/hardware-configuration.nix
             
             # Custom modules (hardware, system, services)
             ./modules

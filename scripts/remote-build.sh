@@ -27,10 +27,10 @@ Environment:
 
 Examples:
   scripts/remote-build.sh tristons-nixbook
-  scripts/remote-build.sh --buildHost david tristons-desk test
-  BUILD_HOST=david scripts/remote-build.sh tristons-desk test
+  scripts/remote-build.sh --buildHost david tristons-workstation test
+  BUILD_HOST=david scripts/remote-build.sh tristons-workstation test
   TARGET_USER=triston scripts/remote-build.sh pits switch
-  scripts/remote-build.sh tristons-desk switch --upgrade --show-trace
+  scripts/remote-build.sh tristons-workstation switch --upgrade --show-trace
 USAGE
 }
 

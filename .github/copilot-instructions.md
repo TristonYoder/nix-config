@@ -4,7 +4,7 @@ This repo is a flake-based, multi-host Nix configuration (NixOS + nix-darwin) us
 Provide concise, actionable edits: reference the flake entrypoints, host names, module locations, and secret handling. Keep changes minimal and preserve existing style.
 
 - Big picture (what matters):
-  - `flake.nix` is the canonical entrypoint. It exposes `nixosConfigurations` and `darwinConfigurations` for named hosts (e.g. `david`, `pits`, `tristons-desk`, `tyoder-mbp`, `Tristons-MacBook-Pro`). Use these attributes when building or referencing outputs.
+  - `flake.nix` is the canonical entrypoint. It exposes `nixosConfigurations` and `darwinConfigurations` for named hosts (e.g. `david`, `pits`, `tristons-workstation`, `tyoder-mbp`, `Tristons-MacBook-Pro`). Use these attributes when building or referencing outputs.
   - Declarative structure: `common/` (shared system defaults), `profiles/` (role-based sets: `server.nix`, `desktop.nix`, `edge.nix`, `darwin.nix`), `modules/` (services split by category), `hosts/` (per-host configs + hardware files), `home/` (Home Manager user configs), `secrets/` (encrypted `.age` files and helper scripts).
 
 - Typical developer workflows and safe commands to mention in PRs or patches:

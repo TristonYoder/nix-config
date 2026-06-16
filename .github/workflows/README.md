@@ -36,7 +36,7 @@ Syntax Check (30s)
 |------|------|-------------|
 | **david** | Main Server | ✅ Yes |
 | **pits** | Edge VPS | ✅ Yes |
-| **tristons-desk** | Desktop | ✅ Yes |
+| **tristons-workstation** | Desktop | ✅ Yes |
 
 ## Workflows
 
@@ -50,7 +50,7 @@ Syntax Check (30s)
 3. Test all hosts in parallel:
    - `david` (main server)
    - `pits` (edge VPS)  
-   - `tristons-desk` (desktop)
+   - `tristons-workstation` (desktop)
 4. Run `nixos-rebuild dry-run` on each
 5. Report independent results
 
@@ -225,7 +225,7 @@ Add to your Tailscale ACL policy:
    ```
 3. **Add to deploy workflow** (`.github/workflows/deploy-nixos-config.yml`):
    ```yaml
-   ALL_HOSTS='["david", "pits", "tristons-desk", "new-host"]'
+   ALL_HOSTS='["david", "pits", "tristons-workstation", "new-host"]'
    ```
 4. **Configure the host:**
    - Enable `modules.services.development.github-actions.enable = true`
@@ -387,5 +387,5 @@ This is expected with `fail-fast: false`:
 
 **Last Updated:** October 13, 2025  
 **Status:** Active  
-**Managed Hosts:** 3 (david, pits, tristons-desk)
+**Managed Hosts:** 3 (david, pits, tristons-workstation)
 
