@@ -47,14 +47,22 @@
   services.btrfs.autoScrub.enable = true;
 
   # =============================================================================
-  # GAMING — disabled for initial install, re-enable post-install via rebuild
+  # SWAP
   # =============================================================================
 
-  # workstation.nix profile defaults this on with every emulator enabled.
-  # First install ran out of RAM building the full closure on a swapless
-  # live installer — trim it here, add back selectively once the base
-  # system is up and has its own swap.
-  modules.services.gaming.enable = false;
+  # The live installer had no swap at all, which is what caused the OOM
+  # during first install (building Steam + 11 emulators + DaVinci Resolve
+  # in one closure). The installed system inherited that same swapless
+  # state -- add real swap before re-enabling that full closure below.
+  swapDevices = [
+    { device = "/swapfile"; size = 16384; }
+  ];
+
+  # =============================================================================
+  # GAMING — re-enabled now that the system has its own swap (see above)
+  # =============================================================================
+
+  # profiles/workstation.nix already defaults this to true; no override needed.
 
   # =============================================================================
   # PACKAGES
