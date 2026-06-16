@@ -59,47 +59,56 @@
   #
   # environment.etc can't be used here -- NixOS's /etc entries are symlinks
   # into /nix/store, and NetworkManager's keyfile plugin refuses to load
-  # symlinked connection files. systemd-tmpfiles' "C+" (force-copy) writes a
-  # real regular file instead, re-applied on every boot.
-  systemd.tmpfiles.rules = [
-    "C+ /etc/NetworkManager/system-connections/Fiber.nmconnection 0600 root root - ${pkgs.writeText "fiber.nmconnection" ''
-      [connection]
-      id=Fiber (Core Services)
-      uuid=08f82423-5331-372b-b85e-365c56669f4b
-      type=ethernet
+  # symlinked connection files. systemd-tmpfiles' "C" type only copies when
+  # the target is *missing* -- confirmed live that "+" does NOT make it force
+  # an overwrite of an existing file the way "f+"/"F+" do for other types, so
+  # since these profiles already existed, C+ silently did nothing on every
+  # rebuild. An activation script always runs and always copies, so use that
+  # instead.
+  system.activationScripts.pinNetworkManagerRouteMetrics =
+    let
+      fiberConn = pkgs.writeText "fiber.nmconnection" ''
+        [connection]
+        id=Fiber (Core Services)
+        uuid=08f82423-5331-372b-b85e-365c56669f4b
+        type=ethernet
 
-      [ethernet]
+        [ethernet]
 
-      [ipv4]
-      method=auto
-      route-metric=100
+        [ipv4]
+        method=auto
+        route-metric=100
 
-      [ipv6]
-      addr-gen-mode=stable-privacy
-      method=auto
+        [ipv6]
+        addr-gen-mode=stable-privacy
+        method=auto
 
-      [proxy]
-    ''}"
-    "C+ /etc/NetworkManager/system-connections/Ethernet\\x20(User\\x20Devices).nmconnection 0600 root root - ${pkgs.writeText "ethernet-user-devices.nmconnection" ''
-      [connection]
-      id=Ethernet (User Devices)
-      uuid=4da1406d-7dc8-3cc4-8cef-6eaf6eab0ba5
-      type=ethernet
-      autoconnect-priority=-100
+        [proxy]
+      '';
+      eno1Conn = pkgs.writeText "ethernet-user-devices.nmconnection" ''
+        [connection]
+        id=Ethernet (User Devices)
+        uuid=4da1406d-7dc8-3cc4-8cef-6eaf6eab0ba5
+        type=ethernet
+        autoconnect-priority=-100
 
-      [ethernet]
+        [ethernet]
 
-      [ipv4]
-      method=auto
-      route-metric=200
+        [ipv4]
+        method=auto
+        route-metric=200
 
-      [ipv6]
-      addr-gen-mode=stable-privacy
-      method=auto
+        [ipv6]
+        addr-gen-mode=stable-privacy
+        method=auto
 
-      [proxy]
-    ''}"
-  ];
+        [proxy]
+      '';
+    in
+    ''
+      install -m 600 -o root -g root ${fiberConn} "/etc/NetworkManager/system-connections/Fiber.nmconnection"
+      install -m 600 -o root -g root ${eno1Conn} "/etc/NetworkManager/system-connections/Ethernet (User Devices).nmconnection"
+    '';
 
   # =============================================================================
   # HARDWARE
