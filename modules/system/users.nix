@@ -76,7 +76,7 @@ in
       authorizedKeysFiles = [ "/etc/ssh/authorized_keys.d/%u" ];
     };
 
-    security.pam.services.sudo.sshAgentAuth = cfg.enableSshAgentSudo;
+    security.pam.services.sudo.sshAgentAuth = mkIf cfg.enableSshAgentSudo true;
 
     users.users.${cfg.mainUser.name} = {
       isNormalUser = true;
