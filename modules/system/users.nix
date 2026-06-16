@@ -17,6 +17,16 @@ in
       '';
     };
 
+    enableSshAgentSudo = mkOption {
+      type = types.bool;
+      default = true;
+      description = ''
+        Allow sudo to authenticate via a forwarded/local SSH agent key (pam_ssh_agent_auth)
+        instead of a Unix password, using mainUser.sshKeys as the trusted key list.
+        Lets a fresh host with no password ever set still be administered remotely over SSH.
+      '';
+    };
+
     mainUser = {
       name = mkOption {
         type = types.str;
@@ -61,6 +71,13 @@ in
   };
 
   config = mkIf cfg.enable {
+    security.pam.sshAgentAuth = mkIf cfg.enableSshAgentSudo {
+      enable = true;
+      authorizedKeysFiles = [ "/etc/ssh/authorized_keys.d/%u" ];
+    };
+
+    security.pam.services.sudo.sshAgentAuth = mkIf cfg.enableSshAgentSudo true;
+
     users.users.${cfg.mainUser.name} = {
       isNormalUser = true;
       description = cfg.mainUser.description;
