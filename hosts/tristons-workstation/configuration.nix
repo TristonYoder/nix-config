@@ -71,15 +71,17 @@
   ];
 
   # Hibernation support: this is a swapfile on btrfs, not a dedicated
-  # partition, so the kernel also needs a resume_offset -- the physical
-  # extent location of the file, which only exists once the file is
-  # actually on disk and can't be computed at build time. After the next
-  # rebuild creates the new (larger) swapfile, run once:
+  # partition, so the kernel also needs resume_offset -- the physical
+  # extent location of the file. Computed once via:
   #   sudo btrfs inspect-internal map-swapfile -r /swapfile
-  # then add the printed value to boot.kernelParams below as
-  # "resume_offset=<value>" and rebuild again.
+  # Re-run that and update this value if the swapfile is ever recreated
+  # (e.g. resized again) -- the offset is tied to that specific file's
+  # on-disk layout, not the path.
   boot.resumeDevice = config.fileSystems."/".device;
-  boot.kernelParams = [ "resume=${config.fileSystems."/".device}" ];
+  boot.kernelParams = [
+    "resume=${config.fileSystems."/".device}"
+    "resume_offset=5275821"
+  ];
 
   # =============================================================================
   # GAMING — re-enabled now that the system has its own swap (see above)
