@@ -8,6 +8,13 @@
   ];
 
   # =============================================================================
+  # PXE NETBOOT INSTALLER
+  # =============================================================================
+  # Reinstall any x86_64 host on the LAN without physical media. DHCP options
+  # 66/67 (next-server/bootfile) are configured in Unifi, not here.
+  modules.services.infrastructure.netboot.enable = true;
+
+  # =============================================================================
   # NETWORK: Bridge for Tailscale router container
   # =============================================================================
   # tailscale-router.nix creates br0 on enp4s0f0 with static 10.150.100.30/23,

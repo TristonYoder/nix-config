@@ -144,7 +144,7 @@
           ];
           
           specialArgs = {
-            inherit nixpkgs nixpkgs-unstable nix-bitcoin iopenpod-flake;
+            inherit self nixpkgs nixpkgs-unstable nix-bitcoin iopenpod-flake;
           };
         };
 
@@ -255,6 +255,21 @@
 
           specialArgs = {
             inherit nixpkgs nixpkgs-unstable iopenpod-flake;
+          };
+        };
+
+        # -----------------------------------------------------------------------------
+        # netboot-installer - Generic PXE netboot installer, served from david
+        # -----------------------------------------------------------------------------
+        netboot-installer = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+
+          modules = [
+            ./hosts/netboot-installer/installer.nix
+          ];
+
+          specialArgs = {
+            inherit nixpkgs;
           };
         };
 
