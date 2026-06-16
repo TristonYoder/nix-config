@@ -34,6 +34,13 @@ in
           while every other host has 1000) and breaks NFS (sec=sys checks
           raw numeric UID, not username — a mismatch causes "permission
           denied" reading a perfectly valid, correctly-owned directory).
+
+          Only affects NEW accounts: NixOS's user activation refuses to
+          change the UID of an account that already exists (logs a
+          "not applying UID change" warning instead). A host whose UID has
+          already drifted needs a one-time manual fix before rebuilding:
+          `sudo usermod -u <uid> <name>` (and chown any locally-owned files
+          if the account has real local data, not just an NFS-backed home).
         '';
       };
 
