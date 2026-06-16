@@ -9,6 +9,9 @@
   networking.hostName = "tristons-workstation";
   system.stateVersion = "25.05";
 
+  # Passwordless sudo CI/automation user (standard on all hosts)
+  modules.services.development.github-actions.enable = true;
+
   # =============================================================================
   # HOME DIRECTORY ON DAVID VIA NFS
   # =============================================================================
