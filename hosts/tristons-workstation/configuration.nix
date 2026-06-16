@@ -63,9 +63,23 @@
   # during first install (building Steam + 11 emulators + DaVinci Resolve
   # in one closure). The installed system inherited that same swapless
   # state -- add real swap before re-enabling that full closure below.
+  #
+  # Sized for hibernation (RAM is ~31GiB; swap must be >= RAM, sized up
+  # with headroom rather than cut exactly to it).
   swapDevices = [
-    { device = "/swapfile"; size = 16384; }
+    { device = "/swapfile"; size = 40960; }
   ];
+
+  # Hibernation support: this is a swapfile on btrfs, not a dedicated
+  # partition, so the kernel also needs a resume_offset -- the physical
+  # extent location of the file, which only exists once the file is
+  # actually on disk and can't be computed at build time. After the next
+  # rebuild creates the new (larger) swapfile, run once:
+  #   sudo btrfs inspect-internal map-swapfile -r /swapfile
+  # then add the printed value to boot.kernelParams below as
+  # "resume_offset=<value>" and rebuild again.
+  boot.resumeDevice = config.fileSystems."/".device;
+  boot.kernelParams = [ "resume=${config.fileSystems."/".device}" ];
 
   # =============================================================================
   # GAMING — re-enabled now that the system has its own swap (see above)
