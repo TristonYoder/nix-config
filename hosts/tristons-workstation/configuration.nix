@@ -32,7 +32,10 @@
   # HARDWARE
   # =============================================================================
 
-  modules.hardware.nvidia.enable = true;
+  modules.hardware.nvidia = {
+    enable = true;
+    useOpenSource = true;  # RTX 4080 (Ada Lovelace) — open modules recommended
+  };
 
   # =============================================================================
   # PACKAGES
