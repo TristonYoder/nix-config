@@ -10,7 +10,7 @@ This is a flake-based, multi-host Nix configuration managing NixOS servers, desk
 
 - **david** (NixOS Server) - Full infrastructure stack with media, productivity, storage services
 - **pits** (NixOS Edge/Pi) - Lightweight public-facing reverse proxy
-- **tristons-workstation** (NixOS Desktop) - KDE Plasma workstation
+- **tristons-workstation** (NixOS Desktop) - KDE Plasma workstation. RTX 4080 (open NVIDIA kernel modules), btrfs root (`@`, `@nix`, `@snapshots` subvolumes), `/home` symlinked to NFS-mounted `/data` on david (`useDataDrive`). **Always has a 10Gb fiber backhaul to david over the Core Services VLAN** — this is a permanent network characteristic of this host, not a one-off; treat NFS-backed home and any future high-bandwidth dependency on david as safe to assume for this host specifically.
 - **tyoder-mbp** (macOS Apple Silicon) - Work MacBook Pro
 - **Tristons-MacBook-Pro** (macOS Intel) - Personal MacBook Pro
 
@@ -479,6 +479,22 @@ killall Dock && killall Finder
 
 # Some settings require logout/login
 ```
+
+### nixos-install OOM on Live Installer (Swapless RAM Disk)
+**Host:** any first-time NixOS install via live USB
+
+The live installer environment runs entirely in RAM with **no swap by default**. A heavy closure — e.g. `profiles/workstation.nix`'s gaming module (Steam + 11 emulators, all `mkDefault true`) plus DaVinci Resolve — can exhaust RAM during `nixos-install` and freeze the machine hard enough that even SSH stops responding (timeout during banner exchange, not connection refused). Recovery requires a hard power-cycle, and the live USB itself can get corrupted by the abrupt power loss, requiring a re-flash.
+
+**Mitigations for first install:**
+1. Disable heavy optional modules in the host config before the first install (e.g. `modules.services.gaming.enable = false;`), re-enable post-install once the system has its own swap.
+2. Create a temporary swapfile on the target disk before running `nixos-install`, to cushion build memory spikes:
+   ```bash
+   sudo btrfs filesystem mkswapfile --size 16G /mnt/swapfile  # btrfs target
+   sudo swapon /mnt/swapfile
+   ```
+3. Already-built store paths under `/mnt/nix/store` survive a reboot of the live session as long as the target disk partitions aren't reformatted — remount and resume rather than starting over.
+
+**Diagnostics:** `free -h` on the installer (check `Swap: 0B` to confirm no cushion exists) before starting a heavy install.
 
 ### SDDM Blinking Cursor (No Login Screen)
 **Host:** david — Plasma 6 + NVIDIA
