@@ -159,9 +159,12 @@
 
   # profiles/workstation.nix already defaults this to true; no override needed.
 
-  # /data/nix-builds/cache is NFS-mounted from david — pulls store paths built
-  # by the CI build-offline-closures job without hitting cache.nixos.org.
-  modules.system.nixCache.enable = true;
+  # /data is NFS-mounted from david, so hit the cache directly on disk rather
+  # than going through the HTTPS endpoint.
+  modules.system.nixCache = {
+    enable = true;
+    cacheUrl = "file:///data/nix-builds/cache";
+  };
 
   # =============================================================================
   # PACKAGES
