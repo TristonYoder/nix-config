@@ -159,6 +159,13 @@
 
   # profiles/workstation.nix already defaults this to true; no override needed.
 
+  # /data is NFS-mounted from david, so hit the cache directly on disk rather
+  # than going through the HTTPS endpoint.
+  modules.system.nixCache = {
+    enable = true;
+    cacheUrl = "file:///data/nix-builds/cache";
+  };
+
   # =============================================================================
   # PACKAGES
   # =============================================================================

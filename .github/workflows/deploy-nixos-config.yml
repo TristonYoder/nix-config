@@ -77,7 +77,7 @@ jobs:
       id: set-hosts
       run: |
         # Define all available NixOS hosts
-        ALL_HOSTS='["david", "pits"]'  # tristons-workstation excluded from auto-deployment
+        ALL_HOSTS='["david", "pits", "tristons-workstation"]'  # always-online machine, safe for CI auto-deploy
         
         if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
           INPUT_HOSTS="${{ github.event.inputs.hosts }}"

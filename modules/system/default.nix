@@ -7,5 +7,6 @@
     ./networking.nix
     ./users.nix
     ./desktop.nix
+    ./nix-cache.nix
   ];
 }
