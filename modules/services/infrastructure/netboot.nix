@@ -16,7 +16,7 @@
 # (see hosts/netboot-installer/*.nix for examples) and add an entry to
 # `images` below.
 
-{ config, lib, pkgs, self, ... }:
+{ config, lib, pkgs, self ? null, ... }:
 
 with lib;
 let
@@ -98,6 +98,13 @@ in
   };
 
   config = mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = self != null;
+        message = "modules.services.infrastructure.netboot.enable requires `self` passed via this host's specialArgs (see flake.nix).";
+      }
+    ];
+
     # Document root for atftpd: only the two menu-embedded iPXE binaries.
     # Everything else (kernels, initrds, squashfs, per-image scripts) is
     # served over HTTP via nginx below.
