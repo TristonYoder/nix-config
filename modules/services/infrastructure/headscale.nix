@@ -266,6 +266,7 @@ in
           magic_dns = true;
           nameservers = {
             global = [
+              "1.1.1.1"
               "100.75.81.4"
               "fd7a:115c:a1e0:7cfc:118d:7504:ea5e:8cc0"
               "100.85.170.40"
