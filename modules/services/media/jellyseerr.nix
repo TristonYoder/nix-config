@@ -29,7 +29,7 @@ in
 
   config = mkIf cfg.enable {
     # Jellyseerr service
-    services.jellyseerr = {
+    services.seerr = {
       enable = true;
       openFirewall = cfg.openFirewall;
       port = cfg.port;

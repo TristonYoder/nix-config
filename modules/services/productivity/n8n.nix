@@ -40,10 +40,7 @@ in
     services.n8n = {
       enable = true;
       openFirewall = cfg.openFirewall;
-      webhookUrl = cfg.domain;
-      settings = {
-        # Additional n8n settings can go here
-      };
+      environment.WEBHOOK_URL = "https://${cfg.domain}";
     };
 
     # Caddy virtual host

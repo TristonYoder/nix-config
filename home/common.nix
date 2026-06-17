@@ -80,11 +80,9 @@ in
       credential.helper = "osxkeychain";
     };
   } else {
-    # NixOS uses home-manager release-25.05 which may not support settings yet
-    # Using deprecated format for backward compatibility
-    userName = "Triston Yoder";
-    userEmail = "triston@7co.dev";
-    extraConfig = {
+    settings = {
+      user.name = "Triston Yoder";
+      user.email = "triston@7co.dev";
       init.defaultBranch = "main";
       pull.rebase = false;
       push.autoSetupRemote = true;
@@ -155,10 +153,12 @@ in
         [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
         rebuild() {
-        local repo="$HOME/Projects/nix-config"
+        local base_repo="github:TristonYoder/nix-config"
+        local local_repo="$HOME/Projects/nix-config"
         local action="switch"
         local remote=0
         local build_host=""
+        local branch=""
         local -a passthrough=()
 
         while [[ $# -gt 0 ]]; do
@@ -171,12 +171,21 @@ in
               build_host="$2"
               shift 2
               ;;
+            -b|--branch)
+              branch="$2"
+              shift 2
+              ;;
             *)
               passthrough+=("$1")
               shift
               ;;
           esac
         done
+
+        local repo="$base_repo"
+        if [[ -n "$branch" ]]; then
+          repo="$base_repo/$branch"
+        fi
 
         if [[ "''${#passthrough[@]}" -gt 0 ]]; then
           case "''${passthrough[0]}" in
@@ -192,19 +201,19 @@ in
             echo "Remote rebuilds are not supported for darwin hosts." >&2
             return 1
           fi
-          sudo darwin-rebuild "$action" "''${passthrough[@]}" --flake "$repo"
+          sudo darwin-rebuild "$action" --refresh "''${passthrough[@]}" --flake "$repo"
           exec zsh
         fi
 
         if [[ "$remote" -eq 1 ]]; then
-          local cmd=("$repo/scripts/remote-build.sh")
+          local cmd=("$local_repo/scripts/remote-build.sh")
           if [[ -n "$build_host" ]]; then
             cmd+=("--buildHost" "$build_host")
           fi
           cmd+=("$action" "''${passthrough[@]}")
           "''${cmd[@]}"
         else
-          sudo nixos-rebuild "$action" "''${passthrough[@]}" --flake "$repo"
+          sudo nixos-rebuild "$action" --refresh "''${passthrough[@]}" --flake "$repo"
         fi
       }
     ''];

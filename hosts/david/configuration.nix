@@ -31,6 +31,12 @@
   system.stateVersion = "23.11"; # Did you read the comment?
   system.autoUpgrade.channel = "https://nixos.org/channels/nixos-23.11/";
 
+  # ZFS encryption key is loaded via postDeviceCommands (key file, not interactive).
+  # Force scripted initrd so postDeviceCommands remains supported; without this,
+  # boot.zfs.requestEncryptionCredentials auto-enables systemd stage 1 in 26.05
+  # which drops postDeviceCommands support.
+  boot.initrd.systemd.enable = lib.mkForce false;
+
   # =============================================================================
   # HOST-SPECIFIC SETTINGS
   # =============================================================================
@@ -45,8 +51,9 @@
     ];
   };
   
-  # iMessage Bridge - BlueBubbles configuration
+  # iMessage Bridge - disabled: go-modules hash mismatch in nixpkgs 26.05, re-enable after fix
   modules.services.communication.mautrix-imessage = {
+    enable = false;
     blueBubblesUrl = "http://macservices:1234";
     provisioningWhitelist = [
       "@triston:${config.networking.domain}"
@@ -156,6 +163,9 @@
       "Judah's MP3 Player"
     ];
   };
+
+  # Serve the Nix binary cache over HTTPS so all Tailscale hosts can use it.
+  modules.services.infrastructure.nixCacheServer.enable = true;
 
   # =============================================================================
   # ADDITIONAL SERVICES

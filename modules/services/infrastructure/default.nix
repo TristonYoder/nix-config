@@ -6,6 +6,7 @@
     ./cloudflared.nix
     ./headscale.nix
     ./netboot.nix
+    ./nix-cache-server.nix
     ./postgresql.nix
     ./tailscale.nix
     ./technitium.nix

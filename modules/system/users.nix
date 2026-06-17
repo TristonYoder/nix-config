@@ -17,11 +17,41 @@ in
       '';
     };
 
+    enableSshAgentSudo = mkOption {
+      type = types.bool;
+      default = true;
+      description = ''
+        Allow sudo to authenticate via a forwarded/local SSH agent key (pam_ssh_agent_auth)
+        instead of a Unix password, using mainUser.sshKeys as the trusted key list.
+        Lets a fresh host with no password ever set still be administered remotely over SSH.
+      '';
+    };
+
     mainUser = {
       name = mkOption {
         type = types.str;
         default = "tristonyoder";
         description = "Main user account name";
+      };
+
+      uid = mkOption {
+        type = types.int;
+        default = 1000;
+        description = ''
+          Fixed UID, pinned so it's identical on every host. Without this,
+          NixOS auto-assigns UIDs in user-creation order, which can silently
+          diverge per host (confirmed: tristons-workstation assigned 1001
+          while every other host has 1000) and breaks NFS (sec=sys checks
+          raw numeric UID, not username — a mismatch causes "permission
+          denied" reading a perfectly valid, correctly-owned directory).
+
+          Only affects NEW accounts: NixOS's user activation refuses to
+          change the UID of an account that already exists (logs a
+          "not applying UID change" warning instead). A host whose UID has
+          already drifted needs a one-time manual fix before rebuilding:
+          `sudo usermod -u <uid> <name>` (and chown any locally-owned files
+          if the account has real local data, not just an NFS-backed home).
+        '';
       };
 
       description = mkOption {
@@ -61,18 +91,32 @@ in
   };
 
   config = mkIf cfg.enable {
+    security.pam.sshAgentAuth = mkIf cfg.enableSshAgentSudo {
+      enable = true;
+      authorizedKeysFiles = [ "/etc/ssh/authorized_keys.d/%u" ];
+    };
+
+    security.pam.services.sudo.sshAgentAuth = mkIf cfg.enableSshAgentSudo true;
+
     users.users.${cfg.mainUser.name} = {
       isNormalUser = true;
+      uid = cfg.mainUser.uid;
       description = cfg.mainUser.description;
       extraGroups = cfg.mainUser.extraGroups;
       packages = cfg.mainUser.packages;
       openssh.authorizedKeys.keys = cfg.mainUser.sshKeys;
       home = "/home/${cfg.mainUser.name}";
+      # On useDataDrive hosts, tmpfiles creates /home/<user> as an L+ symlink.
+      # createHome = true (the isNormalUser default) would conflict — activation
+      # tries mkdir on the path that already exists as a symlink, exiting with 17.
+      createHome = !cfg.useDataDrive;
     };
 
     # Caroline Yoder user account (only on hosts with data drive)
+    # uid pinned to match david (1002) for the same NFS reason as mainUser.uid above.
     users.users.carolineyoder = mkIf cfg.useDataDrive {
       isNormalUser = true;
+      uid = 1002;
       description = "Caroline Yoder";
       extraGroups = [ "nextcloud" ];
       packages = with pkgs; [
@@ -84,6 +128,7 @@ in
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK5JWm3A5tXTCPq8YTua30QH2+Pa/Mz96QC5KJZKdEsz"  # Same key as tristonyoder for now
       ];
       home = "/home/carolineyoder";
+      createHome = false;  # tmpfiles handles home via L+ symlink (see below)
     };
 
     # Data drive setup: symlink /home to /data for persistent storage

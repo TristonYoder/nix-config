@@ -67,6 +67,10 @@ with lib;
       "romm-igdb-client-secret" = { file = ../secrets/romm-igdb-client-secret.age; owner = "root"; group = "docker"; mode = "0440"; };
     })
 
+    // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.infrastructure.nixCacheServer.enable) {
+      "nix-cache-signing-key" = { file = ../secrets/nix-cache-signing-key.age; owner = "github-actions"; group = "github-actions"; mode = "0400"; };
+    })
+
     // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.infrastructure.cloudflared.enable) {
       "cloudflared-token-current" = { file = ../secrets/cloudflared-token-current.age; owner = "cloudflared"; group = "cloudflared"; mode = "0400"; };
     })

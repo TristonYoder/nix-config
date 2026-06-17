@@ -41,7 +41,7 @@ in
       after = [ "plasma-kwin_wayland.service" ];
       serviceConfig = {
         Type = "oneshot";
-        ExecStart = "${pkgs.xorg.xdpyinfo}/bin/xdpyinfo -display :0";
+        ExecStart = "${pkgs.xdpyinfo}/bin/xdpyinfo -display :0";
         SuccessExitStatus = "0 1";
       };
     };
