@@ -335,7 +335,7 @@ jobs:
             STORE_PATH=$(readlink -f "/data/nix-builds/$host")
             echo "Built: $STORE_PATH"
             echo "$STORE_PATH" | sudo tee "/data/nix-builds/$host.path" > /dev/null
-            sudo nix copy --to "file:///data/nix-builds/cache" "$STORE_PATH"
+            sudo nix copy --to "file:///data/nix-builds/cache?secret-key=/run/agenix/nix-cache-signing-key" "$STORE_PATH"
             echo "✅ $host closure cached"
           }
 

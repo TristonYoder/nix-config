@@ -48,7 +48,11 @@ in
   # =============================================================================
   # DAVID-SPECIFIC SECRETS
   # =============================================================================
-  
+
+  # Nix binary cache signing key — used by CI (github-actions) to sign store paths
+  # on nix copy --to file:///data/nix-builds/cache?secret-key=...
+  "nix-cache-signing-key.age".publicKeys = davidKeys;
+
   # Matrix Synapse registration shared secret (only on david)
   "matrix-registration-secret.age".publicKeys = davidKeys;
   

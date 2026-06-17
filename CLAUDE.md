@@ -333,6 +333,33 @@ Write concisely with technical accuracy.
 4. Choose appropriate profile import (server/desktop/edge/darwin)
 5. Rebuild: `sudo nixos-rebuild switch --flake .#hostname`
 
+### Binary Cache Signing Key
+
+The binary cache signing keypair is generated once and never regenerated unless compromised. The private key lives in agenix; the public key is hardcoded in `modules/system/nix-cache.nix` and `common/darwin.nix`.
+
+**To generate (run on any host with nix):**
+```bash
+nix-store --generate-binary-cache-key nix-cache.theyoder.family \
+  /tmp/nix-cache-priv-key.pem /tmp/nix-cache-pub-key.pem
+
+cat /tmp/nix-cache-pub-key.pem
+# → e.g. "nix-cache.theyoder.family:abc123..."
+
+cd secrets
+./encrypt-secret.sh -n nix-cache-signing-key.age -f /tmp/nix-cache-priv-key.pem
+rm /tmp/nix-cache-priv-key.pem /tmp/nix-cache-pub-key.pem
+```
+
+**Then paste the public key string into:**
+- `modules/system/nix-cache.nix` → `trustedPublicKey` default value
+- `common/darwin.nix` → `trusted-public-keys` list
+
+**To retroactively sign existing cached paths after first setup:**
+```bash
+# On david, after the key is deployed via agenix:
+nix store sign --key-file /run/agenix/nix-cache-signing-key --recursive --all
+```
+
 ### Managing Secrets (agenix)
 
 **This repo is public. All secrets must be encrypted before committing. Never commit plaintext credentials, tokens, or passwords — not even temporarily.**

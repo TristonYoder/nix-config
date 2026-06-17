@@ -157,18 +157,8 @@
     ];
   };
 
-  # Local binary cache — /data/nix-builds/cache is on david's own disk.
-  modules.system.nixCache.enable = true;
-
   # Serve the Nix binary cache over HTTPS so all Tailscale hosts can use it.
-  modules.services.vHosts.hosts."nix-cache.${config.networking.domain}" = {
-    managedProxy = false;
-    public = false;
-    extraConfig = ''
-      root * /data/nix-builds/cache
-      file_server
-    '';
-  };
+  modules.services.infrastructure.nixCacheServer.enable = true;
 
   # =============================================================================
   # ADDITIONAL SERVICES

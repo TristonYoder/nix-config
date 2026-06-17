@@ -5,6 +5,7 @@
     ./caddy.nix
     ./cloudflared.nix
     ./headscale.nix
+    ./nix-cache-server.nix
     ./postgresql.nix
     ./tailscale.nix
     ./technitium.nix

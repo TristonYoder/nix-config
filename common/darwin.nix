@@ -58,6 +58,7 @@
   # re-downloading store paths the CI build-offline-closures job already built.
   nix.settings.substituters = [ "https://nix-cache.theyoder.family" ];
   nix.settings.trusted-substituters = [ "https://nix-cache.theyoder.family" ];
+  nix.settings.trusted-public-keys = [ "nix-cache.theyoder.family:NgpfqkeBWGMBuRI6uaxIqVTPEPRtyd4DcTJcvAFv4T4=" ];
 
   # =============================================================================
   # MACOS SYSTEM PREFERENCES

@@ -14,8 +14,17 @@ in
       description = ''
         URL of the binary cache written by the build-offline-closures CI job on
         david. Defaults to the internal HTTPS endpoint served by david over
-        Tailscale. Override with file:///data/nix-builds/cache on hosts with
-        the NFS /data mount for lower latency.
+        Tailscale.
+      '';
+    };
+
+    trustedPublicKey = mkOption {
+      type = types.nullOr types.str;
+      default = "nix-cache.theyoder.family:NgpfqkeBWGMBuRI6uaxIqVTPEPRtyd4DcTJcvAFv4T4=";
+      description = ''
+        Public key for verifying signed paths from the binary cache.
+        Format: "nix-cache.theyoder.family:<base64>".
+        Set after running: nix-store --generate-binary-cache-key nix-cache.theyoder.family priv.pem pub.pem
       '';
     };
   };
@@ -23,5 +32,6 @@ in
   config = mkIf cfg.enable {
     nix.settings.substituters = [ cfg.cacheUrl ];
     nix.settings.trusted-substituters = [ cfg.cacheUrl ];
+    nix.settings.trusted-public-keys = lib.optional (cfg.trustedPublicKey != null) cfg.trustedPublicKey;
   };
 }
