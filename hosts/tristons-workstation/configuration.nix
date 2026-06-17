@@ -41,19 +41,23 @@
     ];
   };
 
-  # Ping david for up to 10 seconds before the NFS mount is attempted.
-  # network-online.target (not network.target) is required — network.target
-  # only means "being managed", not "has an IP/route"; pings fail with
-  # "Network is unreachable" if we only wait for network.target.
-  # Always exits 0 — a down david means the mount attempt will just fail.
+  # Wait for david to be reachable before attempting the NFS mount.
+  # Two-phase script:
+  #   1. Wait up to 30s for a route to 10.150.100.30 to exist. network-online.target
+  #      fires as soon as any interface (e.g. eno1) has an IP, but the route to
+  #      10.150.100.30 lives on enp7s0 which may complete DHCP slightly later.
+  #      `ip route get` fails immediately (no output) when there is no route,
+  #      so this loop rate-limits retries with sleep 1.
+  #   2. Ping david up to 10 times once the route exists.
+  # Always exits 0 — a down david just means the mount will fail gracefully.
   systemd.services.nfs-david-reachable = {
     description = "Wait for david NFS server (10.150.100.30) to be reachable";
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "${pkgs.bash}/bin/bash -c 'for i in $(seq 1 10); do ${pkgs.iputils}/bin/ping -c1 -W1 10.150.100.30 && exit 0; done; exit 0'";
+      ExecStart = "${pkgs.bash}/bin/bash -c 'for i in $(seq 1 30); do ${pkgs.iproute2}/bin/ip route get 10.150.100.30 >/dev/null 2>&1 && break; sleep 1; done; for i in $(seq 1 10); do ${pkgs.iputils}/bin/ping -c1 -W1 10.150.100.30 && exit 0; done; exit 0'";
     };
-    after = [ "network-online.target" ];
+    after = [ "network-online.target" "sys-subsystem-net-devices-enp7s0.device" ];
     wants = [ "network-online.target" ];
   };
 
