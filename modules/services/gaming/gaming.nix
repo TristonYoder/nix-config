@@ -33,7 +33,7 @@ in
       # Nintendo
       dolphin = mkEnableOption "Dolphin (GameCube/Wii emulator)" // { default = true; };
       ryujinx = mkEnableOption "Ryubing (Switch emulator, formerly Ryujinx)" // { default = true; };
-      melonDS = mkEnableOption "melonDS (DS emulator)" // { default = true; };
+      melonds = mkEnableOption "melonDS (DS emulator)" // { default = true; };
       mgba = mkEnableOption "mGBA (GBA emulator)" // { default = true; };
       azahar = mkEnableOption "Azahar (3DS emulator)" // { default = true; };
       cemu = mkEnableOption "Cemu (Wii U emulator)" // { default = true; };
@@ -78,7 +78,7 @@ in
       # Nintendo
       ++ (optional cfg.emulators.dolphin pkgs.dolphin-emu)
       ++ (optional cfg.emulators.ryujinx pkgs.ryubing)
-      ++ (optional cfg.emulators.melonDS pkgs.melonDS)
+      ++ (optional cfg.emulators.melonds pkgs.melonds)
       ++ (optional cfg.emulators.mgba pkgs.mgba)
       ++ (optional cfg.emulators.azahar pkgs.azahar)
       ++ (optional cfg.emulators.cemu pkgs.cemu)

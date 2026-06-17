@@ -80,11 +80,9 @@ in
       credential.helper = "osxkeychain";
     };
   } else {
-    # NixOS uses home-manager release-25.05 which may not support settings yet
-    # Using deprecated format for backward compatibility
-    userName = "Triston Yoder";
-    userEmail = "triston@7co.dev";
-    extraConfig = {
+    settings = {
+      user.name = "Triston Yoder";
+      user.email = "triston@7co.dev";
       init.defaultBranch = "main";
       pull.rebase = false;
       push.autoSetupRemote = true;
