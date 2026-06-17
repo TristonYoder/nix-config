@@ -30,14 +30,28 @@
     device = "10.150.100.30:/";
     fsType = "nfs";
     options = [
-      "x-systemd.automount"                    # mount on-demand so login never races startup
-      "x-systemd.requires=tailscaled.service"   # NFS routes through tailscale0 — wait for it
-      "x-systemd.after=tailscaled.service"
+      "x-systemd.automount"
       "hard"
       "timeo=50"
       "retrans=3"
       "nfsvers=4"
     ];
+  };
+
+  # Ping david for up to 10 seconds before attempting the NFS mount.
+  # NFS routes through tailscale0, so the mount fails immediately if
+  # Tailscale hasn't established its route yet. Always exits 0 so a
+  # down david doesn't stall boot — the mount just fails gracefully.
+  systemd.services.nfs-david-reachable = {
+    description = "Wait for david NFS server (10.150.100.30) to be reachable";
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.bash}/bin/bash -c 'for i in $(seq 1 10); do ${pkgs.iputils}/bin/ping -c1 -W1 10.150.100.30 && exit 0; done; exit 0'";
+    };
+    after = [ "network.target" ];
+    wantedBy = [ "data.mount" ];
+    before = [ "data.mount" ];
   };
 
   # Symlink /home/tristonyoder -> /data/tristonyoder/home
