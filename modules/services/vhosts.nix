@@ -301,12 +301,15 @@ in
         description = "Sync vHost DNS records to Technitium";
         wantedBy = [ "multi-user.target" ];
         after = [ "network-online.target" "agenix.service" "technitium-dns-server.service" ];
-        wants = [ "network-online.target" "agenix.service" ];
+        wants = [ "network-online.target" "agenix.service" "technitium-dns-server.service" ];
         restartIfChanged = true;
 
         serviceConfig = {
           Type = "oneshot";
           RemainAfterExit = true;
+          # Wait for Technitium's HTTP listener before running dns-sync.
+          # Technitium may still be starting when activation triggers this unit.
+          ExecStartPre = "${pkgs.bash}/bin/bash -c 'until ${pkgs.curl}/bin/curl -sf http://localhost:5380/api/status > /dev/null 2>&1; do sleep 1; done'";
           ExecStart = "${dnsSyncScript}";
           StateDirectory = "dns-sync";
         };
