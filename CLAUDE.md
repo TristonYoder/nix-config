@@ -52,22 +52,30 @@ rebuild
 
 ### NixOS Hosts
 
+The `rebuild` shell function (defined in `home/common.nix`) fetches from GitHub automatically — just push first, then run it from any directory:
+
 ```bash
-# Auto-detect hostname and rebuild
-sudo nixos-rebuild switch --flake .
-
-# Specify host explicitly
-sudo nixos-rebuild switch --flake .#david
-
-# Test configuration without activation
-sudo nixos-rebuild test --flake .
-
-# Build without activating
-sudo nixos-rebuild build --flake .
-
-# Show detailed error traces
-sudo nixos-rebuild switch --flake . --show-trace
+rebuild          # switch (default)
+rebuild boot     # switch at next boot
+rebuild test     # test without committing to boot
 ```
+
+Under the hood, or for explicit control:
+
+```bash
+# From GitHub (what `rebuild` uses — works on any host including NFS-backed workstation)
+sudo nixos-rebuild switch --flake github:TristonYoder/nix-config
+sudo nixos-rebuild switch --flake github:TristonYoder/nix-config#david
+
+# From local repo (only reliable on david where repo is on local disk)
+sudo nixos-rebuild switch --flake /data/tristonyoder/home/Projects/nix-config#david
+
+# Other actions
+sudo nixos-rebuild test --flake github:TristonYoder/nix-config
+sudo nixos-rebuild switch --flake github:TristonYoder/nix-config --show-trace
+```
+
+**Note for tristons-workstation:** The repo lives on NFS. Always use the GitHub flake URL (or `rebuild`) — running `sudo nixos-rebuild --flake .` from the local path hits NFS root-squash issues.
 
 ### macOS (Darwin) Hosts
 
