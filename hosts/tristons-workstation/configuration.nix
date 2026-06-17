@@ -31,8 +31,8 @@
     fsType = "nfs";
     options = [
       "x-systemd.automount"                    # mount on-demand so login never races startup
-      "x-systemd.requires=tailscale.service"   # NFS routes through tailscale0 — wait for it
-      "x-systemd.after=tailscale.service"
+      "x-systemd.requires=tailscaled.service"   # NFS routes through tailscale0 — wait for it
+      "x-systemd.after=tailscaled.service"
       "hard"
       "timeo=50"
       "retrans=3"
