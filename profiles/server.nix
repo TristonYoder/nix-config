@@ -4,6 +4,29 @@
 { config, pkgs, lib, ... }:
 {
   # =============================================================================
+  # POWER MANAGEMENT — servers must never sleep or hibernate
+  # =============================================================================
+
+  # Disable all sleep/suspend/hibernate states at the systemd-sleep level
+  systemd.sleep.extraConfig = ''
+    AllowSuspend=no
+    AllowHibernate=no
+    AllowHybridSleep=no
+    AllowSuspendThenHibernate=no
+  '';
+
+  # Ignore all power/lid events so logind never triggers a sleep
+  services.logind.extraConfig = ''
+    HandleSuspendKey=ignore
+    HandleHibernateKey=ignore
+    HandleLidSwitch=ignore
+    HandleLidSwitchExternalPower=ignore
+    HandleLidSwitchDocked=ignore
+    HandlePowerKey=ignore
+    IdleAction=ignore
+  '';
+
+  # =============================================================================
   # HARDWARE MODULES
   # =============================================================================
   
