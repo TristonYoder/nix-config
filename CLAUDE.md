@@ -43,55 +43,41 @@ Run this when switching machines if there's active in-progress memory that hasn'
 
 ## Build & Rebuild Commands
 
-Use the `rebuild` shorthand — it auto-detects the host and runs the appropriate command:
+Use the `rebuild` shorthand — it auto-detects the host, fetches from GitHub, and runs the appropriate command:
 ```bash
 rebuild
 ```
 
-**Always commit changes before rebuilding.** This is a flake-based repo — the build reads from the git tree, not the working directory. Uncommitted changes are invisible to the builder.
+**Always commit AND push before rebuilding.** All hosts now build from `github:TristonYoder/nix-config` — the build fetches the latest pushed commit on `main`. Uncommitted or unpushed changes are invisible to the builder.
 
 ### NixOS Hosts
-
-The `rebuild` shell function (defined in `home/common.nix`) fetches from GitHub automatically — just push first, then run it from any directory:
 
 ```bash
 rebuild          # switch (default)
 rebuild boot     # switch at next boot
 rebuild test     # test without committing to boot
-```
 
-Under the hood, or for explicit control:
-
-```bash
-# From GitHub (what `rebuild` uses — works on any host including NFS-backed workstation)
+# Explicit — same as what `rebuild` runs under the hood
 sudo nixos-rebuild switch --flake github:TristonYoder/nix-config
 sudo nixos-rebuild switch --flake github:TristonYoder/nix-config#david
-
-# From local repo (only reliable on david where repo is on local disk)
-sudo nixos-rebuild switch --flake /data/tristonyoder/home/Projects/nix-config#david
-
-# Other actions
-sudo nixos-rebuild test --flake github:TristonYoder/nix-config
 sudo nixos-rebuild switch --flake github:TristonYoder/nix-config --show-trace
 ```
-
-**Note for tristons-workstation:** The repo lives on NFS. Always use the GitHub flake URL (or `rebuild`) — running `sudo nixos-rebuild --flake .` from the local path hits NFS root-squash issues.
 
 ### macOS (Darwin) Hosts
 
 ```bash
-# First-time setup (install nix-darwin)
+rebuild      # or: hms / hmswitch aliases
+
+# Explicit
+sudo darwin-rebuild switch --flake github:TristonYoder/nix-config
+sudo darwin-rebuild switch --flake github:TristonYoder/nix-config#tyoder-mbp
+
+# First-time setup (nix-darwin not yet installed)
 nix build '.#darwinConfigurations.tyoder-mbp.config.system.build.toplevel' --out-link /tmp/result && \
-  sudo /tmp/result/sw/bin/darwin-rebuild switch --flake '.#tyoder-mbp'
+  sudo /tmp/result/sw/bin/darwin-rebuild switch --flake 'github:TristonYoder/nix-config#tyoder-mbp'
 
-# Subsequent rebuilds
-darwin-rebuild switch --flake .
-
-# For Intel Mac (note the quoted hostname)
-darwin-rebuild switch --flake '.#Tristons-MacBook-Pro'
-
-# Test build without applying
-darwin-rebuild build --flake .
+# Intel Mac
+sudo darwin-rebuild switch --flake 'github:TristonYoder/nix-config#Tristons-MacBook-Pro'
 ```
 
 ### Validation & Testing
