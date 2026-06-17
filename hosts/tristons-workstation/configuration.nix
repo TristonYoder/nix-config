@@ -57,16 +57,31 @@
     wants = [ "network-online.target" ];
   };
 
-  # Automount unit: presents /data immediately at boot; first access triggers
-  # data.mount. No After/Requires on the ping service here — putting those on
-  # the automount unit (rather than the mount unit) creates an ordering cycle:
-  # local-fs.target -> data.automount -> nfs-david-reachable -> network.target
-  # -> ... -> local-fs.target. systemd breaks the cycle by deleting the
-  # automount job, so /data never mounts. The ping wait lives on data.mount
-  # (via the drop-in below) where the NFS connect actually happens.
+  # Automount unit: presents /data on first access and triggers data.mount.
+  #
+  # DefaultDependencies=false is required to break the boot ordering cycle.
+  # With the default (true), systemd adds data.automount to local-fs.target.wants/
+  # automatically. That creates a cycle: local-fs.target -> data.automount ->
+  # nfs-david-reachable -> network-online.target -> ... -> local-fs.target.
+  # systemd resolves it by deleting the automount job so /data never mounts.
+  #
+  # With DefaultDependencies=false, local-fs.target no longer depends on
+  # data.automount, so we can safely add After=network-online.target here.
+  # This prevents early-boot accesses (nix-daemon cache check, NixOS activation)
+  # from triggering the mount before the network is up.
+  #
+  # Before/Conflicts=umount.target replace what DefaultDependencies would have
+  # added for clean shutdown ordering.
   systemd.automounts = [{
     where = "/data";
     wantedBy = [ "remote-fs.target" ];
+    unitConfig = {
+      DefaultDependencies = false;
+      After = "network-online.target";
+      Wants = "network-online.target";
+      Before = "umount.target remote-fs.target";
+      Conflicts = "umount.target";
+    };
   }];
 
   # Define data.mount explicitly so we can add After/Requires=nfs-david-reachable.
