@@ -191,7 +191,7 @@ in
             echo "Remote rebuilds are not supported for darwin hosts." >&2
             return 1
           fi
-          sudo darwin-rebuild "$action" "''${passthrough[@]}" --flake "$repo"
+          sudo darwin-rebuild "$action" --refresh "''${passthrough[@]}" --flake "$repo"
           exec zsh
         fi
 
@@ -203,7 +203,7 @@ in
           cmd+=("$action" "''${passthrough[@]}")
           "''${cmd[@]}"
         else
-          sudo nixos-rebuild "$action" "''${passthrough[@]}" --flake "$repo"
+          sudo nixos-rebuild "$action" --refresh "''${passthrough[@]}" --flake "$repo"
         fi
       }
     ''];

@@ -50,6 +50,8 @@ rebuild
 
 **Always commit AND push before rebuilding.** All hosts now build from `github:TristonYoder/nix-config` — the build fetches the latest pushed commit on `main`. Uncommitted or unpushed changes are invisible to the builder.
 
+**`--refresh` is required** when building from `github:` URLs. Without it, nix may use a locally cached resolution of the flake ref and silently build from a stale commit rather than HEAD. The `rebuild` function adds this automatically; always include it in manual invocations.
+
 ### NixOS Hosts
 
 ```bash
@@ -58,9 +60,9 @@ rebuild boot     # switch at next boot
 rebuild test     # test without committing to boot
 
 # Explicit — same as what `rebuild` runs under the hood
-sudo nixos-rebuild switch --flake github:TristonYoder/nix-config
-sudo nixos-rebuild switch --flake github:TristonYoder/nix-config#david
-sudo nixos-rebuild switch --flake github:TristonYoder/nix-config --show-trace
+sudo nixos-rebuild switch --refresh --flake github:TristonYoder/nix-config
+sudo nixos-rebuild switch --refresh --flake github:TristonYoder/nix-config#david
+sudo nixos-rebuild switch --refresh --flake github:TristonYoder/nix-config --show-trace
 ```
 
 ### macOS (Darwin) Hosts
@@ -69,8 +71,8 @@ sudo nixos-rebuild switch --flake github:TristonYoder/nix-config --show-trace
 rebuild      # or: hms / hmswitch aliases
 
 # Explicit
-sudo darwin-rebuild switch --flake github:TristonYoder/nix-config
-sudo darwin-rebuild switch --flake github:TristonYoder/nix-config#tyoder-mbp
+sudo darwin-rebuild switch --refresh --flake github:TristonYoder/nix-config
+sudo darwin-rebuild switch --refresh --flake github:TristonYoder/nix-config#tyoder-mbp
 
 # First-time setup (nix-darwin not yet installed)
 nix build '.#darwinConfigurations.tyoder-mbp.config.system.build.toplevel' --out-link /tmp/result && \
