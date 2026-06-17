@@ -41,10 +41,11 @@
     ];
   };
 
-  # Ping david for up to 10 seconds before the automount unit starts.
-  # NFS traffic routes through tailscale0, so mounting fails immediately
-  # if the route isn't established yet. Always exits 0 — a down david
-  # just means the automount starts anyway and fails gracefully.
+  # Ping david for up to 10 seconds before the NFS mount is attempted.
+  # network-online.target (not network.target) is required — network.target
+  # only means "being managed", not "has an IP/route"; pings fail with
+  # "Network is unreachable" if we only wait for network.target.
+  # Always exits 0 — a down david means the mount attempt will just fail.
   systemd.services.nfs-david-reachable = {
     description = "Wait for david NFS server (10.150.100.30) to be reachable";
     serviceConfig = {
@@ -52,22 +53,30 @@
       RemainAfterExit = true;
       ExecStart = "${pkgs.bash}/bin/bash -c 'for i in $(seq 1 10); do ${pkgs.iputils}/bin/ping -c1 -W1 10.150.100.30 && exit 0; done; exit 0'";
     };
-    after = [ "network.target" ];
+    after = [ "network-online.target" ];
+    wants = [ "network-online.target" ];
   };
 
-  # Automount unit defined via NixOS systemd module so we can set After=
-  # directly on the automount unit (not via environment.etc drop-in, which
-  # hits a NixOS etc-builder ordering bug with nested subdirectories).
-  # Automount presents /data immediately at boot; first access triggers the
-  # actual NFS mount once nfs-david-reachable confirms the route is up.
+  # Automount unit: presents /data immediately at boot; first access triggers
+  # data.mount. No After/Requires on the ping service here — putting those on
+  # the automount unit (rather than the mount unit) creates an ordering cycle:
+  # local-fs.target -> data.automount -> nfs-david-reachable -> network.target
+  # -> ... -> local-fs.target. systemd breaks the cycle by deleting the
+  # automount job, so /data never mounts. The ping wait lives on data.mount
+  # (via the drop-in below) where the NFS connect actually happens.
   systemd.automounts = [{
     where = "/data";
     wantedBy = [ "remote-fs.target" ];
-    unitConfig = {
-      After = "nfs-david-reachable.service";
-      Requires = "nfs-david-reachable.service";
-    };
   }];
+
+  # Drop-in on data.mount: wait for the ping check before each NFS mount
+  # attempt. This applies on top of the fstab-generated mount unit without
+  # having to redeclare all mount options.
+  environment.etc."systemd/system/data.mount.d/ping-wait.conf".text = ''
+    [Unit]
+    After=nfs-david-reachable.service
+    Requires=nfs-david-reachable.service
+  '';
 
   # Symlink /home/tristonyoder -> /data/tristonyoder/home
   modules.system.users.useDataDrive = true;
