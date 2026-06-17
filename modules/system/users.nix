@@ -106,6 +106,10 @@ in
       packages = cfg.mainUser.packages;
       openssh.authorizedKeys.keys = cfg.mainUser.sshKeys;
       home = "/home/${cfg.mainUser.name}";
+      # On useDataDrive hosts, tmpfiles creates /home/<user> as an L+ symlink.
+      # createHome = true (the isNormalUser default) would conflict — activation
+      # tries mkdir on the path that already exists as a symlink, exiting with 17.
+      createHome = !cfg.useDataDrive;
     };
 
     # Caroline Yoder user account (only on hosts with data drive)
@@ -124,6 +128,7 @@ in
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK5JWm3A5tXTCPq8YTua30QH2+Pa/Mz96QC5KJZKdEsz"  # Same key as tristonyoder for now
       ];
       home = "/home/carolineyoder";
+      createHome = false;  # tmpfiles handles home via L+ symlink (see below)
     };
 
     # Data drive setup: symlink /home to /data for persistent storage
