@@ -47,11 +47,12 @@ in
         warn-dirty = false;
       };
       
-      # Automatic garbage collection
+      # Automatic garbage collection — keep last 5 generations.
+      # Hosts can override: david disables it, edge overrides dates to daily.
       gc = {
-        automatic = true;
-        dates = "weekly";
-        options = "--delete-older-than 90d";
+        automatic = lib.mkDefault true;
+        dates = lib.mkDefault "weekly";
+        options = lib.mkDefault "--max-old-count 5";
       };
     };
 

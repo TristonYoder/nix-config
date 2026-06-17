@@ -160,6 +160,10 @@
   # Serve the Nix binary cache over HTTPS so all Tailscale hosts can use it.
   modules.services.infrastructure.nixCacheServer.enable = true;
 
+  # David is the build machine — don't auto-GC, the /data/nix-builds symlinks
+  # are the GC roots and should be managed intentionally.
+  nix.gc.automatic = false;
+
   # =============================================================================
   # ADDITIONAL SERVICES
   # =============================================================================
