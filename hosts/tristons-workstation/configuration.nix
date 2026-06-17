@@ -30,7 +30,6 @@
     device = "10.150.100.30:/";
     fsType = "nfs";
     options = [
-      "_netdev"
       "x-systemd.automount"                    # mount on-demand so login never races startup
       "x-systemd.requires=tailscale.service"   # NFS routes through tailscale0 — wait for it
       "x-systemd.after=tailscale.service"
