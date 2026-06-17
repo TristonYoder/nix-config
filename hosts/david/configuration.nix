@@ -164,7 +164,7 @@
   nix.gc = {
     automatic = true;
     dates = "monthly";
-    options = "--delete-older-than 90d --max-old-count 30";
+    options = "--delete-older-than 365d --max-old-count 30";
   };
 
   # =============================================================================
