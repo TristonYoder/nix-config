@@ -30,8 +30,7 @@
     device = "10.150.100.30:/";
     fsType = "nfs";
     options = [
-      "nofail"                   # mount failure doesn't block boot
-      "x-systemd.mount-timeout=35"  # give up after 35s if david is unreachable
+      "x-systemd.automount"
       "hard"
       "timeo=50"
       "retrans=3"
@@ -39,10 +38,14 @@
     ];
   };
 
-  # Ping david for up to 10 seconds before attempting the NFS mount.
-  # NFS traffic routes through tailscale0 so the mount fails immediately
-  # if Tailscale hasn't established a route yet. Always exits 0 so a
-  # down david doesn't stall boot — nofail + mount-timeout handle that.
+  # Ping david for up to 10 seconds before the automount unit starts.
+  # NFS traffic routes through tailscale0, so mounting fails immediately
+  # if the route isn't established yet. Always exits 0 — a down david
+  # just means the automount starts anyway and fails gracefully.
+  #
+  # Wired to data.automount (not data.mount) because automount bypasses
+  # After= on the triggered mount unit. Delaying the automount unit itself
+  # ensures the route is ready before any access can trigger a mount.
   systemd.services.nfs-david-reachable = {
     description = "Wait for david NFS server (10.150.100.30) to be reachable";
     serviceConfig = {
@@ -51,16 +54,13 @@
       ExecStart = "${pkgs.bash}/bin/bash -c 'for i in $(seq 1 10); do ${pkgs.iputils}/bin/ping -c1 -W1 10.150.100.30 && exit 0; done; exit 0'";
     };
     after = [ "network.target" ];
-    wantedBy = [ "data.mount" ];
-    before = [ "data.mount" ];
   };
 
-  # SDDM waits for the NFS home mount before presenting the login screen.
-  # Uses wants (not requires) so login still works if the mount failed.
-  systemd.services.display-manager = {
-    wants = [ "data.mount" ];
-    after = [ "data.mount" ];
-  };
+  environment.etc."systemd/system/data.automount.d/wait-for-david.conf".text = ''
+    [Unit]
+    After=nfs-david-reachable.service
+    Requires=nfs-david-reachable.service
+  '';
 
   # Symlink /home/tristonyoder -> /data/tristonyoder/home
   modules.system.users.useDataDrive = true;
