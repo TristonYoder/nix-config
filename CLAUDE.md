@@ -52,6 +52,18 @@ rebuild
 
 **`--refresh` is required** when building from `github:` URLs. Without it, nix may use a locally cached resolution of the flake ref and silently build from a stale commit rather than HEAD. The `rebuild` function adds this automatically; always include it in manual invocations.
 
+### Testing a Feature Branch
+
+The standard way to test changes on a feature branch before merging to `main`:
+
+```bash
+# Push your branch first, then:
+rebuild -b feat/my-feature          # build + switch from that branch
+rebuild --branch feat/my-feature test   # test without committing to boot
+```
+
+The `-b`/`--branch` flag sets the flake URL to `github:TristonYoder/nix-config/<branch>`. This works on both NixOS and Darwin hosts. Always push the branch before running — the build pulls from GitHub, not local disk.
+
 ### NixOS Hosts
 
 ```bash

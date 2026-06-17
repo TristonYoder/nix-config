@@ -153,11 +153,12 @@ in
         [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
         rebuild() {
-        local repo="github:TristonYoder/nix-config"
+        local base_repo="github:TristonYoder/nix-config"
         local local_repo="$HOME/Projects/nix-config"
         local action="switch"
         local remote=0
         local build_host=""
+        local branch=""
         local -a passthrough=()
 
         while [[ $# -gt 0 ]]; do
@@ -170,12 +171,21 @@ in
               build_host="$2"
               shift 2
               ;;
+            -b|--branch)
+              branch="$2"
+              shift 2
+              ;;
             *)
               passthrough+=("$1")
               shift
               ;;
           esac
         done
+
+        local repo="$base_repo"
+        if [[ -n "$branch" ]]; then
+          repo="$base_repo/$branch"
+        fi
 
         if [[ "''${#passthrough[@]}" -gt 0 ]]; then
           case "''${passthrough[0]}" in
