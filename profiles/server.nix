@@ -8,23 +8,23 @@
   # =============================================================================
 
   # Disable all sleep/suspend/hibernate states at the systemd-sleep level
-  systemd.sleep.extraConfig = ''
-    AllowSuspend=no
-    AllowHibernate=no
-    AllowHybridSleep=no
-    AllowSuspendThenHibernate=no
-  '';
+  systemd.sleep.settings.Sleep = {
+    AllowSuspend = false;
+    AllowHibernate = false;
+    AllowHybridSleep = false;
+    AllowSuspendThenHibernate = false;
+  };
 
   # Ignore all power/lid events so logind never triggers a sleep
-  services.logind.extraConfig = ''
-    HandleSuspendKey=ignore
-    HandleHibernateKey=ignore
-    HandleLidSwitch=ignore
-    HandleLidSwitchExternalPower=ignore
-    HandleLidSwitchDocked=ignore
-    HandlePowerKey=ignore
-    IdleAction=ignore
-  '';
+  services.logind.settings.Login = {
+    HandleSuspendKey = "ignore";
+    HandleHibernateKey = "ignore";
+    HandleLidSwitch = "ignore";
+    HandleLidSwitchExternalPower = "ignore";
+    HandleLidSwitchDocked = "ignore";
+    HandlePowerKey = "ignore";
+    IdleAction = "ignore";
+  };
 
   # =============================================================================
   # HARDWARE MODULES
