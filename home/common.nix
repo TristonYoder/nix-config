@@ -153,7 +153,7 @@ in
         [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
         rebuild() {
-        local repo="$HOME/Projects/nix-config"
+        local repo="github:TristonYoder/nix-config"
         local action="switch"
         local remote=0
         local build_host=""
