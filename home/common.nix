@@ -154,6 +154,7 @@ in
 
         rebuild() {
         local repo="github:TristonYoder/nix-config"
+        local local_repo="$HOME/Projects/nix-config"
         local action="switch"
         local remote=0
         local build_host=""
@@ -195,7 +196,7 @@ in
         fi
 
         if [[ "$remote" -eq 1 ]]; then
-          local cmd=("$repo/scripts/remote-build.sh")
+          local cmd=("$local_repo/scripts/remote-build.sh")
           if [[ -n "$build_host" ]]; then
             cmd+=("--buildHost" "$build_host")
           fi

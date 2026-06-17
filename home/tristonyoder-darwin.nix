@@ -27,8 +27,8 @@
       dnsflush = "sudo killall -HUP mDNSResponder;sudo killall mDNSResponderHelper;sudo dscacheutil -flushcache";
       
       # Home manager switch shortcut (with auto-reload)
-      hms = "cd ~/Projects/nix-config && sudo darwin-rebuild switch --flake . && exec zsh";
-      hmswitch = "cd ~/Projects/nix-config && sudo darwin-rebuild switch --flake . && exec zsh";
+      hms = "sudo darwin-rebuild switch --flake github:TristonYoder/nix-config && exec zsh";
+      hmswitch = "sudo darwin-rebuild switch --flake github:TristonYoder/nix-config && exec zsh";
     };
   };
   
