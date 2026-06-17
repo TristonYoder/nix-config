@@ -10,7 +10,7 @@ This is a flake-based, multi-host Nix configuration managing NixOS servers, desk
 
 - **david** (NixOS Server) - Full infrastructure stack with media, productivity, storage services
 - **pits** (NixOS Edge/Pi) - Lightweight public-facing reverse proxy
-- **tristons-workstation** (NixOS Desktop) - KDE Plasma workstation. RTX 4080 (open NVIDIA kernel modules), btrfs root (`@`, `@nix`, `@snapshots` subvolumes), `/home` symlinked to NFS-mounted `/data` on david (`useDataDrive`). **Always has a 10Gb fiber backhaul to david over the Core Services VLAN** — this is a permanent network characteristic of this host, not a one-off; treat NFS-backed home and any future high-bandwidth dependency on david as safe to assume for this host specifically.
+- **tristons-workstation** (NixOS Desktop) - KDE Plasma workstation. RTX 4080 (open NVIDIA kernel modules), btrfs root (`@`, `@nix`, `@snapshots` subvolumes), `/home` symlinked to NFS-mounted `/data` on david (`useDataDrive`). **Always has a 10Gb fiber backhaul to david over the Core Services VLAN** — this is a permanent network characteristic of this host, not a one-off; treat NFS-backed home and any future high-bandwidth dependency on david as safe to assume for this host specifically. Dual-NIC: `enp7s0` carries `10.150.100.0/23` (Core Services, route to david), `eno1` carries `10.150.10.0/24` (User Devices). `network-online.target` may fire on `eno1` before `enp7s0` completes DHCP — see the NFS automount troubleshooting entry before touching boot-time network ordering on this host.
 - **tyoder-mbp** (macOS Apple Silicon) - Work MacBook Pro
 - **Tristons-MacBook-Pro** (macOS Intel) - Personal MacBook Pro
 
@@ -534,6 +534,51 @@ Without `--tags tag:github-actions`, preauthkeys produce untagged nodes. The hea
 **Always create preauthkeys with:**
 ```bash
 sudo headscale preauthkeys create --user github-actions --reusable --ephemeral --expiration 168h --tags tag:github-actions
+```
+
+### /data NFS Automount Fails on tristons-workstation
+**Host:** tristons-workstation — NFS home directory backed by david
+
+The `/data` automount involves three interacting systemd units:
+- `data.automount` — presents `/data`; first access triggers the mount
+- `data.mount` — does the actual NFS connect; defined via `systemd.mounts` (not fstab-generator) so we can attach ordering constraints
+- `nfs-david-reachable.service` — waits for the route to `10.150.100.30` and pings david before the mount is attempted
+
+**Ordering cycle (symptom: `data.automount` shows `inactive (dead)` at boot)**
+
+With `DefaultDependencies=yes` (the systemd default), systemd auto-adds `data.automount` to `local-fs.target.wants/`. Any network dependency on the automount unit then creates a cycle:
+
+```
+local-fs.target → data.automount → nfs-david-reachable →
+network-online.target → ... → local-fs.target
+```
+
+systemd resolves ordering cycles by deleting the job — so the automount unit is killed and `/data` never mounts.
+
+**Fix:** `DefaultDependencies=false` in the automount's `unitConfig`. This removes it from `local-fs.target.wants/` so the cycle can't form. Add `Before=umount.target remote-fs.target` and `Conflicts=umount.target` manually (what DefaultDependencies would have contributed for clean shutdown). The network dependency belongs on `data.mount`, not `data.automount`.
+
+**"Network is unreachable" pings (symptom: all pings fail in `nfs-david-reachable` logs)**
+
+`network-online.target` fires as soon as *any* managed interface has an IP — typically `eno1` (`10.150.10.0/24`). The route to `10.150.100.30` lives on `enp7s0` (`10.150.100.0/23`) which completes DHCP slightly later. `ping` exits immediately with "Network is unreachable" when there is no route, so a plain ping loop burns all retries in milliseconds.
+
+**Fix:** Two-phase script in `nfs-david-reachable`:
+1. Poll `ip route get 10.150.100.30` up to 30s (sleep 1 between retries) — waits for the enp7s0 route to appear
+2. Ping david up to 10 times once the route exists
+
+**`environment.etc` drop-ins on `data.mount` don't work**
+
+NixOS's etc-builder cannot create nested subdirectories (e.g. `systemd/system/data.mount.d/`). Attempting it fails the build with "mkdir: cannot create directory: Permission denied". Use `systemd.mounts` to define the full mount unit instead — it creates `/etc/systemd/system/data.mount` which overrides the fstab-generator's `/run/systemd/generator/data.mount`.
+
+**Diagnostics:**
+```bash
+systemctl status data.automount data.mount nfs-david-reachable
+journalctl -b -u data.automount -u data.mount -u nfs-david-reachable
+
+# Check for ordering cycle (automount should NOT be in local-fs.target.wants)
+ls /etc/systemd/system/local-fs.target.wants/
+
+# Check the route exists before manual mount
+ip route get 10.150.100.30
 ```
 
 ### Port Conflicts
