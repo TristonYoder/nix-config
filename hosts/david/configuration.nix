@@ -44,8 +44,9 @@
     ];
   };
   
-  # iMessage Bridge - BlueBubbles configuration
+  # iMessage Bridge - disabled: go-modules hash mismatch in nixpkgs 26.05, re-enable after fix
   modules.services.communication.mautrix-imessage = {
+    enable = false;
     blueBubblesUrl = "http://macservices:1234";
     provisioningWhitelist = [
       "@triston:${config.networking.domain}"
