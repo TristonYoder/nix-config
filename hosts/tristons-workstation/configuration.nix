@@ -30,7 +30,8 @@
     device = "10.150.100.30:/";
     fsType = "nfs";
     options = [
-      "x-systemd.automount"
+      "nofail"                   # mount failure doesn't block boot
+      "x-systemd.mount-timeout=35"  # give up after 35s if david is unreachable
       "hard"
       "timeo=50"
       "retrans=3"
@@ -39,9 +40,9 @@
   };
 
   # Ping david for up to 10 seconds before attempting the NFS mount.
-  # NFS routes through tailscale0, so the mount fails immediately if
-  # Tailscale hasn't established its route yet. Always exits 0 so a
-  # down david doesn't stall boot — the mount just fails gracefully.
+  # NFS traffic routes through tailscale0 so the mount fails immediately
+  # if Tailscale hasn't established a route yet. Always exits 0 so a
+  # down david doesn't stall boot — nofail + mount-timeout handle that.
   systemd.services.nfs-david-reachable = {
     description = "Wait for david NFS server (10.150.100.30) to be reachable";
     serviceConfig = {
@@ -52,6 +53,13 @@
     after = [ "network.target" ];
     wantedBy = [ "data.mount" ];
     before = [ "data.mount" ];
+  };
+
+  # SDDM waits for the NFS home mount before presenting the login screen.
+  # Uses wants (not requires) so login still works if the mount failed.
+  systemd.services.display-manager = {
+    wants = [ "data.mount" ];
+    after = [ "data.mount" ];
   };
 
   # Symlink /home/tristonyoder -> /data/tristonyoder/home
