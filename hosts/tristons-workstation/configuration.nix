@@ -30,6 +30,8 @@
     device = "10.150.100.30:/";
     fsType = "nfs";
     options = [
+      "_netdev"                # wait for network before attempting mount
+      "x-systemd.automount"   # mount on-demand so login never races NFS startup
       "hard"
       "timeo=50"
       "retrans=3"
