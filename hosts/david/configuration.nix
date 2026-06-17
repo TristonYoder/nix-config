@@ -24,6 +24,12 @@
   system.stateVersion = "23.11"; # Did you read the comment?
   system.autoUpgrade.channel = "https://nixos.org/channels/nixos-23.11/";
 
+  # ZFS encryption key is loaded via postDeviceCommands (key file, not interactive).
+  # Force scripted initrd so postDeviceCommands remains supported; without this,
+  # boot.zfs.requestEncryptionCredentials auto-enables systemd stage 1 in 26.05
+  # which drops postDeviceCommands support.
+  boot.initrd.systemd.enable = lib.mkForce false;
+
   # =============================================================================
   # HOST-SPECIFIC SETTINGS
   # =============================================================================
