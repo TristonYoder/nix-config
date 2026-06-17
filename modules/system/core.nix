@@ -47,12 +47,12 @@ in
         warn-dirty = false;
       };
       
-      # Automatic garbage collection — keep last 5 generations.
-      # Hosts can override: david disables it, edge overrides dates to daily.
+      # Automatic garbage collection — 1 month or 10 generations, whichever is less.
+      # david overrides to 3 months / 30 generations; edge overrides to daily / 3.
       gc = {
         automatic = lib.mkDefault true;
-        dates = lib.mkDefault "weekly";
-        options = lib.mkDefault "--max-old-count 5";
+        dates = lib.mkDefault "monthly";
+        options = lib.mkDefault "--delete-older-than 30d --max-old-count 10";
       };
     };
 
