@@ -30,8 +30,10 @@
     device = "10.150.100.30:/";
     fsType = "nfs";
     options = [
-      "_netdev"                # wait for network before attempting mount
-      "x-systemd.automount"   # mount on-demand so login never races NFS startup
+      "_netdev"
+      "x-systemd.automount"                    # mount on-demand so login never races startup
+      "x-systemd.requires=tailscale.service"   # NFS routes through tailscale0 — wait for it
+      "x-systemd.after=tailscale.service"
       "hard"
       "timeo=50"
       "retrans=3"
