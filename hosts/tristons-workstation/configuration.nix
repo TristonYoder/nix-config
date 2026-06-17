@@ -42,6 +42,11 @@
   # Symlink /home/tristonyoder -> /data/tristonyoder/home
   modules.system.users.useDataDrive = true;
 
+  # Allow root to run nixos-rebuild from the NFS-backed repo.
+  # Without this, libgit2 (used by nix) refuses to open a repo owned by
+  # a different uid even when no_root_squash is set.
+  programs.git.config.safe.directory = [ "/data/tristonyoder/home/Projects/nix-config" ];
+
   # =============================================================================
   # NETWORKING — pin enp7s0 (10.150.100.x) as the default route
   # =============================================================================
