@@ -26,11 +26,14 @@
   # Path is "/" not "/data": david's NFS server marks /data as fsid=0, which
   # makes it the NFSv4 pseudo-root. NFSv4 clients address the pseudo-root as
   # "/", not the real on-disk path.
+  # noauto: don't add to remote-fs.target — the automount unit below handles
+  # triggering. Without noauto, NixOS would also start this mount at boot
+  # via remote-fs.target, racing with tailscale before the route is up.
   fileSystems."/data" = {
     device = "10.150.100.30:/";
     fsType = "nfs";
     options = [
-      "x-systemd.automount"
+      "noauto"
       "hard"
       "timeo=50"
       "retrans=3"
@@ -42,10 +45,6 @@
   # NFS traffic routes through tailscale0, so mounting fails immediately
   # if the route isn't established yet. Always exits 0 — a down david
   # just means the automount starts anyway and fails gracefully.
-  #
-  # Wired to data.automount (not data.mount) because automount bypasses
-  # After= on the triggered mount unit. Delaying the automount unit itself
-  # ensures the route is ready before any access can trigger a mount.
   systemd.services.nfs-david-reachable = {
     description = "Wait for david NFS server (10.150.100.30) to be reachable";
     serviceConfig = {
@@ -56,11 +55,19 @@
     after = [ "network.target" ];
   };
 
-  environment.etc."systemd/system/data.automount.d/wait-for-david.conf".text = ''
-    [Unit]
-    After=nfs-david-reachable.service
-    Requires=nfs-david-reachable.service
-  '';
+  # Automount unit defined via NixOS systemd module so we can set After=
+  # directly on the automount unit (not via environment.etc drop-in, which
+  # hits a NixOS etc-builder ordering bug with nested subdirectories).
+  # Automount presents /data immediately at boot; first access triggers the
+  # actual NFS mount once nfs-david-reachable confirms the route is up.
+  systemd.automounts = [{
+    where = "/data";
+    wantedBy = [ "remote-fs.target" ];
+    unitConfig = {
+      After = "nfs-david-reachable.service";
+      Requires = "nfs-david-reachable.service";
+    };
+  }];
 
   # Symlink /home/tristonyoder -> /data/tristonyoder/home
   modules.system.users.useDataDrive = true;
