@@ -69,14 +69,20 @@
     wantedBy = [ "remote-fs.target" ];
   }];
 
-  # Drop-in on data.mount: wait for the ping check before each NFS mount
-  # attempt. This applies on top of the fstab-generated mount unit without
-  # having to redeclare all mount options.
-  environment.etc."systemd/system/data.mount.d/ping-wait.conf".text = ''
-    [Unit]
-    After=nfs-david-reachable.service
-    Requires=nfs-david-reachable.service
-  '';
+  # Define data.mount explicitly so we can add After/Requires=nfs-david-reachable.
+  # environment.etc drop-ins can't create nested subdirectories (etc-builder
+  # limitation), so we define the full mount unit here instead.
+  # DefaultDependencies=false: prevent auto-adding to remote-fs.target or
+  # any other target — the automount unit is the only trigger for this mount.
+  systemd.mounts = [{
+    where = "/data";
+    what = "10.150.100.30:/";
+    type = "nfs";
+    options = "hard,timeo=50,retrans=3,nfsvers=4";
+    after = [ "nfs-david-reachable.service" ];
+    requires = [ "nfs-david-reachable.service" ];
+    unitConfig.DefaultDependencies = false;
+  }];
 
   # Symlink /home/tristonyoder -> /data/tristonyoder/home
   modules.system.users.useDataDrive = true;
