@@ -94,15 +94,54 @@
   # limitation), so we define the full mount unit here instead.
   # DefaultDependencies=false: prevent auto-adding to remote-fs.target or
   # any other target — the automount unit is the only trigger for this mount.
-  systemd.mounts = [{
-    where = "/data";
-    what = "10.150.100.30:/";
-    type = "nfs";
-    options = "hard,timeo=50,retrans=3,nfsvers=4";
-    after = [ "nfs-david-reachable.service" ];
-    requires = [ "nfs-david-reachable.service" ];
-    unitConfig.DefaultDependencies = false;
-  }];
+  systemd.mounts = [
+    {
+      where = "/data";
+      what = "10.150.100.30:/";
+      type = "nfs";
+      options = "hard,timeo=50,retrans=3,nfsvers=4";
+      after = [ "nfs-david-reachable.service" ];
+      requires = [ "nfs-david-reachable.service" ];
+      unitConfig.DefaultDependencies = false;
+    }
+
+    # Bind mount a host-local directory over ~/.local/share/applications so that
+    # HM activation and Steam write desktop entries here (on local /var) rather
+    # than to the NFS-shared home. Without this, david's last rebuild populates
+    # the shared path with its own store-path Exec= lines, which may not match
+    # what's on the workstation.
+    {
+      description = "Host-local XDG applications directory (shadows NFS home)";
+      what = "/var/lib/xdg-apps-tristonyoder";
+      where = "/data/tristonyoder/home/tristonyoder/.local/share/applications";
+      type = "none";
+      options = "bind";
+      after = [ "xdg-apps-mountpoint.service" ];
+      requires = [ "xdg-apps-mountpoint.service" ];
+      wantedBy = [ "graphical.target" ];
+      unitConfig.DefaultDependencies = false;
+    }
+  ];
+
+  # Persistent host-local directory that backs the bind mount above.
+  systemd.tmpfiles.rules = [
+    "d /var/lib/xdg-apps-tristonyoder 0755 tristonyoder users -"
+  ];
+
+  # Ensure the mount point directory exists inside the NFS home before we bind
+  # over it. /data may not have the path pre-created on first boot.
+  systemd.services.xdg-apps-mountpoint = {
+    description = "Create XDG applications bind mount point in NFS home";
+    after = [ "data.mount" ];
+    requires = [ "data.mount" ];
+    before = [ "data-tristonyoder-home-tristonyoder-.local-share-applications.mount" ];
+    wantedBy = [ "data-tristonyoder-home-tristonyoder-.local-share-applications.mount" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.coreutils}/bin/mkdir -p /data/tristonyoder/home/tristonyoder/.local/share/applications";
+    };
+  };
 
   # Symlink /home/tristonyoder -> /data/tristonyoder/home
   modules.system.users.useDataDrive = true;
