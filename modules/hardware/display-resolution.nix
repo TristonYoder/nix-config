@@ -7,7 +7,7 @@ let
   # Hostname-based resolution mapping
   hostResolutions = {
     "david" = "1920x1080";
-    "tristons-workstation" = "1920x1080";
+    "tristons-workstation" = "3840x2160";
     "tristons-nixbook" = "2560x1600";
     "pits" = "1920x1080";  # Default for headless/edge
   };
