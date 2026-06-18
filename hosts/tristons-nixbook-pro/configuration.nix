@@ -99,21 +99,20 @@
   # logind/sleep settings for t2Suspend workaround mode.
   # Kept here (not in the module) to avoid the shared module referencing
   # version-sensitive option paths.
-  systemd.sleep.extraConfig = ''
-    [Sleep]
-    AllowSuspend=yes
-    AllowHibernation=no
-    AllowSuspendThenHibernate=no
-    AllowHybridSleep=no
-  '';
+  systemd.sleep.settings.Sleep = {
+    AllowSuspend = true;
+    AllowHibernation = false;
+    AllowSuspendThenHibernate = false;
+    AllowHybridSleep = false;
+  };
 
   services.logind = {
     lidSwitch = "suspend";
     lidSwitchExternalPower = "suspend";
-    extraConfig = ''
-      HandleSuspendKey=suspend
-      HandleHibernateKey=ignore
-    '';
+    settings.Login = {
+      HandleSuspendKey = "suspend";
+      HandleHibernateKey = "ignore";
+    };
   };
 
   # ===========================================================================
