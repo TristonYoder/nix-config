@@ -287,6 +287,45 @@ jobs:
             }
           }' || echo "Reaction failed, continuing..."
 
+  # Trigger the update-notifier on all workstations that are reachable.
+  # For deployed hosts (workstation) this is a no-op (already on latest SHA).
+  # For offline hosts (nixbooks) this prompts the user the next time they're online.
+  notify-workstations:
+    runs-on: ubuntu-latest
+    needs: [prepare-deployment, build-all-closures, deploy-configurations]
+    if: needs.build-all-closures.result == 'success'
+
+    steps:
+    - name: Setup Tailscale (Headscale)
+      uses: tailscale/github-action@v2
+      with:
+        authkey: ${{ secrets.HEADSCALE_AUTHKEY }}
+        tags: tag:github-actions
+        version: 1.78.1
+        args: --login-server ${{ secrets.HEADSCALE_LOGIN_SERVER }}
+
+    - name: Wait for Tailscale connection
+      run: sleep 10
+
+    - name: Trigger update check on online workstations
+      run: |
+        mkdir -p ~/.ssh
+        echo "Host *" >> ~/.ssh/config
+        echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+        echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
+        echo "  ConnectTimeout 5" >> ~/.ssh/config
+        chmod 600 ~/.ssh/config
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+
+        for HOST in tristons-workstation tristons-nixbook tristons-nixbook-pro; do
+          echo "Notifying $HOST..."
+          ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST.vpn.theyoder.family \
+            "sudo systemctl start auto-update-check.service" \
+            && echo "✅ $HOST notified" \
+            || echo "⚠️  $HOST unreachable, skipping"
+        done
+
   deployment-summary:
     runs-on: ubuntu-latest
     needs: [prepare-deployment, build-all-closures, deploy-configurations]
