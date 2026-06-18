@@ -241,8 +241,14 @@
   # PACKAGES
   # =============================================================================
 
+  services.hardware.openrgb = {
+    enable = true;
+    motherboard = "amd";
+  };
+
   environment.systemPackages = with pkgs; [
     nfs-utils
+    openrgb
     vlc
   ];
 }
