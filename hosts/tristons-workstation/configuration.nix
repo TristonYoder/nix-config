@@ -246,7 +246,10 @@
     motherboard = "amd";
   };
 
+  services.asusd.enable = true;
+
   environment.systemPackages = with pkgs; [
+    asusctl
     nfs-utils
     openrgb
     vlc
