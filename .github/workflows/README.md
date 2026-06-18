@@ -41,7 +41,7 @@ No rsync. No temp directories. Every rebuild — in CI and locally via `rebuild`
 |------|------|---------|-------------|-------------|
 | **david** | Main Server | ✅ | ✅ | ✅ |
 | **pits** | Edge VPS | ✅ | ✅ | ✅ |
-| **tristons-workstation** | Desktop | ✅ | ✅ | ✅ |
+| **tristons-workstation** | Desktop | ✅ | ✅ | ✅ best-effort |
 | **tristons-nixbook** | Laptop | ✅ | ❌ (offline) | ✅ best-effort |
 | **tristons-nixbook-pro** | Laptop | ✅ | ❌ (offline) | ✅ best-effort |
 
@@ -76,8 +76,8 @@ All tests are parallel. One failing host doesn't stop others.
 4. `deployment-summary` — reports overall status
 
 **Closure build order within `build-all-closures`:**
-- `david`, `pits`, `tristons-workstation` — must succeed (blocks deployment if any fail)
-- `tristons-nixbook`, `tristons-nixbook-pro` — best-effort (logged but non-blocking)
+- `david`, `pits` — must succeed (blocks deployment if either fails)
+- `tristons-workstation`, `tristons-nixbook`, `tristons-nixbook-pro` — best-effort (logged but non-blocking)
 
 ## Usage
 

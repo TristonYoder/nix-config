@@ -149,12 +149,13 @@ jobs:
             echo "✅ $host cached"
           }
 
-          # Online (deploy target) hosts — failure here blocks deployment
+          # Always-online hosts — failure here blocks deployment
           build_and_cache david
           build_and_cache pits
-          build_and_cache tristons-workstation
 
-          # Offline hosts — best-effort so their closures are in cache for local rebuilds
+          # Best-effort hosts — logged but non-blocking
+          build_and_cache tristons-workstation \
+            || echo "⚠️ tristons-workstation build failed, continuing"
           build_and_cache tristons-nixbook \
             || echo "⚠️ tristons-nixbook build failed, continuing"
           build_and_cache tristons-nixbook-pro \
