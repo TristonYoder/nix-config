@@ -34,6 +34,14 @@ with lib;
       };
     })
 
+    // (optionalAttrs (config.modules.system.krdp.enable && !config.services.caddy.enable) {
+      "cloudflare-api-token" = {
+        file = ../secrets/cloudflare-api-token.age;
+        owner = "root";
+        mode = "0400";
+      };
+    })
+
     // (optionalAttrs config.modules.services.vHosts.technitium.enable {
       "technitium-api-token" = { file = ../secrets/technitium-api-token.age; owner = "root"; group = "root"; mode = "0400"; };
     })
