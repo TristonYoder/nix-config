@@ -139,7 +139,6 @@
     serviceConfig = {
       Type = "oneshot";
       RemainAfterExit = true;
-      User = "tristonyoder";
       ExecStart = "${pkgs.coreutils}/bin/mkdir -p /data/tristonyoder/home/tristonyoder/.local/share/applications";
     };
   };
