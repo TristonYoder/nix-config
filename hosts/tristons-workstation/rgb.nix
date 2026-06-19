@@ -81,7 +81,38 @@ let
       29) apply "003366" "00FFCC" "$(gradient 001A33 00FFCC)" "$(gradient 00FFCC 001A33)" ;;  # Deep Sea
     esac
   '';
+  # Time-based routing: 08:00–20:00 → vibes, otherwise → off
+  routeScript = pkgs.writeShellScript "rgb-route" ''
+    HOUR=$(date +%H)
+    if [ "$HOUR" -ge 8 ] && [ "$HOUR" -lt 20 ]; then
+      exec ${vibesScript}
+    else
+      exec ${offScript}
+    fi
+  '';
 in {
+  # On boot: run after OpenRGB server is up
+  systemd.services.rgb-init = {
+    description = "RGB state at boot (vibes 08-20, off otherwise)";
+    after = [ "openrgb.service" "graphical.target" ];
+    wants = [ "openrgb.service" ];
+    wantedBy = [ "graphical.target" ];
+    serviceConfig = { Type = "oneshot"; ExecStart = "${routeScript}"; };
+  };
+
+  # On resume from suspend: ExecStop fires after sleep.target deactivates (= after wake)
+  systemd.services.rgb-resume = {
+    description = "RGB state after resume from suspend";
+    after = [ "sleep.target" ];
+    wantedBy = [ "sleep.target" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.coreutils}/bin/true";
+      ExecStop = "${routeScript}";
+    };
+  };
+
   systemd.services.rgb-off = {
     description = "Turn off all RGB";
     serviceConfig = { Type = "oneshot"; ExecStart = "${offScript}"; };
