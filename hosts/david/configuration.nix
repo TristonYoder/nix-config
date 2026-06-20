@@ -148,9 +148,22 @@
 
   modules.services.ai.litellm = {
     models = [
-      { name = "fast";  model = "ollama/hermes3";           apiBase = "http://tristons-workstation.${config.networking.domain}:11434"; }
-      { name = "embed"; model = "ollama/nomic-embed-text";  apiBase = "http://tristons-workstation.${config.networking.domain}:11434"; }
-      { name = "smart"; model = "anthropic/claude-sonnet-4-6"; apiKeyEnv = "ANTHROPIC_API_KEY"; }
+      # ── Embeddings ────────────────────────────────────────────────────────────
+      { name = "embed";            model = "ollama/nomic-embed-text";      apiBase = "http://tristons-workstation.${config.networking.domain}:11434"; }
+
+      # ── Local inference (tristons-workstation RTX 4080) ──────────────────────
+      { name = "local";            model = "ollama/hermes3";               apiBase = "http://tristons-workstation.${config.networking.domain}:11434"; }
+      { name = "local-tool";       model = "ollama/qwen2.5:72b";           apiBase = "http://tristons-workstation.${config.networking.domain}:11434"; }
+      { name = "local-code";       model = "ollama/qwen2.5-coder:32b";     apiBase = "http://tristons-workstation.${config.networking.domain}:11434"; }
+      { name = "local-general";    model = "ollama/qwen2.5:32b";           apiBase = "http://tristons-workstation.${config.networking.domain}:11434"; }
+
+      # ── API models (Anthropic) ────────────────────────────────────────────────
+      # fast: general tasking, routing, summarization
+      { name = "fast";             model = "anthropic/claude-sonnet-4-6";  apiKeyEnv = "ANTHROPIC_API_KEY"; }
+      # smart: tool-heavy agentic work, coding, complex reasoning
+      { name = "smart";            model = "anthropic/claude-opus-4-8";    apiKeyEnv = "ANTHROPIC_API_KEY"; }
+      # max: hardest problems, long-horizon tasks
+      { name = "max";              model = "anthropic/claude-fable-5";     apiKeyEnv = "ANTHROPIC_API_KEY"; }
     ];
     environmentFile = config.age.secrets.hermes-env.path;
   };
