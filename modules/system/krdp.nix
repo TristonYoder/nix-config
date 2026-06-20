@@ -37,7 +37,7 @@ in
         dnsProvider = "cloudflare";
         # lego needs CF_DNS_API_TOKEN=<token>; the agenix secret is a raw value,
         # so krdp-acme-credentials formats it at runtime.
-        credentialsFile = "/run/krdp/acme-cf.env";
+        environmentFile = "/run/krdp/acme-cf.env";
         group = "krdp-cert";
       };
     };
