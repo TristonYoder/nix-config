@@ -186,8 +186,10 @@ let
           services.openssh.enable = true;
           users.users.agent = {
             isNormalUser = true;
-            openssh.authorizedKeys.keyFiles =
-              [ "/var/lib/hermes-agent/ssh/id_ed25519.pub" ];
+            # Embed the pubkey directly — keyFiles resolves at build time and
+            # /var/lib/hermes-agent/ssh/ does not exist in the flake.
+            # Read the key with: cat /var/lib/hermes-agent/ssh/id_ed25519.pub
+            openssh.authorizedKeys.keys = [ "<paste-hermes-agent-pubkey-here>" ];
           };
           system.stateVersion = "25.05";
         };
@@ -212,15 +214,20 @@ let
 
     ## Commands (run via executor SSH)
 
+    The executor runs on the host. Use the host path to nix-config, not /nix-config
+    (that mount only exists inside the Hermes container).
+
     ```bash
+    NIXCFG="${cfg.nixConfigPath}"
+
     # Create branch and write files
-    git -C /nix-config checkout main
-    git -C /nix-config pull
-    git -C /nix-config checkout -b agent/container-<name>
+    git -C "$NIXCFG" checkout main
+    git -C "$NIXCFG" pull
+    git -C "$NIXCFG" checkout -b agent/container-<name>
     # ... write files ...
-    git -C /nix-config add -A
-    git -C /nix-config commit -m "request: <name> container"
-    git -C /nix-config push -u origin agent/container-<name>
+    git -C "$NIXCFG" add -A
+    git -C "$NIXCFG" commit -m "request: <name> container"
+    git -C "$NIXCFG" push -u origin agent/container-<name>
 
     # Open PR
     gh --repo TristonYoder/nix-config pr create \
@@ -301,6 +308,12 @@ in
     gitEmail = mkOption {
       type = types.str;
       default = "hermes@${config.networking.hostName}";
+    };
+
+    vaultOwner = mkOption {
+      type = types.str;
+      default = "tristonyoder";
+      description = "User that owns the vault directory on the host.";
     };
   };
 
@@ -426,6 +439,10 @@ EOF
           ${pkgs.git}/bin/git -C "$VAULT" add -A
           ${pkgs.git}/bin/git -C "$VAULT" commit -m "init: hermes vault"
         fi
+
+        # Ensure vault is owned by the normal user, not root.
+        # The parent /data path is NFS-backed; chown only the vault subtree.
+        chown -R ${cfg.vaultOwner}:${cfg.vaultOwner} "$VAULT"
       '';
       deps = [ "users" "groups" "hermesAgentSshKey" ];
     };
