@@ -565,6 +565,25 @@ cat $(which <app>)   # check for QT_QPA_PLATFORM hardcode
 loginctl show-session <id>   # Type=wayland = no native X11
 ```
 
+### Headscale 0.25 Policy: Use Email as Username, Not Headscale Username
+**Context:** headscale 0.25 changed how users are identified in ACL/SSH policy
+
+headscale 0.25 requires `@`-qualified identifiers in policy group members and tagOwners. But the identifier to use is the **email address** (the OIDC LoginName), not the headscale username:
+- `triston@theyoder.family` ✓ (correct — matches what Tailscale clients see as LoginName)
+- `tristonyoder@theyoder.family` ✗ (headscale username — won't match in SSH policy evaluation)
+- `tristonyoder@id.theyoder.family` ✗ (wrong format)
+
+For the local `github-actions` user (no OIDC/email), use `github-actions@ts.theyoder.family`.
+
+When editing policy via the admin UI or `headscale policy set`, always use email addresses for OIDC users. To check what LoginName headscale assigns to nodes: `sudo tailscale debug netmap | grep LoginName` on any connected node.
+
+To fix a broken policy after a headscale upgrade:
+```bash
+sudo headscale policy get > /tmp/policy.json
+# edit /tmp/policy.json — replace headscale usernames with email addresses
+sudo headscale policy set -f /tmp/policy_fixed.json
+```
+
 ### Headscale Preauthkeys Missing `--tags` Breaks CI SSH
 **Context:** GitHub Actions CI runners joining the Tailscale mesh via headscale
 
