@@ -35,34 +35,15 @@ in
       defaults.email = "triston@7andco.studio";
       certs.${domain} = {
         dnsProvider = "cloudflare";
-        # lego needs CF_DNS_API_TOKEN=<token>; the agenix secret is a raw value,
-        # so krdp-acme-credentials formats it at runtime.
-        environmentFile = "/run/krdp/acme-cf.env";
+        # credentialFiles sets CF_DNS_API_TOKEN from the file contents directly
+        # (no KEY= prefix needed — lego reads the raw value).
+        credentialFiles = { CF_DNS_API_TOKEN_FILE = config.age.secrets.cloudflare-api-token.path; };
         group = "krdp-cert";
       };
     };
 
     users.groups.krdp-cert = {};
     users.users.${cfg.user}.extraGroups = [ "krdp-cert" ];
-
-    # Write Cloudflare credentials in the KEY=VALUE format lego expects.
-    # Runs before the ACME service; reads the raw token from agenix.
-    systemd.services.krdp-acme-credentials = {
-      description = "Prepare Cloudflare credentials for krdp ACME";
-      before = [ "acme-${domain}.service" "acme-selfsigned-${domain}.service" ];
-      requiredBy = [ "acme-${domain}.service" ];
-      serviceConfig = {
-        Type = "oneshot";
-        RemainAfterExit = true;
-      };
-      script = ''
-        mkdir -p /run/krdp
-        echo "CF_DNS_API_TOKEN=$(cat ${config.age.secrets.cloudflare-api-token.path})" \
-          > /run/krdp/acme-cf.env
-        chmod 600 /run/krdp/acme-cf.env
-        chown acme:acme /run/krdp/acme-cf.env
-      '';
-    };
 
     networking.firewall.allowedTCPPorts = [ cfg.port ];
 
