@@ -112,6 +112,22 @@ with lib;
       "tidarr-oidc-secret" = { file = ../secrets/tidarr-oidc-secret.age; mode = "0400"; };
     })
 
+    // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.ai.hermes.enable) {
+      # Shared EnvironmentFile for hermes-agent, litellm, and open-webui.
+      # Create with: cd secrets && ./encrypt-secret.sh -n hermes-env.age -e
+      # Contents:
+      #   LITELLM_MASTER_KEY=<openssl rand -base64 32>
+      #   OPENAI_API_KEY=<same as LITELLM_MASTER_KEY — used by Open WebUI>
+      #   ANTHROPIC_API_KEY=<key>
+      #   GITHUB_TOKEN=<token with repo + pull_request scopes>
+      #   WEBUI_SECRET_KEY=<openssl rand -base64 32>
+      # Optional gateway tokens:
+      #   TELEGRAM_BOT_TOKEN=<token>
+      #   MATRIX_ACCESS_TOKEN=<token>
+      #   MATRIX_HOMESERVER_URL=https://matrix.theyoder.family
+      "hermes-env" = { file = ../secrets/hermes-env.age; mode = "0400"; };
+    })
+
     // (optionalAttrs (config.networking.hostName == "pits") {
       # PITS secrets here
     });

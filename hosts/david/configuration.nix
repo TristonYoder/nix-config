@@ -145,19 +145,15 @@
   # =============================================================================
   # AI — Hermes agent stack
   # =============================================================================
-  # hermes is enabled by default via profiles/server.nix.
-  # Override options here as needed, e.g.:
-  #
-  #   modules.services.ai.hermes = {
-  #     # environmentFile = config.age.secrets.open-webui-env.path;
-  #     # apiBaseUrls = [ "https://api.openai.com/v1" ];
-  #     # enableWebSearch = true;  # once SearXNG is running
-  #   };
-  #
-  # To create the secrets file:
-  #   cd secrets && ./encrypt-secret.sh -n open-webui-env.age -e
-  #   # WEBUI_SECRET_KEY=<openssl rand -base64 32>
-  #   # OPENAI_API_KEYS=<key>   (optional)
+  # Enabled by default via profiles/server.nix (mkDefault true).
+  # Wire the secrets file once created:
+  #   cd secrets && ./encrypt-secret.sh -n hermes-env.age -e
+  #   (see modules/secrets.nix for the full list of required keys)
+
+  modules.services.ai.hermes = {
+    # environmentFile = config.age.secrets.hermes-env.path;
+    # enableWebSearch = true;  # flip once SearXNG is running
+  };
 
   # =============================================================================
   # STORAGE: USB Drive Sync
