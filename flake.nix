@@ -134,7 +134,11 @@
             # External modules
             nixos-vscode-server.nixosModules.default
             agenix.nixosModules.default
+            # Hermes Agent — upstream module + our wrapper, david-only.
+            # hermes-agent.nix is not in ./modules to avoid pulling the upstream
+            # flake on hosts that can't reach github (pits) or don't use it.
             hermes-agent.nixosModules.default
+            ./modules/services/ai/hermes-agent.nix
             # nix-bitcoin.nixosModules.default  # Only include when bitcoin.nix is enabled
 
             # Home Manager
@@ -176,8 +180,7 @@
             # External modules
             nixos-vscode-server.nixosModules.default
             agenix.nixosModules.default
-            hermes-agent.nixosModules.default
-            
+
             # Home Manager
             home-manager.nixosModules.home-manager
             {
@@ -187,7 +190,7 @@
               home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
             }
           ];
-          
+
           specialArgs = {
             inherit nixpkgs nixpkgs-unstable iopenpod-flake;
           };
@@ -217,7 +220,6 @@
             # External modules
             nixos-vscode-server.nixosModules.default
             agenix.nixosModules.default
-            hermes-agent.nixosModules.default
 
             # Home Manager
             home-manager.nixosModules.home-manager
@@ -250,7 +252,6 @@
             ./modules
             nixos-vscode-server.nixosModules.default
             agenix.nixosModules.default
-            hermes-agent.nixosModules.default
             home-manager.nixosModules.home-manager
             {
               home-manager.useGlobalPkgs = true;
@@ -321,7 +322,6 @@
             # External modules
             nixos-vscode-server.nixosModules.default
             agenix.nixosModules.default
-            hermes-agent.nixosModules.default
 
             # Home Manager
             home-manager.nixosModules.home-manager
