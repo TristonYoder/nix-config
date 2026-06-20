@@ -164,13 +164,6 @@ in
             description = "OIDC scopes to request (includes groups for group-based access)";
           };
 
-          allowedGroups = mkOption {
-            type = types.listOf types.str;
-            default = [ ];
-            example = [ "vpn_user" "headscale" ];
-            description = "Restrict access to specific OIDC groups (PocketID group names)";
-          };
-
           pkce = mkOption {
             type = types.submodule {
               options = {
@@ -287,7 +280,6 @@ in
           client_id = cfg.oidc.clientId;
           client_secret_path = cfg.oidc.clientSecretFile;
           scope = cfg.oidc.scope;
-          allowed_groups = cfg.oidc.allowedGroups;
           pkce = {
             enabled = cfg.oidc.pkce.enabled;
             method = cfg.oidc.pkce.method;
