@@ -72,7 +72,7 @@ in
       wantedBy = [ "graphical-session.target" ];
       after = [ "graphical-session.target" ];
       serviceConfig = {
-        ExecStart = "${pkgs.krdp}/bin/krdpserver --certificate ${certDir}/cert.pem --certificate-key ${certDir}/key.pem --plasma --port ${toString cfg.port}";
+        ExecStart = "${pkgs.kdePackages.krdp}/bin/krdpserver --certificate ${certDir}/cert.pem --certificate-key ${certDir}/key.pem --plasma --port ${toString cfg.port}";
         Restart = "on-failure";
         RestartSec = "5s";
       };
