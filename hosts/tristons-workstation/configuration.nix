@@ -297,6 +297,24 @@
   };
 
   # =============================================================================
+  # AI — Ollama local LLM server (RTX 4080 via CUDA)
+  # =============================================================================
+
+  # Serves local models for Open WebUI on david over the 10Gb fiber LAN.
+  # hermes3 (NousResearch) is the default: strong tool-calling and agentic
+  # reasoning. nomic-embed-text provides fast local embeddings for RAG.
+  modules.services.ai.ollama = {
+    enable = true;
+    useCuda = true;
+    loadModels = [
+      "hermes3:latest"
+      "nomic-embed-text:latest"
+    ];
+    # Expose only on the Core Services VLAN NIC — david is the only consumer.
+    allowedInterfaces = [ "enp7s0" ];
+  };
+
+  # =============================================================================
   # RDP SERVER
   # =============================================================================
 

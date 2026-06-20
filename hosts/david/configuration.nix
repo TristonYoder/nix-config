@@ -143,6 +143,42 @@
   };
 
   # =============================================================================
+  # AI — Hermes agent stack
+  # =============================================================================
+  #
+  # Open WebUI is the chat/agent UI. It routes to:
+  #   - Ollama on tristons-workstation (local models: Hermes 3, nomic-embed-text)
+  #   - API providers declared in environmentFile (OPENAI_API_KEYS, etc.)
+  # Qdrant backs RAG: uploaded docs and conversation snippets become searchable
+  # semantic memory. nomic-embed-text on the workstation generates embeddings.
+  #
+  # Before enabling, create the secrets file:
+  #   cd secrets
+  #   ./encrypt-secret.sh -n open-webui-env.age -e
+  #   # Paste (one per line):
+  #   #   WEBUI_SECRET_KEY=<run: openssl rand -base64 32>
+  #   #   OPENAI_API_KEYS=<anthropic-or-openai-key>
+  #
+  # Then add to secrets/secrets.nix:
+  #   "open-webui-env.age".publicKeys = [ ... ];
+  # And uncomment environmentFile below.
+
+  modules.services.ai.qdrant.enable = true;
+
+  modules.services.ai.open-webui = {
+    enable = true;
+    enableQdrant = true;
+    enableWebSearch = false;  # flip to true once SearXNG is running
+    # API providers (positionally matched with OPENAI_API_KEYS in environmentFile).
+    # Anthropic does not expose a native OpenAI-compatible endpoint without a
+    # proxy — start with OpenAI or leave empty to use local-only.
+    apiBaseUrls = [
+      # "https://api.openai.com/v1"
+    ];
+    # environmentFile = config.age.secrets.open-webui-env.path;
+  };
+
+  # =============================================================================
   # STORAGE: USB Drive Sync
   # =============================================================================
 
