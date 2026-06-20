@@ -113,10 +113,7 @@ with lib;
     })
 
     // (optionalAttrs (config.networking.hostName == "david") {
-      # Add hermes-env once the secret file is created:
-      #   cd secrets && ./encrypt-secret.sh -n hermes-env.age -e
-      # Then uncomment:
-      # "hermes-env" = { file = ../secrets/hermes-env.age; mode = "0400"; };
+      "hermes-env" = { file = ../secrets/hermes-env.age; mode = "0400"; };
     })
 
     // (optionalAttrs (config.networking.hostName == "pits") {
