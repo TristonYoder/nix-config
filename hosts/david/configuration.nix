@@ -169,7 +169,12 @@
   };
 
   modules.services.ai.hermes-agent = {
+    enable = true;
+    model = "fast";  # LiteLLM route: claude-sonnet-4-6 (general tasking)
     environmentFile = config.age.secrets.hermes-env.path;
+    extraVolumes = [
+      "/data/tristonyoder/home/Projects/nix-config:/nix-config:ro"
+    ];
   };
 
   modules.services.ai.open-webui = {

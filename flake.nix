@@ -42,9 +42,12 @@
 
     # External app flakes
     iopenpod-flake.url = "github:TristonYoder/iopenpod-flake";
+
+    # Hermes Agent (NousResearch) — official NixOS module
+    hermes-agent.url = "github:NousResearch/hermes-agent";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, flake-utils, iopenpod-flake, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, flake-utils, iopenpod-flake, hermes-agent, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -131,8 +134,9 @@
             # External modules
             nixos-vscode-server.nixosModules.default
             agenix.nixosModules.default
+            hermes-agent.nixosModules.default
             # nix-bitcoin.nixosModules.default  # Only include when bitcoin.nix is enabled
-            
+
             # Home Manager
             home-manager.nixosModules.home-manager
             {
@@ -153,25 +157,26 @@
         # -----------------------------------------------------------------------------
         tristons-workstation = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
-          
+
           modules = [
             # Common configuration
             ./common/system.nix
             ./common/linux.nix
-            
+
             # Workstation profile (includes desktop profile)
             ./profiles/workstation.nix
-            
+
             # Host-specific configuration
             ./hosts/tristons-workstation/configuration.nix
             ./hosts/tristons-workstation/hardware-configuration.nix
-            
+
             # Custom modules (hardware, system, services)
             ./modules
-            
+
             # External modules
             nixos-vscode-server.nixosModules.default
             agenix.nixosModules.default
+            hermes-agent.nixosModules.default
             
             # Home Manager
             home-manager.nixosModules.home-manager
@@ -212,6 +217,7 @@
             # External modules
             nixos-vscode-server.nixosModules.default
             agenix.nixosModules.default
+            hermes-agent.nixosModules.default
 
             # Home Manager
             home-manager.nixosModules.home-manager
@@ -244,6 +250,7 @@
             ./modules
             nixos-vscode-server.nixosModules.default
             agenix.nixosModules.default
+            hermes-agent.nixosModules.default
             home-manager.nixosModules.home-manager
             {
               home-manager.useGlobalPkgs = true;
@@ -314,7 +321,8 @@
             # External modules
             nixos-vscode-server.nixosModules.default
             agenix.nixosModules.default
-            
+            hermes-agent.nixosModules.default
+
             # Home Manager
             home-manager.nixosModules.home-manager
             {
@@ -324,7 +332,7 @@
               home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
             }
           ];
-          
+
           specialArgs = {
             inherit nixpkgs nixpkgs-unstable;
           };
