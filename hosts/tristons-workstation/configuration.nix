@@ -2,6 +2,7 @@
 
 { config, pkgs, lib, ... }:
 {
+  imports = [ ./rgb.nix ];
   # =============================================================================
   # SYSTEM IDENTIFICATION
   # =============================================================================
@@ -93,15 +94,73 @@
   # limitation), so we define the full mount unit here instead.
   # DefaultDependencies=false: prevent auto-adding to remote-fs.target or
   # any other target — the automount unit is the only trigger for this mount.
-  systemd.mounts = [{
-    where = "/data";
-    what = "10.150.100.30:/";
-    type = "nfs";
-    options = "hard,timeo=50,retrans=3,nfsvers=4";
-    after = [ "nfs-david-reachable.service" ];
-    requires = [ "nfs-david-reachable.service" ];
-    unitConfig.DefaultDependencies = false;
-  }];
+  systemd.mounts = [
+    {
+      where = "/data";
+      what = "10.150.100.30:/";
+      type = "nfs";
+      options = "hard,timeo=50,retrans=3,nfsvers=4";
+      after = [ "nfs-david-reachable.service" ];
+      requires = [ "nfs-david-reachable.service" ];
+      unitConfig.DefaultDependencies = false;
+    }
+
+    # Host-local btrfs subvolumes mounted over ~/.local for each NFS-home user
+    # so KDE Wallet and other app data stay on the local NVMe rather than NFS.
+    {
+      description = "Host-local ~/.local btrfs subvolume for tristonyoder";
+      what = "/dev/disk/by-uuid/e2953d1f-2263-4331-9c3d-72dc1c7f000d";
+      where = "/data/tristonyoder/home/.local";
+      type = "btrfs";
+      options = "subvol=@tristonyoder-local,compress=zstd,noatime,ssd,discard=async";
+      after = [ "tristonyoder-dotlocal-mountpoint.service" ];
+      requires = [ "tristonyoder-dotlocal-mountpoint.service" ];
+      wantedBy = [ "graphical.target" ];
+      unitConfig.DefaultDependencies = false;
+    }
+
+    {
+      description = "Host-local ~/.local btrfs subvolume for carolineyoder";
+      what = "/dev/disk/by-uuid/e2953d1f-2263-4331-9c3d-72dc1c7f000d";
+      where = "/data/carolineyoder/home/.local";
+      type = "btrfs";
+      options = "subvol=@carolineyoder-local,compress=zstd,noatime,ssd,discard=async";
+      after = [ "carolineyoder-dotlocal-mountpoint.service" ];
+      requires = [ "carolineyoder-dotlocal-mountpoint.service" ];
+      wantedBy = [ "graphical.target" ];
+      unitConfig.DefaultDependencies = false;
+    }
+  ];
+
+  # Ensure ~/.local mount points exist in NFS homes before mounting btrfs subvolumes
+  # over them. /data may not have these directories pre-created on first boot.
+  systemd.services.tristonyoder-dotlocal-mountpoint = {
+    description = "Ensure tristonyoder ~/.local mount point exists in NFS home";
+    after = [ "data.mount" ];
+    requires = [ "data.mount" ];
+    before = [ "data-tristonyoder-home-.local.mount" ];
+    wantedBy = [ "data-tristonyoder-home-.local.mount" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      User = "tristonyoder";
+      ExecStart = "${pkgs.coreutils}/bin/mkdir -p /data/tristonyoder/home/.local";
+    };
+  };
+
+  systemd.services.carolineyoder-dotlocal-mountpoint = {
+    description = "Ensure carolineyoder ~/.local mount point exists in NFS home";
+    after = [ "data.mount" ];
+    requires = [ "data.mount" ];
+    before = [ "data-carolineyoder-home-.local.mount" ];
+    wantedBy = [ "data-carolineyoder-home-.local.mount" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      User = "carolineyoder";
+      ExecStart = "${pkgs.coreutils}/bin/mkdir -p /data/carolineyoder/home/.local";
+    };
+  };
 
   # Symlink /home/tristonyoder -> /data/tristonyoder/home
   modules.system.users.useDataDrive = true;
@@ -238,11 +297,23 @@
   };
 
   # =============================================================================
+  # RDP SERVER
+  # =============================================================================
+
+  modules.system.krdp.enable = true;
+
+  # =============================================================================
   # PACKAGES
   # =============================================================================
 
+  services.hardware.openrgb = {
+    enable = true;
+    motherboard = "amd";
+  };
+
   environment.systemPackages = with pkgs; [
     nfs-utils
+    openrgb
     vlc
   ];
 }

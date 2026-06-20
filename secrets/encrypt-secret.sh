@@ -20,6 +20,7 @@ NC='\033[0m' # No Color
 # These are fetched dynamically from the servers
 DAVID_HOST="david"
 PITS_HOST="pits"
+WORKSTATION_HOST="tristons-workstation"
 ADMIN_SSH_KEY="$HOME/.ssh/agenix.pub"
 
 # Usage information
@@ -64,10 +65,11 @@ ${BLUE}Examples:${NC}
   $0 -v cloudflare-api-token.age
 
 ${BLUE}Recipients:${NC}
-  david: SSH host key for david server
-  pits:  SSH host key for pits server
-  admin: Admin SSH key for local secret management
-  all:   All of the above (default)
+  david:                SSH host key for david server
+  pits:                 SSH host key for pits server
+  tristons-workstation: SSH host key for tristons-workstation
+  admin:                Admin SSH key for local secret management
+  all:                  All of the above (default)
 
 ${BLUE}Troubleshooting:${NC}
   If you get "no identity matched any of the recipients" during nixos-rebuild:
@@ -211,9 +213,10 @@ trap "rm -f $RECIPIENTS_FILE" EXIT
 echo -e "${BLUE}Fetching SSH public keys...${NC}"
 
 if [[ "$HOSTS" == "all" ]]; then
-    echo -e "${BLUE}Recipients:${NC} david, pits, admin"
+    echo -e "${BLUE}Recipients:${NC} david, pits, tristons-workstation, admin"
     ssh tristonyoder@$DAVID_HOST "cat /etc/ssh/ssh_host_ed25519_key.pub" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Failed to fetch david SSH key${NC}"; exit 1; }
     ssh tristonyoder@$PITS_HOST "cat /etc/ssh/ssh_host_ed25519_key.pub" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Failed to fetch pits SSH key${NC}"; exit 1; }
+    ssh tristonyoder@$WORKSTATION_HOST "cat /etc/ssh/ssh_host_ed25519_key.pub" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Failed to fetch tristons-workstation SSH key${NC}"; exit 1; }
     cat "$ADMIN_SSH_KEY" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Admin SSH key not found at $ADMIN_SSH_KEY${NC}"; exit 1; }
 else
     echo -e "${BLUE}Recipients:${NC} $HOSTS"
@@ -226,11 +229,14 @@ else
             pits)
                 ssh tristonyoder@$PITS_HOST "cat /etc/ssh/ssh_host_ed25519_key.pub" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Failed to fetch pits SSH key${NC}"; exit 1; }
                 ;;
+            tristons-workstation)
+                ssh tristonyoder@$WORKSTATION_HOST "cat /etc/ssh/ssh_host_ed25519_key.pub" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Failed to fetch tristons-workstation SSH key${NC}"; exit 1; }
+                ;;
             admin)
                 cat "$ADMIN_SSH_KEY" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Admin SSH key not found at $ADMIN_SSH_KEY${NC}"; exit 1; }
                 ;;
             *)
-                echo -e "${RED}Error: Unknown host '$host'. Valid: david, pits, admin, all${NC}"
+                echo -e "${RED}Error: Unknown host '$host'. Valid: david, pits, tristons-workstation, admin, all${NC}"
                 exit 1
                 ;;
         esac

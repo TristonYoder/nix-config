@@ -9,6 +9,8 @@ let
   pits = "age1jja99mf5qfczutr574nve8vhpt7azm8aq4ukqqrstdn0agud23nscazh6r";
 
   tristons-nixbook = "age1nmhy84rxx5rsk37jcmwp7rvjujd2kqjzet2klj96h6gdnqyxm46qwmg88s";
+
+  tristons-workstation = "age1t09tawcxnv7dk36jwqdt0ah5qragmta2gg52n93adydhzdz48esqv0lwv4";
   
   # =============================================================================
   # ADMIN KEYS - Keys for managing secrets from local machines
@@ -29,7 +31,7 @@ let
   # =============================================================================
   
   # Secrets accessible by all hosts + admins (shared secrets)
-  allServers = [ david pits tristons-nixbook ] ++ adminKeys;
+  allServers = [ david pits tristons-nixbook tristons-workstation ] ++ adminKeys;
   
   # Secrets for david only
   davidKeys = [ david ] ++ adminKeys;

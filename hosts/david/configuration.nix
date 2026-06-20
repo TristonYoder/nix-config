@@ -167,6 +167,13 @@
   # Serve the Nix binary cache over HTTPS so all Tailscale hosts can use it.
   modules.services.infrastructure.nixCacheServer.enable = true;
 
+  # Conservative GC for the build machine — keep 3 months or 30 generations.
+  nix.gc = {
+    automatic = true;
+    dates = "monthly";
+    options = "--delete-older-than 365d --max-old-count 30";
+  };
+
   # =============================================================================
   # ADDITIONAL SERVICES
   # =============================================================================

@@ -12,7 +12,9 @@
     # Enable store optimization (safe on NixOS)
     auto-optimise-store = true;
     trusted-substituters = [ "ssh-ng://david" ];
-    # Allow vmTools (nixos-hardware brcm-firmware, nixpkgs VM tests) to use KVM
+  } // lib.optionalAttrs (lib.any (m: lib.hasPrefix "kvm" m) config.boot.kernelModules) {
+    # Only expose /dev/kvm in the sandbox on hosts that actually have it (bare-metal with kvm-amd/kvm-intel).
+    # VMs (e.g. pits/Hyper-V) lack /dev/kvm and fail the build if this is set.
     extra-sandbox-paths = [ "/dev/kvm" ];
     system-features = [ "nixos-test" "benchmark" "big-parallel" "kvm" ];
   };
