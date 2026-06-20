@@ -309,6 +309,9 @@
     loadModels = [
       "hermes3:latest"
       "nomic-embed-text:latest"
+      "qwen2.5:72b"
+      "qwen2.5-coder:32b"
+      "qwen2.5:32b"
     ];
     # Expose only on the Core Services VLAN NIC — david is the only consumer.
     allowedInterfaces = [ "enp7s0" ];
