@@ -171,10 +171,7 @@
   # AI SERVICES
   # =============================================================================
 
-  modules.services.ai.open-webui = {
-    enable = lib.mkDefault true;
-    ollamaHost = lib.mkDefault "http://tristons-workstation.${config.networking.domain}:11434";
-  };
+  modules.services.ai.hermes.enable = lib.mkDefault true;
 
   # =============================================================================
   # DNS CONFIGURATION
