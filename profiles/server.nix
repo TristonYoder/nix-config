@@ -171,7 +171,10 @@
   # AI SERVICES
   # =============================================================================
 
-  modules.services.ai.hermes.enable = lib.mkDefault true;
+  modules.services.ai.hermes-agent.enable = lib.mkDefault true;
+  modules.services.ai.litellm.enable     = lib.mkDefault true;
+  modules.services.ai.open-webui.enable  = lib.mkDefault true;
+  modules.services.ai.qdrant.enable      = lib.mkDefault true;
 
   # =============================================================================
   # DNS CONFIGURATION

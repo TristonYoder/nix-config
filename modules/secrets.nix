@@ -112,7 +112,7 @@ with lib;
       "tidarr-oidc-secret" = { file = ../secrets/tidarr-oidc-secret.age; mode = "0400"; };
     })
 
-    // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.ai.hermes.enable) {
+    // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.ai.hermes-agent.enable) {
       # Shared EnvironmentFile for hermes-agent, litellm, and open-webui.
       # Create with: cd secrets && ./encrypt-secret.sh -n hermes-env.age -e
       # Contents:

@@ -143,16 +143,30 @@
   };
 
   # =============================================================================
-  # AI — Hermes agent stack
-  # =============================================================================
-  # Enabled by default via profiles/server.nix (mkDefault true).
-  # Wire the secrets file once created:
+  # AI — each service enabled via profiles/server.nix (mkDefault true)
+  # Configure per-service below; wire environmentFile once secret is created:
   #   cd secrets && ./encrypt-secret.sh -n hermes-env.age -e
   #   (see modules/secrets.nix for the full list of required keys)
+  # =============================================================================
 
-  modules.services.ai.hermes = {
+  modules.services.ai.litellm = {
+    models = [
+      { name = "fast";  model = "ollama/hermes3";           apiBase = "http://tristons-workstation.${config.networking.domain}:11434"; }
+      { name = "embed"; model = "ollama/nomic-embed-text";  apiBase = "http://tristons-workstation.${config.networking.domain}:11434"; }
+      { name = "smart"; model = "anthropic/claude-sonnet-4-6"; apiKeyEnv = "ANTHROPIC_API_KEY"; }
+    ];
     # environmentFile = config.age.secrets.hermes-env.path;
-    # enableWebSearch = true;  # flip once SearXNG is running
+  };
+
+  modules.services.ai.hermes-agent = {
+    # environmentFile = config.age.secrets.hermes-env.path;
+  };
+
+  modules.services.ai.open-webui = {
+    ollamaHost = "http://tristons-workstation.${config.networking.domain}:11434";
+    enableQdrant = true;
+    apiBaseUrls = [ "http://127.0.0.1:4000" ];  # LiteLLM default port
+    # environmentFile = config.age.secrets.hermes-env.path;
   };
 
   # =============================================================================

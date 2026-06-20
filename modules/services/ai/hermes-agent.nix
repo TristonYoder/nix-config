@@ -446,7 +446,12 @@ EOF
       };
       environmentFiles = optional (cfg.environmentFile != null) cfg.environmentFile;
       extraOptions = [ "--network=host" ];
-      dependsOn = [ "litellm" ];
+    };
+
+    # Wait for LiteLLM (systemd service) before starting the agent container.
+    systemd.services."docker-hermes-agent" = {
+      after = [ "litellm.service" ];
+      wants = [ "litellm.service" ];
     };
   };
 }
