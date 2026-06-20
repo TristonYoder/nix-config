@@ -316,11 +316,8 @@ in
       home = "/var/lib/hermes-executor";
       createHome = true;
       shell = pkgs.bash;
-      # The agent keypair is generated at activation time (below).
-      # sshd reads this file at connection time, so it works even though
-      # the key doesn't exist at the moment this option is evaluated.
-      openssh.authorizedKeys.keyFiles =
-        [ "/var/lib/hermes-agent/ssh/id_ed25519.pub" ];
+      # authorized_keys is written at activation time by hermesAgentSshKey
+      # (below) so the key path never needs to be known at eval/build time.
     };
     users.groups.hermes-executor = {};
 
@@ -362,6 +359,16 @@ Host localhost
 EOF
           chmod 600 "$CONFIG"
         fi
+
+        # Write pubkey into executor's authorized_keys at activation time.
+        # authorizedKeys.keyFiles is eval-time (build-time) and can't reference
+        # a path that doesn't exist in the Nix store, so we do it here instead.
+        EXEC_SSH=/var/lib/hermes-executor/.ssh
+        mkdir -p "$EXEC_SSH"
+        chmod 700 "$EXEC_SSH"
+        cp "$KEY.pub" "$EXEC_SSH/authorized_keys"
+        chmod 600 "$EXEC_SSH/authorized_keys"
+        chown -R hermes-executor:hermes-executor "$EXEC_SSH"
       '';
       deps = [ "users" "groups" ];
     };
