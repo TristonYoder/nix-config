@@ -112,6 +112,10 @@ with lib;
       "tidarr-oidc-secret" = { file = ../secrets/tidarr-oidc-secret.age; mode = "0400"; };
     })
 
+    // (optionalAttrs (config.networking.hostName == "david") {
+      "hermes-env" = { file = ../secrets/hermes-env.age; mode = "0400"; };
+    })
+
     // (optionalAttrs (config.networking.hostName == "pits") {
       # PITS secrets here
     });
