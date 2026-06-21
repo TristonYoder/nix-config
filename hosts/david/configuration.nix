@@ -147,6 +147,8 @@
   # =============================================================================
 
   modules.services.ai.litellm = {
+    # rpc.statd (NFS) grabs port 4000 dynamically via rpcbind; use 4100 to avoid the conflict.
+    port = 4100;
     models = [
       # ── Embeddings ────────────────────────────────────────────────────────────
       { name = "embed";            model = "ollama/nomic-embed-text";      apiBase = "http://tristons-workstation.${config.networking.domain}:11434"; }
@@ -169,9 +171,14 @@
     environmentFile = config.age.secrets.hermes-env.path;
   };
 
+  # Set the Matrix home room so /sethome is not needed after each restart.
+  # HERMES_MANAGED=true blocks the /sethome command; env var is the only path.
+  services.hermes-agent.environment.MATRIX_HOME_ROOM = "!evHgyPMGVZyKzGopQo:theyoder.family";
+
   modules.services.ai.hermes-agent = {
     enable = true;
     model = "local";  # LiteLLM route: hermes3:8b on tristons-workstation RTX 4080
+    inferenceUrl = "http://127.0.0.1:4100";
     environmentFile = config.age.secrets.hermes-env.path;
     extraVolumes = [
       "/data/tristonyoder/home/Projects/nix-config:/nix-config:ro"
@@ -181,7 +188,7 @@
   modules.services.ai.open-webui = {
     ollamaHost = "http://tristons-workstation.${config.networking.domain}:11434";
     enableQdrant = true;
-    apiBaseUrls = [ "http://127.0.0.1:4000" ];  # LiteLLM default port
+    apiBaseUrls = [ "http://127.0.0.1:4100" ];  # LiteLLM proxy port
     environmentFile = config.age.secrets.hermes-env.path;
   };
 
