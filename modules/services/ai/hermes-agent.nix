@@ -53,7 +53,11 @@ in
       # mkIf conditional. The upstream hermes module serializes Nix mkIf into
       # a {_type: if, ...} YAML dict, and runtime_provider.py calls .strip()
       # on that dict → AttributeError: 'dict' object has no attribute 'strip'.
-      settings.model = { default = cfg.model; }
+      #
+      # provider=openai: hermes sees ANTHROPIC_API_KEY in env and defaults to
+      # Anthropic when the model name isn't recognized. Explicit provider forces
+      # the OpenAI-compatible path so LiteLLM proxy is used instead.
+      settings.model = { default = cfg.model; provider = "openai"; }
         // optionalAttrs (cfg.inferenceUrl != null) { base_url = cfg.inferenceUrl; };
 
       environmentFiles = optional (cfg.environmentFile != null) cfg.environmentFile;
