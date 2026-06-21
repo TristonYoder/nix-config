@@ -16,7 +16,7 @@ in
 
     inferenceUrl = mkOption {
       type = types.nullOr types.str;
-      default = "http://127.0.0.1:4000";
+      default = "http://127.0.0.1:${toString config.modules.services.ai.litellm.port}";
       description = "Base URL for the LiteLLM proxy. Set null to use provider URLs directly.";
     };
 
@@ -49,10 +49,22 @@ in
       enable = true;
       addToSystemPackages = true;
 
-      settings.model.default = cfg.model;
-
-      # Point at LiteLLM proxy if set
-      settings.model.base_url = mkIf (cfg.inferenceUrl != null) cfg.inferenceUrl;
+      # Use optionalAttrs (not mkIf) so all values are plain YAML strings.
+      # The upstream hermes module serializes mkIf into {_type: if, ...} dicts,
+      # and runtime_provider.py calls .strip() on those → AttributeError.
+      #
+      # provider=custom:litellm-proxy: hermes resolves this against the
+      # providers.litellm-proxy entry, reads LITELLM_MASTER_KEY from env,
+      # and sends it as the API key so LiteLLM auth succeeds.
+      settings = {
+        model = { default = cfg.model; provider = "custom:litellm-proxy"; }
+          // optionalAttrs (cfg.inferenceUrl != null) { base_url = cfg.inferenceUrl; };
+      } // optionalAttrs (cfg.inferenceUrl != null) {
+        providers.litellm-proxy = {
+          api = cfg.inferenceUrl;
+          key_env = "LITELLM_MASTER_KEY";
+        };
+      };
 
       environmentFiles = optional (cfg.environmentFile != null) cfg.environmentFile;
 

@@ -301,17 +301,17 @@
   # =============================================================================
 
   # Serves local models for Open WebUI on david over the 10Gb fiber LAN.
-  # hermes3 (NousResearch) is the default: strong tool-calling and agentic
-  # reasoning. nomic-embed-text provides fast local embeddings for RAG.
+  # All models sized to fit fully in RTX 4080 16GB VRAM (Q4_K_M ≈ 9GB max for 14b).
   modules.services.ai.ollama = {
     enable = true;
     useCuda = true;
     loadModels = [
-      "hermes3:latest"
-      "nomic-embed-text:latest"
-      "qwen2.5:72b"
-      "qwen2.5-coder:32b"
-      "qwen2.5:32b"
+      "hermes3:latest"          # 8b  ~5GB  — agentic tool-use (NousResearch)
+      "nomic-embed-text:latest" # tiny ~274MB — RAG embeddings
+      "llama3.2:3b"             # 3b  ~2GB  — fast lightweight tasks
+      "qwen2.5:14b"             # 14b ~9GB  — strong general purpose
+      "qwen2.5-coder:14b"       # 14b ~9GB  — code generation
+      "phi4:14b"                # 14b ~9GB  — Microsoft phi4, excellent reasoning
     ];
     # Expose only on the Core Services VLAN NIC — david is the only consumer.
     allowedInterfaces = [ "enp7s0" ];
