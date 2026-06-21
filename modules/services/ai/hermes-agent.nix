@@ -49,10 +49,12 @@ in
       enable = true;
       addToSystemPackages = true;
 
-      settings.model.default = cfg.model;
-
-      # Point at LiteLLM proxy if set
-      settings.model.base_url = mkIf (cfg.inferenceUrl != null) cfg.inferenceUrl;
+      # Use optionalAttrs so base_url is set as a plain YAML string, not a
+      # mkIf conditional. The upstream hermes module serializes Nix mkIf into
+      # a {_type: if, ...} YAML dict, and runtime_provider.py calls .strip()
+      # on that dict → AttributeError: 'dict' object has no attribute 'strip'.
+      settings.model = { default = cfg.model; }
+        // optionalAttrs (cfg.inferenceUrl != null) { base_url = cfg.inferenceUrl; };
 
       environmentFiles = optional (cfg.environmentFile != null) cfg.environmentFile;
 
