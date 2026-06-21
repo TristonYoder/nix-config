@@ -40,6 +40,11 @@ in
   };
 
   config = mkIf cfg.enable {
+    # olm is required by mautrix[encryption] for Matrix E2E. nixpkgs marks it
+    # insecure due to the upstream project being archived, but it's functional
+    # and there's no replacement for python-olm in the mautrix ecosystem yet.
+    nixpkgs.config.permittedInsecurePackages = [ "olm-3.2.16" ];
+
     services.hermes-agent = {
       enable = true;
       addToSystemPackages = true;
@@ -50,6 +55,13 @@ in
       settings.model.base_url = mkIf (cfg.inferenceUrl != null) cfg.inferenceUrl;
 
       environmentFiles = optional (cfg.environmentFile != null) cfg.environmentFile;
+
+      # Matrix platform dependencies — mautrix[encryption] + supporting libs.
+      # These are added to PYTHONPATH via makeWrapper so hermes can import them
+      # from its sealed Nix Python env.
+      extraPythonPackages = with pkgs.python312Packages;
+        [ mautrix asyncpg aiosqlite aiohttp-socks ]
+        ++ mautrix.optional-dependencies.encryption;
 
       container = mkIf cfg.containerMode {
         enable = true;
