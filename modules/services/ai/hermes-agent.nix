@@ -16,7 +16,7 @@ in
 
     inferenceUrl = mkOption {
       type = types.nullOr types.str;
-      default = "http://127.0.0.1:4000";
+      default = "http://127.0.0.1:${toString config.modules.services.ai.litellm.port}";
       description = "Base URL for the LiteLLM proxy. Set null to use provider URLs directly.";
     };
 

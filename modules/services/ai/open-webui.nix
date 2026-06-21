@@ -46,7 +46,7 @@ in
     #   "https://api.anthropic.com/v1"  (requires openai-compatible wrapper)
     apiBaseUrls = mkOption {
       type = types.listOf types.str;
-      default = [];
+      default = [ "http://127.0.0.1:${toString config.modules.services.ai.litellm.port}" ];
       description = "Additional OpenAI-compatible API base URLs (positionally matched with OPENAI_API_KEYS).";
     };
 

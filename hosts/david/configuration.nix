@@ -182,7 +182,6 @@
   modules.services.ai.hermes-agent = {
     enable = true;
     model = "local";  # LiteLLM route: hermes3:8b on tristons-workstation RTX 4080
-    inferenceUrl = "http://127.0.0.1:4100";
     environmentFile = config.age.secrets.hermes-env.path;
     extraVolumes = [
       "/data/tristonyoder/home/Projects/nix-config:/nix-config:ro"
@@ -192,7 +191,6 @@
   modules.services.ai.open-webui = {
     ollamaHost = "http://tristons-workstation.${config.networking.domain}:11434";
     enableQdrant = true;
-    apiBaseUrls = [ "http://127.0.0.1:4100" ];  # LiteLLM proxy port
     environmentFile = config.age.secrets.hermes-env.path;
   };
 
