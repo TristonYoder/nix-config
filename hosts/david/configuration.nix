@@ -171,7 +171,7 @@
 
   modules.services.ai.hermes-agent = {
     enable = true;
-    model = "fast";  # LiteLLM route: claude-sonnet-4-6 (general tasking)
+    model = "local";  # LiteLLM route: hermes3:8b on tristons-workstation RTX 4080
     environmentFile = config.age.secrets.hermes-env.path;
     extraVolumes = [
       "/data/tristonyoder/home/Projects/nix-config:/nix-config:ro"
