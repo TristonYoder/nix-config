@@ -22,6 +22,10 @@
   
   networking.hostName = "david";
   system.stateVersion = "23.11"; # Did you read the comment?
+
+  # tristons-workstation is reachable via Tailscale but not via VLAN from david's br0.
+  # Pin it to the Tailscale IP so internal service lookups (LiteLLM → Ollama) work.
+  networking.hosts."100.110.37.61" = [ "tristons-workstation.theyoder.family" "tristons-workstation" ];
   system.autoUpgrade.channel = "https://nixos.org/channels/nixos-23.11/";
 
   # ZFS encryption key is loaded via postDeviceCommands (key file, not interactive).
