@@ -155,14 +155,14 @@
     port = 4100;
     models = [
       # ── Embeddings ────────────────────────────────────────────────────────────
-      { name = "embed";            model = "ollama/nomic-embed-text";      apiBase = "http://tristons-workstation.${config.networking.domain}:11434"; }
+      { name = "embed";            model = "ollama/nomic-embed-text";      apiBase = "http://100.110.37.61:11434"; }
 
       # ── Local inference (tristons-workstation RTX 4080) ──────────────────────
-      { name = "local";            model = "ollama/hermes3";               apiBase = "http://tristons-workstation.${config.networking.domain}:11434"; }
-      { name = "local-fast";       model = "ollama/llama3.2:3b";           apiBase = "http://tristons-workstation.${config.networking.domain}:11434"; }
-      { name = "local-tool";       model = "ollama/qwen2.5:14b";           apiBase = "http://tristons-workstation.${config.networking.domain}:11434"; }
-      { name = "local-code";       model = "ollama/qwen2.5-coder:14b";     apiBase = "http://tristons-workstation.${config.networking.domain}:11434"; }
-      { name = "local-general";    model = "ollama/phi4:14b";              apiBase = "http://tristons-workstation.${config.networking.domain}:11434"; }
+      { name = "local";            model = "ollama/hermes3";               apiBase = "http://100.110.37.61:11434"; }
+      { name = "local-fast";       model = "ollama/llama3.2:3b";           apiBase = "http://100.110.37.61:11434"; }
+      { name = "local-tool";       model = "ollama/qwen2.5:14b";           apiBase = "http://100.110.37.61:11434"; }
+      { name = "local-code";       model = "ollama/qwen2.5-coder:14b";     apiBase = "http://100.110.37.61:11434"; }
+      { name = "local-general";    model = "ollama/phi4:14b";              apiBase = "http://100.110.37.61:11434"; }
 
       # ── API models (Anthropic) ────────────────────────────────────────────────
       # fast: general tasking, routing, summarization
