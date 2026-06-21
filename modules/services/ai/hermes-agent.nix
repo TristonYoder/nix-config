@@ -80,8 +80,6 @@ in
 
       environmentFiles = optional (cfg.environmentFile != null) cfg.environmentFile;
 
-      documents = optionalAttrs (cfg.soul != null) { "SOUL.md" = cfg.soul; };
-
       environment = optionalAttrs (cfg.matrixHomeRoom != null) {
         MATRIX_HOME_ROOM = cfg.matrixHomeRoom;
       };
@@ -96,6 +94,18 @@ in
         backend = "docker";
         extraVolumes = cfg.extraVolumes;
       };
+    };
+
+    # Write SOUL.md to HERMES_HOME (.hermes/), where load_soul_md() reads it.
+    # Cannot use services.hermes-agent.documents — that installs to workingDirectory
+    # (workspace), which hermes never checks for the persona slot.
+    system.activationScripts.hermesAgentSoul = mkIf (cfg.soul != null) {
+      text = ''
+        install -o hermes-agent -g hermes-agent -m 0660 \
+          ${pkgs.writeText "hermes-SOUL.md" cfg.soul} \
+          /var/lib/hermes-agent/.hermes/SOUL.md
+      '';
+      deps = [ "hermes-agent-setup" "users" "groups" ];
     };
   };
 }
