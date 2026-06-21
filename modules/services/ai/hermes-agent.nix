@@ -37,6 +37,18 @@ in
       default = [];
       description = "Additional volume mounts for the container.";
     };
+
+    soul = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      description = "SOUL.md content (hermes system prompt / persona). Written to the working directory at activation via services.hermes-agent.documents. Null uses hermes's built-in default.";
+    };
+
+    matrixHomeRoom = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      description = "Matrix room ID to use as the hermes home room (MATRIX_HOME_ROOM env var). Set so /sethome is not required after each restart.";
+    };
   };
 
   config = mkIf cfg.enable {
@@ -67,6 +79,12 @@ in
       };
 
       environmentFiles = optional (cfg.environmentFile != null) cfg.environmentFile;
+
+      documents = optionalAttrs (cfg.soul != null) { "SOUL.md" = cfg.soul; };
+
+      environment = optionalAttrs (cfg.matrixHomeRoom != null) {
+        MATRIX_HOME_ROOM = cfg.matrixHomeRoom;
+      };
 
       # Matrix platform dependencies — uses the upstream 'matrix' pyproject.toml
       # optional-dependency group, which includes mautrix[encryption]==0.21.0,

@@ -175,14 +175,11 @@
     environmentFile = config.age.secrets.hermes-env.path;
   };
 
-  # Set the Matrix home room so /sethome is not needed after each restart.
-  # HERMES_MANAGED=true blocks the /sethome command; env var is the only path.
-  services.hermes-agent.environment.MATRIX_HOME_ROOM = "!evHgyPMGVZyKzGopQo:theyoder.family";
-
   modules.services.ai.hermes-agent = {
     enable = true;
     model = "local-general";  # LiteLLM route: phi4:14b on tristons-workstation RTX 4080
     environmentFile = config.age.secrets.hermes-env.path;
+    matrixHomeRoom = "!evHgyPMGVZyKzGopQo:theyoder.family";
     extraVolumes = [
       "/data/tristonyoder/home/Projects/nix-config:/nix-config:ro"
     ];

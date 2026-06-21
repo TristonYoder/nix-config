@@ -64,6 +64,18 @@ in
           ANTHROPIC_API_KEY=<key>
       '';
     };
+
+    extraSettings = mkOption {
+      type = types.attrs;
+      default = {};
+      description = ''
+        Arbitrary LiteLLM settings merged (via //) into services.litellm.settings.
+        Top-level keys override the generated ones wholesale — e.g. passing
+        extraSettings.litellm_settings = {...} replaces the generated
+        litellm_settings (including telemetry=false) entirely.
+        Use for router_settings, callbacks, or other config not exposed as typed options.
+      '';
+    };
   };
 
   config = mkIf cfg.enable {
@@ -93,7 +105,7 @@ in
         general_settings = mkIf cfg.requireAuth {
           master_key = "os.environ/LITELLM_MASTER_KEY";
         };
-      };
+      } // cfg.extraSettings;
     };
   };
 }
