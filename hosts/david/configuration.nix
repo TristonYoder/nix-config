@@ -203,13 +203,26 @@ in
 
   modules.services.ai.hermes-agent = {
     enable = true;
-    model = "local-general";  # LiteLLM route: phi4:14b on tristons-workstation RTX 4080
+    model  = "local-general";  # LiteLLM route: phi4:14b on tristons-workstation RTX 4080
     environmentFile = config.age.secrets.hermes-env.path;
     # HERMES_MANAGED=true (in environmentFile) blocks /sethome; homeRoom is the only path.
     homeRoom = "!evHgyPMGVZyKzGopQo:theyoder.family";
     extraVolumes = [
       "/data/tristonyoder/home/Projects/nix-config:/nix-config:ro"
     ];
+
+    # Nightly scan watches the core stack; weekly storage report includes the
+    # tank pool. Digest and vault maintenance run on defaults.
+    nightlyAnomalyScan.services = [
+      "jellyfin" "immich-server" "vaultwarden" "postgresql" "caddy"
+      "matrix-synapse" "litellm" "hermes-agent"
+    ];
+    nightlyAnomalyScan.pools = [ "tank" ];
+    weeklyStorageReport.enable = true;
+
+    # Homelab MCP enabled — gives hermes structured tools for service/ZFS queries.
+    # allowRestarts left false until a Matrix-confirmation skill is in place.
+    homelabMcp.enable = true;
   };
 
   modules.services.ai.open-webui = {
