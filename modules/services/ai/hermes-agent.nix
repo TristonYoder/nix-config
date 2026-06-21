@@ -56,12 +56,10 @@ in
 
       environmentFiles = optional (cfg.environmentFile != null) cfg.environmentFile;
 
-      # Matrix platform dependencies — mautrix[encryption] + supporting libs.
-      # These are added to PYTHONPATH via makeWrapper so hermes can import them
-      # from its sealed Nix Python env.
-      extraPythonPackages = with pkgs.python312Packages;
-        [ mautrix asyncpg aiosqlite aiohttp-socks ]
-        ++ mautrix.optional-dependencies.encryption;
+      # Matrix platform dependencies — uses the upstream 'matrix' pyproject.toml
+      # optional-dependency group, which includes mautrix[encryption]==0.21.0,
+      # aiosqlite, asyncpg, and aiohttp-socks into the sealed uv venv.
+      extraDependencyGroups = [ "matrix" ];
 
       container = mkIf cfg.containerMode {
         enable = true;
