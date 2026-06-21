@@ -54,11 +54,20 @@ in
       # a {_type: if, ...} YAML dict, and runtime_provider.py calls .strip()
       # on that dict → AttributeError: 'dict' object has no attribute 'strip'.
       #
-      # provider=openai: hermes sees ANTHROPIC_API_KEY in env and defaults to
-      # Anthropic when the model name isn't recognized. Explicit provider forces
-      # the OpenAI-compatible path so LiteLLM proxy is used instead.
-      settings.model = { default = cfg.model; provider = "custom"; }
+      # provider=custom:litellm-proxy: hermes resolves this against the
+      # providers.litellm-proxy entry below, which supplies base_url + key_env
+      # so hermes sends LITELLM_MASTER_KEY as the API key.
+      settings.model = { default = cfg.model; provider = "custom:litellm-proxy"; }
         // optionalAttrs (cfg.inferenceUrl != null) { base_url = cfg.inferenceUrl; };
+
+      # Named custom provider so hermes knows the base URL and which env var
+      # holds the API key for the LiteLLM proxy. Omitted when inferenceUrl is null.
+      settings = mkIf (cfg.inferenceUrl != null) {
+        providers.litellm-proxy = {
+          api = cfg.inferenceUrl;
+          key_env = "LITELLM_MASTER_KEY";
+        };
+      };
 
       environmentFiles = optional (cfg.environmentFile != null) cfg.environmentFile;
 
