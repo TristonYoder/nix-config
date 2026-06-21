@@ -86,8 +86,6 @@ in
 
       environmentFiles = optional (cfg.environmentFile != null) cfg.environmentFile;
 
-      documents = optionalAttrs (cfg.soul != null) { "SOUL.md" = cfg.soul; };
-
       environment = optionalAttrs (cfg.homeRoom != null) {
         MATRIX_HOME_ROOM = cfg.homeRoom;
       };
