@@ -55,8 +55,6 @@ in
         enable = true;
         backend = "docker";
         extraVolumes = cfg.extraVolumes;
-        # RTX 4080 available if needed for local inference inside the container
-        extraOptions = [ "--gpus" "all" ];
       };
     };
   };
