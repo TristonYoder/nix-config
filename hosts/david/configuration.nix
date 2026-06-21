@@ -153,6 +153,8 @@
   modules.services.ai.litellm = {
     # rpc.statd (NFS) grabs port 4000 dynamically via rpcbind; use 4100 to avoid the conflict.
     port = 4100;
+    # LiteLLM binds to 127.0.0.1 only — no auth needed for localhost-only service.
+    requireAuth = false;
     models = [
       # ── Embeddings ────────────────────────────────────────────────────────────
       { name = "embed";            model = "ollama/nomic-embed-text";      apiBase = "http://100.110.37.61:11434"; }

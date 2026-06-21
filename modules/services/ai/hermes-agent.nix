@@ -57,7 +57,7 @@ in
       # provider=openai: hermes sees ANTHROPIC_API_KEY in env and defaults to
       # Anthropic when the model name isn't recognized. Explicit provider forces
       # the OpenAI-compatible path so LiteLLM proxy is used instead.
-      settings.model = { default = cfg.model; provider = "openai"; }
+      settings.model = { default = cfg.model; provider = "custom"; }
         // optionalAttrs (cfg.inferenceUrl != null) { base_url = cfg.inferenceUrl; };
 
       environmentFiles = optional (cfg.environmentFile != null) cfg.environmentFile;

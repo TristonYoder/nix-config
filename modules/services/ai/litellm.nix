@@ -44,12 +44,22 @@ in
       default = [];
     };
 
+    requireAuth = mkOption {
+      type = types.bool;
+      default = true;
+      description = ''
+        Require clients to authenticate with LITELLM_MASTER_KEY.
+        Safe to disable when LiteLLM is localhost-only and all callers
+        are trusted local services (hermes, open-webui, etc.).
+      '';
+    };
+
     environmentFile = mkOption {
       type = types.nullOr types.path;
       default = null;
       description = ''
         Agenix-decrypted EnvironmentFile. Must include:
-          LITELLM_MASTER_KEY=<random>    # key clients use to authenticate
+          LITELLM_MASTER_KEY=<random>    # key clients use to authenticate (if requireAuth = true)
         And any API keys referenced in models[*].apiKeyEnv:
           ANTHROPIC_API_KEY=<key>
       '';
@@ -80,7 +90,7 @@ in
           drop_params = true;
         };
 
-        general_settings = {
+        general_settings = mkIf cfg.requireAuth {
           master_key = "os.environ/LITELLM_MASTER_KEY";
         };
       };
