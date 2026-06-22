@@ -346,7 +346,7 @@ in
 
     # Caddy reverse proxy for headscale API and admin UI
     modules.services.vHosts.hosts.${cfg.domain} = {
-      managedProxy = false;
+      rawConfig = true;
       public = true;  # Headscale API must be public for Tailscale clients
       dnsRecord = false;  # Omit from Technitium — let public DNS resolve this so local clients reach the public entry, not a Tailscale-redirected one
       extraConfig = ''

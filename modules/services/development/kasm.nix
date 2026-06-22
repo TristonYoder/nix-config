@@ -136,7 +136,7 @@ in
     
     # Caddy reverse proxy configuration
     modules.services.vHosts.hosts.${cfg.domain} = {
-      managedProxy = false;
+      rawConfig = true;
       extraConfig = ''
         reverse_proxy https://localhost:${toString cfg.listenPort} {
           transport http {

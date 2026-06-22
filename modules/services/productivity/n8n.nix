@@ -17,7 +17,7 @@ in
     
     domain = mkOption {
       type = types.str;
-      default = "n8n.7andco.dev";
+      default = "n8n.${config.networking.domain}";
       description = "Domain for n8n";
     };
     
