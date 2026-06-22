@@ -2,6 +2,12 @@
 # Hosts all services including infrastructure, media, productivity, and storage
 
 { config, pkgs, lib, nixpkgs, nixpkgs-unstable, nix-bitcoin, ... }:
+let
+  # Tailscale IP for tristons-workstation. LiteLLM uses aiodns which bypasses
+  # /etc/hosts, so we must use the raw IP rather than the hostname everywhere
+  # LiteLLM resolves endpoints. Update this if the device re-registers on Tailscale.
+  workstationIp = "100.110.37.61";
+in
 {
   imports = [
     ../../modules/services/tailscale-router.nix
@@ -25,7 +31,7 @@
 
   # tristons-workstation is reachable via Tailscale but not via VLAN from david's br0.
   # Pin it to the Tailscale IP so internal service lookups (LiteLLM → Ollama) work.
-  networking.hosts."100.110.37.61" = [ "tristons-workstation.theyoder.family" "tristons-workstation" ];
+  networking.hosts.${workstationIp} = [ "tristons-workstation.theyoder.family" "tristons-workstation" ];
   system.autoUpgrade.channel = "https://nixos.org/channels/nixos-23.11/";
 
   # ZFS encryption key is loaded via postDeviceCommands (key file, not interactive).
@@ -155,14 +161,14 @@
     port = 4100;
     models = [
       # ── Embeddings ────────────────────────────────────────────────────────────
-      { name = "embed";            model = "ollama/nomic-embed-text";      apiBase = "http://100.110.37.61:11434"; }
+      { name = "embed";            model = "ollama/nomic-embed-text";      apiBase = "http://${workstationIp}:11434"; }
 
       # ── Local inference (tristons-workstation RTX 4080) ──────────────────────
-      { name = "local";            model = "ollama/hermes3";               apiBase = "http://100.110.37.61:11434"; }
-      { name = "local-fast";       model = "ollama/llama3.2:3b";           apiBase = "http://100.110.37.61:11434"; }
-      { name = "local-tool";       model = "ollama/qwen2.5:14b";           apiBase = "http://100.110.37.61:11434"; }
-      { name = "local-code";       model = "ollama/qwen2.5-coder:14b";     apiBase = "http://100.110.37.61:11434"; }
-      { name = "local-general";    model = "ollama/phi4:14b";              apiBase = "http://100.110.37.61:11434"; }
+      { name = "local";            model = "ollama/hermes3";               apiBase = "http://${workstationIp}:11434"; }
+      { name = "local-fast";       model = "ollama/llama3.2:3b";           apiBase = "http://${workstationIp}:11434"; }
+      { name = "local-tool";       model = "ollama/qwen2.5:14b";           apiBase = "http://${workstationIp}:11434"; }
+      { name = "local-code";       model = "ollama/qwen2.5-coder:14b";     apiBase = "http://${workstationIp}:11434"; }
+      { name = "local-general";    model = "ollama/phi4:14b";              apiBase = "http://${workstationIp}:11434"; }
 
       # ── API models (Anthropic) ────────────────────────────────────────────────
       # fast: general tasking, routing, summarization
@@ -175,14 +181,12 @@
     environmentFile = config.age.secrets.hermes-env.path;
   };
 
-  # Set the Matrix home room so /sethome is not needed after each restart.
-  # HERMES_MANAGED=true blocks the /sethome command; env var is the only path.
-  services.hermes-agent.environment.MATRIX_HOME_ROOM = "!evHgyPMGVZyKzGopQo:theyoder.family";
-
   modules.services.ai.hermes-agent = {
     enable = true;
     model = "local-general";  # LiteLLM route: phi4:14b on tristons-workstation RTX 4080
     environmentFile = config.age.secrets.hermes-env.path;
+    # HERMES_MANAGED=true (in environmentFile) blocks /sethome; homeRoom is the only path.
+    homeRoom = "!evHgyPMGVZyKzGopQo:theyoder.family";
     extraVolumes = [
       "/data/tristonyoder/home/Projects/nix-config:/nix-config:ro"
     ];
