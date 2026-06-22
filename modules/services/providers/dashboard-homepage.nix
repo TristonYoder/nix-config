@@ -3,7 +3,7 @@
 with lib;
 
 let
-  cfg = config.modules.services.providers.dashboard;
+  cfg = config.modules.services.providers.dashboard-homepage;
 
   dashboardHosts = filter (h: h.enable)
     (attrValues config.modules.services.vHosts.hosts);
@@ -12,7 +12,6 @@ let
   groupByCategory = hosts:
     let
       grouped = groupBy (h: if h.category != "" then h.category else "Services") hosts;
-      # Title-case a category key
       titleCase = s:
         let first = lib.toUpper (lib.substring 0 1 s);
             rest  = lib.substring 1 (lib.stringLength s - 1) s;
@@ -29,8 +28,8 @@ let
   homepageServices = groupByCategory dashboardHosts;
 in
 {
-  options.modules.services.providers.dashboard = {
-    enable = mkEnableOption "Homepage dashboard provider for vHosts";
+  options.modules.services.providers.dashboard-homepage = {
+    enable = mkEnableOption "Homepage dashboard provider (static, per-host, build-time generated)";
 
     port = mkOption {
       type = types.port;
@@ -50,7 +49,6 @@ in
       description = "Browser title shown in Homepage.";
     };
 
-    # Passthrough for widgets, bookmarks, etc.
     extraSettings = mkOption {
       type = types.attrs;
       default = { };
@@ -70,12 +68,10 @@ in
     services.homepage-dashboard = {
       enable = true;
       listenPort = cfg.port;
-      # Allow access via the configured domain and localhost
       allowedHosts = "${cfg.domain},localhost:${toString cfg.port}";
       services = homepageServices;
     } // cfg.extraSettings;
 
-    # Auto-register the dashboard in the vHosts registry
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
       displayName = "Home";
