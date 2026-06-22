@@ -69,6 +69,8 @@ with lib;
       "pocket-id-encryption-key" = { file = ../secrets/pocket-id-encryption-key.age; owner = "root"; group = "docker"; mode = "0440"; };
       # tidarr: docker-only service (docker/media/media-aq.nix), no NixOS module enable
       "tidarr-oidc-secret" = { file = ../secrets/tidarr-oidc-secret.age; mode = "0400"; };
+      # hermes-agent: NixOS module loaded only on david (external flake dep), no universal enable option
+      "hermes-env" = { file = ../secrets/hermes-env.age; mode = "0400"; };
     })
 
     // (optionalAttrs config.modules.services.gaming.romm.enable {
@@ -123,8 +125,5 @@ with lib;
       "jellyfin-api-key" = { file = ../secrets/jellyfin-api-key.age; mode = "0400"; };
     })
 
-    // (optionalAttrs config.modules.services.ai.hermes-agent.enable {
-      # Encrypted to davidKeys only
-      "hermes-env" = { file = ../secrets/hermes-env.age; mode = "0400"; };
-    });
+    ;
 }
