@@ -61,7 +61,7 @@
   modules.services.communication.stalwart-mail.enable = false;
 
   # dns-sync: use local Technitium directly (avoids Caddy loopback for the API)
-  modules.services.vHosts.technitium.url = "http://localhost:5380";
+  modules.services.providers.dns-technitium.url = "http://localhost:5380";
 
   # Navidrome - Music streaming server (Subsonic-compatible)
   modules.services.media.navidrome.enable = true;
@@ -93,7 +93,7 @@
 
   # Technitium DNS Web UI and DoH - dns01.<baseDomain>
   modules.services.vHosts.hosts."dns01.${config.networking.domain}" = {
-    managedProxy = false;  # Use custom routing for multi-backend setup
+    rawConfig = true;  # Use custom routing for multi-backend setup
     public = false;  # Restrict to internal networks (auto-applied by module)
     extraConfig = ''
       # DNS over HTTPS endpoint - Technitium runs DoH on port 5353

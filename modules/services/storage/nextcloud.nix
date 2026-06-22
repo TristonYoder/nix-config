@@ -392,7 +392,7 @@ in
     # Caddy virtual host on David
     # Caddy serves Nextcloud directly via PHP-FPM Unix socket
     modules.services.vHosts.hosts.${cfg.domain} = {
-      managedProxy = false;
+      rawConfig = true;
       extraConfig = ''
         # Serve Nextcloud via PHP-FPM
         root * ${config.services.nextcloud.package}

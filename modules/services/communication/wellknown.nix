@@ -6,20 +6,26 @@ let
   matrixCfg = config.modules.services.communication.matrix-synapse;
   pixelfedCfg = config.modules.services.communication.pixelfed;
   
-  # Determine if this is the host server (david) or edge server (PITS)
-  isHostServer = config.networking.hostName == "david";
-  
-  # Target host for proxying services - localhost for host server, david hostname for edge servers
-  targetHost = if isHostServer then "localhost" else "david";
+  # Determine if this is the service host or an edge proxy
+  isHostServer = config.networking.hostName == cfg.serviceHost;
+
+  # Target host for proxying services
+  targetHost = if isHostServer then "localhost" else cfg.serviceHost;
 in
 {
   options.modules.services.communication.wellknown = {
     enable = mkEnableOption "Well-known delegation for federation services";
-    
+
     domain = mkOption {
       type = types.str;
       default = config.networking.domain;
       description = "Root domain for well-known endpoints";
+    };
+
+    serviceHost = mkOption {
+      type = types.str;
+      default = "david";
+      description = "Hostname of the machine running Matrix and Pixelfed. Used to distinguish local routing (localhost) from proxy routing on edge servers.";
     };
   };
 
@@ -28,7 +34,7 @@ in
     # Works for both host server (localhost routing) and edge servers (remote routing to host)
     # Note: On edge servers uses HTTPS with Cloudflare DNS-01, on host server uses HTTP (internal)
     modules.services.vHosts.hosts.${if isHostServer then "http://${cfg.domain}" else cfg.domain} = {
-      managedProxy = false;
+      rawConfig = true;
       public = !isHostServer;  # Public on edge servers for federation, internal on host server
       dnsChallenge = !isHostServer;
       extraConfig = ''

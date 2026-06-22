@@ -27,7 +27,7 @@
   
   # Caddy for reverse proxy and public-facing services
   modules.services.infrastructure.caddy.enable = lib.mkDefault true;
-  modules.services.vHosts.technitium = {
+  modules.services.providers.dns-technitium = {
     enable = lib.mkDefault true;
     url = lib.mkDefault "https://dns01.${config.networking.domain}";
   };

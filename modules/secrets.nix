@@ -42,12 +42,15 @@ with lib;
       };
     })
 
-    // (optionalAttrs config.modules.services.vHosts.technitium.enable {
+    // (optionalAttrs config.modules.services.providers.dns-technitium.enable {
       "technitium-api-token" = { file = ../secrets/technitium-api-token.age; owner = "root"; group = "root"; mode = "0400"; };
     })
 
     // (optionalAttrs (config.networking.hostName == "david") {
-      # Unconditional david secrets
+      # Docker-compose services loaded directly in flake.nix for david have no
+      # NixOS module enable option, so hostname is the only available gate here.
+      # Encryption in secrets/secrets.nix (davidKeys) is the real access control;
+      # this guard just avoids deploying unused secrets to other hosts.
       "babybuddy-secrets" = { file = ../secrets/babybuddy-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
       "outline-google-secret" = { file = ../secrets/outline-google-secret.age; owner = "root"; group = "docker"; mode = "0440"; };
       "affine-db-password" = { file = ../secrets/affine-db-password.age; owner = "root"; group = "docker"; mode = "0440"; };
@@ -64,9 +67,13 @@ with lib;
       "outline-secrets" = { file = ../secrets/outline-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
       "nextdns-link" = { file = ../secrets/nextdns-link.age; owner = "root"; group = "root"; mode = "0400"; };
       "pocket-id-encryption-key" = { file = ../secrets/pocket-id-encryption-key.age; owner = "root"; group = "docker"; mode = "0440"; };
+      # tidarr: docker-only service (docker/media/media-aq.nix), no NixOS module enable
+      "tidarr-oidc-secret" = { file = ../secrets/tidarr-oidc-secret.age; mode = "0400"; };
     })
 
-    // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.gaming.romm.enable) {
+    // (optionalAttrs config.modules.services.gaming.romm.enable {
+      # Encrypted to davidKeys only — enabling romm on another host requires
+      # re-encrypting these secrets to that host's key first.
       "romm-auth-secret-key" = { file = ../secrets/romm-auth-secret-key.age; owner = "root"; group = "docker"; mode = "0440"; };
       "romm-db-password" = { file = ../secrets/romm-db-password.age; owner = "root"; group = "docker"; mode = "0440"; };
       "romm-oidc-secret" = { file = ../secrets/romm-oidc-secret.age; owner = "root"; group = "docker"; mode = "0440"; };
@@ -75,48 +82,49 @@ with lib;
       "romm-igdb-client-secret" = { file = ../secrets/romm-igdb-client-secret.age; owner = "root"; group = "docker"; mode = "0440"; };
     })
 
-    // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.infrastructure.nixCacheServer.enable) {
+    // (optionalAttrs config.modules.services.infrastructure.nixCacheServer.enable {
+      # Encrypted to davidKeys only
       "nix-cache-signing-key" = { file = ../secrets/nix-cache-signing-key.age; owner = "github-actions"; group = "github-actions"; mode = "0400"; };
     })
 
-    // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.infrastructure.cloudflared.enable) {
+    // (optionalAttrs config.modules.services.infrastructure.cloudflared.enable {
+      # Encrypted to davidKeys only
       "cloudflared-token-current" = { file = ../secrets/cloudflared-token-current.age; owner = "cloudflared"; group = "cloudflared"; mode = "0400"; };
     })
 
-    // (optionalAttrs (config.networking.hostName == "pits" && config.modules.services.infrastructure.headscale.enable) {
+    // (optionalAttrs config.modules.services.infrastructure.headscale.enable {
+      # Encrypted to pitsKeys only
       "headscale-api-key" = { file = ../secrets/headscale-api-key.age; owner = "headscale"; group = "headscale"; mode = "0400"; };
     })
 
-    // (optionalAttrs (config.networking.hostName == "pits" && config.modules.services.infrastructure.headscale.oidc.enable) {
+    // (optionalAttrs config.modules.services.infrastructure.headscale.oidc.enable {
+      # Encrypted to pitsKeys only
       "headscale-oidc-secret" = { file = ../secrets/headscale-oidc-secret.age; owner = "headscale"; group = "headscale"; mode = "0400"; };
     })
 
-    // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.communication.matrix-synapse.enable) {
+    // (optionalAttrs config.modules.services.communication.matrix-synapse.enable {
+      # Encrypted to davidKeys only
       "matrix-registration-secret" = { file = ../secrets/matrix-registration-secret.age; owner = "matrix-synapse"; group = "matrix-synapse"; mode = "0400"; };
     })
 
-    // (optionalAttrs (config.networking.hostName == "david" && config.services.nextcloud.enable) {
+    // (optionalAttrs config.services.nextcloud.enable {
+      # Encrypted to davidKeys only
       "nextcloud-admin-password" = { file = ../secrets/nextcloud-admin-password.age; owner = "nextcloud"; group = "nextcloud"; mode = "0400"; };
     })
 
-    // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.media.jellyplexWatched.enable) {
+    // (optionalAttrs config.modules.services.media.jellyplexWatched.enable {
+      # Encrypted to davidKeys only
       "plex-token" = { file = ../secrets/plex-token.age; owner = "jellyplex-watched"; group = "jellyplex-watched"; mode = "0400"; };
       "jellyfin-token" = { file = ../secrets/jellyfin-token.age; owner = "jellyplex-watched"; group = "jellyplex-watched"; mode = "0400"; };
     })
 
-    // (optionalAttrs (config.networking.hostName == "david" && config.modules.services.storage.mp3PlayerSync.enable) {
+    // (optionalAttrs config.modules.services.storage.mp3PlayerSync.enable {
+      # Encrypted to davidKeys only
       "jellyfin-api-key" = { file = ../secrets/jellyfin-api-key.age; mode = "0400"; };
     })
 
-    // (optionalAttrs (config.networking.hostName == "david") {
-      "tidarr-oidc-secret" = { file = ../secrets/tidarr-oidc-secret.age; mode = "0400"; };
-    })
-
-    // (optionalAttrs (config.networking.hostName == "david") {
+    // (optionalAttrs config.modules.services.ai.hermes-agent.enable {
+      # Encrypted to davidKeys only
       "hermes-env" = { file = ../secrets/hermes-env.age; mode = "0400"; };
-    })
-
-    // (optionalAttrs (config.networking.hostName == "pits") {
-      # PITS secrets here
     });
 }

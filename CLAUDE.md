@@ -11,6 +11,8 @@ This is a flake-based, multi-host Nix configuration managing NixOS servers, desk
 - **david** (NixOS Server) - Full infrastructure stack with media, productivity, storage services
 - **pits** (NixOS Edge/Pi) - Lightweight public-facing reverse proxy
 - **tristons-workstation** (NixOS Desktop) - KDE Plasma workstation. RTX 4080 (open NVIDIA kernel modules), btrfs root (`@`, `@nix`, `@snapshots` subvolumes), `/home` symlinked to NFS-mounted `/data` on david (`useDataDrive`). **Always has a 10Gb fiber backhaul to david over the Core Services VLAN** — this is a permanent network characteristic of this host, not a one-off; treat NFS-backed home and any future high-bandwidth dependency on david as safe to assume for this host specifically. Dual-NIC: `enp7s0` carries `10.150.100.0/23` (Core Services, route to david), `eno1` carries `10.150.10.0/24` (User Devices). `network-online.target` may fire on `eno1` before `enp7s0` completes DHCP — see the NFS automount troubleshooting entry before touching boot-time network ordering on this host.
+- **tristons-nixbook** (NixOS Laptop) - Workstation profile on a MacBook. NFS-mounts `/data` from david. Key swap (Command↔Control) via keyd for MacBook keyboard layout.
+- **tristons-nixbook-pro** (NixOS on T2 MacBook Pro 16,1) - Dual-boot, uses `nixos-hardware.apple-t2`. Custom bootable installer ISOs built from the flake (`tristons-nixbook-pro-installer`, `tristons-nixbook-pro-installer-plasma`).
 - **tyoder-mbp** (macOS Apple Silicon) - Work MacBook Pro
 - **Tristons-MacBook-Pro** (macOS Intel) - Personal MacBook Pro
 
