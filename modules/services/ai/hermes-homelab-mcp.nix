@@ -382,7 +382,8 @@ let
         for a in assets[:limit]:
             city_str = a.get("exifInfo",{}).get("city","")
             loc = f" — {city_str}" if city_str else ""
-            lines.append(f"  {a.get('localDateTime','')[:10]}{loc}  id={a.get('id')}  {IMMICH_API_URL}/api/assets/{a.get('id')}/thumbnail")
+            dt = (a.get("localDateTime") or "")[:10]
+            lines.append(f"  {dt}{loc}  id={a.get('id')}  {IMMICH_API_URL}/api/assets/{a.get('id')}/thumbnail")
         return f"Found {len(assets)} photo(s):\n" + "\n".join(lines)
 
     def tool_immich_create_album(args):
