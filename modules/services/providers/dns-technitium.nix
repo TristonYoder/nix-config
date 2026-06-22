@@ -163,15 +163,21 @@ in
         }
 
         technitium_delete() {
-          local domain="$1" zone
+          local domain="$1" zone record_type
           zone=$(find_zone "$domain")
           [ -z "$zone" ] && return
           echo "  - $domain (stale)"
+          # Use ANAME at zone apex (mirrors technitium_add logic), CNAME elsewhere
+          if [ "$domain" = "$zone" ]; then
+            record_type="ANAME"
+          else
+            record_type="CNAME"
+          fi
           $CURL --retry 3 --retry-delay 2 -sfG \
             --data-urlencode "token=$TOKEN" \
             --data-urlencode "domain=$domain" \
             --data-urlencode "zone=$zone" \
-            --data-urlencode "type=CNAME" \
+            --data-urlencode "type=$record_type" \
             "$TECHNITIUM_URL/api/zones/records/delete" \
             | $JQ -r 'if .status == "ok" then "    removed" else "    error: \(.errorMessage)" end' || true
         }
@@ -227,7 +233,7 @@ in
           RemainAfterExit = true;
           # Wait for Technitium's HTTP listener before running dns-sync.
           # Technitium may still be starting when activation triggers this unit.
-          ExecStartPre = "${pkgs.bash}/bin/bash -c 'until ${pkgs.curl}/bin/curl -sf http://localhost:5380/api/status > /dev/null 2>&1; do sleep 1; done'";
+          ExecStartPre = "${pkgs.bash}/bin/bash -c 'i=0; until ${pkgs.curl}/bin/curl -sf http://localhost:5380/api/status > /dev/null 2>&1; do i=$((i+1)); [ $i -ge 60 ] && echo \"dns-sync: timed out waiting for Technitium\" >&2 && exit 1; sleep 1; done'";
           ExecStart = "${dnsSyncScript}";
           StateDirectory = "dns-sync";
         };

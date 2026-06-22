@@ -24,8 +24,8 @@ in
 
     serviceHost = mkOption {
       type = types.str;
-      default = "david";
-      description = "Hostname of the machine running Matrix and Pixelfed. Used to distinguish local routing (localhost) from proxy routing on edge servers.";
+      default = config.networking.hostName;
+      description = "Hostname of the machine running Matrix and Pixelfed. Defaults to the current host (service and proxy on the same machine). Edge servers set this to the host running Matrix/Pixelfed.";
     };
   };
 
