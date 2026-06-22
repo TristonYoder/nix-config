@@ -2,6 +2,20 @@
 
 with lib;
 
+let
+  # Auto-expand a bare subdomain (no dots) to a FQDN using networking.domain.
+  # Keys that already contain dots are used verbatim for backward compat.
+  expandDomain = name:
+    if (builtins.match ".*\\..*" name) != null
+    then name
+    else "${name}.${config.networking.domain}";
+
+  # Title-case a string: "budget" → "Budget", "open-webui" → "Open-webui"
+  titleCase = s:
+    let first = lib.toUpper (lib.substring 0 1 s);
+        rest  = lib.substring 1 (lib.stringLength s - 1) s;
+    in "${first}${rest}";
+in
 {
   options.modules.services.vHosts = {
     hosts = mkOption {
@@ -15,8 +29,12 @@ with lib;
 
           virtualHost = mkOption {
             type = types.str;
-            default = name;
-            description = "Virtual host name (defaults to the attribute key).";
+            default = expandDomain name;
+            description = ''
+              FQDN for this virtual host.
+              Defaults to the attribute key if it contains dots; otherwise
+              auto-expands to ''${key}.''${networking.domain}.
+            '';
           };
 
           reverseProxyAddress = mkOption {
@@ -52,7 +70,11 @@ with lib;
           public = mkOption {
             type = types.bool;
             default = false;
-            description = "Whether the virtual host should be publicly accessible.";
+            description = ''
+              Whether the virtual host is publicly accessible.
+              When true and the cloudflare-tunnel provider is enabled, an
+              ingress rule is added to route this domain through the tunnel.
+            '';
           };
 
           dnsRecord = mkOption {
@@ -78,10 +100,55 @@ with lib;
             default = "";
             description = "Additional config for this virtual host. In managed mode, appended after the proxy directive. In rawConfig mode, this is the entire site block content.";
           };
+
+          # ── Provider metadata (consumed by dashboard / monitoring providers) ──
+
+          displayName = mkOption {
+            type = types.str;
+            default = titleCase name;
+            description = "Human-readable service name shown in dashboards.";
+          };
+
+          category = mkOption {
+            type = types.str;
+            default = "";
+            description = "Dashboard category (e.g. \"media\", \"productivity\", \"infrastructure\").";
+          };
+
+          icon = mkOption {
+            type = types.str;
+            default = "";
+            description = "Icon identifier or URL used by the dashboard provider.";
+          };
+
+          monitor = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Whether the monitoring provider should track uptime for this host.";
+          };
         };
       }));
       default = { };
-      description = "Agnostic virtual host definitions used by reverse proxy and DNS provider modules.";
+      description = ''
+        Agnostic virtual host registry consumed by all provider modules
+        (reverse proxy, DNS, Cloudflare tunnel, dashboard, monitoring).
+
+        Minimal declaration — bare subdomain, auto-expands to FQDN:
+
+          modules.services.vHosts.hosts."budget" = {
+            reverseProxyPort = cfg.port;
+          };
+          # → virtualHost = "budget.''${networking.domain}"
+          # → displayName  = "Budget"
+          # → Caddy + Technitium DNS wired automatically (if enabled)
+
+        Public exposure via Cloudflare tunnel:
+
+          modules.services.vHosts.hosts."budget" = {
+            reverseProxyPort = cfg.port;
+            public = true;
+          };
+      '';
     };
   };
 }
