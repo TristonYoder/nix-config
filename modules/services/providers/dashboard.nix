@@ -1,23 +1,5 @@
 { config, lib, ... }:
 
-# ── Dashboard provider (TBD) ─────────────────────────────────────────────────
-#
-# This module will auto-populate a self-hosted dashboard with every enabled
-# vHost, using the registry metadata: displayName, category, icon, virtualHost.
-#
-# Candidates under evaluation:
-#   - Homarr       — declarative NixOS module available in nixpkgs
-#   - Homepage     — YAML-config-driven, widely used, nixpkgs module available
-#   - Dasherr      — minimal, JSON config
-#
-# Once a tool is chosen, this stub becomes a full provider that:
-#   1. Installs and starts the dashboard service
-#   2. Generates service tiles from config.modules.services.vHosts.hosts
-#      (filtered to h.enable entries, grouped by h.category)
-#   3. Uses h.virtualHost as the launch URL and h.displayName as the label
-#
-# ─────────────────────────────────────────────────────────────────────────────
-
 with lib;
 
 let
@@ -25,33 +7,80 @@ let
 
   dashboardHosts = filter (h: h.enable)
     (attrValues config.modules.services.vHosts.hosts);
+
+  # Group vHosts by category, falling back to "Services" for uncategorized
+  groupByCategory = hosts:
+    let
+      grouped = groupBy (h: if h.category != "" then h.category else "Services") hosts;
+      # Title-case a category key
+      titleCase = s:
+        let first = lib.toUpper (lib.substring 0 1 s);
+            rest  = lib.substring 1 (lib.stringLength s - 1) s;
+        in "${first}${rest}";
+      toGroupEntry = cat: members:
+        { "${titleCase cat}" = map (h:
+            { "${h.displayName}" = {
+                href = "https://${h.virtualHost}";
+              } // optionalAttrs (h.icon != "") { icon = h.icon; };
+            }) members;
+        };
+    in mapAttrsToList toGroupEntry grouped;
+
+  homepageServices = groupByCategory dashboardHosts;
 in
 {
   options.modules.services.providers.dashboard = {
-    enable = mkEnableOption "Dashboard provider for vHosts (implementation TBD)";
-
-    provider = mkOption {
-      type = types.enum [ "homepage" "homarr" "dasherr" ];
-      default = "homepage";
-      description = "Which dashboard tool to configure.";
-    };
+    enable = mkEnableOption "Homepage dashboard provider for vHosts";
 
     port = mkOption {
       type = types.port;
       default = 3000;
-      description = "Port the dashboard service listens on.";
+      description = "Port Homepage listens on.";
     };
 
     domain = mkOption {
       type = types.str;
       default = "home.${config.networking.domain}";
-      description = "Domain to expose the dashboard on (registered as a vHost automatically).";
+      description = "Domain to expose Homepage on (registered as a vHost automatically).";
+    };
+
+    title = mkOption {
+      type = types.str;
+      default = config.networking.domain;
+      description = "Browser title shown in Homepage.";
+    };
+
+    # Passthrough for widgets, bookmarks, etc.
+    extraSettings = mkOption {
+      type = types.attrs;
+      default = { };
+      description = "Extra Homepage settings (widgets, bookmarks, settings block, etc.).";
+      example = literalExpression ''
+        {
+          widgets = [
+            { resources = { cpu = true; memory = true; disk = "/"; }; }
+            { search = { provider = "google"; target = "_blank"; }; }
+          ];
+        }
+      '';
     };
   };
 
   config = mkIf cfg.enable {
-    warnings = [
-      "modules.services.providers.dashboard is enabled but not yet implemented (tool selection pending). Would render ${toString (builtins.length dashboardHosts)} service tiles."
-    ];
+    services.homepage-dashboard = {
+      enable = true;
+      listenPort = cfg.port;
+      # Allow access via the configured domain and localhost
+      allowedHosts = "${cfg.domain},localhost:${toString cfg.port}";
+      services = homepageServices;
+    } // cfg.extraSettings;
+
+    # Auto-register the dashboard in the vHosts registry
+    modules.services.vHosts.hosts.${cfg.domain} = {
+      reverseProxyPort = cfg.port;
+      displayName = "Home";
+      category = "infrastructure";
+      monitor = false;
+    };
   };
 }

@@ -1,21 +1,4 @@
-{ config, lib, ... }:
-
-# ── Monitoring provider (TBD) ────────────────────────────────────────────────
-#
-# This module will auto-configure a monitoring service for every vHost that has
-# monitor = true (the default).  The implementation is pending tool selection.
-#
-# Candidates under evaluation:
-#   - Gatus       — declarative YAML config, lightweight, Prometheus metrics
-#   - Uptime Kuma — GUI-driven but has a REST API for declarative seeding
-#
-# Once a tool is chosen, this stub becomes a full provider that:
-#   1. Installs and starts the monitoring service
-#   2. Generates monitor targets from config.modules.services.vHosts.hosts
-#      (filtering to hosts where h.enable && h.monitor)
-#   3. Exposes an option set matching the provider's configuration surface
-#
-# ────────────────────────────────────────────────────────────────────────────
+{ config, lib, pkgs, ... }:
 
 with lib;
 
@@ -24,22 +7,72 @@ let
 
   monitoredHosts = filter (h: h.enable && h.monitor)
     (attrValues config.modules.services.vHosts.hosts);
+
+  # Generate a Gatus endpoint for each monitored vHost
+  gatuEndpoints = map (h: {
+    name     = h.displayName;
+    url      = "https://${h.virtualHost}";
+    interval = cfg.interval;
+    conditions = [
+      "[STATUS] == 200"
+    ] ++ optionals cfg.checkTLS [
+      "[CERTIFICATE_EXPIRATION] > 72h"
+    ];
+  }) monitoredHosts;
 in
 {
   options.modules.services.providers.monitoring = {
-    enable = mkEnableOption "Monitoring provider for vHosts (implementation TBD)";
+    enable = mkEnableOption "Gatus monitoring provider for vHosts";
 
-    # Placeholder — will expand to provider-specific options once tool is chosen
-    provider = mkOption {
-      type = types.enum [ "gatus" "uptime-kuma" ];
-      default = "gatus";
-      description = "Which monitoring tool to configure.";
+    port = mkOption {
+      type = types.port;
+      default = 8090;
+      description = "Port Gatus listens on.";
+    };
+
+    domain = mkOption {
+      type = types.str;
+      default = "status.${config.networking.domain}";
+      description = "Domain to expose Gatus on (registered as a vHost automatically).";
+    };
+
+    interval = mkOption {
+      type = types.str;
+      default = "5m";
+      description = "Default check interval (Gatus duration string, e.g. \"1m\", \"5m\").";
+    };
+
+    checkTLS = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Also verify TLS certificate expiry (>72h) on each endpoint.";
+    };
+
+    extraSettings = mkOption {
+      type = types.attrs;
+      default = { };
+      description = "Extra settings merged into the Gatus config (freeform, see upstream docs).";
     };
   };
 
   config = mkIf cfg.enable {
-    warnings = [
-      "modules.services.providers.monitoring is enabled but not yet implemented (tool selection pending). Monitoring targets: ${toString (map (h: h.virtualHost) monitoredHosts)}"
-    ];
+    services.gatus = {
+      enable = true;
+      settings = mkMerge [
+        {
+          web.port = cfg.port;
+          endpoints = gatuEndpoints;
+        }
+        cfg.extraSettings
+      ];
+    };
+
+    # Auto-register the status page in the vHosts registry
+    modules.services.vHosts.hosts.${cfg.domain} = {
+      reverseProxyPort = cfg.port;
+      displayName = "Status";
+      category = "infrastructure";
+      monitor = false; # don't monitor the monitor
+    };
   };
 }

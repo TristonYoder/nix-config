@@ -27,12 +27,16 @@ in
 
     tunnelId = mkOption {
       type = types.str;
+      default = "";
       description = "Cloudflare Tunnel UUID (from `cloudflared tunnel create`).";
     };
 
     tunnelSecretFile = mkOption {
       type = types.path;
-      default = config.age.secrets.cloudflare-tunnel-secret.path;
+      default =
+        if config.age.secrets ? cloudflare-tunnel-secret
+        then config.age.secrets.cloudflare-tunnel-secret.path
+        else "/run/agenix/cloudflare-tunnel-secret";
       description = "Path to the tunnel credentials JSON file (agenix secret).";
     };
 
