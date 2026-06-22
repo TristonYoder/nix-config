@@ -211,18 +211,42 @@ in
       "/data/tristonyoder/home/Projects/nix-config:/nix-config:ro"
     ];
 
-    # Nightly scan watches the core stack; weekly storage report includes the
-    # tank pool. Digest and vault maintenance run on defaults.
+    # ── Infrastructure monitoring ─────────────────────────────────────────────
     nightlyAnomalyScan.services = [
       "jellyfin" "immich-server" "vaultwarden" "postgresql" "caddy"
       "matrix-synapse" "litellm" "hermes-agent"
     ];
     nightlyAnomalyScan.pools = [ "tank" ];
-    weeklyStorageReport.enable = true;
 
-    # Homelab MCP enabled — gives hermes structured tools for service/ZFS queries.
-    # allowRestarts left false until a Matrix-confirmation skill is in place.
+    # ── Life management ───────────────────────────────────────────────────────
+    # Immich integration — On This Day + smart album skill
+    immich.enable       = true;
+    immich.apiUrl       = "http://localhost:${toString config.modules.services.media.immich.port}";
+    immich.apiKeyEnvVar = "IMMICH_API_KEY";
+
+    # Actual Budget — weekly pulse + monthly report
+    actualBudget.enable       = true;
+    actualBudget.apiUrl       = "http://localhost:${toString config.modules.services.productivity.actualHttpApi.port}";
+    actualBudget.apiKeyEnvVar = "ACTUAL_HTTP_API_KEY";
+
+    # Relationship CRM — Sunday nudge at 10am
+    relationshipCrm.enable = true;
+
+    # Focus mode skill (triggered by conversation, no schedule)
+    focusMode.enable = true;
+
+    # Weekly review — Friday 4pm
+    weeklyReview.enable = true;
+
+    # Homelab MCP — structured tools for service/ZFS/disk/media queries
     homelabMcp.enable = true;
+    homelabMcp.allowRestarts = false;
+
+    # Vaultwarden audit — disabled until bw CLI is available in executor
+    vaultwardenAudit.enable = false;
+
+    # Notion sync — disabled until Notion workspace is wired
+    notionSync.enable = false;
   };
 
   modules.services.ai.open-webui = {
