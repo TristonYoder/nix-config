@@ -152,7 +152,7 @@
           ];
           
           specialArgs = {
-            inherit nixpkgs nixpkgs-unstable nix-bitcoin iopenpod-flake;
+            inherit self nixpkgs nixpkgs-unstable nix-bitcoin iopenpod-flake;
           };
         };
 
@@ -192,7 +192,7 @@
           ];
 
           specialArgs = {
-            inherit nixpkgs nixpkgs-unstable iopenpod-flake;
+            inherit self nixpkgs nixpkgs-unstable iopenpod-flake;
           };
         };
 
@@ -232,7 +232,7 @@
           ];
 
           specialArgs = {
-            inherit nixpkgs nixpkgs-unstable iopenpod-flake;
+            inherit self nixpkgs nixpkgs-unstable iopenpod-flake;
           };
         };
 
@@ -262,7 +262,7 @@
           ];
 
           specialArgs = {
-            inherit nixpkgs nixpkgs-unstable iopenpod-flake;
+            inherit self nixpkgs nixpkgs-unstable iopenpod-flake;
           };
         };
 
@@ -334,11 +334,11 @@
           ];
 
           specialArgs = {
-            inherit nixpkgs nixpkgs-unstable;
+            inherit self nixpkgs nixpkgs-unstable;
           };
         };
       };
-      
+
       # =============================================================================
       # DARWIN CONFIGURATIONS (macOS)
       # =============================================================================

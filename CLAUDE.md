@@ -115,13 +115,24 @@ hostname  # Returns: tyoder-mbp, Tristons-MacBook-Pro, david, tristons-workstati
   - No need to SSH elsewhere
 
 **Remote testing from macOS** (when NOT on target host):
-```bash
-# Test on david (most common - server with all services)
-ssh github-actions@david "cd /home/github-actions/nix-config && git fetch origin && git checkout <branch> && git pull origin <branch> && sudo nixos-rebuild dry-run --flake .#david"
 
-# Or build without activation
-ssh github-actions@david "cd /home/github-actions/nix-config && sudo nixos-rebuild build --flake .#david"
+Push your branch first, then SSH to david and use the `github:` flake URL — no rsync needed:
+
+```bash
+# Dry-run any NixOS host config on david
+ssh github-actions@david.vpn.theyoder.family \
+  "sudo nixos-rebuild dry-run --flake 'github:TristonYoder/nix-config#david' --refresh"
+
+# Build without activation
+ssh github-actions@david.vpn.theyoder.family \
+  "sudo nixos-rebuild build --flake 'github:TristonYoder/nix-config#david' --refresh"
+
+# Test a specific branch
+ssh github-actions@david.vpn.theyoder.family \
+  "sudo nixos-rebuild dry-run --flake 'github:TristonYoder/nix-config/feat/my-branch#david' --refresh"
 ```
+
+**`--refresh` is required** with `github:` URLs so nix fetches the latest pushed commit rather than a cached ref.
 
 **Local testing on NixOS** (when already on target host):
 ```bash
@@ -423,7 +434,7 @@ gh run view <run-id> --log-failed
 grep -n "error\|Error\|failed\|Failed" <saved-log-file> | tail -60
 ```
 
-The CI matrix runs jobs for each host (e.g. `test-configurations (david, david)`). The rsync file listing is verbose — skip past it to find the actual `nixos-rebuild dry-run` error.
+The CI matrix runs jobs for each host (e.g. `test-configurations (tristons-workstation)`). Each job SSHes to david and runs `nixos-rebuild dry-run --flake github:...#<host> --refresh`. The error will be in the SSH step output — no rsync noise to skip past.
 
 ### Docker Compose Services
 

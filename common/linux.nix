@@ -1,13 +1,17 @@
 # Common configuration for all Linux/NixOS hosts
 # This file contains settings shared across all NixOS machines
 
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, self, ... }:
 
 {
   # =============================================================================
   # NIX SETTINGS (NixOS specific)
   # =============================================================================
   
+  # Bake the git commit SHA into the running system so update-notifier can
+  # compare against the latest deployed SHA from the GitHub Actions API.
+  system.configurationRevision = self.rev or "dirty";
+
   nix.settings = {
     # Enable store optimization (safe on NixOS)
     auto-optimise-store = true;

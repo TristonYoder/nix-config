@@ -20,6 +20,7 @@
   modules.system.networking.enable = lib.mkDefault true;
   modules.system.users.enable = lib.mkDefault true;
   modules.system.desktop.enable = lib.mkDefault true;
+  modules.system.auto-update.enable = lib.mkDefault true;
 
   # =============================================================================
   # DEVELOPMENT SERVICES (minimal set)
