@@ -20,8 +20,8 @@ in
 
     ollamaHost = mkOption {
       type = types.str;
-      default = "http://tristons-workstation:11434";
-      description = "Ollama API endpoint for local models.";
+      default = "http://localhost:${toString config.modules.services.ai.ollama.port}";
+      description = "Ollama API endpoint for local models. Override when Ollama runs on a remote host.";
     };
 
     # Path to an EnvironmentFile with secrets. Loaded by the systemd unit so

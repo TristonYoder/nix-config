@@ -32,6 +32,17 @@ in
       description = "Run Hermes in a Docker container (supports apt/pip/npm for agent-installed tools).";
     };
 
+    homeRoom = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      description = ''
+        Matrix room ID to use as Hermes's persistent home room (sets MATRIX_HOME_ROOM).
+        When set, Hermes re-joins this room on startup without requiring /sethome.
+        Must be set alongside HERMES_MANAGED=true in the environment file to block
+        the /sethome command (prevents accidental home-room override).
+      '';
+    };
+
     extraVolumes = mkOption {
       type = types.listOf types.str;
       default = [];
@@ -67,6 +78,10 @@ in
       };
 
       environmentFiles = optional (cfg.environmentFile != null) cfg.environmentFile;
+
+      environment = optionalAttrs (cfg.homeRoom != null) {
+        MATRIX_HOME_ROOM = cfg.homeRoom;
+      };
 
       # Matrix platform dependencies — uses the upstream 'matrix' pyproject.toml
       # optional-dependency group, which includes mautrix[encryption]==0.21.0,
