@@ -7,14 +7,14 @@ on:
     paths:
       - '**.nix'
       - 'flake.lock'
-      - 'secrets/**'
+      - 'secrets/**.age'
       - '.github/workflows/**'
   pull_request:
     branches: [ main ]
     paths:
       - '**.nix'
       - 'flake.lock'
-      - 'secrets/**'
+      - 'secrets/**.age'
       - '.github/workflows/**'
 
 env:
