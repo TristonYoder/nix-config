@@ -205,8 +205,8 @@ in
     enable = true;
     model = "local-general";  # LiteLLM route: phi4:14b on tristons-workstation RTX 4080
     environmentFile = config.age.secrets.hermes-env.path;
-    # HERMES_MANAGED=true (in environmentFile) blocks /sethome; matrixHomeRoom is the only path.
-    matrixHomeRoom = "!evHgyPMGVZyKzGopQo:theyoder.family";
+    # HERMES_MANAGED=true (in environmentFile) blocks /sethome; homeRoom is the only path.
+    homeRoom = "!evHgyPMGVZyKzGopQo:theyoder.family";
     extraVolumes = [
       "/data/tristonyoder/home/Projects/nix-config:/nix-config:ro"
     ];
