@@ -169,6 +169,7 @@ in
     displayName = "InvokeAI";
     category = "ai";
     icon = "invoke-ai";
+    monitor = false; # runs on workstation, not always reachable
   };
 
   # =============================================================================
