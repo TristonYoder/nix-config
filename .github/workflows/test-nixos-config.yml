@@ -7,7 +7,6 @@ on:
     paths:
       - '**.nix'
       - 'flake.lock'
-      - 'docker/**'
       - 'secrets/**'
       - '.github/workflows/**'
   pull_request:
@@ -15,7 +14,6 @@ on:
     paths:
       - '**.nix'
       - 'flake.lock'
-      - 'docker/**'
       - 'secrets/**'
       - '.github/workflows/**'
 
