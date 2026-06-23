@@ -138,6 +138,7 @@ in
       displayName = "Open WebUI";
       category = "ai";
       icon = "open-webui";
+      monitor = false; # service crashes on nixpkgs missing qdrant_client
     };
   };
 }

@@ -14,7 +14,7 @@ let
     url      = "https://${h.virtualHost}";
     interval = cfg.interval;
     conditions = [
-      "[STATUS] == 200"
+      "[STATUS] < 500"
     ] ++ optionals cfg.checkTLS [
       "[CERTIFICATE_EXPIRATION] > 72h"
     ];

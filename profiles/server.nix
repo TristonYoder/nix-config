@@ -188,6 +188,7 @@
   # DNS CONFIGURATION
   # =============================================================================
 
-  # Configure DNS servers to use Cloudflare DNS
-  networking.nameservers = [ "1.1.1.1" "1.0.0.1" ];
+  # Use Technitium (local) as primary DNS so internal *.theyoder.family domains resolve,
+  # with Cloudflare as fallback for external queries.
+  networking.nameservers = [ "127.0.0.1" "1.1.1.1" "1.0.0.1" ];
 }
