@@ -131,21 +131,25 @@ jobs:
         ssh ${{ secrets.NIXOS_SERVER_USER }}@david.vpn.theyoder.family << 'EOF'
           set -e
 
+          NIX_CLOSURE_DIR="/var/lib/nix-ci-closures"
+          sudo mkdir -p "$NIX_CLOSURE_DIR"
+
           build_and_cache() {
             local host="$1"
             shift
             echo "--- Building $host ---"
+            local out_link="$NIX_CLOSURE_DIR/$host"
             sudo nix build \
               "github:TristonYoder/nix-config#nixosConfigurations.$host.config.system.build.toplevel" \
               --refresh \
-              --out-link "/tmp/nix-closure-$host" \
+              --out-link "$out_link" \
               "$@"
-            STORE_PATH=$(readlink -f "/tmp/nix-closure-$host")
+            STORE_PATH=$(readlink -f "$out_link")
             echo "Signing and caching: $STORE_PATH"
             sudo nix copy \
               --to "file:///data/nix-builds/cache?secret-key=/run/agenix/nix-cache-signing-key" \
               "$STORE_PATH"
-            rm -f "/tmp/nix-closure-$host"
+            sudo rm -f "$out_link"
             echo "✅ $host cached"
           }
 
