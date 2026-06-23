@@ -4,8 +4,20 @@ on:
   push:
     branches:
       - main
+    paths:
+      - '**.nix'
+      - 'flake.lock'
+      - 'docker/**'
+      - 'secrets/**'
+      - '.github/workflows/**'
   pull_request:
     branches: [ main ]
+    paths:
+      - '**.nix'
+      - 'flake.lock'
+      - 'docker/**'
+      - 'secrets/**'
+      - '.github/workflows/**'
 
 env:
   MATRIX_HOMESERVER_URL: ${{ secrets.MATRIX_HOMESERVER_URL }}
