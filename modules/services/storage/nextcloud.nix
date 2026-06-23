@@ -106,6 +106,7 @@ in
 
       settings = {
         overwriteProtocol = "https";
+        "overwrite.cli.url" = "https://${cfg.domain}";
         default_phone_region = "US";
         trusted_proxies = [ "127.0.0.1" "10.100.0.0/18" "100.64.0.0/10" "fd7a:115c:a1e0::/48" ];
         datadirectory = cfg.dataDir;
@@ -128,6 +129,25 @@ in
     services.postgresqlBackup = mkIf cfg.enableBackups {
       enable = true;
       startAt = "*-*-* 01:15:00";
+    };
+
+    # Fix PostgreSQL collation version mismatch after glibc upgrades.
+    # Runs once after PostgreSQL is ready; harmless if versions already match.
+    systemd.services.nextcloud-refresh-collation = {
+      description = "Refresh Nextcloud PostgreSQL collation version";
+      after = [ "postgresql.service" ];
+      requires = [ "postgresql.service" ];
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        User = "postgres";
+        RemainAfterExit = true;
+      };
+      script = ''
+        ${config.services.postgresql.package}/bin/psql nextcloud \
+          -c "ALTER DATABASE nextcloud REFRESH COLLATION VERSION;" \
+          2>&1 | grep -v "^$" || true
+      '';
     };
 
     # Nextcloud requires direct PHP-FPM access via Caddy rather than a simple reverse proxy
