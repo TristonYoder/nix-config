@@ -13,15 +13,16 @@ let
     name     = h.displayName;
     url      = "https://${h.virtualHost}";
     interval = cfg.interval;
-    client = {
-      dns-resolver = "tcp://${cfg.dnsResolver}";
-    };
     conditions = [
       "[STATUS] < 500"
     ] ++ optionals cfg.checkTLS [
       "[CERTIFICATE_EXPIRATION] > 72h"
     ];
   }) monitoredHosts;
+
+  # /etc/hosts entries so Gatus resolves internal vHost domains to localhost
+  # (Caddy listens on 0.0.0.0:443 with per-domain TLS, so this works for all)
+  extraHostsEntries = concatMapStrings (h: "127.0.0.1 ${h.virtualHost}\n") monitoredHosts;
 in
 {
   options.modules.services.providers.monitoring = {
@@ -51,12 +52,6 @@ in
       description = "Also verify TLS certificate expiry (>72h) on each endpoint.";
     };
 
-    dnsResolver = mkOption {
-      type = types.str;
-      default = "127.0.0.1:53";
-      description = "DNS resolver used by Gatus for endpoint lookups (host:port). Defaults to local Technitium.";
-    };
-
     extraSettings = mkOption {
       type = types.attrs;
       default = { };
@@ -65,6 +60,8 @@ in
   };
 
   config = mkIf cfg.enable {
+    networking.extraHosts = extraHostsEntries;
+
     services.gatus = {
       enable = true;
       settings = mkMerge [
