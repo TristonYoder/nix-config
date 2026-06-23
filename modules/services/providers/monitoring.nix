@@ -13,6 +13,9 @@ let
     name     = h.displayName;
     url      = "https://${h.virtualHost}";
     interval = cfg.interval;
+    client = {
+      dns-resolver = "tcp://${cfg.dnsResolver}";
+    };
     conditions = [
       "[STATUS] < 500"
     ] ++ optionals cfg.checkTLS [
@@ -46,6 +49,12 @@ in
       type = types.bool;
       default = true;
       description = "Also verify TLS certificate expiry (>72h) on each endpoint.";
+    };
+
+    dnsResolver = mkOption {
+      type = types.str;
+      default = "127.0.0.1:53";
+      description = "DNS resolver used by Gatus for endpoint lookups (host:port). Defaults to local Technitium.";
     };
 
     extraSettings = mkOption {
