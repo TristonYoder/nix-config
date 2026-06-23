@@ -286,6 +286,9 @@ in
     # Caddy virtual host
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
+      displayName = "RomM";
+      category = "gaming";
+      icon = "romm";
     };
   };
 }

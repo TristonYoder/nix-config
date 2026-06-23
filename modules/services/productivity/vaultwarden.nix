@@ -65,6 +65,9 @@ in
     # Caddy virtual host
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
+      displayName = "Vaultwarden";
+      category = "productivity";
+      icon = "vaultwarden";
     };
   };
 }

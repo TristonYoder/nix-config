@@ -19,6 +19,9 @@ in
     modules.services.vHosts.hosts."nix-cache.${config.networking.domain}" = {
       rawConfig = true;
       public = false;
+      displayName = "Nix Cache";
+      category = "infrastructure";
+      monitor = false;
       extraConfig = ''
         root * ${cfg.cacheDir}
         file_server

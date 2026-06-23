@@ -138,6 +138,9 @@ in
     # Caddy virtual host
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
+      displayName = "Jellyfin";
+      category = "media";
+      icon = "jellyfin";
     };
   };
 }

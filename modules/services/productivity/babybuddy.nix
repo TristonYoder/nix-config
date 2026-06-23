@@ -99,6 +99,9 @@ in
 
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
+      displayName = "Baby Buddy";
+      category = "productivity";
+      icon = "baby-buddy";
     };
   };
 }

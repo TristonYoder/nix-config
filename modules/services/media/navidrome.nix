@@ -45,6 +45,9 @@ in
 
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
+      displayName = "Navidrome";
+      category = "media";
+      icon = "navidrome";
     };
   };
 }

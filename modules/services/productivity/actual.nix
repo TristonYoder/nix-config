@@ -44,6 +44,9 @@ in
     # Caddy virtual host
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
+      displayName = "Actual Budget";
+      category = "productivity";
+      icon = "actual-budget";
     };
   };
 }

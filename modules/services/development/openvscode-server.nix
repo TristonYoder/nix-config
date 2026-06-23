@@ -58,6 +58,9 @@ in
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyHost = cfg.host;
       reverseProxyPort = cfg.port;
+      displayName = "VS Code";
+      category = "development";
+      icon = "vscode";
     };
   };
 }

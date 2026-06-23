@@ -177,6 +177,14 @@
   modules.services.ai.qdrant.enable      = lib.mkDefault true;
 
   # =============================================================================
+  # PROVIDER: MONITORING + DASHBOARD
+  # =============================================================================
+
+  modules.services.providers.monitoring.enable = lib.mkDefault true;
+
+  modules.services.providers.dashboard-homepage.enable = lib.mkDefault true;
+
+  # =============================================================================
   # DNS CONFIGURATION
   # =============================================================================
 

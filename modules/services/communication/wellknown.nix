@@ -37,6 +37,9 @@ in
       rawConfig = true;
       public = !isHostServer;  # Public on edge servers for federation, internal on host server
       dnsChallenge = !isHostServer;
+      displayName = "Well-Known";
+      category = "infrastructure";
+      monitor = false;
       extraConfig = ''
         # Matrix well-known endpoints - serve directly
         ${if matrixCfg.enable || !isHostServer then ''
