@@ -39,7 +39,7 @@ in
 
     domain = mkOption {
       type = types.str;
-      default = "home.${config.networking.domain}";
+      default = "apps.${config.networking.domain}";
       description = "Domain to expose Homepage on (registered as a vHost automatically).";
     };
 
