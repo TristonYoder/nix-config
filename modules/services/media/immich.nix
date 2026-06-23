@@ -193,7 +193,10 @@ in
 
     # Caddy virtual hosts
     modules.services.vHosts.hosts.${cfg.domain} = {
-      managedProxy = false;
+      rawConfig = true;
+      displayName = "Photos";
+      category = "media";
+      icon = "immich";
       extraConfig = ''
         handle_path /share* {
           reverse_proxy http://localhost:${toString cfg.publicProxyPort}
@@ -205,8 +208,11 @@ in
     };
 
     modules.services.vHosts.hosts.${cfg.publicProxyDomain} = {
-      managedProxy = false;
+      rawConfig = true;
       public = true;  # Public proxy for sharing photos externally
+      displayName = "Photo Sharing";
+      category = "media";
+      monitor = false;
       extraConfig = ''
         reverse_proxy http://localhost:${toString cfg.publicProxyPort}
       '';

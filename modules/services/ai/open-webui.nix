@@ -20,8 +20,8 @@ in
 
     ollamaHost = mkOption {
       type = types.str;
-      default = "http://tristons-workstation:11434";
-      description = "Ollama API endpoint for local models.";
+      default = "http://localhost:${toString config.modules.services.ai.ollama.port}";
+      description = "Ollama API endpoint for local models. Override when Ollama runs on a remote host.";
     };
 
     # Path to an EnvironmentFile with secrets. Loaded by the systemd unit so
@@ -135,6 +135,10 @@ in
 
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
+      displayName = "Open WebUI";
+      category = "ai";
+      icon = "open-webui";
+      monitor = false; # service crashes on nixpkgs missing qdrant_client
     };
   };
 }

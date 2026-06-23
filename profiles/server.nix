@@ -48,7 +48,7 @@
   # =============================================================================
   
   modules.services.infrastructure.caddy.enable = lib.mkDefault true;
-  modules.services.vHosts.technitium = {
+  modules.services.providers.dns-technitium = {
     enable = lib.mkDefault true;
     url = lib.mkDefault "https://dns01.${config.networking.domain}";
   };
@@ -175,6 +175,14 @@
   modules.services.ai.litellm.enable     = lib.mkDefault true;
   modules.services.ai.open-webui.enable  = lib.mkDefault true;
   modules.services.ai.qdrant.enable      = lib.mkDefault true;
+
+  # =============================================================================
+  # PROVIDER: MONITORING + DASHBOARD
+  # =============================================================================
+
+  modules.services.providers.monitoring.enable = lib.mkDefault true;
+
+  modules.services.providers.dashboard-homepage.enable = lib.mkDefault true;
 
   # =============================================================================
   # DNS CONFIGURATION

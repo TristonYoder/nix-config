@@ -234,6 +234,9 @@ in
     # Caddy virtual host for webmail interface
     modules.services.vHosts.hosts.${cfg.webmailDomain} = {
       reverseProxyPort = 8080;
+      displayName = "Webmail";
+      category = "communication";
+      icon = "stalwart-mail";
       serverAliases = [
         # MTA-STS for mail security policy
         "mta-sts.${cfg.domain}"
@@ -246,6 +249,9 @@ in
     # Caddy virtual host for admin interface
     modules.services.vHosts.hosts."admin.mail.7andco.dev" = {
       reverseProxyPort = 8081;
+      displayName = "Mail Admin";
+      category = "communication";
+      monitor = false;
     };
 
     # Open additional firewall ports if needed

@@ -4,388 +4,180 @@ Automated testing and deployment for all NixOS hosts using GitHub Actions.
 
 ## Overview
 
-This repository uses GitHub Actions to automatically test and deploy NixOS configurations to multiple hosts in parallel. When you push to the `main` branch, the workflows will:
+When you push to `main`, the workflows:
 
-1. ✅ Validate flake syntax
-2. ✅ Test all NixOS configurations in parallel
-3. ✅ Deploy to all hosts automatically if tests pass
+1. Validate flake syntax on the GitHub Actions runner
+2. Dry-run all NixOS host configurations on david (via `github:` flake URL)
+3. Build closures for every NixOS host on david and sign them into the binary cache
+4. Deploy to all online hosts — each host downloads pre-built paths from the cache
 
 ## Architecture
 
 ```
 Push to main
     ↓
-Syntax Check (30s)
+Syntax Check (runner, ~30s)
     ↓
-┌─────────────┬─────────────┬─────────────┐
-│   david     │    pits     │ tristons-   │
-│   TEST      │    TEST     │  desk TEST  │
-│  (2-3 min)  │  (2-3 min)  │  (2-3 min)  │
-└─────────────┴─────────────┴─────────────┘
-    ↓ All Pass
-┌─────────────┬─────────────┬─────────────┐
-│   david     │    pits     │ tristons-   │
-│   DEPLOY    │   DEPLOY    │ desk DEPLOY │
-│  (3-5 min)  │  (3-5 min)  │  (3-5 min)  │
-└─────────────┴─────────────┴─────────────┘
+┌──────────────────────────────────────┐
+│  dry-run all hosts on david          │
+│  (parallel matrix, ~2-3 min each)   │
+└──────────────────────────────────────┘
+    ↓ All pass
+Build all closures on david + sign to binary cache
+(sequential per host, ~5-20 min total)
+    ↓
+┌─────────────┬─────────────┬──────────────────────┐
+│   david     │    pits     │  tristons-workstation │
+│   DEPLOY    │   DEPLOY    │        DEPLOY         │
+│  (fast, pulls from cache) │                       │
+└─────────────┴─────────────┴──────────────────────┘
 ```
+
+No rsync. No temp directories. Every rebuild — in CI and locally via `rebuild` — hits the binary cache.
 
 ## Managed Hosts
 
-| Host | Type | Auto-Deploy |
-|------|------|-------------|
-| **david** | Main Server | ✅ Yes |
-| **pits** | Edge VPS | ✅ Yes |
-| **tristons-workstation** | Desktop | ✅ Yes |
+| Host | Type | CI Test | Auto-Deploy | Cache Build |
+|------|------|---------|-------------|-------------|
+| **david** | Main Server | ✅ | ✅ | ✅ |
+| **pits** | Edge VPS | ✅ | ✅ | ✅ |
+| **tristons-workstation** | Desktop | ✅ | ✅ | ✅ best-effort |
+| **tristons-nixbook** | Laptop | ✅ | ❌ (offline) | ✅ best-effort |
+| **tristons-nixbook-pro** | Laptop | ✅ | ❌ (offline) | ✅ best-effort |
 
 ## Workflows
 
-### Test Workflow
+### test-nixos-config.yml
 
 **Triggers:** Every push and pull request
 
-**Steps:**
-1. Check flake syntax locally (fast fail)
-2. Connect to Tailscale network
-3. Test all hosts in parallel:
-   - `david` (main server)
-   - `pits` (edge VPS)  
-   - `tristons-workstation` (desktop)
-4. Run `nixos-rebuild dry-run` on each
-5. Report independent results
+**Jobs:**
+1. `check-flake-syntax` — installs nix on the runner, runs `nix flake check --all-systems`
+2. `test-configurations` (matrix: all NixOS hosts) — SSHes to david via Tailscale and runs:
+   ```
+   sudo nixos-rebuild dry-run --flake 'github:TristonYoder/nix-config#<host>' --refresh
+   ```
 
-**Features:**
-- Parallel execution
-- Fast syntax check
-- Independent failures (one host failing doesn't stop others)
+All tests are parallel. One failing host doesn't stop others.
 
-### Deploy Workflow
+### deploy-nixos-config.yml
 
 **Triggers:**
-- Automatic after successful test on `main` branch
-- Manual trigger with host selection
+- Automatic after `test-nixos-config.yml` succeeds on `main`
+- Manual trigger (`workflow_dispatch`) with optional host selection
 
-**Steps for each host:**
-1. Create timestamped backup
-2. Run final dry-run test
-3. Deploy with `nixos-rebuild switch`
-4. Report success/failure
+**Jobs:**
+1. `prepare-deployment` — determines which hosts to deploy
+2. `build-all-closures` — SSHes to david, builds every NixOS host toplevel from `github:`, signs the closure into `/data/nix-builds/cache`
+3. `deploy-configurations` (parallel matrix) — SSHes to each online host and runs:
+   ```
+   sudo nixos-rebuild switch --flake 'github:TristonYoder/nix-config#<host>' --refresh
+   ```
+4. `deployment-summary` — reports overall status
 
-**Features:**
-- Parallel deployment
-- Selective deployment (manual)
-- Automatic backups
-- Independent failures
+**Closure build order within `build-all-closures`:**
+- `david`, `pits` — must succeed (blocks deployment if either fails)
+- `tristons-workstation`, `tristons-nixbook`, `tristons-nixbook-pro` — best-effort (logged but non-blocking)
 
 ## Usage
 
 ### Automatic Deployment
 
-Push to the `main` branch:
-
-```bash
-git checkout main
-git add .
-git commit -m "Update configurations"
-git push origin main
-```
-
-This automatically:
-1. Tests all hosts
-2. Deploys to all hosts if tests pass
+Push or merge to `main`. Tests run, then if all pass:
+1. Closures built and cached on david
+2. All online hosts deploy in parallel from the cache
 
 ### Manual Deployment
 
-Deploy to all hosts:
-1. GitHub → Actions
-2. "Deploy NixOS Flake Configuration"
-3. "Run workflow"
-4. Hosts: `all` (default)
-5. "Run workflow"
+1. GitHub → Actions → "Deploy NixOS Flake Configuration" → Run workflow
+2. Set `hosts` to `all` (default) or a comma-separated subset: `david,pits`
 
-Deploy to specific hosts:
-1. GitHub → Actions  
-2. "Deploy NixOS Flake Configuration"
-3. "Run workflow"
-4. Hosts: `david,pits` (comma-separated)
-5. "Run workflow"
-
-### Test Without Deploying
-
-Push to any branch except `main`:
+### Test a Feature Branch
 
 ```bash
-git checkout -b feature/new-feature
-git add .
-git commit -m "Test new feature"
-git push origin feature/new-feature
+git checkout -b feat/my-change
+# make changes
+git add . && git commit -m "feat: description"
+git push origin feat/my-change
 ```
 
-Tests run, but no deployment occurs.
+The test workflow runs dry-runs for every host. No deployment occurs on non-`main` branches.
+
+To test a branch locally before merging:
+```bash
+rebuild -b feat/my-change
+```
 
 ## Required GitHub Secrets
 
-Configure these in your repository settings:
-
 | Secret | Description |
 |--------|-------------|
-| `TAILSCALE_OAUTH_CLIENT_ID` | Tailscale OAuth Client ID |
-| `TAILSCALE_OAUTH_SECRET` | Tailscale OAuth Secret |
-| `NIXOS_SERVER_USER` | SSH user (github-actions) |
-| `SSH_PRIVATE_KEY` | SSH private key for all hosts |
-| `MATRIX_HOMESERVER_URL` | Matrix homeserver URL (e.g., https://matrix.theyoder.family) |
-| `MATRIX_ROOM_ID` | Matrix room ID (starts with `!`, not the alias `#`) |
-| `MATRIX_ACCESS_TOKEN` | Matrix access token for the bot user |
-
-### Setting Up Secrets
-
-1. **Tailscale OAuth:**
-   - Go to https://login.tailscale.com/admin/settings/oauth
-   - Create a new OAuth client
-   - Tag: `tag:github-actions`
-   - Copy Client ID and Secret to GitHub secrets
-
-2. **SSH Key:**
-   - Generate a dedicated SSH key: `ssh-keygen -t ed25519 -C "github-actions@david-nixos"`
-   - Add public key to each host's configuration
-   - Add private key to GitHub secrets
-
-3. **Matrix Notifications:**
-   - Create a Matrix bot user in your homeserver
-   - Generate an access token for the bot
-   - Invite the bot to your notification room
-   - Get the room ID (starts with `!`, NOT the alias that starts with `#`)
-     - From Element: Room Settings → Advanced → Room ID
-     - Example: `!abc123xyz:theyoder.family` (correct)
-     - NOT: `#systems-alerts:theyoder.family` (alias, won't work)
-   - Add secrets to GitHub repository
-
-4. **GitHub Repository:**
-   - Settings → Secrets and variables → Actions
-   - Add each secret
+| `HEADSCALE_AUTHKEY` | Headscale pre-auth key (tagged `tag:github-actions`) |
+| `HEADSCALE_LOGIN_SERVER` | Headscale control server URL |
+| `NIXOS_SERVER_USER` | SSH user (`github-actions`) |
+| `SSH_PRIVATE_KEY` | SSH private key authorized on all hosts |
+| `MATRIX_HOMESERVER_URL` | Matrix homeserver URL |
+| `MATRIX_ROOM_ID` | Matrix room ID (starts with `!`) |
+| `MATRIX_ACCESS_TOKEN` | Matrix bot access token |
 
 ## Host Configuration
 
-Each host needs:
-
-### 1. Enable GitHub Actions Module
-
-In host configuration or profile:
+Each managed NixOS host needs:
 
 ```nix
-{
-  modules.services.development.github-actions.enable = true;
-}
+{ modules.services.development.github-actions.enable = true; }
 ```
 
-### 2. Connect to Tailscale
-
-```bash
-# On each host
-sudo tailscale status  # Verify connected
-```
-
-### 3. Apply Configuration
-
-```bash
-# On each host
-sudo nixos-rebuild switch --flake .
-```
-
-This creates the `github-actions` user and authorizes the SSH key.
-
-## Tailscale ACL Configuration
-
-Add to your Tailscale ACL policy:
-
-```json
-{
-  "tagOwners": {
-    "tag:github-actions": ["your-email@example.com"]
-  },
-  "acls": [
-    {
-      "action": "accept",
-      "src": ["tag:github-actions"],
-      "dst": ["autogroup:members:*"]
-    }
-  ]
-}
-```
+This creates the `github-actions` user with sudo access and the authorized SSH key.
 
 ## Adding a New Host
 
-1. **Create host configuration** in `flake.nix`
-2. **Add to test workflow** (`.github/workflows/test-nixos-config.yml`):
+1. Create the host configuration under `hosts/<hostname>/`
+2. Add it to `flake.nix` in `nixosConfigurations`
+3. Add it to the test matrix in `test-nixos-config.yml`:
    ```yaml
    matrix:
-     host: 
-       - name: new-host
-         hostname: new-host
+     host:
+       - new-hostname
    ```
-3. **Add to deploy workflow** (`.github/workflows/deploy-nixos-config.yml`):
-   ```yaml
-   ALL_HOSTS='["david", "pits", "tristons-workstation", "new-host"]'
+4. If it should be auto-deployed, add it to `ALL_HOSTS` in `deploy-nixos-config.yml`:
+   ```bash
+   ALL_HOSTS='["david", "pits", "tristons-workstation", "new-hostname"]'
    ```
-4. **Configure the host:**
-   - Enable `modules.services.development.github-actions.enable = true`
-   - Connect to Tailscale
-   - Apply configuration
-
-## Monitoring
-
-### Matrix Notifications
-
-All GitHub Actions workflows automatically send notifications to your configured Matrix room:
-
-- **Job Start**: Notifications when jobs begin
-- **Job Success**: Notifications when jobs complete successfully
-- **Job Failure**: Notifications when jobs fail with links to logs
-
-Notifications include:
-- Workflow name
-- Host name (for matrix jobs)
-- Branch name
-- Status (Starting, Success, Failed)
-- Direct links to GitHub Actions logs
-
-### View Status
-
-**GitHub Actions Tab:**
-- See all workflow runs
-- View parallel job execution
-- Check individual host logs
-
-**Matrix Room:**
-- Real-time notifications
-- Quick status overview
-- Direct links to logs
-
-**Individual Host:**
-```bash
-ssh github-actions@hostname
-journalctl -xe
-sudo nixos-rebuild list-generations
-```
-
-### Success Indicators
-
-✅ All hosts show green checkmarks  
-✅ Deployment summary shows success  
-✅ Backups created successfully  
-✅ Services running on all hosts  
+   And add `build_and_cache new-hostname` to the `build-all-closures` job.
+5. Enable `modules.services.development.github-actions.enable = true` on the host
 
 ## Rollback
 
-### NixOS Generation Rollback
-
 ```bash
-ssh github-actions@hostname
+ssh github-actions@<hostname>.vpn.theyoder.family
 sudo nixos-rebuild switch --rollback
-```
-
-### Configuration Backup Rollback
-
-```bash
-ssh github-actions@hostname
-
-# List backups
-ls -la /var/backups/nixos/
-
-# Restore from backup
-sudo cp -r /var/backups/nixos/flake_config_TIMESTAMP/* /etc/nixos/
-cd /etc/nixos
-sudo nixos-rebuild switch --flake .#hostname
+# or switch to a specific generation:
+sudo nixos-rebuild switch --generation N
 ```
 
 ## Troubleshooting
 
-### Host Unreachable
+### Host unreachable
 
 ```bash
-# Check Tailscale
 sudo tailscale status
-
-# Test SSH
-ssh github-actions@hostname
+ssh github-actions@<hostname>.vpn.theyoder.family
 ```
 
-### Configuration Test Fails
+### Stale build (nix uses old flake ref)
+
+Always include `--refresh` when using `github:` URLs. The workflows already do this.
+Without it, nix may resolve the flake ref from a local cache and build a stale commit.
+
+### Closure build fails for an offline host
+
+`tristons-nixbook` and `tristons-nixbook-pro` failures are logged but don't block deployment.
+Their closures can be rebuilt on the next push.
+
+### See recent CI runs
 
 ```bash
-# SSH to host
-ssh github-actions@hostname
-
-# Manual test
-cd /etc/nixos
-sudo nixos-rebuild dry-run --flake .#hostname
+gh run list --branch main --limit 5
+gh run view <run-id> --log-failed
 ```
-
-### Some Hosts Fail, Others Succeed
-
-This is expected with `fail-fast: false`:
-1. Review failed host logs individually
-2. Fix configuration for failed hosts
-3. Manually re-deploy to failed hosts only
-
-## Security Considerations
-
-### SSH Keys
-- Use dedicated SSH keys for GitHub Actions
-- Store private keys securely in GitHub Secrets
-- Rotate keys periodically
-
-### Sudo Permissions
-- GitHub Actions user has full sudo access (required for nixos-rebuild)
-- Audit sudo usage in logs
-
-### Tailscale ACLs
-- Restrict `tag:github-actions` to necessary hosts
-- Regularly review ACL policies
-
-### Backups
-- Automatic backups before each deployment
-- Maintain at least 10 generations
-- Test restore procedures regularly
-
-## Best Practices
-
-1. ✅ **Test on feature branches** before merging to main
-2. ✅ **Use meaningful commit messages** for audit trail
-3. ✅ **Monitor first deployment** after changes
-4. ✅ **Keep backups** for quick rollback
-5. ✅ **Review logs** after deployment
-6. ✅ **Test rollback** procedure periodically
-7. ✅ **Update workflows** when adding/removing hosts
-8. ✅ **Secure your secrets** and rotate regularly
-
-## Performance
-
-### Parallel vs Sequential
-
-**Before (sequential):**
-- Test 3 hosts: ~9 minutes
-- Deploy 3 hosts: ~15 minutes
-- Total: ~24 minutes
-
-**After (parallel):**
-- Test 3 hosts: ~3 minutes
-- Deploy 3 hosts: ~5 minutes  
-- Total: ~8 minutes
-
-**Improvement:** 66% faster! ⚡
-
-## Resources
-
-- [Test Workflow](.github/workflows/test-nixos-config.yml)
-- [Deploy Workflow](.github/workflows/deploy-nixos-config.yml)
-- [Matrix Notification Action](.github/actions/matrix-notification)
-- [GitHub Actions Module](../modules/services/development/github-actions.nix)
-- [Tailscale Documentation](https://tailscale.com/kb/)
-
----
-
-**Last Updated:** October 13, 2025  
-**Status:** Active  
-**Managed Hosts:** 3 (david, pits, tristons-workstation)
-

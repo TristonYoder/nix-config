@@ -102,7 +102,7 @@ in
           drop_params = true;
         };
 
-        general_settings = mkIf cfg.requireAuth {
+        general_settings = optionalAttrs cfg.requireAuth {
           master_key = "os.environ/LITELLM_MASTER_KEY";
         };
       } // cfg.extraSettings;

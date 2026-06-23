@@ -118,6 +118,9 @@ in
     # Note: External access via PITS goes directly to nginx:8085, this is just for local Caddy access
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.nginxPort;
+      displayName = "Pixelfed";
+      category = "communication";
+      icon = "pixelfed";
     };
 
 

@@ -155,6 +155,9 @@ in
     # Caddy virtual host using new vHosts system
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
+      displayName = "Tandoor";
+      category = "productivity";
+      icon = "tandoor-recipes";
     };
   };
 }

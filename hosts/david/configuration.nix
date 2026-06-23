@@ -2,6 +2,12 @@
 # Hosts all services including infrastructure, media, productivity, and storage
 
 { config, pkgs, lib, nixpkgs, nixpkgs-unstable, nix-bitcoin, ... }:
+let
+  # Tailscale IP for tristons-workstation. LiteLLM uses aiodns which bypasses
+  # /etc/hosts, so we must use the raw IP rather than the hostname everywhere
+  # LiteLLM resolves endpoints. Update this if the device re-registers on Tailscale.
+  workstationIp = "100.110.37.61";
+in
 {
   imports = [
     ../../modules/services/tailscale-router.nix
@@ -25,7 +31,7 @@
 
   # tristons-workstation is reachable via Tailscale but not via VLAN from david's br0.
   # Pin it to the Tailscale IP so internal service lookups (LiteLLM → Ollama) work.
-  networking.hosts."100.110.37.61" = [ "tristons-workstation.theyoder.family" "tristons-workstation" ];
+  networking.hosts.${workstationIp} = [ "tristons-workstation.theyoder.family" "tristons-workstation" ];
   system.autoUpgrade.channel = "https://nixos.org/channels/nixos-23.11/";
 
   # ZFS encryption key is loaded via postDeviceCommands (key file, not interactive).
@@ -61,7 +67,7 @@
   modules.services.communication.stalwart-mail.enable = false;
 
   # dns-sync: use local Technitium directly (avoids Caddy loopback for the API)
-  modules.services.vHosts.technitium.url = "http://localhost:5380";
+  modules.services.providers.dns-technitium.url = "http://localhost:5380";
 
   # Navidrome - Music streaming server (Subsonic-compatible)
   modules.services.media.navidrome.enable = true;
@@ -93,8 +99,12 @@
 
   # Technitium DNS Web UI and DoH - dns01.<baseDomain>
   modules.services.vHosts.hosts."dns01.${config.networking.domain}" = {
-    managedProxy = false;  # Use custom routing for multi-backend setup
+    rawConfig = true;  # Use custom routing for multi-backend setup
     public = false;  # Restrict to internal networks (auto-applied by module)
+    displayName = "DNS";
+    category = "infrastructure";
+    icon = "technitium-dns-server";
+    monitor = false;
     extraConfig = ''
       # DNS over HTTPS endpoint - Technitium runs DoH on port 5353
       handle /dns-query* {
@@ -118,32 +128,48 @@
   modules.services.vHosts.hosts."elizabethallen.photography" = {
     public = true;
     reverseProxyPort = 1996;
+    displayName = "Elizabeth Allen Photography";
+    category = "public";
   };
 
   # Tunarr - Virtual IPTV tuner for Plex/Jellyfin
   modules.services.vHosts.hosts."tunarr.${config.networking.domain}" = {
     reverseProxyPort = 8100;
+    displayName = "Tunarr";
+    category = "media";
+    icon = "tunarr";
   };
 
   # Dispatcharr - IPTV and stream management
   modules.services.vHosts.hosts."tv.${config.networking.domain}" = {
     reverseProxyPort = 9191;
+    displayName = "Dispatcharr";
+    category = "media";
   };
 
   # Threadfin - IPTV EPG proxy and M3U playlist management
   modules.services.vHosts.hosts."local-epg.tv.${config.networking.domain}" = {
     reverseProxyPort = 34400;
+    displayName = "Threadfin EPG";
+    category = "media";
+    monitor = false;
   };
 
   # Tidarr - Tidal music downloader
   modules.services.vHosts.hosts."tidal.${config.networking.domain}" = {
     reverseProxyPort = 8484;
+    displayName = "Tidarr";
+    category = "media";
   };
 
   # InvokeAI
   modules.services.vHosts.hosts."invoke.${config.networking.domain}" = {
     reverseProxyHost = "tristons-workstation.${config.networking.domain}";
     reverseProxyPort = 9090;
+    displayName = "InvokeAI";
+    category = "ai";
+    icon = "invoke-ai";
+    monitor = false; # runs on workstation, not always reachable
   };
 
   # =============================================================================
@@ -155,14 +181,14 @@
     port = 4100;
     models = [
       # ── Embeddings ────────────────────────────────────────────────────────────
-      { name = "embed";            model = "ollama/nomic-embed-text";      apiBase = "http://100.110.37.61:11434"; }
+      { name = "embed";            model = "ollama/nomic-embed-text";      apiBase = "http://${workstationIp}:11434"; }
 
       # ── Local inference (tristons-workstation RTX 4080) ──────────────────────
-      { name = "local";            model = "ollama/hermes3";               apiBase = "http://100.110.37.61:11434"; }
-      { name = "local-fast";       model = "ollama/llama3.2:3b";           apiBase = "http://100.110.37.61:11434"; }
-      { name = "local-tool";       model = "ollama/qwen2.5:14b";           apiBase = "http://100.110.37.61:11434"; }
-      { name = "local-code";       model = "ollama/qwen2.5-coder:14b";     apiBase = "http://100.110.37.61:11434"; }
-      { name = "local-general";    model = "ollama/phi4:14b";              apiBase = "http://100.110.37.61:11434"; }
+      { name = "local";            model = "ollama/hermes3";               apiBase = "http://${workstationIp}:11434"; }
+      { name = "local-fast";       model = "ollama/llama3.2:3b";           apiBase = "http://${workstationIp}:11434"; }
+      { name = "local-tool";       model = "ollama/qwen2.5:14b";           apiBase = "http://${workstationIp}:11434"; }
+      { name = "local-code";       model = "ollama/qwen2.5-coder:14b";     apiBase = "http://${workstationIp}:11434"; }
+      { name = "local-general";    model = "ollama/phi4:14b";              apiBase = "http://${workstationIp}:11434"; }
 
       # ── API models (Anthropic) ────────────────────────────────────────────────
       # fast: general tasking, routing, summarization
@@ -179,6 +205,7 @@
     enable = true;
     model = "local-general";  # LiteLLM route: phi4:14b on tristons-workstation RTX 4080
     environmentFile = config.age.secrets.hermes-env.path;
+    # HERMES_MANAGED=true (in environmentFile) blocks /sethome; matrixHomeRoom is the only path.
     matrixHomeRoom = "!evHgyPMGVZyKzGopQo:theyoder.family";
     extraVolumes = [
       "/data/tristonyoder/home/Projects/nix-config:/nix-config:ro"

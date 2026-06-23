@@ -11,6 +11,8 @@ This is a flake-based, multi-host Nix configuration managing NixOS servers, desk
 - **david** (NixOS Server) - Full infrastructure stack with media, productivity, storage services
 - **pits** (NixOS Edge/Pi) - Lightweight public-facing reverse proxy
 - **tristons-workstation** (NixOS Desktop) - KDE Plasma workstation. RTX 4080 (open NVIDIA kernel modules), btrfs root (`@`, `@nix`, `@snapshots` subvolumes), `/home` symlinked to NFS-mounted `/data` on david (`useDataDrive`). **Always has a 10Gb fiber backhaul to david over the Core Services VLAN** — this is a permanent network characteristic of this host, not a one-off; treat NFS-backed home and any future high-bandwidth dependency on david as safe to assume for this host specifically. Dual-NIC: `enp7s0` carries `10.150.100.0/23` (Core Services, route to david), `eno1` carries `10.150.10.0/24` (User Devices). `network-online.target` may fire on `eno1` before `enp7s0` completes DHCP — see the NFS automount troubleshooting entry before touching boot-time network ordering on this host.
+- **tristons-nixbook** (NixOS Laptop) - Workstation profile on a MacBook. NFS-mounts `/data` from david. Key swap (Command↔Control) via keyd for MacBook keyboard layout.
+- **tristons-nixbook-pro** (NixOS on T2 MacBook Pro 16,1) - Dual-boot, uses `nixos-hardware.apple-t2`. Custom bootable installer ISOs built from the flake (`tristons-nixbook-pro-installer`, `tristons-nixbook-pro-installer-plasma`).
 - **tyoder-mbp** (macOS Apple Silicon) - Work MacBook Pro
 - **Tristons-MacBook-Pro** (macOS Intel) - Personal MacBook Pro
 
@@ -115,13 +117,24 @@ hostname  # Returns: tyoder-mbp, Tristons-MacBook-Pro, david, tristons-workstati
   - No need to SSH elsewhere
 
 **Remote testing from macOS** (when NOT on target host):
-```bash
-# Test on david (most common - server with all services)
-ssh github-actions@david "cd /home/github-actions/nix-config && git fetch origin && git checkout <branch> && git pull origin <branch> && sudo nixos-rebuild dry-run --flake .#david"
 
-# Or build without activation
-ssh github-actions@david "cd /home/github-actions/nix-config && sudo nixos-rebuild build --flake .#david"
+Push your branch first, then SSH to david and use the `github:` flake URL — no rsync needed:
+
+```bash
+# Dry-run any NixOS host config on david
+ssh github-actions@david.vpn.theyoder.family \
+  "sudo nixos-rebuild dry-run --flake 'github:TristonYoder/nix-config#david' --refresh"
+
+# Build without activation
+ssh github-actions@david.vpn.theyoder.family \
+  "sudo nixos-rebuild build --flake 'github:TristonYoder/nix-config#david' --refresh"
+
+# Test a specific branch
+ssh github-actions@david.vpn.theyoder.family \
+  "sudo nixos-rebuild dry-run --flake 'github:TristonYoder/nix-config/feat/my-branch#david' --refresh"
 ```
+
+**`--refresh` is required** with `github:` URLs so nix fetches the latest pushed commit rather than a cached ref.
 
 **Local testing on NixOS** (when already on target host):
 ```bash
@@ -423,7 +436,7 @@ gh run view <run-id> --log-failed
 grep -n "error\|Error\|failed\|Failed" <saved-log-file> | tail -60
 ```
 
-The CI matrix runs jobs for each host (e.g. `test-configurations (david, david)`). The rsync file listing is verbose — skip past it to find the actual `nixos-rebuild dry-run` error.
+The CI matrix runs jobs for each host (e.g. `test-configurations (tristons-workstation)`). Each job SSHes to david and runs `nixos-rebuild dry-run --flake github:...#<host> --refresh`. The error will be in the SSH step output — no rsync noise to skip past.
 
 ### Docker Compose Services
 
