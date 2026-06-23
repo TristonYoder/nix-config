@@ -191,6 +191,7 @@ nix build '.#darwinConfigurations.tyoder-mbp.config.system.build.toplevel'
 │   ├── system/              # Core settings, networking, users, desktop
 │   └── services/
 │       ├── infrastructure/  # Caddy, PostgreSQL, Tailscale
+│       ├── providers/       # Cross-cutting providers (DNS, monitoring, dashboard, tunnel)
 │       ├── media/           # Jellyfin, Immich, Jellyseerr
 │       ├── productivity/    # Vaultwarden, n8n, Actual
 │       ├── storage/         # ZFS, NFS, Samba, Syncthing
@@ -223,7 +224,7 @@ in
 {
   options.modules.services.category.servicename = {
     enable = mkEnableOption "Service Description";
-    domain = mkOption { type = types.str; default = "service.domain.com"; };
+    domain = mkOption { type = types.str; default = "service.${config.networking.domain}"; };
     port = mkOption { type = types.int; default = 8080; };
   };
 
@@ -231,11 +232,15 @@ in
     # Service configuration
     services.servicename.enable = true;
 
-    # Optional: Auto Caddy reverse proxy integration
-    services.caddy.virtualHosts.${cfg.domain} =
-      mkIf config.modules.services.infrastructure.caddy.enable {
-        extraConfig = ''reverse_proxy http://localhost:${toString cfg.port}'';
-      };
+    # Register with the vHosts registry — Caddy, Technitium DNS, Gatus, and Homepage
+    # all consume this automatically. Never configure those providers directly.
+    modules.services.vHosts.hosts.${cfg.domain} = {
+      reverseProxyPort = cfg.port;
+      displayName = "Service Name";   # shown in dashboard + monitoring
+      category    = "media";          # groups tiles in Homepage dashboard
+      icon        = "service-name";   # icon slug (dashicons / selfh.st/sh-icons)
+      # monitor   = false;            # set if service won't return HTTP < 500
+    };
   };
 }
 ```
@@ -265,8 +270,36 @@ Service modules declare their requirements through typed options. Provider modul
 **Rule:** When building a service module, ask "could this declaration be consumed by a different provider?" If yes, it belongs in the agnostic options layer. Provider-specific escape hatches (like `extraConfig`) are acceptable but should be treated as non-portable.
 
 **Established abstractions:**
-- `modules.services.vHosts.hosts` — reverse proxy + DNS (consumed by Caddy, Technitium)
+- `modules.services.vHosts.hosts` — unified service registry (consumed by Caddy, Technitium DNS, Gatus monitoring, Homepage dashboard, Cloudflare Tunnel)
 - `modules.services.appData` — service data directories (consumed by plain fs or ZFS provider)
+
+**vHosts registry schema** (key = domain or bare subdomain auto-expanded to `<key>.<networking.domain>`):
+
+```nix
+modules.services.vHosts.hosts."myservice" = {
+  reverseProxyPort = 8080;          # port on localhost
+  reverseProxyHost = "other-host";  # optional: proxy to a different host
+  displayName      = "My Service";  # dashboard tile label (default: titleCase key)
+  category         = "media";       # dashboard group (default: "Services")
+  icon             = "my-service";  # dashicons slug (optional)
+  monitor          = true;          # include in Gatus monitoring (default: true)
+  public           = false;         # expose via Cloudflare Tunnel (default: false)
+  serverAliases    = [];            # extra domains for the same vHost
+};
+```
+
+**Providers** (`modules/services/providers/`):
+
+| Provider | Option path | What it does |
+|---|---|---|
+| Caddy | `modules.services.infrastructure.caddy` | Reverse proxy for all vHosts |
+| Technitium DNS | `modules.services.providers.dns-technitium` | Creates DNS records for all vHosts |
+| Gatus monitoring | `modules.services.providers.monitoring` | Status page at `status.<domain>` |
+| Homepage dashboard | `modules.services.providers.dashboard-homepage` | App grid at `apps.<domain>` |
+| Homarr dashboard | `modules.services.providers.dashboard-homarr` | API-driven dashboard (cross-host) |
+| Cloudflare Tunnel | `modules.services.providers.cloudflare-tunnel` | Exposes `public = true` vHosts |
+
+All providers are enabled/disabled independently. The server profile enables Caddy, Technitium, Gatus, and Homepage by default.
 
 ### Configuration Hierarchy
 
