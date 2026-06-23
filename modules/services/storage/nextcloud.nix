@@ -3,7 +3,7 @@
 with lib;
 let
   cfg = config.modules.services.storage.nextcloud;
-  pkg = pkgs.nextcloud31;
+  pkg = pkgs.nextcloud32;
 
   builtinApps = listToAttrs (map (name: {
     inherit name;
