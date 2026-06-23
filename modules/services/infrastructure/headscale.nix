@@ -349,6 +349,9 @@ in
       rawConfig = true;
       public = true;  # Headscale API must be public for Tailscale clients
       dnsRecord = false;  # Omit from Technitium — let public DNS resolve this so local clients reach the public entry, not a Tailscale-redirected one
+      displayName = "Headscale";
+      category = "infrastructure";
+      icon = "headscale";
       extraConfig = ''
         ${optionalString (cfg.adminUI.type != "none") ''
         # Admin UI at /admin path

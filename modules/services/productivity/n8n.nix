@@ -46,6 +46,9 @@ in
     # Caddy virtual host
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = 5678;
+      displayName = "n8n";
+      category = "productivity";
+      icon = "n8n";
     };
   };
 }

@@ -231,6 +231,9 @@ in
     # configure Caddy in pits/configuration.nix instead
     modules.services.vHosts.hosts."matrix.${cfg.serverName}" = {
       rawConfig = true;
+      displayName = "Matrix";
+      category = "communication";
+      icon = "matrix";
       extraConfig = ''
         reverse_proxy /_matrix/* http://localhost:${toString cfg.clientPort}
         reverse_proxy /_synapse/client/* http://localhost:${toString cfg.clientPort}

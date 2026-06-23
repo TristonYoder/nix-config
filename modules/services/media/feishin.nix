@@ -98,6 +98,8 @@ in
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
       serverAliases = cfg.serverAliases;
+      displayName = "Feishin";
+      category = "media";
     };
   };
 }

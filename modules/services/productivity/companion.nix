@@ -77,6 +77,8 @@ in
 
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
+      displayName = "Companion";
+      category = "productivity";
     };
   };
 }

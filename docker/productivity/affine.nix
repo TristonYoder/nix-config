@@ -277,5 +277,8 @@ in
   # Caddy reverse proxy
   modules.services.vHosts.hosts.${domain} = {
     reverseProxyPort = 3010;
+    displayName = "Affine";
+    category = "productivity";
+    icon = "affine";
   };
 }

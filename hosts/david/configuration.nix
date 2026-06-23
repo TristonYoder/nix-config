@@ -101,6 +101,10 @@ in
   modules.services.vHosts.hosts."dns01.${config.networking.domain}" = {
     rawConfig = true;  # Use custom routing for multi-backend setup
     public = false;  # Restrict to internal networks (auto-applied by module)
+    displayName = "DNS";
+    category = "infrastructure";
+    icon = "technitium-dns-server";
+    monitor = false;
     extraConfig = ''
       # DNS over HTTPS endpoint - Technitium runs DoH on port 5353
       handle /dns-query* {
@@ -124,32 +128,47 @@ in
   modules.services.vHosts.hosts."elizabethallen.photography" = {
     public = true;
     reverseProxyPort = 1996;
+    displayName = "Elizabeth Allen Photography";
+    category = "public";
   };
 
   # Tunarr - Virtual IPTV tuner for Plex/Jellyfin
   modules.services.vHosts.hosts."tunarr.${config.networking.domain}" = {
     reverseProxyPort = 8100;
+    displayName = "Tunarr";
+    category = "media";
+    icon = "tunarr";
   };
 
   # Dispatcharr - IPTV and stream management
   modules.services.vHosts.hosts."tv.${config.networking.domain}" = {
     reverseProxyPort = 9191;
+    displayName = "Dispatcharr";
+    category = "media";
   };
 
   # Threadfin - IPTV EPG proxy and M3U playlist management
   modules.services.vHosts.hosts."local-epg.tv.${config.networking.domain}" = {
     reverseProxyPort = 34400;
+    displayName = "Threadfin EPG";
+    category = "media";
+    monitor = false;
   };
 
   # Tidarr - Tidal music downloader
   modules.services.vHosts.hosts."tidal.${config.networking.domain}" = {
     reverseProxyPort = 8484;
+    displayName = "Tidarr";
+    category = "media";
   };
 
   # InvokeAI
   modules.services.vHosts.hosts."invoke.${config.networking.domain}" = {
     reverseProxyHost = "tristons-workstation.${config.networking.domain}";
     reverseProxyPort = 9090;
+    displayName = "InvokeAI";
+    category = "ai";
+    icon = "invoke-ai";
   };
 
   # =============================================================================

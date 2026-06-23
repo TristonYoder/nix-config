@@ -604,6 +604,9 @@ in
     # Caddy virtual host for reverse proxy
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
+      displayName = "Outline";
+      category = "productivity";
+      icon = "outline";
     };
   };
 }

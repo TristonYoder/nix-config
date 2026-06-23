@@ -100,6 +100,9 @@ in
 
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
+      displayName = "Actual API";
+      category = "productivity";
+      monitor = false;
     };
   };
 }

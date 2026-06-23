@@ -135,6 +135,9 @@ in
 
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
+      displayName = "Open WebUI";
+      category = "ai";
+      icon = "open-webui";
     };
   };
 }
