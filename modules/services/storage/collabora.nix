@@ -86,6 +86,26 @@ in
       wantedBy = [ "multi-user.target" ];
     };
 
+    # Configure Nextcloud's richdocuments app to point at this Collabora instance.
+    # Runs once after nextcloud-setup; safe to re-run (occ set is idempotent).
+    systemd.services.nextcloud-configure-collabora = {
+      description = "Configure Nextcloud richdocuments to use Collabora Online";
+      after = [ "nextcloud-setup.service" ];
+      requires = [ "nextcloud-setup.service" ];
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        User = "nextcloud";
+      };
+      script = ''
+        ${config.services.nextcloud.occ}/bin/nextcloud-occ config:app:set richdocuments wopi_url \
+          --value="https://${cfg.domain}"
+        ${config.services.nextcloud.occ}/bin/nextcloud-occ config:app:set richdocuments disable_certificate_verification \
+          --value=""
+      '';
+    };
+
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
       displayName = "Collabora Online";
