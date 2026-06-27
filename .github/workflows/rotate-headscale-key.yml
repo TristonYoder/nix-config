@@ -18,17 +18,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Tailscale (Headscale)
-      uses: tailscale/github-action@v2
-      with:
-        authkey: ${{ secrets.HEADSCALE_AUTHKEY }}
-        tags: tag:github-actions
-        version: 1.78.1
-        args: --login-server ${{ secrets.HEADSCALE_LOGIN_SERVER }}
-
-    - name: Wait for Tailscale connection
-      run: sleep 10
-
     - name: Configure SSH
       run: |
         mkdir -p ~/.ssh
@@ -43,7 +32,8 @@ jobs:
     - name: Generate new preauthkey
       id: generate-key
       run: |
-        HOST="pits.vpn.theyoder.family"
+        # pits is public-facing — no VPN needed, avoids chicken-and-egg with the authkey
+        HOST="pits.theyoder.family"
 
         # SSH with retry logic
         MAX_RETRIES=3
@@ -67,9 +57,19 @@ jobs:
           fi
         done
 
+        # Newer headscale requires numeric user ID, not username
+        # Table format: "ID | Name | Username | Email | Created"
+        USER_ID=$(ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST \
+          "sudo headscale users list" | awk -F'|' '/github-actions/{gsub(/[^0-9]/, "", $1); print $1}' | head -1)
+
+        # Fall back to known ID if lookup fails
+        if [ -z "$USER_ID" ]; then
+          USER_ID=3
+        fi
+
         # Generate new 7-day reusable preauthkey
         NEW_KEY=$(ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST \
-          "sudo headscale preauthkeys create --user github-actions --reusable --ephemeral --expiration 168h --tags tag:github-actions" | tail -1)
+          "sudo headscale preauthkeys create --user $USER_ID --reusable --ephemeral --expiration 168h --tags tag:github-actions" | tail -1)
 
         if [ -z "$NEW_KEY" ]; then
           echo "Failed to generate new preauthkey"
