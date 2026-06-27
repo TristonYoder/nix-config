@@ -109,6 +109,9 @@ in
   
   # Nextcloud admin password (only on david)
   "nextcloud-admin-password.age".publicKeys = davidKeys;
+
+  # Nextcloud OIDC client secret (Pocket ID)
+  "nextcloud-oidc-client-secret.age".publicKeys = davidKeys;
   
   # Scrypted Watchtower HTTP API Token (only on david)
   "scrypted-watchtower-token.age".publicKeys = davidKeys;
