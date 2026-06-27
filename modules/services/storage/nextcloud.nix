@@ -59,7 +59,7 @@ in
     enableOfficeApps = mkOption {
       type = types.bool;
       default = true;
-      description = "Enable OnlyOffice and Richdocuments office suite integration.";
+      description = "Enable Richdocuments (Collabora) office suite integration.";
     };
 
     enableBackups = mkOption {
@@ -89,7 +89,7 @@ in
       extraAppsEnable = true;
       extraApps = builtinApps
         // optionalAttrs cfg.enableOfficeApps {
-          inherit (pkg.packages.apps) onlyoffice richdocuments;
+          inherit (pkg.packages.apps) richdocuments;
         }
         // cfg.extraApps;
 

@@ -37,9 +37,9 @@ in
     virtualisation.oci-containers.containers."collabora" = {
       image = "collabora/code:latest";
       environment = {
-        # Allow Nextcloud as WOPI host (escaped for regex)
+        # aliasgroup1 is a regex — escape dots so they match literally
         extra_params = "--o:ssl.enable=false --o:ssl.termination=true";
-        aliasgroup1 = "https://${cfg.nextcloudDomain}";
+        aliasgroup1 = "https://${lib.strings.replaceStrings ["."] ["\\."] cfg.nextcloudDomain}";
         DONT_GEN_SSL_CERT = "1";
         dictionaries = "en_US";
       };
