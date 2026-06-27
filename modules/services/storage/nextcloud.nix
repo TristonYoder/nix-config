@@ -163,7 +163,7 @@ in
       category = "storage";
       icon = "nextcloud";
       extraConfig = ''
-        root * ${pkg}
+        root * ${config.services.nextcloud.package}
 
         php_fastcgi unix//run/phpfpm/nextcloud.sock {
           env front_controller_active true
