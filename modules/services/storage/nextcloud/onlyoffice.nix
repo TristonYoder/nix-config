@@ -35,7 +35,7 @@ in
 
   config = mkIf (nc.enable && cfg.enable) {
     age.secrets.nextcloud-onlyoffice-jwt = mkIf (cfg.jwtSecretFile == null) {
-      file = ../../../secrets/nextcloud-onlyoffice-jwt.age;
+      file = ../../../../secrets/nextcloud-onlyoffice-jwt.age;
       owner = "nextcloud";
       group = "nextcloud";
       mode = "0400";

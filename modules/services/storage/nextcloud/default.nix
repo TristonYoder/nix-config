@@ -1,6 +1,11 @@
 { config, lib, pkgs, ... }:
 
 with lib;
+
+# Office suite submodules (collabora.nix, onlyoffice.nix) extend the
+# modules.services.storage.nextcloud option namespace from this same folder.
+# They are loaded automatically via the imports list in the storage default.nix.
+
 let
   cfg = config.modules.services.storage.nextcloud;
   pkg = pkgs.nextcloud33;
@@ -73,7 +78,7 @@ in
 
   config = mkIf cfg.enable {
     age.secrets.nextcloud-admin-password = mkIf (cfg.adminPassFile == null) {
-      file = ../../../secrets/nextcloud-admin-password.age;
+      file = ../../../../secrets/nextcloud-admin-password.age;
       owner = "nextcloud";
       group = "nextcloud";
       mode = "0400";
