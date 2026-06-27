@@ -34,6 +34,12 @@ in
       default = "pocket-id";
       description = "Internal identifier for the OIDC provider (used in occ commands)";
     };
+
+    disablePasswordLogin = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Disable the built-in password login form, making Pocket ID the sole entry point. Enable only after verifying OIDC works.";
+    };
   };
 
   config = mkIf (nc.enable && cfg.enable) {
@@ -87,8 +93,10 @@ in
             --check-bearer=1 \
             --send-id-token-hint=1
 
-          # Disable built-in login form so Pocket ID is the only entry point
-          ${occ} config:app:set user_oidc allow_multiple_user_backends --value="0"
+          # When disablePasswordLogin is true, OIDC is the sole entry point.
+          # Default is false so the admin account remains accessible during setup.
+          ${occ} config:app:set user_oidc allow_multiple_user_backends \
+            --value="${if cfg.disablePasswordLogin then "0" else "1"}"
         '';
     };
   };
