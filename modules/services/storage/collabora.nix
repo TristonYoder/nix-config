@@ -86,6 +86,10 @@ in
       wantedBy = [ "multi-user.target" ];
     };
 
+    # david uses 1.1.1.1 for DNS, not Technitium, so local vHost domains don't
+    # resolve on-host. Add a hosts entry so Nextcloud can reach Collabora.
+    networking.hosts."127.0.0.1" = [ cfg.domain ];
+
     # Configure Nextcloud's richdocuments app to point at this Collabora instance.
     # Runs once after nextcloud-setup; safe to re-run (occ set is idempotent).
     systemd.services.nextcloud-configure-collabora = {
