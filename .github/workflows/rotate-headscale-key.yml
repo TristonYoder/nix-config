@@ -57,10 +57,12 @@ jobs:
           fi
         done
 
-        # Newer headscale requires numeric user ID, not username
-        # Table format: "ID | Name | Username | Email | Created"
+        # Newer headscale requires numeric user ID, not username.
+        # Use JSON output (no ANSI codes). "id" precedes "name" in each object,
+        # so track the last seen ID and print it when we hit "github-actions".
         USER_ID=$(ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST \
-          "sudo headscale users list" | awk -F'|' '/github-actions/{gsub(/[^0-9]/, "", $1); print $1}' | head -1)
+          "sudo headscale users list -o json" \
+          | awk '/"id":/{match($0, /"id": ([0-9]+)/, a); last_id=a[1]} /"name": "github-actions"/{print last_id; exit}')
 
         # Fall back to known ID if lookup fails
         if [ -z "$USER_ID" ]; then
