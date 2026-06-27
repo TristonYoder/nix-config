@@ -107,7 +107,7 @@ in
         ${config.services.nextcloud.occ}/bin/nextcloud-occ config:app:set richdocuments disable_certificate_verification \
           --value=""
         ${config.services.nextcloud.occ}/bin/nextcloud-occ config:app:set richdocuments wopi_allowlist \
-          --value="127.0.0.1"
+          --value="127.0.0.1,192.168.32.0/20"
       '';
     };
 
