@@ -238,6 +238,7 @@ in
 
   # david has the cache on local disk — no need to route through HTTPS.
   modules.system.nixCache.cacheUrl = "file:///data/nix-builds/cache";
+  modules.system.nixCache.priority = 20;
 
   # Conservative GC for the build machine — keep 3 months or 30 generations.
   nix.gc = {

@@ -22,6 +22,16 @@ in
       '';
     };
 
+    priority = mkOption {
+      type = types.int;
+      default = 30;
+      description = ''
+        Substituter priority. Lower number = higher priority.
+        cache.nixos.org is 40; our cache defaults to 30 so it is preferred.
+        Hosts with direct disk access (file://) should use 20.
+      '';
+    };
+
     trustedPublicKey = mkOption {
       type = types.nullOr types.str;
       default = "nix-cache.theyoder.family:NgpfqkeBWGMBuRI6uaxIqVTPEPRtyd4DcTJcvAFv4T4=";
@@ -34,8 +44,9 @@ in
   };
 
   config = mkIf cfg.enable {
-    nix.settings.substituters = [ cfg.cacheUrl ];
-    nix.settings.trusted-substituters = [ cfg.cacheUrl ];
-    nix.settings.trusted-public-keys = lib.optional (cfg.trustedPublicKey != null) cfg.trustedPublicKey;
+    # extra-* appends to the defaults so cache.nixos.org remains a fallback.
+    nix.settings.extra-substituters = [ "${cfg.cacheUrl}?priority=${toString cfg.priority}" ];
+    nix.settings.extra-trusted-substituters = [ cfg.cacheUrl ];
+    nix.settings.extra-trusted-public-keys = lib.optional (cfg.trustedPublicKey != null) cfg.trustedPublicKey;
   };
 }
