@@ -2,6 +2,7 @@
 {
   # Import storage service modules
   imports = [
+    ./collabora.nix
     ./nfs.nix
     ./nextcloud.nix
     ./samba.nix
