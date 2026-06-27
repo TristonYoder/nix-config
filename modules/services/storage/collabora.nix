@@ -51,6 +51,9 @@ in
         "--cap-add=MKNOD"
         "--network-alias=collabora"
         "--network=collabora_default"
+        # Collabora calls back to Nextcloud via WOPI; inject a hosts entry so
+        # the container can resolve the local domain without system DNS.
+        "--add-host=${cfg.nextcloudDomain}:host-gateway"
       ];
     };
 
