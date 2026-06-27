@@ -115,6 +115,12 @@ in
       phpOptions."opcache.interned_strings_buffer" = "16";
     };
 
+    # The NixOS nextcloud module unconditionally enables nginx and adds a vhost
+    # on port 80. We use Caddy via PHP-FPM instead, so disable that nginx vhost.
+    services.nginx.virtualHosts.${cfg.domain}.listen = mkForce [
+      { addr = "127.0.0.1"; port = 11080; }
+    ];
+
     # Allow Caddy to communicate with PHP-FPM
     services.phpfpm.pools.nextcloud.settings = {
       "listen.owner" = config.services.caddy.user;
