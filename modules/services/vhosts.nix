@@ -23,7 +23,7 @@ in
     # system resolver (david uses 1.1.1.1; Technitium only handles external clients).
     networking.hosts."127.0.0.1" =
       map (h: h.virtualHost)
-        (filter (h: h.enable)
+        (filter (h: h.enable && h.localHostsEntry)
           (attrValues config.modules.services.vHosts.hosts));
   };
 
@@ -135,6 +135,12 @@ in
             type = types.bool;
             default = true;
             description = "Whether the monitoring provider should track uptime for this host.";
+          };
+
+          localHostsEntry = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Whether to add a 127.0.0.1 /etc/hosts entry for this virtual host so on-host services can resolve it without Technitium.";
           };
         };
       }));
