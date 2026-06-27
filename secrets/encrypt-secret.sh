@@ -20,7 +20,6 @@ NC='\033[0m' # No Color
 # Keys live in secrets/keys/<host>.pub — safe to commit, not secrets.
 # To add/refresh a key: ssh <host> "cat /etc/ssh/ssh_host_ed25519_key.pub" > keys/<host>.pub
 KEYS_DIR="$(cd "$(dirname "$0")" && pwd)/keys"
-ADMIN_SSH_KEY="$HOME/.ssh/agenix.pub"
 
 # Usage information
 usage() {
@@ -69,7 +68,7 @@ ${BLUE}Recipients:${NC}
   pits:                 SSH host key for pits server
   tristons-workstation: SSH host key for tristons-workstation
   tyoder-mbp:           SSH host key for tyoder-mbp
-  admin:                ~/.ssh/agenix.pub (falls back to keys/admin.pub)
+  admin:                keys/admin.pub (committed to repo)
   all:                  david + pits + tristons-workstation + admin (default)
 
   To add a new host: ssh <user>@<host> 'cat /etc/ssh/ssh_host_ed25519_key.pub' > keys/<host>.pub
@@ -226,12 +225,8 @@ add_key_file() {
 }
 
 add_admin_key() {
-    # Prefer local agenix.pub; fall back to committed key file
-    if [ -f "$ADMIN_SSH_KEY" ]; then
-        add_key_file "admin (local ~/.ssh/agenix.pub)" "$ADMIN_SSH_KEY"
-    else
-        add_key_file "admin" "$KEYS_DIR/admin.pub"
-    fi
+    # Use committed keys/admin.pub as the canonical source
+    add_key_file "admin" "$KEYS_DIR/admin.pub"
 }
 
 if [[ "$HOSTS" == "all" ]]; then
