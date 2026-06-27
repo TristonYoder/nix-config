@@ -6,7 +6,11 @@ let
 in
 {
   options.modules.system.nixCache = {
-    enable = mkEnableOption "Local Nix binary cache (david's build-offline-closures output)";
+    enable = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Pull pre-built closures from david's binary cache.";
+    };
 
     cacheUrl = mkOption {
       type = types.str;

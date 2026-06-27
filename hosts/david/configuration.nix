@@ -236,6 +236,9 @@ in
   # Serve the Nix binary cache over HTTPS so all Tailscale hosts can use it.
   modules.services.infrastructure.nixCacheServer.enable = true;
 
+  # david has the cache on local disk — no need to route through HTTPS.
+  modules.system.nixCache.cacheUrl = "file:///data/nix-builds/cache";
+
   # Conservative GC for the build machine — keep 3 months or 30 generations.
   nix.gc = {
     automatic = true;

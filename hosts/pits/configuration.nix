@@ -255,6 +255,4 @@
   # Consider adding monitoring for a public-facing server
   # Example: Prometheus node exporter, Grafana agent, etc.
 
-  # Pull built closures from david's binary cache over Tailscale.
-  modules.system.nixCache.enable = true;
 }

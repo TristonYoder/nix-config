@@ -291,10 +291,7 @@
 
   # /data is NFS-mounted from david, so hit the cache directly on disk rather
   # than going through the HTTPS endpoint.
-  modules.system.nixCache = {
-    enable = true;
-    cacheUrl = "file:///data/nix-builds/cache";
-  };
+  modules.system.nixCache.cacheUrl = "file:///data/nix-builds/cache";
 
   # =============================================================================
   # AI — Ollama local LLM server (RTX 4080 via CUDA)
