@@ -17,6 +17,16 @@ let
     in "${first}${rest}";
 in
 {
+  config = {
+    # Add /etc/hosts entries for all registered vHosts so services on this
+    # machine can resolve local domains without needing Technitium as the
+    # system resolver (david uses 1.1.1.1; Technitium only handles external clients).
+    networking.hosts."127.0.0.1" =
+      map (h: h.virtualHost)
+        (filter (h: h.enable)
+          (attrValues config.modules.services.vHosts.hosts));
+  };
+
   options.modules.services.vHosts = {
     hosts = mkOption {
       type = types.attrsOf (types.submodule ({ name, ... }: {
