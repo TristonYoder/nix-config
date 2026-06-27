@@ -236,11 +236,11 @@ if [[ "$HOSTS" == "all" ]]; then
     add_key_file "tristons-workstation" "$KEYS_DIR/tristons-workstation.pub"
     add_admin_key
 else
-    echo -e "${BLUE}Recipients:${NC} $HOSTS"
+    echo -e "${BLUE}Recipients:${NC} $HOSTS, admin (always included)"
     IFS=',' read -ra HOST_LIST <<< "$HOSTS"
     for host in "${HOST_LIST[@]}"; do
         case $host in
-            admin) add_admin_key ;;
+            admin) ;; # will be added unconditionally below
             *)
                 local keyfile="$KEYS_DIR/${host}.pub"
                 if [ ! -f "$keyfile" ]; then
@@ -252,6 +252,7 @@ else
                 ;;
         esac
     done
+    add_admin_key
 fi
 
 # Get the secret content
