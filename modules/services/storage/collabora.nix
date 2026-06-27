@@ -10,7 +10,7 @@ in
 
     domain = mkOption {
       type = types.str;
-      default = "office.${config.networking.domain}";
+      default = "collabora.${config.networking.domain}";
       description = "Domain for Collabora Online";
     };
 
