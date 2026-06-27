@@ -126,8 +126,10 @@
   modules.services.storage.samba.enable = lib.mkDefault true;
   modules.services.storage.syncthing.enable = lib.mkDefault true;
   
-  modules.services.storage.nextcloud.enable = lib.mkDefault true;
-  modules.services.storage.collabora.enable = lib.mkDefault true;
+  modules.services.storage.nextcloud = {
+    enable = lib.mkDefault true;
+    office.collabora.enable = lib.mkDefault true;
+  };
 
   # =============================================================================
   # GAMING SERVICES
