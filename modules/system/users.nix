@@ -112,9 +112,9 @@ in
       createHome = !cfg.useDataDrive;
     };
 
-    # Caroline Yoder user account (only on hosts with data drive)
+    # Caroline Yoder user account (on all desktop/laptop/workstation hosts)
     # uid pinned to match david (1002) for the same NFS reason as mainUser.uid above.
-    users.users.carolineyoder = mkIf cfg.useDataDrive {
+    users.users.carolineyoder = mkIf config.modules.system.desktop.enable {
       isNormalUser = true;
       uid = 1002;
       description = "Caroline Yoder";
@@ -128,7 +128,9 @@ in
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK5JWm3A5tXTCPq8YTua30QH2+Pa/Mz96QC5KJZKdEsz"  # Same key as tristonyoder for now
       ];
       home = "/home/carolineyoder";
-      createHome = false;  # tmpfiles handles home via L+ symlink (see below)
+      # On useDataDrive hosts, tmpfiles creates /home/carolineyoder as an L+ symlink;
+      # createHome would conflict. On regular desktop hosts, let NixOS create it normally.
+      createHome = !cfg.useDataDrive;
     };
 
     # Data drive setup: symlink /home to /data for persistent storage
