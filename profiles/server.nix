@@ -101,6 +101,7 @@
   modules.services.productivity.actual.enable = lib.mkDefault true;
   modules.services.productivity.outline.enable = lib.mkDefault true;
   modules.services.productivity.tandoor.enable = lib.mkDefault true;
+  modules.services.productivity.vikunja.enable = lib.mkDefault true;
 
   # =============================================================================
   # COMMUNICATION SERVICES
