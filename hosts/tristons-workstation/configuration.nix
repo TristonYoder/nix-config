@@ -287,7 +287,7 @@
   # GAMING — re-enabled now that the system has its own swap (see above)
   # =============================================================================
 
-  # profiles/workstation.nix already defaults this to true; no override needed.
+  modules.services.gaming.enable = true;
 
   # /data is NFS-mounted from david, so hit the cache directly on disk rather
   # than going through the HTTPS endpoint.

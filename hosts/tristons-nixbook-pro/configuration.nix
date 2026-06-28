@@ -127,4 +127,6 @@
   ];
 
   home-manager.users.tristonyoder.modules.appShortcuts.enable = true;
+
+  modules.services.gaming.enable = true;
 }

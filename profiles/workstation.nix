@@ -84,7 +84,7 @@
   # =============================================================================
 
   modules.services.gaming = {
-    enable = lib.mkDefault true;
+    enable = lib.mkDefault false;
     steam.steamRomManager = true;
   };
 }
