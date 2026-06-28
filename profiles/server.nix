@@ -58,6 +58,7 @@
     tokenFile = lib.mkDefault config.age.secrets.cloudflared-token-current.path;
   };
   modules.services.infrastructure.postgresql.enable = lib.mkDefault true;
+  modules.services.infrastructure.scrutiny.enable = lib.mkDefault true;
   modules.services.infrastructure.tailscale.enable = lib.mkDefault true;
   modules.services.infrastructure.technitium.enable = lib.mkDefault true;
 
