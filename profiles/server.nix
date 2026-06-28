@@ -66,6 +66,7 @@
   # =============================================================================
   
   modules.services.media.immich.enable = lib.mkDefault true;
+  modules.services.media.kavita.enable = lib.mkDefault true;
   modules.services.media.jellyfin = {
     enable = lib.mkDefault true;
     pluginRepositories = lib.mkDefault [
