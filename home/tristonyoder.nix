@@ -6,6 +6,7 @@
 {
   imports = [
     ./common.nix
+    ./modules/app-shortcuts.nix
   ];
   
   # User (platform-specific)

@@ -335,4 +335,6 @@
     openrgb
     vlc
   ];
+
+  home-manager.users.tristonyoder.modules.appShortcuts.enable = true;
 }

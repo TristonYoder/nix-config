@@ -137,6 +137,12 @@ in
             description = "Whether the monitoring provider should track uptime for this host.";
           };
 
+          shortcut = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Whether to include this host in the app-manifest JSON (and thus generate a desktop shortcut).";
+          };
+
           localHostsEntry = mkOption {
             type = types.bool;
             default = true;

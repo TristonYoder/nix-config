@@ -163,6 +163,8 @@
 
   modules.services.providers.dashboard-homepage.enable = lib.mkDefault true;
 
+  modules.services.providers.appManifest.enable = lib.mkDefault true;
+
   # =============================================================================
   # DNS CONFIGURATION
   # =============================================================================
