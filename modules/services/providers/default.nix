@@ -6,5 +6,6 @@
     ./monitoring.nix
     ./dashboard-homepage.nix
     ./dashboard-homarr.nix
+    ./app-manifest.nix
   ];
 }

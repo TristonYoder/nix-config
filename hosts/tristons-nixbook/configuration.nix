@@ -86,4 +86,6 @@
     # NFS client support
     nfs-utils
   ];
+
+  home-manager.users.tristonyoder.modules.appShortcuts.enable = true;
 }

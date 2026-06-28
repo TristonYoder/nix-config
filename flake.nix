@@ -188,6 +188,7 @@
               home-manager.useUserPackages = true;
               home-manager.backupFileExtension = "backup";
               home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
+              home-manager.users.carolineyoder = import ./home/carolineyoder.nix;
             }
           ];
 
@@ -228,6 +229,7 @@
               home-manager.useUserPackages = true;
               home-manager.backupFileExtension = "backup";
               home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
+              home-manager.users.carolineyoder = import ./home/carolineyoder.nix;
             }
           ];
 
@@ -258,6 +260,7 @@
               home-manager.useUserPackages = true;
               home-manager.backupFileExtension = "backup";
               home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
+              home-manager.users.carolineyoder = import ./home/carolineyoder.nix;
             }
           ];
 
