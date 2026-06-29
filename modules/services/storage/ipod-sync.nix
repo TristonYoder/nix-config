@@ -19,45 +19,79 @@ in
       example = "/home/tristonyoder/.config/iopenpodcli/config.yaml";
     };
 
-    # On headless hosts (david) the iPod won't be auto-mounted by udisks.
-    # Set this to have the service mount and unmount it manually.
     autoMount = mkOption {
       type = types.bool;
       default = false;
       description = ''
-        Mount the iPod manually before sync and unmount after.
-        Use on headless/server hosts without a desktop session.
-        On desktop hosts (KDE), leave false — udisks auto-mounts the device.
+        Kept for backwards compatibility. The service always reuses an existing
+        KDE/udisks mount and falls back to mounting directly if none is found.
       '';
     };
 
     mountPoint = mkOption {
       type = types.str;
       default = "/mnt/ipod";
-      description = "Mount point used when autoMount = true";
+      description = "Fallback mount point when the device is not already mounted";
+    };
+
+    cacheDir = mkOption {
+      type = types.str;
+      default = "/var/cache/iopod";
+      description = "Directory for pre-staged fingerprints and podcast episodes";
+    };
+
+    prepareInterval = mkOption {
+      type = types.str;
+      default = "hourly";
+      description = "How often to run iopod prepare (systemd calendar expression)";
     };
   };
 
   config = mkIf cfg.enable {
-    # Pull iopod (Qt-free headless CLI) from the iOpenPodCLI flake overlay
     nixpkgs.overlays = [ iopodcli.overlays.default ];
 
-    systemd.tmpfiles.rules = mkIf cfg.autoMount [
+    systemd.tmpfiles.rules = [
       "d ${cfg.mountPoint} 0755 root root -"
+      "d ${cfg.cacheDir} 0755 ${cfg.user} ${cfg.user} -"
     ];
 
-    systemd.services.ipod-sync = {
-      description = "Sync iPod via iopod";
-      # Don't block boot if triggered at startup; only run on-demand from udev
-      after = [ "network.target" ];
-      wants = [ "network.target" ];
-
+    # ── prepare: runs on a timer, no iPod needed ─────────────────────────────
+    # Fingerprints playlist tracks and downloads podcast episodes ahead of time
+    # so ipod-sync.service is fast when the iPod connects.
+    systemd.services.iopod-prepare = {
+      description = "Pre-stage iPod sync content (fingerprint + podcast download)";
+      after = [ "network-online.target" ];
+      wants = [ "network-online.target" ];
       serviceConfig = {
         Type = "oneshot";
-        # Run as root so we can mount; iopod itself is invoked via runuser
+        User = cfg.user;
+        TimeoutStartSec = "2h";
+        StandardOutput = "journal";
+        StandardError = "journal";
+        SyslogIdentifier = "iopod-prepare";
+        ExecStart = "${pkgs.iopod}/bin/iopod prepare --config ${cfg.configFile} --cache-dir ${cfg.cacheDir}";
+      };
+    };
+
+    systemd.timers.iopod-prepare = {
+      description = "Run iopod prepare on a schedule";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = cfg.prepareInterval;
+        Persistent = true;
+        RandomizedDelaySec = "5min";
+      };
+    };
+
+    # ── sync: triggered by udev on iPod connect ───────────────────────────────
+    systemd.services.ipod-sync = {
+      description = "Sync iPod via iopod";
+      after = [ "network.target" ];
+      wants = [ "network.target" ];
+      serviceConfig = {
+        Type = "oneshot";
         User = "root";
         TimeoutStartSec = "2h";
-        # Keep logs for the last 10 runs
         StandardOutput = "journal";
         StandardError = "journal";
         SyslogIdentifier = "ipod-sync";
@@ -66,25 +100,22 @@ in
 
             MOUNT="${cfg.mountPoint}"
 
-            # Find the Apple USB mass storage device (first one found)
             DEVICE=$(${pkgs.util-linux}/bin/lsblk -ndo NAME,VENDOR \
               | ${pkgs.gnugrep}/bin/grep -i "apple" \
               | ${pkgs.gawk}/bin/awk '{print "/dev/" $1}' \
               | head -1)
 
             if [ -z "$DEVICE" ]; then
-              echo "No Apple USB storage device found — skipping sync."
+              echo "No Apple USB storage device found -- skipping sync."
               exit 0
             fi
 
-            # Find the FAT partition on the device
             PART=$(${pkgs.util-linux}/bin/lsblk -nrpo NAME,TYPE "$DEVICE" \
               | ${pkgs.gnugrep}/bin/grep part \
               | ${pkgs.gawk}/bin/awk '{print $1}' \
               | head -1)
             PART="''${PART:-$DEVICE}"
 
-            # Use existing mount if already mounted (e.g. by udisks/KDE)
             EXISTING=$(${pkgs.util-linux}/bin/lsblk -nro NAME,MOUNTPOINTS \
               | ${pkgs.gnugrep}/bin/grep "$(basename "$PART")" \
               | ${pkgs.gawk}/bin/awk '{print $2}' | head -1)
@@ -111,13 +142,14 @@ in
             trap cleanup EXIT
 
             ${pkgs.util-linux}/bin/runuser -u ${cfg.user} -- \
-              ${pkgs.iopod}/bin/iopod --device "$MOUNT" --config ${cfg.configFile}
+              ${pkgs.iopod}/bin/iopod sync \
+                --device "$MOUNT" \
+                --config ${cfg.configFile} \
+                --cache-dir ${cfg.cacheDir}
           '';
       };
     };
 
-    # Trigger the sync when any Apple USB mass storage device is connected.
-    # Apple Vendor ID: 05ac; iPod product IDs span 0x1200–0x12ff.
     services.udev.extraRules = ''
       ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="05ac", ATTR{idProduct}=="12[0-9a-f][0-9a-f]", TAG+="systemd", ENV{SYSTEMD_WANTS}+="ipod-sync.service"
     '';
