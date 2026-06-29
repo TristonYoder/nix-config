@@ -307,11 +307,11 @@
         "nixpkgs": "nixpkgs_4"
       },
       "locked": {
-        "lastModified": 1782764412,
-        "narHash": "sha256-GxuaYSJqJK1T3BpZtMyJIst9lkqOu/K8d7+6HM2Z51I=",
+        "lastModified": 1782764838,
+        "narHash": "sha256-fjTikq89r9yirJAURN9kw6TZqws9r0GPURKwQREMAmg=",
         "owner": "TristonYoder",
         "repo": "iOpenPodCLI",
-        "rev": "0f3944002e85717a0cb322507090df51b959417b",
+        "rev": "c21426904d010a690e6b13cff81be54d5c6bddbb",
         "type": "github"
       },
       "original": {
