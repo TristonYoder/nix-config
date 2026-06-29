@@ -54,14 +54,14 @@ in
 
       serviceConfig = {
         Type = "oneshot";
-        User = cfg.user;
+        # Run as root so we can mount; iopod itself is invoked via runuser
+        User = "root";
         TimeoutStartSec = "5min";
         # Keep logs for the last 10 runs
         StandardOutput = "journal";
         StandardError = "journal";
         SyslogIdentifier = "ipod-sync";
-        ExecStart = pkgs.writeShellScript "ipod-sync-run" (
-          if cfg.autoMount then ''
+        ExecStart = pkgs.writeShellScript "ipod-sync-run" ''
             set -euo pipefail
 
             MOUNT="${cfg.mountPoint}"
@@ -84,66 +84,35 @@ in
               | head -1)
             PART="''${PART:-$DEVICE}"
 
-            echo "Mounting $PART -> $MOUNT"
-            ${pkgs.util-linux}/bin/mount -t vfat -o uid=$(id -u ${cfg.user}),gid=$(id -g ${cfg.user}),umask=002,flush "$PART" "$MOUNT"
-
-            cleanup() {
-              echo "Unmounting $MOUNT"
-              ${pkgs.util-linux}/bin/umount "$MOUNT" || true
-            }
-            trap cleanup EXIT
-
-            ${pkgs.iopod}/bin/iopod --device "$MOUNT" --config ${cfg.configFile}
-          '' else ''
-            set -euo pipefail
-
-            # Find the FAT partition on the first Apple block device
-            DEVICE=$(${pkgs.util-linux}/bin/lsblk -ndo NAME,VENDOR \
-              | ${pkgs.gnugrep}/bin/grep -i "apple" \
-              | ${pkgs.gawk}/bin/awk '{print "/dev/" $1}' \
-              | head -1)
-
-            if [ -z "$DEVICE" ]; then
-              echo "No Apple USB storage device found — skipping sync."
-              exit 0
-            fi
-
-            PART=$(${pkgs.util-linux}/bin/lsblk -nrpo NAME,TYPE "$DEVICE" \
-              | ${pkgs.gnugrep}/bin/grep part \
-              | ${pkgs.gawk}/bin/awk '{print $1}' \
-              | head -1)
-            PART="''${PART:-$DEVICE}"
-
-            # Mount via udisks (under /run/media/<user>) if not already mounted
-            MOUNT=$(${pkgs.util-linux}/bin/lsblk -nro NAME,MOUNTPOINTS \
-              | ${pkgs.gnugrep}/bin/grep "$(basename $PART)" \
-              | ${pkgs.gawk}/bin/awk '{print $2}')
+            # Use existing mount if already mounted (e.g. by udisks/KDE)
+            EXISTING=$(${pkgs.util-linux}/bin/lsblk -nro NAME,MOUNTPOINTS \
+              | ${pkgs.gnugrep}/bin/grep "$(basename "$PART")" \
+              | ${pkgs.gawk}/bin/awk '{print $2}' | head -1)
 
             MOUNTED_HERE=0
-            if [ -z "$MOUNT" ]; then
-              echo "Mounting $PART via udisksctl..."
-              UDISKS_OUT=$(${pkgs.udisks2}/bin/udisksctl mount -b "$PART" --no-user-interaction)
-              MOUNT=$(echo "$UDISKS_OUT" | ${pkgs.gnugrep}/bin/grep -oP '(?<=at ).*' | tr -d '.')
+            if [ -n "$EXISTING" ]; then
+              MOUNT="$EXISTING"
+              echo "iPod already mounted at $MOUNT"
+            else
+              mkdir -p "$MOUNT"
+              echo "Mounting $PART -> $MOUNT"
+              ${pkgs.util-linux}/bin/mount -t vfat \
+                -o uid=$(id -u ${cfg.user}),gid=$(id -g ${cfg.user}),umask=002,flush \
+                "$PART" "$MOUNT"
               MOUNTED_HERE=1
             fi
 
-            if [ -z "$MOUNT" ]; then
-              echo "Failed to determine mount point — aborting."
-              exit 1
-            fi
-
-            echo "iPod at $MOUNT"
             cleanup() {
               if [ "$MOUNTED_HERE" = "1" ]; then
-                echo "Unmounting $PART"
-                ${pkgs.udisks2}/bin/udisksctl unmount -b "$PART" --no-user-interaction || true
+                echo "Unmounting $MOUNT"
+                ${pkgs.util-linux}/bin/umount "$MOUNT" || true
               fi
             }
             trap cleanup EXIT
 
-            ${pkgs.iopod}/bin/iopod --device "$MOUNT" --config ${cfg.configFile}
-          ''
-        );
+            ${pkgs.util-linux}/bin/runuser -u ${cfg.user} -- \
+              ${pkgs.iopod}/bin/iopod --device "$MOUNT" --config ${cfg.configFile}
+          '';
       };
     };
 
