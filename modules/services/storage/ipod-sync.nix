@@ -56,7 +56,7 @@ in
         Type = "oneshot";
         # Run as root so we can mount; iopod itself is invoked via runuser
         User = "root";
-        TimeoutStartSec = "5min";
+        TimeoutStartSec = "2h";
         # Keep logs for the last 10 runs
         StandardOutput = "journal";
         StandardError = "journal";
