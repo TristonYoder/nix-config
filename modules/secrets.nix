@@ -84,6 +84,11 @@ with lib;
       "romm-igdb-client-secret" = { file = ../secrets/romm-igdb-client-secret.age; owner = "root"; group = "docker"; mode = "0440"; };
     })
 
+    // (optionalAttrs config.modules.services.productivity.vaultwarden.enable {
+      # Encrypted to davidKeys only — must contain: ADMIN_TOKEN=<token>
+      "vaultwarden-admin-token" = { file = ../secrets/vaultwarden-admin-token.age; owner = "vaultwarden"; group = "vaultwarden"; mode = "0400"; };
+    })
+
     // (optionalAttrs config.modules.services.infrastructure.nixCacheServer.enable {
       # Encrypted to davidKeys only
       "nix-cache-signing-key" = { file = ../secrets/nix-cache-signing-key.age; owner = "github-actions"; group = "github-actions"; mode = "0400"; };

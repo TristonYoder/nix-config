@@ -260,4 +260,8 @@ in
     };
   };
 
+  # Vaultwarden admin token — file must contain: ADMIN_TOKEN=<token>
+  modules.services.productivity.vaultwarden.adminTokenFile =
+    config.age.secrets.vaultwarden-admin-token.path;
+
 }
