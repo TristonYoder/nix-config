@@ -162,14 +162,10 @@ in
     category = "media";
   };
 
-  # InvokeAI
-  modules.services.vHosts.hosts."invoke.${config.networking.domain}" = {
-    reverseProxyHost = "tristons-workstation.${config.networking.domain}";
-    reverseProxyPort = 9090;
-    displayName = "InvokeAI";
-    category = "ai";
-    icon = "invoke-ai";
-    monitor = false; # runs on workstation, not always reachable
+  # InvokeAI — proxy to tristons-workstation (RTX 4080)
+  modules.services.ai.invokeAi = {
+    enable = true;
+    proxyHost = "tristons-workstation.${config.networking.domain}";
   };
 
   # =============================================================================
