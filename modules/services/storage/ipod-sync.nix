@@ -1,4 +1,4 @@
-{ config, lib, pkgs, iopenpod-flake, ... }:
+{ config, lib, pkgs, iopodcli, ... }:
 
 with lib;
 let
@@ -39,8 +39,8 @@ in
   };
 
   config = mkIf cfg.enable {
-    # Pull iopod from the iopenpod-flake overlay (Qt-free headless build)
-    nixpkgs.overlays = [ iopenpod-flake.overlays.default ];
+    # Pull iopod (Qt-free headless CLI) from the iOpenPodCLI flake overlay
+    nixpkgs.overlays = [ iopodcli.overlays.default ];
 
     systemd.tmpfiles.rules = mkIf cfg.autoMount [
       "d ${cfg.mountPoint} 0755 root root -"
