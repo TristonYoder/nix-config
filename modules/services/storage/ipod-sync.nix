@@ -6,7 +6,7 @@ let
 in
 {
   options.modules.services.storage.ipodSync = {
-    enable = mkEnableOption "iPod auto-sync via iopenpod-sync";
+    enable = mkEnableOption "iPod auto-sync via iopod";
 
     user = mkOption {
       type = types.str;
@@ -15,7 +15,7 @@ in
 
     configFile = mkOption {
       type = types.str;
-      description = "Path to the iopenpod-sync YAML config file";
+      description = "Path to the iopod YAML config file";
       example = "/home/tristonyoder/.config/iopenpodcli/config.yaml";
     };
 
@@ -39,7 +39,7 @@ in
   };
 
   config = mkIf cfg.enable {
-    # Pull iopenpod-sync from the iopenpod-flake overlay (Qt-free headless build)
+    # Pull iopod from the iopenpod-flake overlay (Qt-free headless build)
     nixpkgs.overlays = [ iopenpod-flake.overlays.default ];
 
     systemd.tmpfiles.rules = mkIf cfg.autoMount [
@@ -47,7 +47,7 @@ in
     ];
 
     systemd.services.ipod-sync = {
-      description = "Sync iPod via iopenpod-sync";
+      description = "Sync iPod via iopod";
       # Don't block boot if triggered at startup; only run on-demand from udev
       after = [ "network.target" ];
       wants = [ "network.target" ];
@@ -93,12 +93,12 @@ in
             }
             trap cleanup EXIT
 
-            ${pkgs.iopenpod-sync}/bin/iopenpod-sync --device "$MOUNT" --config ${cfg.configFile}
+            ${pkgs.iopod}/bin/iopod --device "$MOUNT" --config ${cfg.configFile}
           '' else ''
             set -euo pipefail
-            # On desktop hosts udisks auto-mounts the iPod; iopenpod-sync
+            # On desktop hosts udisks auto-mounts the iPod; iopod
             # discovers it by scanning mounted volumes via scan_for_ipods().
-            ${pkgs.iopenpod-sync}/bin/iopenpod-sync --config ${cfg.configFile}
+            ${pkgs.iopod}/bin/iopod --config ${cfg.configFile}
           ''
         );
       };
