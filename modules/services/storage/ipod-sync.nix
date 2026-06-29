@@ -96,9 +96,52 @@ in
             ${pkgs.iopod}/bin/iopod --device "$MOUNT" --config ${cfg.configFile}
           '' else ''
             set -euo pipefail
-            # On desktop hosts udisks auto-mounts the iPod; iopod
-            # discovers it by scanning mounted volumes via scan_for_ipods().
-            ${pkgs.iopod}/bin/iopod --config ${cfg.configFile}
+
+            # Find the FAT partition on the first Apple block device
+            DEVICE=$(${pkgs.util-linux}/bin/lsblk -ndo NAME,VENDOR \
+              | ${pkgs.gnugrep}/bin/grep -i "apple" \
+              | ${pkgs.gawk}/bin/awk '{print "/dev/" $1}' \
+              | head -1)
+
+            if [ -z "$DEVICE" ]; then
+              echo "No Apple USB storage device found — skipping sync."
+              exit 0
+            fi
+
+            PART=$(${pkgs.util-linux}/bin/lsblk -nrpo NAME,TYPE "$DEVICE" \
+              | ${pkgs.gnugrep}/bin/grep part \
+              | ${pkgs.gawk}/bin/awk '{print $1}' \
+              | head -1)
+            PART="''${PART:-$DEVICE}"
+
+            # Mount via udisks (under /run/media/<user>) if not already mounted
+            MOUNT=$(${pkgs.util-linux}/bin/lsblk -nro NAME,MOUNTPOINTS \
+              | ${pkgs.gnugrep}/bin/grep "$(basename $PART)" \
+              | ${pkgs.gawk}/bin/awk '{print $2}')
+
+            MOUNTED_HERE=0
+            if [ -z "$MOUNT" ]; then
+              echo "Mounting $PART via udisksctl..."
+              UDISKS_OUT=$(${pkgs.udisks2}/bin/udisksctl mount -b "$PART" --no-user-interaction)
+              MOUNT=$(echo "$UDISKS_OUT" | ${pkgs.gnugrep}/bin/grep -oP '(?<=at ).*' | tr -d '.')
+              MOUNTED_HERE=1
+            fi
+
+            if [ -z "$MOUNT" ]; then
+              echo "Failed to determine mount point — aborting."
+              exit 1
+            fi
+
+            echo "iPod at $MOUNT"
+            cleanup() {
+              if [ "$MOUNTED_HERE" = "1" ]; then
+                echo "Unmounting $PART"
+                ${pkgs.udisks2}/bin/udisksctl unmount -b "$PART" --no-user-interaction || true
+              fi
+            }
+            trap cleanup EXIT
+
+            ${pkgs.iopod}/bin/iopod --device "$MOUNT" --config ${cfg.configFile}
           ''
         );
       };
