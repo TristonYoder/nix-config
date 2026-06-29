@@ -58,6 +58,7 @@ with lib;
       "affine-oidc-secret" = { file = ../secrets/affine-oidc-secret.age; owner = "root"; group = "docker"; mode = "0440"; };
       "tandoor-secrets" = { file = ../secrets/tandoor-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
       "docmost-secrets" = { file = ../secrets/docmost-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "invoice-ninja-env" = { file = ../secrets/invoice-ninja-env.age; owner = "root"; group = "docker"; mode = "0440"; };
       "wordpress-studio-mysql" = { file = ../secrets/wordpress-studio-mysql.age; owner = "root"; group = "docker"; mode = "0440"; };
       "wordpress-studio-wp" = { file = ../secrets/wordpress-studio-wp.age; owner = "root"; group = "docker"; mode = "0440"; };
       "wordpress-photography-mysql" = { file = ../secrets/wordpress-photography-mysql.age; owner = "root"; group = "docker"; mode = "0440"; };

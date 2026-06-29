@@ -10,5 +10,6 @@
     ./tandoor.nix
     ./babybuddy.nix
     ./companion.nix
+    ./invoice-ninja.nix
   ];
 }
