@@ -224,6 +224,13 @@ in
 
   modules.services.storage.wiiHddSync.enable = true;
 
+  modules.services.storage.ipodSync = {
+    enable = true;
+    user = "tristonyoder";
+    configFile = "/data/tristonyoder/home/.config/iopenpodcli/config.yaml";
+    autoMount = true;  # headless server — no udisks desktop session
+  };
+
   modules.services.storage.mp3PlayerSync = {
     enable = true;
     uuid = "EC95-4FBB";
