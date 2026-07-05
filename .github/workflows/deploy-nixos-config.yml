@@ -1,5 +1,15 @@
 name: Deploy NixOS Flake Configuration
 
+# Serialize deploy runs. Test workflow completions can fire in quick succession
+# (e.g. several PRs merged within minutes), and overlapping deploys race each
+# other's `nixos-rebuild switch` SSH sessions on the same host — the second one
+# fails with "Unit nixos-rebuild-switch-to-configuration.service was already
+# loaded or has a fragment file." Queue instead of canceling so an in-progress
+# activation is never interrupted mid-switch.
+concurrency:
+  group: deploy-nixos-config
+  cancel-in-progress: false
+
 on:
   workflow_run:
     workflows: ["Test NixOS Flake Configuration"]
@@ -246,8 +256,22 @@ jobs:
 
         # Closures are pre-built in the binary cache; --refresh ensures nix fetches
         # the latest HEAD rather than a locally cached flake resolution.
+        set +e
         ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME \
           "sudo nixos-rebuild switch --flake 'github:TristonYoder/nix-config#${{ matrix.host }}' --refresh"
+        DEPLOY_EXIT=$?
+        set -e
+
+        # switch-to-configuration exits 4 specifically when the config activated
+        # but one or more systemd units failed to reach "active" afterward — a
+        # runtime/service-health issue, not a config or activation error. Service
+        # health is already covered by Gatus monitoring, so don't fail the whole
+        # deploy over it (any other exit code still fails the job).
+        if [ "$DEPLOY_EXIT" -eq 4 ]; then
+          echo "::warning::${{ matrix.host }} activated but one or more systemd units failed to start post-activation. Check 'systemctl --failed' on the host."
+          exit 0
+        fi
+        exit "$DEPLOY_EXIT"
 
     - name: Notify success
       if: success()
