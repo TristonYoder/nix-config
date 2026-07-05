@@ -337,4 +337,12 @@
   ];
 
   home-manager.users.tristonyoder.modules.appShortcuts.enable = true;
+
+  modules.services.storage.ipodSync = {
+    enable = true;
+    user = "tristonyoder";
+    configFile = "/home/tristonyoder/.config/iopenpodcli/config.yaml";
+    # KDE/udisks auto-mounts the iPod; no manual mount needed
+    autoMount = false;
+  };
 }

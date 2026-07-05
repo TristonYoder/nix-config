@@ -42,12 +42,13 @@
 
     # External app flakes
     iopenpod-flake.url = "github:TristonYoder/iopenpod-flake";
+    iopodcli.url = "github:TristonYoder/iOpenPodCLI";
 
     # Hermes Agent (NousResearch) — official NixOS module
     hermes-agent.url = "github:NousResearch/hermes-agent";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, flake-utils, iopenpod-flake, hermes-agent, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, flake-utils, iopenpod-flake, iopodcli, hermes-agent, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -152,7 +153,7 @@
           ];
           
           specialArgs = {
-            inherit self nixpkgs nixpkgs-unstable nix-bitcoin iopenpod-flake;
+            inherit self nixpkgs nixpkgs-unstable nix-bitcoin iopenpod-flake iopodcli;
           };
         };
 
@@ -193,7 +194,7 @@
           ];
 
           specialArgs = {
-            inherit self nixpkgs nixpkgs-unstable iopenpod-flake;
+            inherit self nixpkgs nixpkgs-unstable iopenpod-flake iopodcli;
           };
         };
 
