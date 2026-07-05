@@ -84,7 +84,6 @@ jobs:
         echo "Testing flake syntax..."
         nix flake check --all-systems
         echo "✅ Flake syntax check passed!"
-      continue-on-error: true
 
     - name: Notify success
       if: success()
