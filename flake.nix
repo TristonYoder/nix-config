@@ -42,7 +42,7 @@
 
     # External app flakes
     iopenpod-flake.url = "github:TristonYoder/iopenpod-flake";
-    iopodcli.url = "github:TristonYoder/iOpenPodCLI/feat/cli-sync";
+    iopodcli.url = "github:TristonYoder/iOpenPodCLI";
 
     # Hermes Agent (NousResearch) — official NixOS module
     hermes-agent.url = "github:NousResearch/hermes-agent";
