@@ -104,6 +104,9 @@ in
 
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
+      displayName = "Plex";
+      category = "media";
+      icon = "plex";
     };
   };
 }

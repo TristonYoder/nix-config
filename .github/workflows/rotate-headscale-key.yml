@@ -67,9 +67,21 @@ jobs:
           fi
         done
 
+        # Newer headscale requires numeric user ID, not username.
+        # Use JSON output (no ANSI codes). "id" precedes "name" in each object,
+        # so track the last seen ID and print it when we hit "github-actions".
+        USER_ID=$(ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST \
+          "sudo headscale users list -o json" \
+          | awk '/"id":/{match($0, /"id": ([0-9]+)/, a); last_id=a[1]} /"name": "github-actions"/{print last_id; exit}')
+
+        # Fall back to known ID if lookup fails
+        if [ -z "$USER_ID" ]; then
+          USER_ID=3
+        fi
+
         # Generate new 7-day reusable preauthkey
         NEW_KEY=$(ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST \
-          "sudo headscale preauthkeys create --user github-actions --reusable --ephemeral --expiration 168h --tags tag:github-actions" | tail -1)
+          "sudo headscale preauthkeys create --user $USER_ID --reusable --ephemeral --expiration 168h --tags tag:github-actions" | tail -1)
 
         if [ -z "$NEW_KEY" ]; then
           echo "Failed to generate new preauthkey"

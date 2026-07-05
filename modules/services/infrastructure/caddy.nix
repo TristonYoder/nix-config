@@ -3,12 +3,12 @@
 with lib;
 let
   cfg = config.modules.services.infrastructure.caddy;
-  vHosts = recursiveUpdate cfg.virtualHosts config.modules.services.vHosts.hosts;
+  vHosts = config.modules.services.vHosts.hosts;
 in
 {
   options.modules.services.infrastructure.caddy = {
     enable = mkEnableOption "Caddy reverse proxy with Cloudflare DNS";
-    
+
     email = mkOption {
       type = types.str;
       default = "triston@7andco.studio";
@@ -20,98 +20,11 @@ in
       default = [ "127.0.0.1" "::1" "10.0.0.0/8" "172.16.0.0/12" "192.168.0.0/16" "10.100.0.0/18" "100.64.0.0/10" "fd7a:115c:a1e0::/48" ];
       description = "IP ranges considered internal for private virtual hosts.";
     };
-    
+
     cloudflareApiTokenFile = mkOption {
       type = types.nullOr types.path;
       default = null;
       description = "Path to file containing Cloudflare API token for DNS-01 challenge";
-    };
-
-    virtualHosts = mkOption {
-      type = types.attrsOf (types.submodule ({ name, ... }: {
-        options = {
-          enable = mkOption {
-            type = types.bool;
-            default = true;
-            description = "Whether to create this virtual host.";
-          };
-
-          virtualHost = mkOption {
-            type = types.str;
-            default = name;
-            description = "Virtual host name (defaults to the attribute key).";
-          };
-
-          reverseProxyAddress = mkOption {
-            type = types.nullOr types.str;
-            default = null;
-            description = "Explicit upstream reverse proxy target (overrides host/port/SSL if set).";
-          };
-
-          reverseProxyHost = mkOption {
-            type = types.str;
-            default = "localhost";
-            description = "Reverse proxy host (defaults to the local machine).";
-          };
-
-          reverseProxyPort = mkOption {
-            type = types.port;
-            default = 80;
-            description = "Reverse proxy port.";
-          };
-
-          reverseProxySSL = mkOption {
-            type = types.bool;
-            default = false;
-            description = "Whether to use HTTPS when building the reverse proxy address.";
-          };
-
-          managedProxy = mkOption {
-            type = types.bool;
-            default = true;
-            description = "Whether to use the managed reverse proxy template.";
-          };
-
-          public = mkOption {
-            type = types.bool;
-            default = false;
-            description = "Whether the virtual host should be publicly accessible.";
-          };
-
-          dnsRecord = mkOption {
-            type = types.bool;
-            default = true;
-            description = "Whether to include this virtual host in managed DNS records.";
-          };
-
-          dnsChallenge = mkOption {
-            type = types.bool;
-            default = true;
-            description = "Whether to enable DNS-01 TLS for this host (uses Cloudflare snippet).";
-          };
-
-          serverAliases = mkOption {
-            type = types.listOf types.str;
-            default = [ ];
-            description = "Additional hostnames served by this virtual host.";
-          };
-
-          extraConfig = mkOption {
-            type = types.lines;
-            default = "";
-            description = "Additional Caddy config appended to this virtual host.";
-          };
-        };
-      }));
-      default = { };
-      description = "Caddy virtual host definitions managed by the infrastructure module.";
-    };
-
-    dnsRecords = mkOption {
-      type = types.listOf types.str;
-      default = [ ];
-      readOnly = true;
-      description = "List of virtual hosts requesting DNS records (for future automation).";
     };
   };
 
@@ -175,11 +88,6 @@ in
     # Open firewall ports for HTTP and HTTPS
     networking.firewall.allowedTCPPorts = [ 80 443 ];
 
-    modules.services.infrastructure.caddy.dnsRecords =
-      map (host: host.virtualHost)
-        (filter (host: host.dnsRecord)
-          (attrValues vHosts));
-
     services.caddy.virtualHosts = mkMerge (
       mapAttrsToList (_: hostCfg:
         let
@@ -193,7 +101,7 @@ in
           "${hostCfg.virtualHost}" = {
             serverAliases = hostCfg.serverAliases;
             extraConfig =
-              if hostCfg.managedProxy then
+              if !hostCfg.rawConfig then
                 ''
                   ${optionalString (!hostCfg.public) ''
                     @internal {

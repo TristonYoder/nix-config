@@ -4,6 +4,9 @@
 !/secrets/secrets.nix
 !/secrets/README.md
 !/secrets/*.sh
+!/secrets/keys
+/secrets/keys/*
+!/secrets/keys/*.pub
 
 # Nix build outputs
 **/result

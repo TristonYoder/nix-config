@@ -48,7 +48,7 @@
   # =============================================================================
   
   modules.services.infrastructure.caddy.enable = lib.mkDefault true;
-  modules.services.vHosts.technitium = {
+  modules.services.providers.dns-technitium = {
     enable = lib.mkDefault true;
     url = lib.mkDefault "https://dns01.${config.networking.domain}";
   };
@@ -58,6 +58,7 @@
     tokenFile = lib.mkDefault config.age.secrets.cloudflared-token-current.path;
   };
   modules.services.infrastructure.postgresql.enable = lib.mkDefault true;
+  modules.services.infrastructure.scrutiny.enable = lib.mkDefault true;
   modules.services.infrastructure.tailscale.enable = lib.mkDefault true;
   modules.services.infrastructure.technitium.enable = lib.mkDefault true;
 
@@ -101,6 +102,7 @@
   modules.services.productivity.actual.enable = lib.mkDefault true;
   modules.services.productivity.outline.enable = lib.mkDefault true;
   modules.services.productivity.tandoor.enable = lib.mkDefault true;
+  modules.services.productivity.stirlingPdf.enable = lib.mkDefault true;
 
   # =============================================================================
   # COMMUNICATION SERVICES
@@ -126,31 +128,10 @@
   modules.services.storage.samba.enable = lib.mkDefault true;
   modules.services.storage.syncthing.enable = lib.mkDefault true;
   
-  # Nextcloud with all apps enabled
-  # modules.services.storage.nextcloud = {
-  #   enable = lib.mkDefault true;
-    
-  #   # Built-in apps
-  #   enableNews = true;
-  #   enableMail = true;
-  #   enableTables = true;
-  #   enableForms = true;
-  #   enableContacts = true;
-  #   enableCalendar = true;
-  #   enableGroupfolders = true;
-  #   enableExternal = true;
-    
-  #   # Custom apps
-  #   enableElementApp = false;
-  #   enableUserSaml = false;
-  #   enableRichdocumentscode = false;
-  #   enableIntegrationNotion = false;
-  #   enableIntegrationGithub = false;
-  #   enableOfficeonline = false;
-  #   enableElectronicsignatures = false;
-  #   enableLibresign = false;
-  #   enableFilesReadmemd = false;
-  # };
+  modules.services.storage.nextcloud = {
+    enable = lib.mkDefault true;
+    office.collabora.enable = lib.mkDefault true;
+  };
 
   # =============================================================================
   # GAMING SERVICES
@@ -171,10 +152,20 @@
   # AI SERVICES
   # =============================================================================
 
-  modules.services.ai.open-webui = {
-    enable = lib.mkDefault true;
-    ollamaHost = lib.mkDefault "http://tristons-workstation.${config.networking.domain}:11434";
-  };
+  modules.services.ai.hermes-agent.enable = lib.mkDefault true;
+  modules.services.ai.litellm.enable     = lib.mkDefault true;
+  modules.services.ai.open-webui.enable  = lib.mkDefault true;
+  modules.services.ai.qdrant.enable      = lib.mkDefault true;
+
+  # =============================================================================
+  # PROVIDER: MONITORING + DASHBOARD
+  # =============================================================================
+
+  modules.services.providers.monitoring.enable = lib.mkDefault true;
+
+  modules.services.providers.dashboard-homepage.enable = lib.mkDefault true;
+
+  modules.services.providers.appManifest.enable = lib.mkDefault true;
 
   # =============================================================================
   # DNS CONFIGURATION

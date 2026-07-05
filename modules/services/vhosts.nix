@@ -1,11 +1,32 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, ... }:
 
 with lib;
 
 let
-  dns = config.modules.services.vHosts.technitium;
+  # Auto-expand a bare subdomain (no dots) to a FQDN using networking.domain.
+  # Keys that already contain dots are used verbatim for backward compat.
+  expandDomain = name:
+    if (builtins.match ".*\\..*" name) != null
+    then name
+    else "${name}.${config.networking.domain}";
+
+  # Title-case a string: "budget" → "Budget", "open-webui" → "Open-webui"
+  titleCase = s:
+    let first = lib.toUpper (lib.substring 0 1 s);
+        rest  = lib.substring 1 (lib.stringLength s - 1) s;
+    in "${first}${rest}";
 in
 {
+  config = {
+    # Add /etc/hosts entries for all registered vHosts so services on this
+    # machine can resolve local domains without needing Technitium as the
+    # system resolver (david uses 1.1.1.1; Technitium only handles external clients).
+    networking.hosts."127.0.0.1" =
+      map (h: h.virtualHost)
+        (filter (h: h.enable && h.localHostsEntry)
+          (attrValues config.modules.services.vHosts.hosts));
+  };
+
   options.modules.services.vHosts = {
     hosts = mkOption {
       type = types.attrsOf (types.submodule ({ name, ... }: {
@@ -18,8 +39,12 @@ in
 
           virtualHost = mkOption {
             type = types.str;
-            default = name;
-            description = "Virtual host name (defaults to the attribute key).";
+            default = expandDomain name;
+            description = ''
+              FQDN for this virtual host.
+              Defaults to the attribute key if it contains dots; otherwise
+              auto-expands to ''${key}.''${networking.domain}.
+            '';
           };
 
           reverseProxyAddress = mkOption {
@@ -46,16 +71,20 @@ in
             description = "Whether to use HTTPS when building the reverse proxy address.";
           };
 
-          managedProxy = mkOption {
+          rawConfig = mkOption {
             type = types.bool;
-            default = true;
-            description = "Whether to use the managed reverse proxy template.";
+            default = false;
+            description = "When true, extraConfig is output verbatim inside the site block. The managed reverse proxy template is skipped; caller is responsible for all routing directives.";
           };
 
           public = mkOption {
             type = types.bool;
             default = false;
-            description = "Whether the virtual host should be publicly accessible.";
+            description = ''
+              Whether the virtual host is publicly accessible.
+              When true and the cloudflare-tunnel provider is enabled, an
+              ingress rule is added to route this domain through the tunnel.
+            '';
           };
 
           dnsRecord = mkOption {
@@ -79,241 +108,69 @@ in
           extraConfig = mkOption {
             type = types.lines;
             default = "";
-            description = "Additional reverse proxy config appended to this virtual host.";
+            description = "Additional config for this virtual host. In managed mode, appended after the proxy directive. In rawConfig mode, this is the entire site block content.";
+          };
+
+          # ── Provider metadata (consumed by dashboard / monitoring providers) ──
+
+          displayName = mkOption {
+            type = types.str;
+            default = titleCase name;
+            description = "Human-readable service name shown in dashboards.";
+          };
+
+          category = mkOption {
+            type = types.str;
+            default = "";
+            description = "Dashboard category (e.g. \"media\", \"productivity\", \"infrastructure\").";
+          };
+
+          icon = mkOption {
+            type = types.str;
+            default = "";
+            description = "Icon identifier or URL used by the dashboard provider.";
+          };
+
+          monitor = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Whether the monitoring provider should track uptime for this host.";
+          };
+
+          shortcut = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Whether to include this host in the app-manifest JSON (and thus generate a desktop shortcut).";
+          };
+
+          localHostsEntry = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Whether to add a 127.0.0.1 /etc/hosts entry for this virtual host so on-host services can resolve it without Technitium.";
           };
         };
       }));
       default = { };
-      description = "Agnostic virtual host definitions used by reverse proxy and DNS sync modules.";
-    };
+      description = ''
+        Agnostic virtual host registry consumed by all provider modules
+        (reverse proxy, DNS, Cloudflare tunnel, dashboard, monitoring).
 
-    technitium = {
-      enable = mkEnableOption "Auto-register vHost DNS records in Technitium on rebuild";
+        Minimal declaration — bare subdomain, auto-expands to FQDN:
 
-      url = mkOption {
-        type = types.str;
-        default = "http://localhost:5380";
-        description = "Technitium DNS Server API base URL";
-      };
+          modules.services.vHosts.hosts."budget" = {
+            reverseProxyPort = cfg.port;
+          };
+          # → virtualHost = "budget.''${networking.domain}"
+          # → displayName  = "Budget"
+          # → Caddy + Technitium DNS wired automatically (if enabled)
 
-      tokenFile = mkOption {
-        type = types.path;
-        default = config.age.secrets.technitium-api-token.path;
-        description = "Path to file containing the Technitium API token";
-      };
+        Public exposure via Cloudflare tunnel:
 
-      zone = mkOption {
-        type = types.str;
-        default = config.networking.domain;
-        description = "Primary DNS zone (e.g. theyoder.family)";
-      };
-
-      targetFqdn = mkOption {
-        type = types.str;
-        default = "${config.networking.hostName}.${config.networking.domain}";
-        description = "CNAME target — this host's own FQDN";
-      };
-
-      stateFile = mkOption {
-        type = types.str;
-        default = "/var/lib/dns-sync/registered-records";
-        description = "State file tracking registered DNS records for declarative cleanup";
-      };
+          modules.services.vHosts.hosts."budget" = {
+            reverseProxyPort = cfg.port;
+            public = true;
+          };
+      '';
     };
   };
-
-  config = mkIf dns.enable (
-    let
-      # Normalize a raw virtualHost string into a list of valid DNS names:
-      # - strips http:// / https:// prefixes
-      # - splits on whitespace (Caddy multi-domain syntax)
-      # - drops empty strings
-      normalizeDomains = vhost:
-        let
-          stripped = removePrefix "https://" (removePrefix "http://" vhost);
-          parts    = splitString " " stripped;
-        in filter (s: s != "") parts;
-
-      # Collect vHosts from service modules — filter to DNS-enabled, active hosts
-      # Include serverAliases so every domain served gets a record
-      allVHosts       = filter (h: h.enable && h.dnsRecord) (attrValues config.modules.services.vHosts.hosts);
-      internalDomains = concatMap (h: normalizeDomains h.virtualHost ++ h.serverAliases) (filter (h: !h.public) allVHosts);
-      publicDomains   = concatMap (h: normalizeDomains h.virtualHost ++ h.serverAliases) (filter (h:  h.public) allVHosts);
-      allDomains      = internalDomains ++ publicDomains;
-
-      # Generate a bash array body from a list of domain strings
-      toBashArray = domains:
-        if domains == []
-        then ""
-        else concatStringsSep "\n" (map (d: "  \"${d}\"") domains);
-
-      dnsSyncScript = pkgs.writeShellScript "dns-sync" ''
-        set -eo pipefail
-
-        TECHNITIUM_URL="${dns.url}"
-        TOKEN=$(cat "${dns.tokenFile}")
-        TARGET="${dns.targetFqdn}"
-        STATE_FILE="${dns.stateFile}"
-        CURL="${pkgs.curl}/bin/curl"
-        JQ="${pkgs.jq}/bin/jq"
-
-        COMMENT="Managed by vHost on ${dns.targetFqdn}"
-
-        # Fetch all known zones from Technitium, sorted longest-first for best-match lookup
-        refresh_zones() {
-          ZONE_LIST=$($CURL -sfG \
-            --data-urlencode "token=$TOKEN" \
-            "$TECHNITIUM_URL/api/zones/list" \
-            | $JQ -r '[.response.zones[].name] | sort_by(length) | reverse | .[]')
-        }
-        refresh_zones
-
-        # Find the longest existing zone that is a suffix of domain
-        find_zone() {
-          local domain="$1"
-          while IFS= read -r zone; do
-            if [[ "$domain" == "$zone" ]] || [[ "$domain" == *".$zone" ]]; then
-              echo "$zone"
-              return
-            fi
-          done <<< "$ZONE_LIST"
-          echo ""
-        }
-
-        # Extract TLD+1 using pure bash (e.g. sub.foo.bar -> foo.bar)
-        tld_plus_one() {
-          local domain="$1"
-          local IFS='.'
-          read -ra labels <<< "$domain"
-          local n=''${#labels[@]}
-          if [ "$n" -ge 2 ]; then
-            echo "''${labels[$((n-2))]}.''${labels[$((n-1))]}"
-          else
-            echo "$domain"
-          fi
-        }
-
-        # Create a Forwarder zone (TLD+1 heuristic), forwarding to 1.1.1.1
-        create_zone() {
-          local domain="$1"
-          local zone
-          zone=$(tld_plus_one "$domain")
-          echo "    creating forwarder zone: $zone -> 1.1.1.1" >&2
-          $CURL -sfG \
-            --data-urlencode "token=$TOKEN" \
-            --data-urlencode "zone=$zone" \
-            --data-urlencode "type=Forwarder" \
-            --data-urlencode "forwarder=1.1.1.1" \
-            "$TECHNITIUM_URL/api/zones/create" | $JQ -r '.status' >&2 || true
-          refresh_zones
-          echo "$zone"
-        }
-
-        technitium_add() {
-          local domain="$1" zone
-          zone=$(find_zone "$domain")
-          if [ -z "$zone" ]; then
-            echo "  + $domain (no zone found — creating)"
-            zone=$(create_zone "$domain")
-          else
-            echo "  + $domain"
-          fi
-          # At zone apex CNAME is forbidden by DNS RFC; use ANAME (alias) instead
-          if [ "$domain" = "$zone" ]; then
-            $CURL --retry 5 --retry-delay 3 --retry-connrefused -sfG \
-              --data-urlencode "token=$TOKEN" \
-              --data-urlencode "domain=$domain" \
-              --data-urlencode "zone=$zone" \
-              --data-urlencode "type=ANAME" \
-              --data-urlencode "aname=$TARGET" \
-              --data-urlencode "overwrite=true" \
-              --data-urlencode "comments=$COMMENT" \
-              "$TECHNITIUM_URL/api/zones/records/add" \
-              | $JQ -r 'if .status == "ok" then "    ok (ANAME)" else "    error: \(.errorMessage)" end' || true
-          else
-            $CURL --retry 5 --retry-delay 3 --retry-connrefused -sfG \
-              --data-urlencode "token=$TOKEN" \
-              --data-urlencode "domain=$domain" \
-              --data-urlencode "zone=$zone" \
-              --data-urlencode "type=CNAME" \
-              --data-urlencode "cname=$TARGET" \
-              --data-urlencode "overwrite=true" \
-              --data-urlencode "comments=$COMMENT" \
-              "$TECHNITIUM_URL/api/zones/records/add" \
-              | $JQ -r 'if .status == "ok" then "    ok" else "    error: \(.errorMessage)" end' || true
-          fi
-        }
-
-        technitium_delete() {
-          local domain="$1" zone
-          zone=$(find_zone "$domain")
-          [ -z "$zone" ] && return
-          echo "  - $domain (stale)"
-          $CURL --retry 3 --retry-delay 2 -sfG \
-            --data-urlencode "token=$TOKEN" \
-            --data-urlencode "domain=$domain" \
-            --data-urlencode "zone=$zone" \
-            --data-urlencode "type=CNAME" \
-            "$TECHNITIUM_URL/api/zones/records/delete" \
-            | $JQ -r 'if .status == "ok" then "    removed" else "    error: \(.errorMessage)" end' || true
-        }
-
-        # --- Domain lists baked in at build time ---
-
-        INTERNAL_DOMAINS=(
-        ${toBashArray internalDomains}
-        )
-
-        PUBLIC_DOMAINS=(
-        ${toBashArray publicDomains}
-        )
-
-        ALL_DOMAINS=()
-        for d in "''${INTERNAL_DOMAINS[@]-}"; do [ -n "$d" ] && ALL_DOMAINS+=("$d"); done
-        for d in "''${PUBLIC_DOMAINS[@]-}" ; do [ -n "$d" ] && ALL_DOMAINS+=("$d"); done
-
-        # --- Level 1: Register CNAMEs in Technitium ---
-
-        echo "=== dns-sync: registering records -> $TARGET ==="
-        for d in "''${ALL_DOMAINS[@]-}"; do
-          [ -n "$d" ] && technitium_add "$d"
-        done
-
-        # --- Level 2: Declarative removal of stale records ---
-
-        mkdir -p "$(dirname "$STATE_FILE")"
-        if [ -f "$STATE_FILE" ]; then
-          echo "=== dns-sync: checking for stale records ==="
-          while IFS= read -r d; do
-            [ -z "$d" ] && continue
-            if ! printf '%s\n' "''${ALL_DOMAINS[@]-}" | grep -qxF "$d"; then
-              technitium_delete "$d"
-            fi
-          done < "$STATE_FILE"
-        fi
-        printf '%s\n' "''${ALL_DOMAINS[@]-}" > "$STATE_FILE"
-
-        echo "=== dns-sync: complete ==="
-      '';
-    in
-    {
-      systemd.services.vHost-dns-technitium = {
-        description = "Sync vHost DNS records to Technitium";
-        wantedBy = [ "multi-user.target" ];
-        after = [ "network-online.target" "agenix.service" "technitium-dns-server.service" ];
-        wants = [ "network-online.target" "agenix.service" "technitium-dns-server.service" ];
-        restartIfChanged = true;
-
-        serviceConfig = {
-          Type = "oneshot";
-          RemainAfterExit = true;
-          # Wait for Technitium's HTTP listener before running dns-sync.
-          # Technitium may still be starting when activation triggers this unit.
-          ExecStartPre = "${pkgs.bash}/bin/bash -c 'until ${pkgs.curl}/bin/curl -sf http://localhost:5380/api/status > /dev/null 2>&1; do sleep 1; done'";
-          ExecStart = "${dnsSyncScript}";
-          StateDirectory = "dns-sync";
-        };
-      };
-    }
-  );
 }

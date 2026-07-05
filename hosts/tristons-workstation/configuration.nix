@@ -291,9 +291,28 @@
 
   # /data is NFS-mounted from david, so hit the cache directly on disk rather
   # than going through the HTTPS endpoint.
-  modules.system.nixCache = {
+  modules.system.nixCache.cacheUrl = "file:///data/nix-builds/cache";
+  modules.system.nixCache.priority = 20;
+
+  # =============================================================================
+  # AI — Ollama local LLM server (RTX 4080 via CUDA)
+  # =============================================================================
+
+  # Serves local models for Open WebUI on david over the 10Gb fiber LAN.
+  # All models sized to fit fully in RTX 4080 16GB VRAM (Q4_K_M ≈ 9GB max for 14b).
+  modules.services.ai.ollama = {
     enable = true;
-    cacheUrl = "file:///data/nix-builds/cache";
+    useCuda = true;
+    loadModels = [
+      "hermes3:latest"          # 8b  ~5GB  — agentic tool-use (NousResearch)
+      "nomic-embed-text:latest" # tiny ~274MB — RAG embeddings
+      "llama3.2:3b"             # 3b  ~2GB  — fast lightweight tasks
+      "qwen2.5:14b"             # 14b ~9GB  — strong general purpose
+      "qwen2.5-coder:14b"       # 14b ~9GB  — code generation
+      "phi4:14b"                # 14b ~9GB  — Microsoft phi4, excellent reasoning
+    ];
+    # Expose only on the Core Services VLAN NIC — david is the only consumer.
+    allowedInterfaces = [ "enp7s0" ];
   };
 
   # =============================================================================
@@ -316,4 +335,6 @@
     openrgb
     vlc
   ];
+
+  home-manager.users.tristonyoder.modules.appShortcuts.enable = true;
 }

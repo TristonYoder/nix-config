@@ -5,7 +5,7 @@ on:
     workflows: ["Test NixOS Flake Configuration"]
     types: [ completed ]
     branches: [ main ]
-  workflow_dispatch:  # Allow manual trigger with custom inputs
+  workflow_dispatch:
     inputs:
       hosts:
         description: 'Comma-separated list of hosts to deploy (e.g., david,pits or "all")'
@@ -18,33 +18,26 @@ env:
   MATRIX_ACCESS_TOKEN: ${{ secrets.MATRIX_ACCESS_TOKEN }}
 
 jobs:
-  # Determine which hosts to deploy
   prepare-deployment:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     outputs:
       hosts: ${{ steps.set-hosts.outputs.hosts }}
       parent_event_id: ${{ steps.notify-start.outputs.event_id }}
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Get commit message
       id: get-commit
       if: always()
       run: |
-        # Get commit message from GitHub event JSON to safely handle quotes and special characters
-        # Read from GITHUB_EVENT_PATH to avoid shell interpolation issues with quotes
-        # For workflow_run events, try to get commit from workflow_run.head_commit
         if [ "${{ github.event_name }}" = "workflow_run" ]; then
-          # Try to get commit message from workflow_run event structure
           COMMIT_MSG=$(jq -r '.workflow_run.head_commit.message // "Deployment triggered by workflow run" // empty' "$GITHUB_EVENT_PATH" 2>/dev/null || echo "Deployment triggered by workflow run")
         else
-          # For push and other events, get from standard location
           COMMIT_MSG=$(jq -r '.head_commit.message // .commits[0].message // "Manual trigger" // empty' "$GITHUB_EVENT_PATH" 2>/dev/null || echo "Manual trigger")
         fi
-        # If message is empty or null, use fallback
         if [ -z "$COMMIT_MSG" ] || [ "$COMMIT_MSG" = "null" ]; then
           if [ "${{ github.event_name }}" = "workflow_run" ]; then
             COMMIT_MSG="Deployment triggered by workflow run"
@@ -56,7 +49,7 @@ jobs:
         echo "commit_message<<EOF" >> $GITHUB_OUTPUT
         echo "$TRUNCATED_MSG" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
-    
+
     - name: Notify deployment start
       id: notify-start
       if: always()
@@ -72,40 +65,149 @@ jobs:
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
-    
+
     - name: Determine deployment hosts
       id: set-hosts
       run: |
-        # Define all available NixOS hosts
-        ALL_HOSTS='["david", "pits", "tristons-workstation"]'  # always-online machine, safe for CI auto-deploy
-        
+        ALL_HOSTS='["david", "pits", "tristons-workstation"]'
+
         if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
           INPUT_HOSTS="${{ github.event.inputs.hosts }}"
           if [ "$INPUT_HOSTS" = "all" ]; then
             echo "hosts=$ALL_HOSTS" >> $GITHUB_OUTPUT
           else
-            # Convert comma-separated list to JSON array
             HOSTS_JSON=$(echo "$INPUT_HOSTS" | jq -R -s -c 'split(",") | map(select(length > 0) | gsub("^\\s+|\\s+$";""))')
             echo "hosts=$HOSTS_JSON" >> $GITHUB_OUTPUT
           fi
         else
-          # Automatic deployment after successful test - deploy to all hosts
           echo "hosts=$ALL_HOSTS" >> $GITHUB_OUTPUT
         fi
 
-  # Deploy to all specified hosts in parallel
-  deploy-configurations:
+  # Build closures for ALL NixOS hosts on david and sign them into the binary cache.
+  # This runs before any deployment so every host can pull pre-built paths from the
+  # cache rather than building locally. Online hosts (david, pits, tristons-workstation)
+  # are built with hard failure; offline hosts (nixbook family) are best-effort.
+  build-all-closures:
     runs-on: ubuntu-latest
     needs: prepare-deployment
-    strategy:
-      matrix:
-        host: ${{ fromJson(needs.prepare-deployment.outputs.hosts) }}
-      fail-fast: false  # Continue deploying to other hosts even if one fails
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
+    - name: Notify building closures
+      id: notify-build-start
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          🔨 Building all host closures on david
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
+
+    - name: Setup Tailscale (Headscale)
+      uses: tailscale/github-action@v2
+      with:
+        authkey: ${{ secrets.HEADSCALE_AUTHKEY }}
+        tags: tag:github-actions
+        version: 1.78.1
+        args: --login-server ${{ secrets.HEADSCALE_LOGIN_SERVER }}
+
+    - name: Wait for Tailscale connection
+      run: sleep 10
+
+    - name: Build and cache all closures on david
+      run: |
+        mkdir -p ~/.ssh
+        echo "Host *" >> ~/.ssh/config
+        echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+        echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
+        chmod 600 ~/.ssh/config
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+
+        ssh ${{ secrets.NIXOS_SERVER_USER }}@david.vpn.theyoder.family << 'EOF'
+          set -e
+
+          NIX_CLOSURE_DIR="/var/lib/nix-ci-closures"
+          sudo mkdir -p "$NIX_CLOSURE_DIR"
+
+          build_and_cache() {
+            local host="$1"
+            shift
+            echo "--- Building $host ---"
+            local out_link="$NIX_CLOSURE_DIR/$host"
+            sudo nix build \
+              "github:TristonYoder/nix-config#nixosConfigurations.$host.config.system.build.toplevel" \
+              --refresh \
+              --out-link "$out_link" \
+              "$@"
+            STORE_PATH=$(readlink -f "$out_link")
+            echo "Signing and caching: $STORE_PATH"
+            sudo nix copy \
+              --to "file:///data/nix-builds/cache?secret-key=/run/agenix/nix-cache-signing-key" \
+              "$STORE_PATH"
+            sudo rm -f "$out_link"
+            echo "✅ $host cached"
+          }
+
+          # Always-online hosts — failure here blocks deployment
+          build_and_cache david
+          build_and_cache pits
+
+          # Best-effort hosts — logged but non-blocking
+          build_and_cache tristons-workstation \
+            || echo "⚠️ tristons-workstation build failed, continuing"
+          build_and_cache tristons-nixbook \
+            || echo "⚠️ tristons-nixbook build failed, continuing"
+          build_and_cache tristons-nixbook-pro \
+            --option extra-substituters 'https://cache.soopy.moe' \
+            --option extra-trusted-public-keys 'cache.soopy.moe:MzBsBVPllIlCwL2PVs3BQC3Bfbp9TIgakN1xFUDEm8E=' \
+            || echo "⚠️ tristons-nixbook-pro build failed, continuing"
+        EOF
+
+    - name: Notify closures built
+      if: success()
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ✅ All closures built and cached
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
+
+    - name: Notify closure build failure
+      if: failure()
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ❌ Closure build failed — deployment blocked
+          ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
+
+  # Deploy to all online hosts using the GitHub flake URL.
+  # Closures are already in the binary cache so each host downloads pre-built
+  # paths rather than rebuilding from source.
+  deploy-configurations:
+    runs-on: ubuntu-latest
+    needs: [prepare-deployment, build-all-closures]
+    strategy:
+      matrix:
+        host: ${{ fromJson(needs.prepare-deployment.outputs.hosts) }}
+      fail-fast: false
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
     - name: Notify deploying host
       id: notify-deploy-start
       continue-on-error: true
@@ -117,7 +219,7 @@ jobs:
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
         thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
-      
+
     - name: Setup Tailscale (Headscale)
       uses: tailscale/github-action@v2
       with:
@@ -128,98 +230,25 @@ jobs:
 
     - name: Wait for Tailscale connection
       run: sleep 10
-      
+
     - name: Deploy to ${{ matrix.host }}
       run: |
-        # Connect to server via Tailscale
-        SERVER_HOSTNAME="${{ matrix.host }}.vpn.theyoder.family"
-        echo "Deploying configuration to ${{ matrix.host }} at $SERVER_HOSTNAME"
-        
-        # Configure SSH to bypass host key verification
         mkdir -p ~/.ssh
         echo "Host *" >> ~/.ssh/config
         echo "  StrictHostKeyChecking no" >> ~/.ssh/config
         echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
         chmod 600 ~/.ssh/config
-
-        # Setup SSH key
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
         chmod 600 ~/.ssh/id_ed25519
 
-        # Copy configuration to server
-        rsync -avz --delete \
-          --exclude='.git' \
-          --exclude='.github' \
-          --exclude='*.save' \
-          --exclude='nextcloud/admin-pass' \
-          ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME:/tmp/nixos-config-deploy-${{ matrix.host }}/
+        SERVER_HOSTNAME="${{ matrix.host }}.vpn.theyoder.family"
+        echo "Deploying ${{ matrix.host }} from github:TristonYoder/nix-config..."
 
-        # Deploy flake configuration on server
-        ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << EOF
-          set -e
-          
-          # Navigate to deploy directory
-          cd /tmp/nixos-config-deploy-${{ matrix.host }}
-          
-          # Create backup directory if it doesn't exist
-          sudo mkdir -p /var/backups/nixos
-          
-          # Create timestamped backup of current flake configuration
-          BACKUP_NAME="flake_config_$(date +%Y%m%d_%H%M%S)"
-          sudo mkdir -p /var/backups/nixos/\$BACKUP_NAME
-          
-          # Backup current flake configuration if it exists
-          if [ -d "/etc/nixos" ]; then
-            sudo cp -r /etc/nixos/. /var/backups/nixos/\$BACKUP_NAME/ 2>/dev/null || true
-          fi
-          
-          # Keep only last 10 backups
-          sudo find /var/backups/nixos -maxdepth 1 -type d -name "flake_config_*" | sort | head -n -10 | xargs -r sudo rm -rf
-          
-          # Free space before deployment to avoid disk exhaustion
-          sudo nix-collect-garbage --delete-older-than 3d || true
-          sudo nix store optimise || true
+        # Closures are pre-built in the binary cache; --refresh ensures nix fetches
+        # the latest HEAD rather than a locally cached flake resolution.
+        ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME \
+          "sudo nixos-rebuild switch --flake 'github:TristonYoder/nix-config#${{ matrix.host }}' --refresh"
 
-          # Final test before deployment using flake
-          echo "Running final configuration test for ${{ matrix.host }}..."
-          if ! sudo nixos-rebuild dry-run --flake .#${{ matrix.host }}; then
-            echo "❌ Final configuration test failed for ${{ matrix.host }}! Aborting deployment."
-            exit 1
-          fi
-          
-          # Deploy the configuration using flake
-          echo "Deploying NixOS configuration for ${{ matrix.host }}..."
-          if sudo nixos-rebuild switch --flake .#${{ matrix.host }}; then
-            echo "✅ NixOS configuration deployed successfully to ${{ matrix.host }}!"
-            echo "SUCCESS" > /tmp/nixos-deploy-result-${{ matrix.host }}.txt
-          else
-            echo "❌ NixOS configuration deployment failed for ${{ matrix.host }}!"
-            echo "FAILED" > /tmp/nixos-deploy-result-${{ matrix.host }}.txt
-            exit 1
-          fi
-        EOF
-        
-        # Get deployment result
-        DEPLOY_RESULT=$(ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME "cat /tmp/nixos-deploy-result-${{ matrix.host }}.txt")
-        
-        if [ "$DEPLOY_RESULT" = "SUCCESS" ]; then
-          echo "✅ NixOS configuration deployed successfully to ${{ matrix.host }}!"
-        else
-          echo "❌ NixOS configuration deployment failed for ${{ matrix.host }}!"
-          exit 1
-        fi
-        
-    - name: Create GitHub Deployment Record
-      if: success()
-      run: |
-        echo "✅ NixOS configuration successfully deployed to ${{ matrix.host }}"
-        
-    - name: Notify on failure
-      if: failure()
-      run: |
-        echo "❌ NixOS configuration deployment failed for ${{ matrix.host }}"
-        echo "Check the server logs for more details"
-    
     - name: Notify success
       if: success()
       continue-on-error: true
@@ -231,8 +260,7 @@ jobs:
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
         thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
-        # redact_event_id: ${{ steps.notify-deploy-start.outputs['event_id'] }}
-    
+
     - name: Notify failure
       if: failure()
       continue-on-error: true
@@ -242,17 +270,16 @@ jobs:
           ❌ ${{ matrix.host }} failed
           ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
-        # redact_event_id: ${{ steps.notify-deploy-start.outputs['event_id'] }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
         thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
-    
+
     - name: React to parent with failure emoji
       if: failure()
       run: |
         PARENT_EVENT_ID="${{ needs.prepare-deployment.outputs.parent_event_id }}"
         ROOM_ID_ENCODED=$(echo -n "${{ secrets.MATRIX_ROOM_ID }}" | jq -sRr @uri)
-        
+
         curl -X PUT "${{ secrets.MATRIX_HOMESERVER_URL }}/_matrix/client/r0/rooms/$ROOM_ID_ENCODED/send/m.reaction/$(openssl rand -hex 16)" \
           -H "Authorization: Bearer ${{ secrets.MATRIX_ACCESS_TOKEN }}" \
           -H "Content-Type: application/json" \
@@ -263,29 +290,16 @@ jobs:
               "key": "❌"
             }
           }' || echo "Reaction failed, continuing..."
-        
-  # Build closures for offline hosts (nixbook) on david after deployment
-  build-offline-closures:
+
+  # Trigger the update-notifier on all workstations that are reachable.
+  # For deployed hosts (workstation) this is a no-op (already on latest SHA).
+  # For offline hosts (nixbooks) this prompts the user the next time they're online.
+  notify-workstations:
     runs-on: ubuntu-latest
-    needs: [prepare-deployment, deploy-configurations]
-    if: needs.deploy-configurations.result == 'success'
+    needs: [prepare-deployment, build-all-closures, deploy-configurations]
+    if: needs.build-all-closures.result == 'success'
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Notify building offline closures
-      id: notify-offline-start
-      continue-on-error: true
-      uses: ./.github/actions/matrix-notification
-      with:
-        message: |
-          🔵 Building offline closures
-        room_id: ${{ secrets.MATRIX_ROOM_ID }}
-        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
-        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
-        thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
-
     - name: Setup Tailscale (Headscale)
       uses: tailscale/github-action@v2
       with:
@@ -297,98 +311,47 @@ jobs:
     - name: Wait for Tailscale connection
       run: sleep 10
 
-    - name: Build offline closures on david
+    - name: Trigger update check on online workstations
       run: |
-        SERVER_HOSTNAME="david.vpn.theyoder.family"
-
-        # Configure SSH
         mkdir -p ~/.ssh
         echo "Host *" >> ~/.ssh/config
         echo "  StrictHostKeyChecking no" >> ~/.ssh/config
         echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
+        echo "  ConnectTimeout 5" >> ~/.ssh/config
         chmod 600 ~/.ssh/config
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
         chmod 600 ~/.ssh/id_ed25519
 
-        # Copy configuration to david
-        rsync -az --delete \
-          --exclude='.git' \
-          --exclude='.github' \
-          --exclude='*.save' \
-          --exclude='nextcloud/admin-pass' \
-          ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME:/tmp/nixos-config-offline-build/
+        for HOST in tristons-workstation tristons-nixbook tristons-nixbook-pro; do
+          echo "Notifying $HOST..."
+          ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST.vpn.theyoder.family \
+            "sudo systemctl start auto-update-check.service" \
+            && echo "✅ $HOST notified" \
+            || echo "⚠️  $HOST unreachable, skipping"
+        done
 
-        # Build closures for all offline hosts and store in binary cache on NFS
-        ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << 'EOF'
-          set -e
-          cd /tmp/nixos-config-offline-build
-
-          sudo mkdir -p /data/nix-builds/cache
-
-          build_closure() {
-            local host="$1"
-            local extra_args="${2:-}"
-            echo "Building $host closure..."
-            sudo nix build ".#nixosConfigurations.$host.config.system.build.toplevel" \
-              -o "/data/nix-builds/$host" \
-              $extra_args
-            STORE_PATH=$(readlink -f "/data/nix-builds/$host")
-            echo "Built: $STORE_PATH"
-            echo "$STORE_PATH" | sudo tee "/data/nix-builds/$host.path" > /dev/null
-            sudo nix copy --to "file:///data/nix-builds/cache?secret-key=/run/agenix/nix-cache-signing-key" "$STORE_PATH"
-            echo "✅ $host closure cached"
-          }
-
-          build_closure tristons-nixbook
-          build_closure tristons-workstation
-          build_closure tristons-nixbook-pro \
-            '--option extra-substituters https://cache.soopy.moe --option extra-trusted-public-keys cache.soopy.moe:MzBsBVPllIlCwL2PVs3BQC3Bfbp9TIgakN1xFUDEm8E='
-        EOF
-
-    - name: Notify offline closures success
-      if: success()
-      continue-on-error: true
-      uses: ./.github/actions/matrix-notification
-      with:
-        message: |
-          ✅ Offline closures built
-        room_id: ${{ secrets.MATRIX_ROOM_ID }}
-        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
-        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
-        thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
-
-    - name: Notify offline closures failure
-      if: failure()
-      continue-on-error: true
-      uses: ./.github/actions/matrix-notification
-      with:
-        message: |
-          ⚠️ Offline closure build failed
-          ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        room_id: ${{ secrets.MATRIX_ROOM_ID }}
-        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
-        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
-        thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
-
-  # Summary job to report overall deployment status
   deployment-summary:
     runs-on: ubuntu-latest
-    needs: [prepare-deployment, deploy-configurations, build-offline-closures]
+    needs: [prepare-deployment, build-all-closures, deploy-configurations]
     if: always()
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Check deployment status
       run: |
+        if [ "${{ needs.build-all-closures.result }}" != "success" ]; then
+          echo "❌ Closure build failed — deployment did not complete."
+          exit 1
+        fi
         if [ "${{ needs.deploy-configurations.result }}" = "success" ]; then
           echo "✅ All NixOS configurations deployed successfully!"
         else
-          echo "⚠️  Some deployments may have failed. Check individual job logs."
+          echo "⚠️  Some deployments failed. Check individual job logs."
           exit 1
         fi
-    
+
     - name: Notify summary success
       if: success()
       continue-on-error: true
@@ -400,7 +363,7 @@ jobs:
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
         thread_id: ${{ needs.prepare-deployment.outputs.parent_event_id }}
-    
+
     - name: Notify summary failure
       if: failure()
       continue-on-error: true

@@ -17,11 +17,9 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # SSH public keys for encryption (NOT age keys - agenix needs SSH format)
-# These are fetched dynamically from the servers
-DAVID_HOST="david"
-PITS_HOST="pits"
-WORKSTATION_HOST="tristons-workstation"
-ADMIN_SSH_KEY="$HOME/.ssh/agenix.pub"
+# Keys live in secrets/keys/<host>.pub — safe to commit, not secrets.
+# To add/refresh a key: ssh <host> "cat /etc/ssh/ssh_host_ed25519_key.pub" > keys/<host>.pub
+KEYS_DIR="$(cd "$(dirname "$0")" && pwd)/keys"
 
 # Usage information
 usage() {
@@ -65,11 +63,15 @@ ${BLUE}Examples:${NC}
   $0 -v cloudflare-api-token.age
 
 ${BLUE}Recipients:${NC}
+  Keys are loaded from secrets/keys/<host>.pub (committed, not secrets).
   david:                SSH host key for david server
   pits:                 SSH host key for pits server
   tristons-workstation: SSH host key for tristons-workstation
-  admin:                Admin SSH key for local secret management
-  all:                  All of the above (default)
+  tyoder-mbp:           SSH host key for tyoder-mbp
+  admin:                keys/admin.pub (committed to repo)
+  all:                  david + pits + tristons-workstation + admin (default)
+
+  To add a new host: ssh <user>@<host> 'cat /etc/ssh/ssh_host_ed25519_key.pub' > keys/<host>.pub
 
 ${BLUE}Troubleshooting:${NC}
   If you get "no identity matched any of the recipients" during nixos-rebuild:
@@ -210,40 +212,48 @@ fi
 RECIPIENTS_FILE=$(mktemp)
 trap "rm -f $RECIPIENTS_FILE" EXIT
 
-echo -e "${BLUE}Fetching SSH public keys...${NC}"
+echo -e "${BLUE}Building recipient list...${NC}"
+
+add_key_file() {
+    local name="$1" keyfile="$2"
+    if [ ! -f "$keyfile" ]; then
+        echo -e "${RED}Error: Key file not found for $name: $keyfile${NC}"
+        exit 1
+    fi
+    cat "$keyfile" >> "$RECIPIENTS_FILE"
+    echo -e "  ${GREEN}✓${NC} $name"
+}
+
+add_admin_key() {
+    # Use committed keys/admin.pub as the canonical source
+    add_key_file "admin" "$KEYS_DIR/admin.pub"
+}
 
 if [[ "$HOSTS" == "all" ]]; then
     echo -e "${BLUE}Recipients:${NC} david, pits, tristons-workstation, admin"
-    ssh tristonyoder@$DAVID_HOST "cat /etc/ssh/ssh_host_ed25519_key.pub" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Failed to fetch david SSH key${NC}"; exit 1; }
-    ssh tristonyoder@$PITS_HOST "cat /etc/ssh/ssh_host_ed25519_key.pub" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Failed to fetch pits SSH key${NC}"; exit 1; }
-    ssh tristonyoder@$WORKSTATION_HOST "cat /etc/ssh/ssh_host_ed25519_key.pub" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Failed to fetch tristons-workstation SSH key${NC}"; exit 1; }
-    cat "$ADMIN_SSH_KEY" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Admin SSH key not found at $ADMIN_SSH_KEY${NC}"; exit 1; }
+    add_key_file "david" "$KEYS_DIR/david.pub"
+    add_key_file "pits" "$KEYS_DIR/pits.pub"
+    add_key_file "tristons-workstation" "$KEYS_DIR/tristons-workstation.pub"
+    add_admin_key
 else
-    echo -e "${BLUE}Recipients:${NC} $HOSTS"
+    echo -e "${BLUE}Recipients:${NC} $HOSTS, admin (always included)"
     IFS=',' read -ra HOST_LIST <<< "$HOSTS"
     for host in "${HOST_LIST[@]}"; do
         case $host in
-            david)
-                ssh tristonyoder@$DAVID_HOST "cat /etc/ssh/ssh_host_ed25519_key.pub" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Failed to fetch david SSH key${NC}"; exit 1; }
-                ;;
-            pits)
-                ssh tristonyoder@$PITS_HOST "cat /etc/ssh/ssh_host_ed25519_key.pub" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Failed to fetch pits SSH key${NC}"; exit 1; }
-                ;;
-            tristons-workstation)
-                ssh tristonyoder@$WORKSTATION_HOST "cat /etc/ssh/ssh_host_ed25519_key.pub" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Failed to fetch tristons-workstation SSH key${NC}"; exit 1; }
-                ;;
-            admin)
-                cat "$ADMIN_SSH_KEY" >> "$RECIPIENTS_FILE" 2>/dev/null || { echo -e "${RED}Error: Admin SSH key not found at $ADMIN_SSH_KEY${NC}"; exit 1; }
-                ;;
+            admin) ;; # will be added unconditionally below
             *)
-                echo -e "${RED}Error: Unknown host '$host'. Valid: david, pits, tristons-workstation, admin, all${NC}"
-                exit 1
+                local keyfile="$KEYS_DIR/${host}.pub"
+                if [ ! -f "$keyfile" ]; then
+                    echo -e "${RED}Error: No key file for '$host' at $keyfile${NC}"
+                    echo -e "${YELLOW}To add it: ssh <user>@$host 'cat /etc/ssh/ssh_host_ed25519_key.pub' > keys/$host.pub${NC}"
+                    exit 1
+                fi
+                add_key_file "$host" "$keyfile"
                 ;;
         esac
     done
+    add_admin_key
 fi
-
-echo -e "${GREEN}✓ Fetched SSH public keys${NC}"
 
 # Get the secret content
 TEMP_FILE=$(mktemp)

@@ -72,7 +72,7 @@
   # Technitium DNS Web UI and DoH - dns02.<baseDomain>
   modules.services.vHosts.hosts."dns02.${config.networking.domain}" =
     lib.mkIf config.modules.services.infrastructure.technitium.enable {
-      managedProxy = false;  # Use custom routing for multi-backend setup
+      rawConfig = true;  # Use custom routing for multi-backend setup
       public = false;  # Restrict to internal networks (auto-applied by module)
       extraConfig = ''
         # DNS over HTTPS endpoint - Technitium runs DoH on port 5353
@@ -105,7 +105,7 @@
   # Uses Cloudflare DNS-01 challenge for automatic HTTPS
   modules.services.vHosts.hosts."matrix.${config.networking.domain}" = {
     public = true;
-    managedProxy = false;
+    rawConfig = true;
     extraConfig = ''
       reverse_proxy /_matrix/* http://david:8448
       reverse_proxy /_synapse/client/* http://david:8448
@@ -161,7 +161,7 @@
   # PITS terminates SSL for external access, forwards to David over Tailscale
   modules.services.vHosts.hosts."cloud.7andco.dev" = {
     public = true;
-    managedProxy = false;
+    rawConfig = true;
     extraConfig = ''
       reverse_proxy https://david {
         transport http {
@@ -255,6 +255,4 @@
   # Consider adding monitoring for a public-facing server
   # Example: Prometheus node exporter, Grafana agent, etc.
 
-  # Pull built closures from david's binary cache over Tailscale.
-  modules.system.nixCache.enable = true;
 }

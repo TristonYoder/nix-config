@@ -17,8 +17,11 @@ in
 
   config = mkIf cfg.enable {
     modules.services.vHosts.hosts."nix-cache.${config.networking.domain}" = {
-      managedProxy = false;
+      rawConfig = true;
       public = false;
+      displayName = "Nix Cache";
+      category = "infrastructure";
+      monitor = false;
       extraConfig = ''
         root * ${cfg.cacheDir}
         file_server

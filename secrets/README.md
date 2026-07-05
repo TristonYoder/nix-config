@@ -50,24 +50,27 @@ Generates 3 encrypted secrets:
 
 ## How It Works
 
-- **Encryption**: Uses PUBLIC keys (from `secrets.nix`) - no private key needed
+- **Encryption**: Uses SSH public keys from `secrets/keys/<host>.pub` — no private key needed, works offline, works from any device
 - **Decryption**: Servers automatically use their SSH host private key (`/etc/ssh/ssh_host_ed25519_key`)
-- **Admin keys**: Only needed on your local machine for managing/editing secrets
+- **Admin key**: `~/.ssh/agenix.pub` on your local machine; `keys/admin.pub` is a committed fallback
+
+### Keys folder
+
+```
+secrets/keys/
+  david.pub
+  pits.pub
+  tristons-workstation.pub
+  tristons-nixbook.pub
+  tyoder-mbp.pub
+  admin.pub
+```
+
+These are **SSH public keys** — not secrets, safe to commit. The `encrypt-secret.sh` script reads from this folder directly, so encryption works from any device without SSH access to the hosts.
 
 ## Adding a Secret
 
 ### 1. Encrypt the secret value
-
-**Recommended:** Use the helper script for easiest secret creation:
-
-```bash
-cd secrets
-
-# Encrypt with all hosts (david, pits, admin)
-./encrypt-secret.sh -n my-secret.age -h all -s "secret-value"
-```
-
-**Manual Method:** If you need full control, encrypt manually:
 
 ```bash
 cd secrets
@@ -75,25 +78,16 @@ cd secrets
 # On macOS/Darwin: Add nix to PATH first
 export PATH="/nix/var/nix/profiles/default/bin:$PATH"
 
-# Step 1: Create a recipients file with SSH public keys
-ssh tristonyoder@david "cat /etc/ssh/ssh_host_ed25519_key.pub" > /tmp/recipients.txt
-ssh tristonyoder@pits "cat /etc/ssh/ssh_host_ed25519_key.pub" >> /tmp/recipients.txt
-cat ~/.ssh/agenix.pub >> /tmp/recipients.txt
+# Encrypt for all hosts (david, pits, tristons-workstation, admin)
+./encrypt-secret.sh -n my-secret.age -s "secret-value"
 
-# Step 2: Encrypt with SSH public keys using -R flag
-echo "MY_SECRET=secret-value" > /tmp/secret-plain.txt
-nix-shell -p age --run \
-  "age --encrypt -R /tmp/recipients.txt -o my-secret.age /tmp/secret-plain.txt"
-
-# Step 3: Clean up
-rm /tmp/secret-plain.txt /tmp/recipients.txt
+# Or for specific hosts
+./encrypt-secret.sh -n david-only.age -h david -s "secret-value"
 ```
 
-**Critical:** Must use `-R` (capital R) with SSH public keys, NOT `-r` with age keys!
-
-**Why:** 
-- `-r age1...` creates X25519 recipients (won't work with agenix)
-- `-R ssh-pub-keys-file` creates ssh-ed25519 recipients (works with agenix)
+**Critical:** Must use `-R` (capital R) with SSH public keys, NOT `-r` with age keys.
+- `-r age1...` creates X25519 recipients → **won't work with agenix**
+- `-R ssh-keys-file` creates ssh-ed25519 recipients → **required by agenix**
 
 The encrypted file must have `-> ssh-ed25519` recipients, not `-> X25519`.
 
@@ -127,59 +121,38 @@ systemd.services.myservice.serviceConfig = {
 
 ## Adding a Host
 
-### 1. Get the host's public key
+### 1. Fetch the host's SSH public key
 
-```bash
-# On the new host
-ssh newhost "cat /etc/ssh/ssh_host_ed25519_key.pub" | nix-shell -p ssh-to-age --run "ssh-to-age"
-```
-
-### 2. Add to `secrets.nix`
-
-```nix
-let
-  newhost = "age1xxxxxxxxx...";  # Public key from step 1
-  
-  newhostKeys = [ newhost ] ++ adminKeys;
-in
-{
-  "my-secret.age".publicKeys = newhostKeys;  # Now newhost can decrypt this
-}
-```
-
-### 3. Rekey secrets (if needed)
-
-If the secret already exists and you're adding a new host, you'll need to re-encrypt it with the new recipient.
-
-**Option A: Re-encrypt manually (recommended for reliability)**
 ```bash
 cd secrets
-
-# On macOS/Darwin: Add nix to PATH first
-export PATH="/nix/var/nix/profiles/default/bin:$PATH"
-
-# Decrypt with your admin SSH key
-nix-shell -p age --run "age --decrypt -i ~/.ssh/agenix my-secret.age" > /tmp/secret-plain.txt
-
-# Create SSH recipients file with all hosts including the new one
-ssh tristonyoder@david "cat /etc/ssh/ssh_host_ed25519_key.pub" > /tmp/recipients.txt
-ssh tristonyoder@pits "cat /etc/ssh/ssh_host_ed25519_key.pub" >> /tmp/recipients.txt
-ssh tristonyoder@newhost "cat /etc/ssh/ssh_host_ed25519_key.pub" >> /tmp/recipients.txt
-cat ~/.ssh/agenix.pub >> /tmp/recipients.txt
-
-# Re-encrypt with SSH public keys (-R flag)
-nix-shell -p age --run \
-  "age --encrypt -R /tmp/recipients.txt -o my-secret.age /tmp/secret-plain.txt"
-
-# Clean up
-rm /tmp/secret-plain.txt /tmp/recipients.txt
+./fetch-host-keys.sh new-hostname
 ```
 
-**Option B: Use agenix rekey (if you have access to decrypt)**
+This writes `keys/new-hostname.pub` and prints the key. If the host isn't in the known-hosts list inside the script, it will prompt for the SSH target (`user@host`).
+
+To refresh all known hosts at once:
+```bash
+./fetch-host-keys.sh
+```
+
+### 2. Re-encrypt secrets that should be accessible on the new host
+
 ```bash
 cd secrets
-nix develop --command agenix -r -i ~/.ssh/agenix
+./encrypt-secret.sh -n my-secret.age -h david,pits,new-hostname \
+  -f <(./decrypt-secret.sh my-secret.age)
 ```
+
+### 3. Add the host to `fetch-host-keys.sh`
+
+Open `fetch-host-keys.sh` and add an entry to the `HOSTS` map:
+```bash
+[new-hostname]="user@new-hostname"
+```
+
+### When a host is reprovisioned
+
+A fresh NixOS install generates a new SSH host key. Run `./fetch-host-keys.sh <hostname>` to update the key file, then re-encrypt any secrets that host needs.
 
 ## Admin Keys
 
@@ -216,11 +189,16 @@ adminKeys = [
 
 ## Key Reference
 
-```nix
-# See secrets.nix for current keys
-david = "age19my5vpmrvl5u9ug4frpdmuuemjhdgemgqjm6xunknmfjf6efvdxs232kym";
-pits  = "age1jja99mf5qfczutr574nve8vhpt7azm8aq4ukqqrstdn0agud23nscazh6r";
-admin = "age1m32sa7vq84004w6spg5tp7vzmszecxpp0da6z6dj8fxs70y34flshd46jq";
+SSH public keys are stored as files in `secrets/keys/`. To view current recipients:
+
+```bash
+ls secrets/keys/
+cat secrets/keys/david.pub
+```
+
+To verify what recipients an encrypted file has:
+```bash
+./encrypt-secret.sh -v cloudflare-api-token.age
 ```
 
 ## Troubleshooting
@@ -273,24 +251,14 @@ cd secrets
 ```bash
 cd secrets
 
-# On macOS/Darwin: Add nix to PATH first
-export PATH="/nix/var/nix/profiles/default/bin:$PATH"
+# Re-encrypt in one step using process substitution
+./encrypt-secret.sh -n yourfile.age -f <(./decrypt-secret.sh yourfile.age)
 
-# 1. Decrypt the secret (if you can)
-nix-shell -p age --run "age --decrypt -i ~/.ssh/agenix yourfile.age" > /tmp/plain.txt
-
-# 2. Re-encrypt with SSH public keys using the script
-./encrypt-secret.sh -n yourfile.age -f /tmp/plain.txt
-
-# 3. Verify it's correct
+# Verify format
 ./encrypt-secret.sh -v yourfile.age
 
-# 4. Clean up
-rm /tmp/plain.txt
-
-# 5. Commit and deploy
-git add yourfile.age
-git commit -m "fix: Re-encrypt with SSH public keys"
+# Commit
+git add yourfile.age && git commit -m "fix(secrets): re-encrypt with SSH public keys"
 ```
 
 **2. Secret Encrypted for Wrong Hosts**
@@ -299,21 +267,10 @@ git commit -m "fix: Re-encrypt with SSH public keys"
 
 **Diagnosis:**
 ```bash
-# Get server's age key
-ssh hostname "cat /etc/ssh/ssh_host_ed25519_key.pub" | nix-shell -p ssh-to-age --run "ssh-to-age"
-
-# Compare with secrets.nix
-grep "hostname =" secrets/secrets.nix
-```
-
-**Fix:** If keys don't match, update `secrets.nix` and re-encrypt:
-```bash
+# Refresh the host's key and re-encrypt
 cd secrets
-
-# On macOS/Darwin: Add nix to PATH first
-export PATH="/nix/var/nix/profiles/default/bin:$PATH"
-
-./encrypt-secret.sh -n yourfile.age -h all -f /tmp/plain.txt
+./fetch-host-keys.sh hostname
+./encrypt-secret.sh -n yourfile.age -f <(./decrypt-secret.sh yourfile.age)
 ```
 
 **3. Server SSH Key Changed**
@@ -397,44 +354,34 @@ sudo nixos-rebuild switch
 
 ## Helper Scripts Reference
 
+### fetch-host-keys.sh
+
+Fetches SSH host public keys and writes them to `keys/<host>.pub`. Run when adding a new host or after a host is reprovisioned.
+
+```bash
+./fetch-host-keys.sh                        # refresh all known hosts
+./fetch-host-keys.sh david pits             # refresh specific hosts
+./fetch-host-keys.sh new-hostname           # fetch unknown host (prompts for SSH target)
+```
+
 ### encrypt-secret.sh
 
-Encrypts secrets using the correct method for agenix compatibility (SSH public keys with `-R` flag).
+Encrypts secrets using SSH public keys from `keys/` for agenix compatibility.
 
-**Features:**
-- Automatically fetches SSH public keys from servers
-- Uses SSH public key encryption (`-R` flag) for agenix compatibility
-- Validates encryption format (checks for ssh-ed25519 recipients)
-- Validates environment variable format
-- Interactive or command-line input
-- Shows preview before encryption
-- Provides next steps after encryption
-- **NEW:** Verify mode to check existing secrets
-
-**Examples:**
 ```bash
-cd secrets
-
-# On macOS/Darwin: Add nix to PATH first
-export PATH="/nix/var/nix/profiles/default/bin:$PATH"
-
 # Interactive mode (recommended)
 ./encrypt-secret.sh -n api-token.age -e
 
-# From command line with all hosts (default)
-./encrypt-secret.sh -n db-password.age -h all -s "mypassword123"
-
-# From command line (all hosts is default)
+# From argument
 ./encrypt-secret.sh -n db-password.age -s "mypassword123"
 
-# From file
+# From file or process substitution
 ./encrypt-secret.sh -n cert.age -f /path/to/certificate.pem
+./encrypt-secret.sh -n token.age -f <(./decrypt-secret.sh token.age)
 
-# Only specific hosts
+# Specific hosts only
 ./encrypt-secret.sh -n david-only.age -h david -s "secret"
-
-# Multiple hosts
-./encrypt-secret.sh -n multi-host.age -h david,pits -s "secret"
+./encrypt-secret.sh -n multi.age -h david,pits -s "secret"
 
 # Environment variable format
 ./encrypt-secret.sh -n token.age -e -s "API_KEY=abc123"
@@ -442,13 +389,6 @@ export PATH="/nix/var/nix/profiles/default/bin:$PATH"
 # Verify an existing secret has correct format
 ./encrypt-secret.sh -v cloudflare-api-token.age
 ```
-
-**What it checks:**
-- ✓ Fetches actual SSH host keys from servers
-- ✓ Uses `-R` flag for SSH public key encryption
-- ✓ Suppresses stderr to prevent file contamination
-- ✓ Verifies result has `ssh-ed25519` recipients (not `X25519`)
-- ✓ Warns if encryption format is wrong
 
 ### decrypt-secret.sh
 

@@ -8,6 +8,7 @@
     ./netboot.nix
     ./nix-cache-server.nix
     ./postgresql.nix
+    ./scrutiny.nix
     ./tailscale.nix
     ./technitium.nix
   ];

@@ -34,11 +34,11 @@
 | Host | Type | Profile | Auto-Deploy | Purpose |
 |------|------|---------|-------------|---------|
 | **david** | NixOS Server | Server | ✅ | Full infrastructure stack |
-| **pits** | NixOS Edge (Pi) | Edge | ✅ | Public-facing reverse proxy |
+| **pits** | NixOS Edge Server | Edge | ✅ | Public-facing reverse proxy |
 | **tristons-workstation** | NixOS Desktop | Desktop | ✅ | Development workstation |
-| **tristons-nixbook** | NixOS Laptop | Desktop | ✅ | Laptop workstation |
-| **tyoder-mbp** | macOS (Apple Silicon) | Darwin | ➖ | Triston's TPCC MacBook Pro (work) |
-| **Tristons-MacBook-Pro** | macOS (Intel T2) | Darwin | ➖ | Triston's MacBook Pro |
+| **tristons-nixbook** | NixOS Laptop | Desktop | ✅ | Family Laptop workstation |
+| **tristons-nixbook-pro** | NixOS Laptop  (Intel with apple T2) | Desktop | ✅ | Triston's NixBook |
+| **tyoder-mbp** | macOS (Apple Silicon) | Darwin | ➖ | Triston's Work MacBook Pro |
 
 ## Deploying from Scratch
 

@@ -46,6 +46,9 @@ in
       };
     };
 
+    # QtWebEngine for Plasma widgets that embed web content
+    environment.systemPackages = [ pkgs.kdePackages.qtwebengine ];
+
     # Bluetooth
     hardware.bluetooth.enable = true;
 

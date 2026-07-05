@@ -6,7 +6,11 @@ let
 in
 {
   options.modules.system.nixCache = {
-    enable = mkEnableOption "Local Nix binary cache (david's build-offline-closures output)";
+    enable = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Pull pre-built closures from david's binary cache.";
+    };
 
     cacheUrl = mkOption {
       type = types.str;
@@ -15,6 +19,16 @@ in
         URL of the binary cache written by the build-offline-closures CI job on
         david. Defaults to the internal HTTPS endpoint served by david over
         Tailscale.
+      '';
+    };
+
+    priority = mkOption {
+      type = types.int;
+      default = 30;
+      description = ''
+        Substituter priority. Lower number = higher priority.
+        cache.nixos.org is 40; our cache defaults to 30 so it is preferred.
+        Hosts with direct disk access (file://) should use 20.
       '';
     };
 
@@ -30,8 +44,9 @@ in
   };
 
   config = mkIf cfg.enable {
-    nix.settings.substituters = [ cfg.cacheUrl ];
-    nix.settings.trusted-substituters = [ cfg.cacheUrl ];
-    nix.settings.trusted-public-keys = lib.optional (cfg.trustedPublicKey != null) cfg.trustedPublicKey;
+    # extra-* appends to the defaults so cache.nixos.org remains a fallback.
+    nix.settings.extra-substituters = [ "${cfg.cacheUrl}?priority=${toString cfg.priority}" ];
+    nix.settings.extra-trusted-substituters = [ cfg.cacheUrl ];
+    nix.settings.extra-trusted-public-keys = lib.optional (cfg.trustedPublicKey != null) cfg.trustedPublicKey;
   };
 }

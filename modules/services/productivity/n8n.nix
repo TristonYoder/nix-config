@@ -17,7 +17,7 @@ in
     
     domain = mkOption {
       type = types.str;
-      default = "n8n.7andco.dev";
+      default = "n8n.${config.networking.domain}";
       description = "Domain for n8n";
     };
     
@@ -46,6 +46,9 @@ in
     # Caddy virtual host
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = 5678;
+      displayName = "n8n";
+      category = "productivity";
+      icon = "n8n";
     };
   };
 }

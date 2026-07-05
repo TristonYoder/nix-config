@@ -4,8 +4,18 @@ on:
   push:
     branches:
       - main
+    paths:
+      - '**.nix'
+      - 'flake.lock'
+      - 'secrets/**.age'
+      - '.github/workflows/**'
   pull_request:
     branches: [ main ]
+    paths:
+      - '**.nix'
+      - 'flake.lock'
+      - 'secrets/**.age'
+      - '.github/workflows/**'
 
 env:
   MATRIX_HOMESERVER_URL: ${{ secrets.MATRIX_HOMESERVER_URL }}
@@ -13,24 +23,21 @@ env:
   MATRIX_ACCESS_TOKEN: ${{ secrets.MATRIX_ACCESS_TOKEN }}
 
 jobs:
-  # First, check flake syntax locally (fast fail)
+  # Check flake syntax on the GitHub Actions runner (fast fail)
   check-flake-syntax:
     runs-on: ubuntu-latest
     outputs:
       parent_event_id: ${{ steps.send-start-notify.outputs.event_id }}
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
-    - name: Notify start
+
+    - name: Get commit message
       id: notify-start
       if: always()
       run: |
-        # Get commit message from GitHub event JSON to safely handle quotes and special characters
-        # Read from GITHUB_EVENT_PATH to avoid shell interpolation issues with quotes
         COMMIT_MSG=$(jq -r '.head_commit.message // .commits[0].message // "Manual trigger" // empty' "$GITHUB_EVENT_PATH" 2>/dev/null || echo "Manual trigger")
-        # If message is empty or null, use fallback
         if [ -z "$COMMIT_MSG" ] || [ "$COMMIT_MSG" = "null" ]; then
           COMMIT_MSG="Manual trigger"
         fi
@@ -38,7 +45,7 @@ jobs:
         echo "commit_message<<EOF" >> $GITHUB_OUTPUT
         echo "$TRUNCATED_MSG" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
-    
+
     - name: Send start notification
       id: send-start-notify
       continue-on-error: true
@@ -53,7 +60,7 @@ jobs:
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
-    
+
     - name: Notify testing syntax
       id: notify-syntax-start
       continue-on-error: true
@@ -65,21 +72,19 @@ jobs:
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
         thread_id: ${{ steps.send-start-notify.outputs['event_id'] }}
-      
+
     - name: Install Nix
       uses: cachix/install-nix-action@v27
       with:
         nix_path: nixpkgs=channel:nixos-unstable
-    
+
     - name: Check flake syntax
       id: syntax-check
       run: |
         echo "Testing flake syntax..."
         nix flake check --all-systems
         echo "✅ Flake syntax check passed!"
-        echo "check_result=success" >> $GITHUB_OUTPUT
-      continue-on-error: true
-    
+
     - name: Notify success
       if: success()
       continue-on-error: true
@@ -91,7 +96,6 @@ jobs:
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
         thread_id: ${{ steps.send-start-notify.outputs['event_id'] }}
-        # redact_event_id: ${{ steps.notify-syntax-start.outputs['event_id'] }}
 
     - name: Notify failure
       if: failure()
@@ -105,14 +109,13 @@ jobs:
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
         thread_id: ${{ steps.send-start-notify.outputs['event_id'] }}
-        # redact_event_id: ${{ steps.notify-syntax-start.outputs['event_id'] }}
-    
+
     - name: React to parent with failure emoji
       if: failure()
       run: |
         PARENT_EVENT_ID="${{ steps.send-start-notify.outputs['event_id'] }}"
         ROOM_ID_ENCODED=$(echo -n "${{ secrets.MATRIX_ROOM_ID }}" | jq -sRr @uri)
-        
+
         curl -X PUT "${{ secrets.MATRIX_HOMESERVER_URL }}/_matrix/client/r0/rooms/$ROOM_ID_ENCODED/redact/$PARENT_EVENT_ID/react-$(date +%s)" \
           -H "Authorization: Bearer ${{ secrets.MATRIX_ACCESS_TOKEN }}" \
           -H "Content-Type: application/json" \
@@ -124,7 +127,8 @@ jobs:
             }
           }' || echo "Reaction failed, continuing..."
 
-  # Test all NixOS configurations
+  # Test all NixOS host configurations by dry-running on david via the GitHub flake URL.
+  # All builds run on david (x86_64-linux) — no rsync, no temp dirs.
   test-configurations:
     runs-on: ubuntu-latest
     needs: check-flake-syntax
@@ -133,22 +137,17 @@ jobs:
     strategy:
       matrix:
         host:
-          - name: david
-            hostname: david
-          - name: pits
-            hostname: david  # dry-run builds on david to avoid filling pits' 50GB disk
-          - name: tristons-nixbook-pro
-            hostname: david  # dry-run builds on david (same x86_64-linux arch)
-          - name: tristons-nixbook
-            hostname: david  # dry-run builds on david (same x86_64-linux arch)
-          - name: tristons-workstation
-            hostname: david  # dry-run builds on david (same x86_64-linux arch)
-      fail-fast: false  # Continue testing other hosts even if one fails
-    
+          - david
+          - pits
+          - tristons-nixbook-pro
+          - tristons-nixbook
+          - tristons-workstation
+      fail-fast: false
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+
     - name: Notify start
       id: notify-start-test
       if: always()
@@ -156,12 +155,12 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          🔵 Testing ${{ matrix.host.name }}
+          🔵 Testing ${{ matrix.host }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
         thread_id: ${{ needs.check-flake-syntax.outputs.parent_event_id }}
-      
+
     - name: Setup Tailscale (Headscale)
       uses: tailscale/github-action@v2
       with:
@@ -172,82 +171,34 @@ jobs:
 
     - name: Wait for Tailscale connection
       run: sleep 10
-      
-    - name: Test ${{ matrix.host.name }} Configuration
+
+    - name: Test ${{ matrix.host }} configuration
       run: |
-        # Connect to server via Tailscale
-        SERVER_HOSTNAME="${{ matrix.host.hostname }}.vpn.theyoder.family"
-        echo "Testing configuration for ${{ matrix.host.name }} on $SERVER_HOSTNAME"
-        
-        # Configure SSH to bypass host key verification
         mkdir -p ~/.ssh
         echo "Host *" >> ~/.ssh/config
         echo "  StrictHostKeyChecking no" >> ~/.ssh/config
         echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
         chmod 600 ~/.ssh/config
-
-        # Setup SSH key
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
         chmod 600 ~/.ssh/id_ed25519
 
-        # Copy configuration to server
-        rsync -avz --delete \
-          --exclude='.git' \
-          --exclude='.github' \
-          --exclude='*.save' \
-          --exclude='nextcloud/admin-pass' \
-          ./ ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME:/tmp/nixos-config-test-${{ matrix.host.name }}/
+        # All NixOS configs are tested on david (x86_64-linux) via the GitHub flake URL.
+        # --refresh ensures nix fetches the latest pushed commit rather than a cached ref.
+        echo "Testing ${{ matrix.host }} on david..."
+        ssh ${{ secrets.NIXOS_SERVER_USER }}@david.vpn.theyoder.family \
+          "sudo nixos-rebuild dry-run --flake 'github:TristonYoder/nix-config#${{ matrix.host }}' --refresh"
 
-        # Test configuration on server
-        ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME << EOF
-          set -e
-          
-          # Navigate to test directory
-          cd /tmp/nixos-config-test-${{ matrix.host.name }}
-          
-          # Test the NixOS configuration using flake
-          echo "Testing NixOS configuration for ${{ matrix.host.name }}..."
-          if sudo nixos-rebuild dry-run --flake .#${{ matrix.host.name }}; then
-            echo "✅ Configuration test passed for ${{ matrix.host.name }}!"
-            echo "SUCCESS" > /tmp/nixos-test-result-${{ matrix.host.name }}.txt
-          else
-            echo "❌ Configuration test failed for ${{ matrix.host.name }}!"
-            echo "FAILED" > /tmp/nixos-test-result-${{ matrix.host.name }}.txt
-            exit 1
-          fi
-        EOF
-        
-        # Get test result
-        TEST_RESULT=$(ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME "cat /tmp/nixos-test-result-${{ matrix.host.name }}.txt")
-        
-        if [ "$TEST_RESULT" = "SUCCESS" ]; then
-          echo "✅ NixOS configuration test passed for ${{ matrix.host.name }}!"
-        else
-          echo "❌ NixOS configuration test failed for ${{ matrix.host.name }}!"
-          exit 1
-        fi
-        
-    - name: Set GitHub status
-      if: always()
-      run: |
-        if [ "${{ job.status }}" = "success" ]; then
-          echo "✅ ${{ matrix.host.name }} configuration test passed"
-        else
-          echo "❌ ${{ matrix.host.name }} configuration test failed"
-        fi
-    
     - name: Notify success
       if: success()
       continue-on-error: true
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ✅ ${{ matrix.host.name }} passed
+          ✅ ${{ matrix.host }} passed
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
         thread_id: ${{ needs.check-flake-syntax.outputs.parent_event_id }}
-        # redact_event_id: ${{ steps.notify-start-test.outputs['event_id'] }}
 
     - name: Notify failure
       if: failure()
@@ -255,14 +206,13 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ❌ ${{ matrix.host.name }} failed
+          ❌ ${{ matrix.host }} failed
           ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
         thread_id: ${{ needs.check-flake-syntax.outputs.parent_event_id }}
-        # redact_event_id: ${{ steps.notify-start-test.outputs['event_id'] }}
-    
+
     - name: React to parent with failure emoji
       if: failure()
       run: |

@@ -78,11 +78,24 @@ cat modules/services/media/immich.nix
 
 ### Infrastructure (`services/infrastructure/`)
 
-- **caddy.nix** - Reverse proxy with Cloudflare DNS integration
-- **cloudflared.nix** - Cloudflare tunnel
+- **caddy.nix** - Reverse proxy (consumes `vHosts` registry)
 - **postgresql.nix** - Database server
 - **tailscale.nix** - VPN with routing features
-- **technitium.nix** - DNS server
+- **technitium.nix** - DNS server (records managed by `dns-technitium` provider)
+
+### Providers (`services/providers/`)
+
+Providers read the `modules.services.vHosts.hosts` registry and implement cross-cutting concerns. Enable any combination independently.
+
+| File | Option path | Function |
+|---|---|---|
+| `dns-technitium.nix` | `modules.services.providers.dns-technitium` | Sync DNS A/CNAME records to Technitium |
+| `monitoring.nix` | `modules.services.providers.monitoring` | Gatus status page at `status.<domain>` |
+| `dashboard-homepage.nix` | `modules.services.providers.dashboard-homepage` | Homepage app grid at `apps.<domain>` |
+| `dashboard-homarr.nix` | `modules.services.providers.dashboard-homarr` | Homarr API-driven dashboard (cross-host) |
+| `cloudflare-tunnel.nix` | `modules.services.providers.cloudflare-tunnel` | Expose `public = true` vHosts via cloudflared |
+
+All four (Caddy + Technitium + Gatus + Homepage) are enabled by default in `profiles/server.nix`.
 
 ### Media (`services/media/`)
 
@@ -141,13 +154,13 @@ in
 {
   options.modules.services.category.servicename = {
     enable = mkEnableOption "Service Description";
-    
+
     domain = mkOption {
       type = types.str;
-      default = "service.domain.com";
+      default = "service.${config.networking.domain}";
       description = "Domain for service";
     };
-    
+
     port = mkOption {
       type = types.int;
       default = 8080;
@@ -161,14 +174,17 @@ in
       enable = true;
       # ... service-specific settings
     };
-    
-    # Optional: Caddy reverse proxy integration
-    modules.services.vHosts.${cfg.domain} = {
+
+    # Register with the vHosts registry.
+    # Caddy, Technitium DNS, Gatus, and Homepage all consume this automatically.
+    # Do NOT configure those providers directly from service modules.
+    modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
+      displayName = "Service Name";  # dashboard label
+      category    = "category";      # dashboard group (e.g. "media", "productivity")
+      icon        = "service-slug";  # optional icon slug
+      # monitor = false;             # set for services that won't return HTTP < 500
     };
-    
-    # Optional: Firewall rules
-    networking.firewall.allowedTCPPorts = [ cfg.port ];
   };
 }
 ```
@@ -212,20 +228,33 @@ sudo nixos-rebuild switch --flake .
 
 ## Common Patterns
 
-### Managed Caddy Virtual Hosts
+### vHosts Registry
 
-The Caddy module supports a reusable virtual host submodule for consistent, self-contained reverse proxy configs:
+The `modules.services.vHosts.hosts` attrset is the central service registry. All providers (Caddy, Technitium DNS, Gatus, Homepage, Cloudflare Tunnel) consume it. Service modules register here instead of configuring providers directly.
+
+Bare subdomain keys auto-expand: `"budget"` → `"budget.<networking.domain>"`.
 
 ```nix
-modules.services.infrastructure.caddy.enable = true;
-
-modules.services.vHosts."service.theyoder.family" = {
-  reverseProxyPort = 8080;
-  public = false; # restrict to internal IP ranges
+# In a service module or host config:
+modules.services.vHosts.hosts."myservice" = {
+  reverseProxyPort = 8080;        # port on localhost
+  reverseProxyHost = "other";     # optional: proxy to another host
+  displayName      = "My Service"; # dashboard label (default: title-cased key)
+  category         = "media";     # dashboard group
+  icon             = "my-service"; # icon slug (optional)
+  monitor          = true;        # include in Gatus (default: true)
+  public           = false;       # expose via Cloudflare Tunnel (default: false)
+  serverAliases    = [];          # extra domains on the same vHost
 };
 ```
 
-Each virtual host supports `public`, `reverseProxyAddress`, `reverseProxyHost`, `reverseProxyPort`, `reverseProxySSL`, `managedProxy`, `virtualHost` (defaults to the attribute key), `dnsRecord`, `dnsChallenge`, `serverAliases`, and `extraConfig` overrides. When `reverseProxyAddress` is set, it takes precedence over host/port/SSL settings.
+Providers are enabled independently in host/profile config:
+```nix
+modules.services.providers.monitoring.enable = true;
+modules.services.providers.dashboard-homepage.enable = true;
+modules.services.providers.dns-technitium.enable = true;
+modules.services.providers.cloudflare-tunnel.enable = true;
+```
 
 ### Enable with Defaults
 
