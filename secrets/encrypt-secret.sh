@@ -242,7 +242,7 @@ else
         case $host in
             admin) ;; # will be added unconditionally below
             *)
-                local keyfile="$KEYS_DIR/${host}.pub"
+                keyfile="$KEYS_DIR/${host}.pub"
                 if [ ! -f "$keyfile" ]; then
                     echo -e "${RED}Error: No key file for '$host' at $keyfile${NC}"
                     echo -e "${YELLOW}To add it: ssh <user>@$host 'cat /etc/ssh/ssh_host_ed25519_key.pub' > keys/$host.pub${NC}"

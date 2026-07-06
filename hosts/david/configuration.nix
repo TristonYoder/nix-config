@@ -218,6 +218,15 @@ in
     extraVolumes = [
       "/data/tristonyoder/home/Projects/nix-config:/nix-config:ro"
     ];
+    # Hermes's brain (SOUL.md, memory, skills) is git-versioned separately from
+    # this repo — TristonYoder/hermes-brain (private: it can carry Triston's own
+    # conversation content, unlike this public repo). Hermes commits its own
+    # deliberate changes; this timer is just a safety net for what it forgets.
+    vaultGit = {
+      enable = true;
+      remote = "git@github.com:TristonYoder/hermes-brain.git";
+      deployKeyFile = config.age.secrets.hermes-brain-deploy-key.path;
+    };
   };
 
   modules.services.ai.open-webui = {

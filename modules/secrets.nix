@@ -71,6 +71,9 @@ with lib;
       "tidarr-oidc-secret" = { file = ../secrets/tidarr-oidc-secret.age; mode = "0400"; };
       # hermes-agent: NixOS module loaded only on david (external flake dep), no universal enable option
       "hermes-env" = { file = ../secrets/hermes-env.age; mode = "0400"; };
+      # Deploy key (write access) for the private TristonYoder/hermes-brain repo —
+      # the vault git-sync timer pushes Hermes's brain (SOUL.md/memory/skills) there.
+      "hermes-brain-deploy-key" = { file = ../secrets/hermes-brain-deploy-key.age; mode = "0400"; };
     })
 
     // (optionalAttrs config.modules.services.gaming.romm.enable {

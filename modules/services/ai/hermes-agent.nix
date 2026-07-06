@@ -94,9 +94,43 @@ in
       '';
     };
 
+    vaultGit = {
+      enable = mkEnableOption "safety-net periodic git sync of the Obsidian vault";
+
+      remote = mkOption {
+        type = types.nullOr types.str;
+        default = null;
+        description = "git remote URL for the vault repo, e.g. \"git@github.com:you/hermes-brain.git\". Required if vaultGit.enable is true.";
+      };
+
+      deployKeyFile = mkOption {
+        type = types.nullOr types.path;
+        default = null;
+        description = "Path to a decrypted SSH private key (e.g. an agenix secret path) with write access to vaultGit.remote.";
+      };
+
+      interval = mkOption {
+        type = types.str;
+        default = "15min";
+        description = ''
+          systemd.timer OnUnitActiveSec value between sync attempts. This is a
+          safety net, not the primary sync path — Hermes is expected to commit
+          its own deliberate changes; this timer only catches what it forgets,
+          with a generic "auto-sync" commit message.
+        '';
+      };
+    };
+
   };
 
   config = mkIf cfg.enable {
+    assertions = [
+      {
+        assertion = cfg.vaultGit.enable -> (cfg.vaultGit.remote != null && cfg.vaultGit.deployKeyFile != null);
+        message = "modules.services.ai.hermes-agent.vaultGit.enable requires both remote and deployKeyFile to be set.";
+      }
+    ];
+
     # olm is required by mautrix[encryption] for Matrix E2E. nixpkgs marks it
     # insecure due to the upstream project being archived, but it's functional
     # and there's no replacement for python-olm in the mautrix ecosystem yet.
@@ -211,6 +245,23 @@ in
         migrate_file "MEMORY.md"
         migrate_file "USER.md"
 
+        ${optionalString (cfg.soul == null) ''
+          # No Nix-declared soul (cfg.soul) — SOUL.md is agent/human-editable vault
+          # content instead, same migrate-once-then-symlink treatment as MEMORY.md/
+          # USER.md above, just one directory shallower (.hermes/SOUL.md, not
+          # .hermes/memories/), since that's where load_soul_md() reads it from.
+          if [ ! -e "${vaultDir}/SOUL.md" ]; then
+            if [ -f "${stateDir}/.hermes/SOUL.md" ] && [ ! -L "${stateDir}/.hermes/SOUL.md" ]; then
+              mv "${stateDir}/.hermes/SOUL.md" "${vaultDir}/SOUL.md"
+            else
+              touch "${vaultDir}/SOUL.md"
+            fi
+            chown ${user}:${group} "${vaultDir}/SOUL.md"
+          fi
+          # Relative: from .hermes/ (one level, like skills below) up to stateDir root.
+          ln -sfn "../${vaultRelToState}/Hermes/SOUL.md" "${stateDir}/.hermes/SOUL.md"
+        ''}
+
         skills_src="${stateDir}/.hermes/skills"
         skills_dst="${vaultDir}/Skills"
         if [ ! -e "$skills_dst" ]; then
@@ -225,6 +276,41 @@ in
         ln -sfn "../${vaultRelToState}/Hermes/Skills" "$skills_src"
       '';
       deps = [ "hermes-agent-setup" "users" "groups" ];
+    };
+
+    # Safety net only — Hermes is expected to commit its own deliberate changes
+    # to the vault (it has command execution and knows the remote). This timer
+    # just catches whatever it forgets, with a generic auto-sync message. Runs
+    # as root: simplest way to read a 0400 deploy-key secret and the vault dir
+    # (owned by the hermes-agent service user) without matching ownership.
+    systemd.services.hermes-vault-git-sync = mkIf cfg.vaultGit.enable {
+      description = "Safety-net git sync for the Hermes Obsidian vault";
+      after = [ "hermes-agent-setup.service" ];
+      path = [ pkgs.git pkgs.openssh ];
+      script = ''
+        set -e
+        export GIT_SSH_COMMAND="ssh -i ${cfg.vaultGit.deployKeyFile} -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+        cd ${cfg.obsidianVault}
+        if [ ! -d .git ]; then
+          echo "vault git repo not initialized at ${cfg.obsidianVault}; skipping sync" >&2
+          exit 0
+        fi
+        git add -A
+        if ! git diff --cached --quiet; then
+          git -c user.name="Hermes" -c user.email="hermes@${config.networking.domain}" commit -m "auto-sync: $(date -Iseconds)"
+        fi
+        git push origin HEAD:main
+      '';
+      serviceConfig.Type = "oneshot";
+    };
+
+    systemd.timers.hermes-vault-git-sync = mkIf cfg.vaultGit.enable {
+      description = "Timer for Hermes vault safety-net git sync";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnBootSec = "5min";
+        OnUnitActiveSec = cfg.vaultGit.interval;
+      };
     };
   };
 }
