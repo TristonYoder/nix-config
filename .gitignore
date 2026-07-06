@@ -42,3 +42,6 @@
 # Temporary files
 .tmp/
 *.tmp
+
+# Claude Code session-local state
+.claude/scheduled_tasks.lock
