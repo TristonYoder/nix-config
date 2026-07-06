@@ -21,14 +21,17 @@ in
     ollamaHost = mkOption {
       type = types.str;
       default = "http://localhost:${toString config.modules.services.ai.ollama.port}";
-      description = "Ollama API endpoint for local models. Override when Ollama runs on a remote host.";
+      description = "Ollama API endpoint used for RAG embeddings. Override when Ollama runs on a remote host.";
     };
 
     # Path to an EnvironmentFile with secrets. Loaded by the systemd unit so
     # the values are never written to the Nix store. Suggested contents:
     #
     #   WEBUI_SECRET_KEY=<random 32+ char string>
-    #   OPENAI_API_KEYS=<key1>;<key2>   # semicolon-separated for multiple providers
+    #
+    # OPENAI_API_KEYS is derived automatically at service start from
+    # LITELLM_MASTER_KEY (see the ExecStartPre below) — no need to duplicate
+    # it here, since it authenticates apiBaseUrls[0] (LiteLLM) by default.
     #
     # Encrypt with agenix: ./encrypt-secret.sh -n open-webui-env.age -e
     environmentFile = mkOption {
@@ -37,9 +40,11 @@ in
       description = "Path to an agenix-decrypted EnvironmentFile with secrets.";
     };
 
-    # Extra OpenAI-compatible API base URLs beyond Ollama (semicolon-separated).
-    # Open WebUI pairs each URL with the corresponding entry in OPENAI_API_KEYS
-    # (from environmentFile) by position.
+    # Extra OpenAI-compatible API base URLs (semicolon-separated). Open WebUI
+    # pairs each URL with the corresponding entry in OPENAI_API_KEYS by
+    # position; entry 0 is auto-authenticated against LiteLLM (see above) —
+    # any additional entries need their own key appended to OPENAI_API_KEYS
+    # in environmentFile.
     #
     # Example: add Anthropic claude-compatible proxy or OpenAI directly.
     #   "https://api.openai.com/v1"
@@ -98,10 +103,6 @@ in
       environment = {
         TZ = config.time.timeZone;
 
-        # --- Local Ollama backend ---
-        OLLAMA_BASE_URL = cfg.ollamaHost;
-        ENABLE_OLLAMA_API = "true";
-
         # --- Additional API providers ---
         # Populated when apiBaseUrls is non-empty; positionally matched with
         # OPENAI_API_KEYS (semicolon-separated) from environmentFile.
@@ -137,6 +138,23 @@ in
         ++ optionals cfg.enableQdrant [ "qdrant.service" ];
       wants = [ "tailscaled.service" ]
         ++ optionals cfg.enableQdrant [ "qdrant.service" ];
+
+      # LiteLLM requires LITELLM_MASTER_KEY auth, but Open WebUI only reads a
+      # provider key from OPENAI_API_KEYS. systemd's EnvironmentFile= can't
+      # do variable substitution, so derive the latter from the former here
+      # rather than duplicating the key inside hermes-env.age. Runs in the
+      # upstream module's RuntimeDirectory ("open-webui" -> /run/open-webui),
+      # which the DynamicUser can write to under the unit's sandboxing.
+      serviceConfig.ExecStartPre = [
+        "${pkgs.writeShellScript "open-webui-derive-litellm-key" ''
+          set -e
+          printf 'OPENAI_API_KEYS=%s\n' "$LITELLM_MASTER_KEY" > "$RUNTIME_DIRECTORY/openai-api-keys.env"
+          chmod 600 "$RUNTIME_DIRECTORY/openai-api-keys.env"
+        ''}"
+      ];
+      # "-" prefix: don't fail ExecStartPre on the first-ever run, before the
+      # file above exists yet.
+      serviceConfig.EnvironmentFile = [ "-/run/open-webui/openai-api-keys.env" ];
     };
 
     modules.services.vHosts.hosts.${cfg.domain} = {
