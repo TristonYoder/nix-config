@@ -84,6 +84,9 @@ in
   # Feishin - Web music player (Jellyfin/Navidrome/Subsonic client)
   modules.services.media.feishin.enable = true;
 
+  # AzuraCast - Internet radio station management (azuracast.* admin, radio.* public player)
+  modules.services.media.azuracast.enable = true;
+
   # Beets - Auto-organize music library from Downloads into Music
   modules.services.media.beets.enable = true;
 
