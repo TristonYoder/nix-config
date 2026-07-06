@@ -184,6 +184,26 @@ in
     monitor = false; # runs on workstation, not always reachable
   };
 
+  # Home Assistant - runs on a separate device on the LAN.
+  # DNS-only (A record); no Caddy reverse proxy, so casting/discovery/local
+  # network features keep working and outages here can't take david's proxy down.
+  modules.services.vHosts.hosts."home.${config.networking.domain}" = {
+    ipAddress = "10.150.2.117";
+    serverAliases = [ "ha.${config.networking.domain}" "house.${config.networking.domain}" ];
+    displayName = "Home Assistant";
+    category = "home-automation";
+    icon = "home-assistant";
+  };
+
+  # Music Assistant - runs on the same device as Home Assistant. DNS-only, no reverse proxy.
+  modules.services.vHosts.hosts."ma.${config.networking.domain}" = {
+    ipAddress = "10.150.2.117";
+    serverAliases = [ "musicassistant.${config.networking.domain}" ];
+    displayName = "Music Assistant";
+    category = "media";
+    icon = "music-assistant";
+  };
+
   # =============================================================================
   # AI — each service enabled via profiles/server.nix (mkDefault true)
   # =============================================================================

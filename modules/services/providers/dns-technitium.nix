@@ -55,9 +55,17 @@ in
       # Collect vHosts from service modules — filter to DNS-enabled, active hosts
       # Include serverAliases so every domain served gets a record
       allVHosts       = filter (h: h.enable && h.dnsRecord) (attrValues config.modules.services.vHosts.hosts);
-      internalDomains = concatMap (h: normalizeDomains h.virtualHost ++ h.serverAliases) (filter (h: !h.public) allVHosts);
-      publicDomains   = concatMap (h: normalizeDomains h.virtualHost ++ h.serverAliases) (filter (h:  h.public) allVHosts);
+      cnameVHosts     = filter (h: h.ipAddress == null) allVHosts;
+      aRecordVHosts   = filter (h: h.ipAddress != null) allVHosts;
+
+      internalDomains = concatMap (h: normalizeDomains h.virtualHost ++ h.serverAliases) (filter (h: !h.public) cnameVHosts);
+      publicDomains   = concatMap (h: normalizeDomains h.virtualHost ++ h.serverAliases) (filter (h:  h.public) cnameVHosts);
       allDomains      = internalDomains ++ publicDomains;
+
+      # domain|ip pairs for vHosts that point directly at an external IP
+      aRecordEntries  = concatMap
+        (h: map (d: "${d}|${h.ipAddress}") (normalizeDomains h.virtualHost ++ h.serverAliases))
+        aRecordVHosts;
 
       # Generate a bash array body from a list of domain strings
       toBashArray = domains:
@@ -162,6 +170,41 @@ in
           fi
         }
 
+        technitium_add_a() {
+          local domain="$1" ip="$2" zone
+          zone=$(find_zone "$domain")
+          if [ -z "$zone" ]; then
+            echo "  + $domain -> $ip (no zone found — creating)"
+            zone=$(create_zone "$domain")
+          else
+            echo "  + $domain -> $ip"
+          fi
+          $CURL --retry 5 --retry-delay 3 --retry-connrefused -sfG \
+            --data-urlencode "token=$TOKEN" \
+            --data-urlencode "domain=$domain" \
+            --data-urlencode "zone=$zone" \
+            --data-urlencode "type=A" \
+            --data-urlencode "ipAddress=$ip" \
+            --data-urlencode "overwrite=true" \
+            --data-urlencode "comments=$COMMENT" \
+            "$TECHNITIUM_URL/api/zones/records/add" \
+            | $JQ -r 'if .status == "ok" then "    ok (A)" else "    error: \(.errorMessage)" end' || true
+        }
+
+        technitium_delete_a() {
+          local domain="$1" zone
+          zone=$(find_zone "$domain")
+          [ -z "$zone" ] && return
+          echo "  - $domain (stale A record)"
+          $CURL --retry 3 --retry-delay 2 -sfG \
+            --data-urlencode "token=$TOKEN" \
+            --data-urlencode "domain=$domain" \
+            --data-urlencode "zone=$zone" \
+            --data-urlencode "type=A" \
+            "$TECHNITIUM_URL/api/zones/records/delete" \
+            | $JQ -r 'if .status == "ok" then "    removed" else "    error: \(.errorMessage)" end' || true
+        }
+
         technitium_delete() {
           local domain="$1" zone record_type
           zone=$(find_zone "$domain")
@@ -192,15 +235,36 @@ in
         ${toBashArray publicDomains}
         )
 
+        # "domain|ip" pairs for vHosts pointing directly at an external IP
+        A_RECORD_PAIRS=(
+        ${toBashArray aRecordEntries}
+        )
+
         ALL_DOMAINS=()
         for d in "''${INTERNAL_DOMAINS[@]-}"; do [ -n "$d" ] && ALL_DOMAINS+=("$d"); done
         for d in "''${PUBLIC_DOMAINS[@]-}" ; do [ -n "$d" ] && ALL_DOMAINS+=("$d"); done
 
-        # --- Level 1: Register CNAMEs in Technitium ---
+        # "domain|kind" entries actually registered this run, for stale-cleanup diffing
+        REGISTERED=()
+
+        # --- Level 1: Register CNAME/ANAME records in Technitium ---
 
         echo "=== dns-sync: registering records -> $TARGET ==="
         for d in "''${ALL_DOMAINS[@]-}"; do
-          [ -n "$d" ] && technitium_add "$d"
+          [ -z "$d" ] && continue
+          technitium_add "$d"
+          REGISTERED+=("$d|cname")
+        done
+
+        # --- Level 1b: Register direct A records ---
+
+        echo "=== dns-sync: registering direct A records ==="
+        for pair in "''${A_RECORD_PAIRS[@]-}"; do
+          [ -z "$pair" ] && continue
+          domain="''${pair%%|*}"
+          ip="''${pair#*|}"
+          technitium_add_a "$domain" "$ip"
+          REGISTERED+=("$domain|a")
         done
 
         # --- Level 2: Declarative removal of stale records ---
@@ -208,14 +272,22 @@ in
         mkdir -p "$(dirname "$STATE_FILE")"
         if [ -f "$STATE_FILE" ]; then
           echo "=== dns-sync: checking for stale records ==="
-          while IFS= read -r d; do
-            [ -z "$d" ] && continue
-            if ! printf '%s\n' "''${ALL_DOMAINS[@]-}" | grep -qxF "$d"; then
-              technitium_delete "$d"
+          while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            domain="''${line%%|*}"
+            kind="''${line#*|}"
+            # legacy state file entries have no "|kind" suffix — they're all cname
+            [ "$kind" = "$line" ] && kind="cname"
+            if ! printf '%s\n' "''${REGISTERED[@]-}" | grep -qxF "$domain|$kind"; then
+              if [ "$kind" = "a" ]; then
+                technitium_delete_a "$domain"
+              else
+                technitium_delete "$domain"
+              fi
             fi
           done < "$STATE_FILE"
         fi
-        printf '%s\n' "''${ALL_DOMAINS[@]-}" > "$STATE_FILE"
+        printf '%s\n' "''${REGISTERED[@]-}" > "$STATE_FILE"
 
         echo "=== dns-sync: complete ==="
       '';
