@@ -20,9 +20,13 @@ let
     ];
   }) monitoredHosts;
 
-  # /etc/hosts entries so Gatus resolves internal vHost domains to localhost
-  # (Caddy listens on 0.0.0.0:443 with per-domain TLS, so this works for all)
-  extraHostsEntries = concatMapStrings (h: "127.0.0.1 ${h.virtualHost}\n") monitoredHosts;
+  # /etc/hosts entries so Gatus can resolve vHost domains without relying on
+  # Technitium as the system resolver (david's system resolver stays 1.1.1.1).
+  # Caddy-managed vHosts resolve to localhost; ipAddress vHosts resolve straight
+  # to the external device so the check hits it, not this host.
+  extraHostsEntries = concatMapStrings
+    (h: "${if h.ipAddress != null then h.ipAddress else "127.0.0.1"} ${h.virtualHost}\n")
+    monitoredHosts;
 in
 {
   options.modules.services.providers.monitoring = {

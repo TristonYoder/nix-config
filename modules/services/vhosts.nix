@@ -29,12 +29,24 @@ in
 
   options.modules.services.vHosts = {
     hosts = mkOption {
-      type = types.attrsOf (types.submodule ({ name, ... }: {
+      type = types.attrsOf (types.submodule ({ name, config, ... }: {
         options = {
           enable = mkOption {
             type = types.bool;
             default = true;
             description = "Whether to create this virtual host.";
+          };
+
+          ipAddress = mkOption {
+            type = types.nullOr types.str;
+            default = null;
+            description = ''
+              External IP address this vHost's DNS records should point to
+              directly (A record), instead of a CNAME/ANAME to this host.
+              When set, this vHost is DNS-only: Caddy does not create a
+              reverse proxy or manage TLS for it (the device at this IP is
+              expected to handle its own requests/TLS).
+            '';
           };
 
           virtualHost = mkOption {
@@ -145,7 +157,7 @@ in
 
           localHostsEntry = mkOption {
             type = types.bool;
-            default = true;
+            default = config.ipAddress == null;
             description = "Whether to add a 127.0.0.1 /etc/hosts entry for this virtual host so on-host services can resolve it without Technitium.";
           };
         };
