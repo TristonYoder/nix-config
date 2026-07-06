@@ -295,11 +295,15 @@ in
           echo "vault git repo not initialized at ${cfg.obsidianVault}; skipping sync" >&2
           exit 0
         fi
-        git add -A
-        if ! git diff --cached --quiet; then
-          git -c user.name="Hermes" -c user.email="hermes@${config.networking.domain}" commit -m "auto-sync: $(date -Iseconds)"
+        # -c safe.directory: this service has no $HOME, so it never sees a
+        # ~/.gitconfig safe.directory exception (e.g. one added via `sudo -i`
+        # interactively) — the repo dir's group ownership is inherited from
+        # the vault's setgid parent, which reads as "dubious" to git otherwise.
+        git -c safe.directory=${cfg.obsidianVault} add -A
+        if ! git -c safe.directory=${cfg.obsidianVault} diff --cached --quiet; then
+          git -c safe.directory=${cfg.obsidianVault} -c user.name="Hermes" -c user.email="hermes@${config.networking.domain}" commit -m "auto-sync: $(date -Iseconds)"
         fi
-        git push origin HEAD:main
+        git -c safe.directory=${cfg.obsidianVault} push origin HEAD:main
       '';
       serviceConfig.Type = "oneshot";
     };
