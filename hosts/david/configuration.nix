@@ -197,13 +197,21 @@ in
       { name = "smart";            model = "anthropic/claude-opus-4-8";    apiKeyEnv = "ANTHROPIC_API_KEY"; }
       # max: hardest problems, long-horizon tasks
       { name = "max";              model = "anthropic/claude-fable-5";     apiKeyEnv = "ANTHROPIC_API_KEY"; }
+
+      # ── API models (OpenRouter free tier) ──────────────────────────────────────
+      # quick: fast/low-effort interactive turns. Free tier is rate-limited
+      # (20 req/min, 50-1000 req/day depending on account balance) — router_settings
+      # fallback below drops to local-fast the moment it's throttled.
+      { name = "quick";            model = "openrouter/openai/gpt-oss-20b:free"; apiKeyEnv = "OPENROUTER_API_KEY"; }
     ];
     environmentFile = config.age.secrets.hermes-env.path;
+    extraSettings.router_settings.fallbacks = [ { quick = [ "local-fast" ]; } ];
   };
 
   modules.services.ai.hermes-agent = {
     enable = true;
-    model = "local-general";  # LiteLLM route: phi4:14b on tristons-workstation RTX 4080
+    model = "quick";  # LiteLLM route: OpenRouter free tier, falls back to local-fast when rate-limited
+    backgroundReviewModel = "local-general";  # keep background review off the free quota
     environmentFile = config.age.secrets.hermes-env.path;
     # HERMES_MANAGED=true (in environmentFile) blocks /sethome; homeRoom is the only path.
     homeRoom = "!evHgyPMGVZyKzGopQo:theyoder.family";
