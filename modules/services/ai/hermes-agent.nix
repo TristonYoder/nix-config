@@ -180,6 +180,14 @@ in
         enable = true;
         backend = "docker";
         extraVolumes = cfg.extraVolumes;
+        # cfg.environment (above) only ever reaches $HERMES_HOME/.env, parsed
+        # by Hermes's own Python process — it's never a real container env
+        # var. TZ has to be a genuine `docker create --env` flag to affect
+        # the container's actual clock, which is what its cron scheduler
+        # evaluates "50 4 * * *" against. extraOptions is included in the
+        # upstream module's container identity hash, so changing it correctly
+        # triggers a recreate (not just a restart) on the next switch.
+        extraOptions = [ "--env" "TZ=${config.time.timeZone}" ];
       };
     };
 
