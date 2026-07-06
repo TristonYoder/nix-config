@@ -112,6 +112,10 @@ in
         AZURACAST_SFTP_PORT = toString cfg.sftpPort;
         AUTO_ASSIGN_PORT_MIN = toString cfg.stationPortMin;
         AUTO_ASSIGN_PORT_MAX = toString cfg.stationPortMax;
+        # Required for first-boot DB init (upstream mariadb entrypoint aborts
+        # without one of the MYSQL_*_PASSWORD vars). The DB isn't reachable
+        # outside the container, so a random root password is fine.
+        MYSQL_RANDOM_ROOT_PASSWORD = "yes";
       };
       volumes = [
         "${cfg.dataDir}/stations:/var/azuracast/stations:rw"
