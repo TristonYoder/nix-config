@@ -94,6 +94,18 @@ in
       default = "latest";
       description = "AzuraCast image tag";
     };
+
+    puid = mkOption {
+      type = types.int;
+      default = 1000;
+      description = "UID the container's internal azuracast user runs as (also used to pre-own bind-mounted data dirs)";
+    };
+
+    pgid = mkOption {
+      type = types.int;
+      default = 1000;
+      description = "GID the container's internal azuracast user runs as (also used to pre-own bind-mounted data dirs)";
+    };
   };
 
   config = mkIf cfg.enable {
@@ -102,6 +114,16 @@ in
       autoPrune.enable = true;
     };
     virtualisation.oci-containers.backend = "docker";
+
+    # AzuraCast's own startup scripts chown /var/azuracast/storage/* to the
+    # azuracast user on every boot, but NOT /var/azuracast/stations or
+    # /var/azuracast/backups. Left to Docker's default bind-mount behavior
+    # those two would be created as root and the app (running as puid/pgid)
+    # can't write to them, so pre-create and own them ourselves.
+    systemd.tmpfiles.rules = [
+      "d ${cfg.dataDir}/stations 0755 ${toString cfg.puid} ${toString cfg.pgid} -"
+      "d ${cfg.dataDir}/backups 0755 ${toString cfg.puid} ${toString cfg.pgid} -"
+    ];
 
     virtualisation.oci-containers.containers."azuracast" = {
       image = "ghcr.io/azuracast/azuracast:${cfg.version}";
@@ -116,6 +138,8 @@ in
         # without one of the MYSQL_*_PASSWORD vars). The DB isn't reachable
         # outside the container, so a random root password is fine.
         MYSQL_RANDOM_ROOT_PASSWORD = "yes";
+        PUID = toString cfg.puid;
+        PGID = toString cfg.pgid;
       };
       volumes = [
         "${cfg.dataDir}/stations:/var/azuracast/stations:rw"
