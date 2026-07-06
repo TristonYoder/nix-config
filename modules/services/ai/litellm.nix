@@ -39,6 +39,18 @@ in
             default = null;
             description = "Environment variable name holding the API key, e.g. 'ANTHROPIC_API_KEY'. LiteLLM reads it as os.environ/<name>.";
           };
+          exposeModelName = mkOption {
+            type = types.bool;
+            default = true;
+            description = ''
+              Also register this route under its raw model name (everything
+              in `model` after the first '/', e.g. "anthropic/claude-sonnet-4.6"
+              or "hermes3") in addition to `name`. Lets clients pick either the
+              tier alias (fast/smart/local/...) — which can be repointed at a
+              different underlying model later without callers noticing — or
+              the specific model directly, e.g. from Open WebUI's dropdown.
+            '';
+          };
         };
       });
       default = [];
@@ -86,16 +98,27 @@ in
       environmentFile = cfg.environmentFile;
 
       settings = {
-        model_list = map (m: {
-          model_name = m.name;
-          litellm_params = {
-            model = m.model;
-          } // optionalAttrs (m.apiBase != null) {
-            api_base = m.apiBase;
-          } // optionalAttrs (m.apiKeyEnv != null) {
-            api_key = "os.environ/${m.apiKeyEnv}";
-          };
-        }) cfg.models;
+        model_list =
+          let
+            # Everything after the first '/' in the litellm model string, e.g.
+            # "openrouter/anthropic/claude-sonnet-4.6" -> "anthropic/claude-sonnet-4.6",
+            # "ollama/hermes3" -> "hermes3".
+            rawNameOf = m: removePrefix ("${head (splitString "/" m.model)}/") m.model;
+            mkEntry = modelName: m: {
+              model_name = modelName;
+              litellm_params = {
+                model = m.model;
+              } // optionalAttrs (m.apiBase != null) {
+                api_base = m.apiBase;
+              } // optionalAttrs (m.apiKeyEnv != null) {
+                api_key = "os.environ/${m.apiKeyEnv}";
+              };
+            };
+          in
+          concatMap (m:
+            [ (mkEntry m.name m) ]
+            ++ optional (m.exposeModelName && rawNameOf m != m.name) (mkEntry (rawNameOf m) m)
+          ) cfg.models;
 
         litellm_settings = {
           telemetry = false;
