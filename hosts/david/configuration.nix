@@ -190,15 +190,17 @@ in
       { name = "local-code";       model = "ollama/qwen2.5-coder:14b";     apiBase = "http://${workstationIp}:11434"; }
       { name = "local-general";    model = "ollama/phi4:14b";              apiBase = "http://${workstationIp}:11434"; }
 
-      # ── API models (Anthropic) ────────────────────────────────────────────────
+      # ── API models (all external/non-local routes go through OpenRouter now —
+      # one provider, one key, one place to see spend/rate-limits across
+      # everything that isn't self-hosted) ──────────────────────────────────────
       # fast: general tasking, routing, summarization
-      { name = "fast";             model = "anthropic/claude-sonnet-4-6";  apiKeyEnv = "ANTHROPIC_API_KEY"; }
+      { name = "fast";             model = "openrouter/anthropic/claude-sonnet-4.6"; apiKeyEnv = "OPENROUTER_API_KEY"; }
       # smart: tool-heavy agentic work, coding, complex reasoning
-      { name = "smart";            model = "anthropic/claude-opus-4-8";    apiKeyEnv = "ANTHROPIC_API_KEY"; }
+      { name = "smart";            model = "openrouter/anthropic/claude-opus-4.8";   apiKeyEnv = "OPENROUTER_API_KEY"; }
       # max: hardest problems, long-horizon tasks
-      { name = "max";              model = "anthropic/claude-fable-5";     apiKeyEnv = "ANTHROPIC_API_KEY"; }
+      { name = "max";              model = "openrouter/anthropic/claude-fable-5";    apiKeyEnv = "OPENROUTER_API_KEY"; }
 
-      # ── API models (OpenRouter free tier) ──────────────────────────────────────
+      # -- OpenRouter free tier --
       # quick: fast/low-effort interactive turns. Free tier is rate-limited
       # (20 req/min, 50-1000 req/day depending on account balance) — router_settings
       # fallback below drops to local-fast the moment it's throttled. gpt-oss-20b
@@ -210,7 +212,7 @@ in
       # output looks garbled on a given turn.
       { name = "quick-large";      model = "openrouter/nousresearch/hermes-3-llama-3.1-405b:free"; apiKeyEnv = "OPENROUTER_API_KEY"; }
 
-      # ── API models (OpenRouter paid) ──────────────────────────────────────────
+      # -- OpenRouter paid --
       # value: real (uncapped, no free-tier flakiness) but cheap — ~$0.23/$0.34
       # per M tokens vs. fast's (Sonnet) ~$3/$15. Consistently near the top of
       # open-weight benchmarks for coding/reasoning; good middle ground between
