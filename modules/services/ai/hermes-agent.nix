@@ -159,6 +159,17 @@ in
         group = config.services.hermes-agent.group;
         stateDir = config.services.hermes-agent.stateDir;
         vaultDir = "${cfg.obsidianVault}/Hermes";
+        # Container mode only bind-mounts stateDir (at a different internal
+        # path, /data). An absolute host symlink target like
+        # /data/hermes/obsidian/... doesn't exist inside that namespace, so
+        # the container's entrypoint fails to dereference it on chown. Vault
+        # links must be relative to resolve under both the host path and the
+        # container's remapped one — which requires obsidianVault to live
+        # under stateDir.
+        vaultRelToState =
+          if lib.hasPrefix "${stateDir}/" cfg.obsidianVault
+          then lib.removePrefix "${stateDir}/" cfg.obsidianVault
+          else throw "modules.services.ai.hermes-agent.obsidianVault must be nested under stateDir (${stateDir}) so the container can see it";
       in ''
         mkdir -p ${vaultDir}
         chown ${user}:${group} ${cfg.obsidianVault} ${vaultDir}
@@ -175,7 +186,8 @@ in
             fi
             chown ${user}:${group} "$dst"
           fi
-          ln -sfn "$dst" "$src"
+          # Relative: from .hermes/memories/ up to stateDir root, into the vault.
+          ln -sfn "../../${vaultRelToState}/Hermes/$name" "$src"
         }
         migrate_file "MEMORY.md"
         migrate_file "USER.md"
@@ -190,7 +202,8 @@ in
           fi
           chown -R ${user}:${group} "$skills_dst"
         fi
-        ln -sfn "$skills_dst" "$skills_src"
+        # Relative: from .hermes/ up to stateDir root, into the vault.
+        ln -sfn "../${vaultRelToState}/Hermes/Skills" "$skills_src"
       '';
       deps = [ "hermes-agent-setup" "users" "groups" ];
     };
