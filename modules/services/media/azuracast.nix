@@ -66,6 +66,29 @@ in
       description = "Data directory for AzuraCast (stations, database, uploads, backups)";
     };
 
+    mediaDir = mkOption {
+      type = types.str;
+      default = "/data/media";
+      description = "Root shared media directory (matches modules.services.media.jellyfin.mediaDir)";
+    };
+
+    libraryMounts = mkOption {
+      type = types.listOf types.str;
+      default = [ "Music" "Podcasts" "Audiobooks" ];
+      description = ''
+        Subdirectories of mediaDir to mount read-only into the container so
+        they can be added as AzuraCast Storage Locations. Read-only because
+        AzuraCast's media manager can rename/tag/reorganize files it can
+        write to, which would fight with beets/Jellyfin's management of the
+        same library. Each is mounted at /var/azuracast/media/<lowercased name>.
+
+        After first login, add a Storage Location (Administration >
+        Storage Locations) pointing at the container path for each library
+        you want a station to use, then assign it as that station's Media
+        storage location.
+      '';
+    };
+
     version = mkOption {
       type = types.str;
       default = "latest";
@@ -101,7 +124,7 @@ in
         "${cfg.dataDir}/geoip:/var/azuracast/storage/geoip:rw"
         "${cfg.dataDir}/sftpgo:/var/azuracast/storage/sftpgo:rw"
         "${cfg.dataDir}/acme:/var/azuracast/storage/acme:rw"
-      ];
+      ] ++ map (name: "${cfg.mediaDir}/${name}:/var/azuracast/media/${toLower name}:ro") cfg.libraryMounts;
       ports = [
         "${toString cfg.httpPort}:${toString cfg.httpPort}/tcp"
         "${toString cfg.sftpPort}:${toString cfg.sftpPort}/tcp"
