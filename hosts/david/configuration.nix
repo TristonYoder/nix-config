@@ -70,6 +70,11 @@ in
   # this host and already owns that port.
   modules.services.productivity.stirlingPdf.port = 7879;
 
+  # Scrutiny and Pixelfed both default to port 8085. Pixelfed's port is
+  # externally referenced (PITS reverse proxy, ActivityPub webfinger), so
+  # move Scrutiny instead — it's Caddy-proxied and localhost-only.
+  modules.services.infrastructure.scrutiny.port = 8087;
+
   # dns-sync: use local Technitium directly (avoids Caddy loopback for the API)
   modules.services.providers.dns-technitium.url = "http://localhost:5380";
 
