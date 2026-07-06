@@ -66,6 +66,10 @@ in
   # Stalwart Mail Server
   modules.services.communication.stalwart-mail.enable = false;
 
+  # Stirling PDF's default port 7878 collides with Radarr, which also runs on
+  # this host and already owns that port.
+  modules.services.productivity.stirlingPdf.port = 7879;
+
   # dns-sync: use local Technitium directly (avoids Caddy loopback for the API)
   modules.services.providers.dns-technitium.url = "http://localhost:5380";
 

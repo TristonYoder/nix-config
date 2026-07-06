@@ -87,6 +87,12 @@ in
   config = mkIf cfg.enable {
     services.open-webui = {
       enable = true;
+      # nixpkgs' open-webui only gates qdrant_client behind its "all" optional
+      # dependency group (unused by the NixOS module), so importing qdrant
+      # support requires overriding the package directly.
+      package = mkIf cfg.enableQdrant (pkgs.open-webui.overridePythonAttrs (old: {
+        dependencies = old.dependencies ++ [ pkgs.python3Packages.qdrant-client ];
+      }));
       host = "127.0.0.1";
       port = cfg.port;
       environment = {
@@ -138,7 +144,6 @@ in
       displayName = "Open WebUI";
       category = "ai";
       icon = "open-webui";
-      monitor = false; # service crashes on nixpkgs missing qdrant_client
     };
   };
 }
