@@ -14,6 +14,18 @@ in
       description = "Default LLM model for Hermes. Should be a LiteLLM-routed name or direct provider string.";
     };
 
+    backgroundReviewModel = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+      description = ''
+        LiteLLM route for the background self-improvement review (memory/skill
+        curation that runs after each turn). Null keeps hermes's own "auto"
+        behavior (same model as the main chat). Set this when the main model
+        is a rate-limited free-tier route, so background review doesn't
+        compete with interactive turns for the same quota.
+      '';
+    };
+
     inferenceUrl = mkOption {
       type = types.nullOr types.str;
       default = "http://127.0.0.1:${toString config.modules.services.ai.litellm.port}";
@@ -109,6 +121,13 @@ in
         providers.litellm-proxy = {
           api = cfg.inferenceUrl;
           key_env = "LITELLM_MASTER_KEY";
+        };
+      } // optionalAttrs (cfg.backgroundReviewModel != null) {
+        # Same litellm-proxy provider as the main model — backgroundReviewModel
+        # is expected to be a LiteLLM route name, not a raw provider string.
+        auxiliary.background_review = {
+          model = cfg.backgroundReviewModel;
+          provider = "custom:litellm-proxy";
         };
       };
 
