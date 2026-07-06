@@ -55,6 +55,33 @@ in
       description = "SOUL.md content (hermes system prompt / persona). Written to the working directory at activation via services.hermes-agent.documents. Null uses hermes's built-in default.";
     };
 
+    stateDir = mkOption {
+      type = types.str;
+      default = "/data/hermes";
+      description = ''
+        Base directory for all Hermes state — config.yaml, memories, skills,
+        sessions, cron, and the workspace. Passed straight through to
+        services.hermes-agent.stateDir. Defaults onto /data (david's bulk
+        storage) rather than upstream's /var/lib/hermes so state survives
+        independently of the root disk and sits next to other appdata.
+      '';
+    };
+
+    obsidianVault = mkOption {
+      type = types.str;
+      default = "${cfg.stateDir}/obsidian";
+      description = ''
+        Path to an Obsidian-compatible vault where Hermes charts its memory
+        (MEMORY.md, USER.md) and knowledge (skills/) as plain markdown notes,
+        instead of leaving them buried inside HERMES_HOME. At activation, the
+        memory files and skills directory are symlinked into
+        "''${obsidianVault}/Hermes/" — existing content is moved in once,
+        never overwritten, so the agent keeps reading/writing the same files
+        while they're also a browsable, syncable Obsidian vault (pair with
+        modules.services.storage.syncthing to reach it from other devices).
+      '';
+    };
+
   };
 
   config = mkIf cfg.enable {
@@ -66,6 +93,7 @@ in
     services.hermes-agent = {
       enable = true;
       addToSystemPackages = true;
+      stateDir = cfg.stateDir;
 
       # Use optionalAttrs (not mkIf) so all values are plain YAML strings.
       # The upstream hermes module serializes mkIf into {_type: if, ...} dicts,
@@ -105,11 +133,77 @@ in
     # Write SOUL.md to HERMES_HOME (.hermes/), where load_soul_md() reads it.
     # Cannot use services.hermes-agent.documents — that installs to workingDirectory
     # (workspace), which hermes never checks for the persona slot.
+    #
+    # user/group/stateDir come from services.hermes-agent (not hardcoded) so this
+    # never drifts from the actual service identity again — it previously pointed
+    # at a "hermes-agent" user/path that nothing in this repo ever creates.
     system.activationScripts.hermesAgentSoul = mkIf (cfg.soul != null) {
       text = ''
-        install -o hermes-agent -g hermes-agent -m 0660 \
+        install -o ${config.services.hermes-agent.user} -g ${config.services.hermes-agent.group} -m 0660 \
           ${pkgs.writeText "hermes-SOUL.md" cfg.soul} \
-          /var/lib/hermes-agent/.hermes/SOUL.md
+          ${config.services.hermes-agent.stateDir}/.hermes/SOUL.md
+      '';
+      deps = [ "hermes-agent-setup" "users" "groups" ];
+    };
+
+    # Chart memory (MEMORY.md, USER.md) and knowledge (skills/) into an Obsidian
+    # vault. Only the two memory *files* are symlinked (not their parent dir —
+    # that dir is systemd-tmpfiles managed by the upstream module, and replacing
+    # a tmpfiles-owned directory with a symlink causes it to fight every switch).
+    # skills/ isn't tmpfiles-managed at all, so the whole directory is safe to
+    # symlink. Idempotent: existing on-disk content is moved into the vault
+    # exactly once (first switch after enabling), never overwritten afterward.
+    system.activationScripts.hermesAgentVault = {
+      text = let
+        user = config.services.hermes-agent.user;
+        group = config.services.hermes-agent.group;
+        stateDir = config.services.hermes-agent.stateDir;
+        vaultDir = "${cfg.obsidianVault}/Hermes";
+        # Container mode only bind-mounts stateDir (at a different internal
+        # path, /data). An absolute host symlink target like
+        # /data/hermes/obsidian/... doesn't exist inside that namespace, so
+        # the container's entrypoint fails to dereference it on chown. Vault
+        # links must be relative to resolve under both the host path and the
+        # container's remapped one — which requires obsidianVault to live
+        # under stateDir.
+        vaultRelToState =
+          if lib.hasPrefix "${stateDir}/" cfg.obsidianVault
+          then lib.removePrefix "${stateDir}/" cfg.obsidianVault
+          else throw "modules.services.ai.hermes-agent.obsidianVault must be nested under stateDir (${stateDir}) so the container can see it";
+      in ''
+        mkdir -p ${vaultDir}
+        chown ${user}:${group} ${cfg.obsidianVault} ${vaultDir}
+
+        migrate_file() {
+          local name="$1"
+          local src="${stateDir}/.hermes/memories/$name"
+          local dst="${vaultDir}/$name"
+          if [ ! -e "$dst" ]; then
+            if [ -f "$src" ] && [ ! -L "$src" ]; then
+              mv "$src" "$dst"
+            else
+              touch "$dst"
+            fi
+            chown ${user}:${group} "$dst"
+          fi
+          # Relative: from .hermes/memories/ up to stateDir root, into the vault.
+          ln -sfn "../../${vaultRelToState}/Hermes/$name" "$src"
+        }
+        migrate_file "MEMORY.md"
+        migrate_file "USER.md"
+
+        skills_src="${stateDir}/.hermes/skills"
+        skills_dst="${vaultDir}/Skills"
+        if [ ! -e "$skills_dst" ]; then
+          if [ -d "$skills_src" ] && [ ! -L "$skills_src" ]; then
+            mv "$skills_src" "$skills_dst"
+          else
+            mkdir -p "$skills_dst"
+          fi
+          chown -R ${user}:${group} "$skills_dst"
+        fi
+        # Relative: from .hermes/ up to stateDir root, into the vault.
+        ln -sfn "../${vaultRelToState}/Hermes/Skills" "$skills_src"
       '';
       deps = [ "hermes-agent-setup" "users" "groups" ];
     };
