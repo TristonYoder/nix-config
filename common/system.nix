@@ -40,6 +40,7 @@ in
     "electron-35.7.5"  # Required for gfn-electron (GeForce Now)
     "electron-39.8.10" # Required for feishin (upgraded from electron-36 in 26.05)
     "olm-3.2.16"       # Required for Matrix communication bridges
+    "pnpm-10.29.2"     # Required for cherry-studio (pnpm 10.29.3+ breaks its electron-builder step)
   ];
 
   # =============================================================================
