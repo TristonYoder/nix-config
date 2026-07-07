@@ -42,21 +42,27 @@ in
 
     stationPortMin = mkOption {
       type = types.port;
-      default = 9500;
+      default = 23000;
       description = ''
         Lower bound of the port range auto-assigned to radio stations
         (Icecast/Shoutcast direct-connect streaming ports). AzuraCast's own
-        default range (8000-8496) collides with Jellyfin (8096) on this host,
-        so this uses a dedicated range instead.
+        default range (8000-8496) collides with Jellyfin (8096) on this host.
+        23000-24999 sits in a large confirmed-empty gap on david (nothing
+        bound between 22000 and 28492 per `ss -tulpn`), well clear of every
+        other service's port range instead of just squeezed next to them.
       '';
     };
 
     stationPortMax = mkOption {
       type = types.port;
-      default = 9599;
+      default = 24999;
       description = ''
-        Upper bound of the station port range. 100 ports supports up to ~33
-        stations (3 ports each); widen if more are needed.
+        Upper bound of the station port range. AzuraCast reserves a full
+        10-port block per station (frontend/telnet/dj/headroom), not just the
+        3 ports actually bound - confirmed empirically when 10 stations
+        exhausted the previous 100-port range. 2000 ports here supports 200
+        stations. Widen further only after checking `ss -tulpn` for occupied
+        ports first - don't just round up blindly.
       '';
     };
 
