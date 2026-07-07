@@ -43,12 +43,14 @@ in
       environment.WEBHOOK_URL = "https://${cfg.domain}";
     };
 
-    # Community node installs shell out to `npm install`, which in turn
-    # spawns `tar` to unpack the downloaded package. The systemd unit's PATH
-    # otherwise has neither, causing "spawn npm ENOENT" then "spawn tar ENOENT".
-    # Use nodejs from the same channel as n8n itself to avoid a node/npm
-    # version mismatch against n8n's bundled node_modules.
-    systemd.services.n8n.path = [ unstable.nodejs pkgs.gnutar ];
+    # Community node installs shell out to `npm install`, which spawns `tar`
+    # to unpack the downloaded package, which in turn spawns `gzip` (tar -z)
+    # to decompress it. The systemd unit's PATH has none of these by default,
+    # causing "spawn npm ENOENT", then "spawn tar ENOENT", then
+    # "gzip: Cannot exec: No such file or directory". Use nodejs from the
+    # same channel as n8n itself to avoid a node/npm version mismatch
+    # against n8n's bundled node_modules.
+    systemd.services.n8n.path = [ unstable.nodejs pkgs.gnutar pkgs.gzip ];
 
     # Caddy virtual host
     modules.services.vHosts.hosts.${cfg.domain} = {
