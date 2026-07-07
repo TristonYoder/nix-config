@@ -11,6 +11,7 @@
   # macOS system packages
   environment.systemPackages = with pkgs; [
     feishin
+    tidal
     # Development tools
     git
     gh
