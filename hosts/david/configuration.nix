@@ -87,6 +87,13 @@ in
   # AzuraCast - Internet radio station management (azuracast.* admin, radio.* public player)
   modules.services.media.azuracast.enable = true;
 
+  # Auto-create an AzuraCast station for each m3u file (Plexamp/Jellyfin mixes)
+  # dropped into the shared m3u/playlist folder
+  modules.services.media.azuracastPlaylistStations = {
+    enable = true;
+    apiKeyFile = config.age.secrets.azuracast-api-key.path;
+  };
+
   # Beets - Auto-organize music library from Downloads into Music
   modules.services.media.beets.enable = true;
 
