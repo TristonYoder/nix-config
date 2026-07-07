@@ -128,5 +128,10 @@ with lib;
       "jellyfin-api-key" = { file = ../secrets/jellyfin-api-key.age; mode = "0400"; };
     })
 
+    // (optionalAttrs config.modules.services.media.azuracastPlaylistSync.enable {
+      # Encrypted to davidKeys only
+      "azuracast-api-key" = { file = ../secrets/azuracast-api-key.age; mode = "0400"; };
+    })
+
     ;
 }
