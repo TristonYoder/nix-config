@@ -88,10 +88,17 @@ in
   modules.services.media.azuracast.enable = true;
 
   # Auto-create an AzuraCast station for each m3u file (Plexamp/Jellyfin mixes)
-  # dropped into the shared m3u/playlist folder
+  # dropped into the shared m3u/playlist folder, and mirror every station into
+  # Navidrome as an Internet Radio Station
   modules.services.media.azuracastPlaylistStations = {
     enable = true;
     apiKeyFile = config.age.secrets.azuracast-api-key.path;
+
+    navidromeSync = {
+      enable = true;
+      user = "jonathan";
+      passwordFile = config.age.secrets.navidrome-api-password.path;
+    };
   };
 
   # Beets - Auto-organize music library from Downloads into Music

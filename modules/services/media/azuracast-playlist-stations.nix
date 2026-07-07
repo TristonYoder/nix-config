@@ -6,6 +6,10 @@
 # own via Liquidsoap's file-watch reload. See azuracast.nix for why the
 # container mounts each library at the same absolute path as the host (so
 # these paths resolve with no rewriting).
+#
+# Optionally also mirrors every AzuraCast station into Navidrome as an
+# Internet Radio Station (Subsonic API), matched by stream URL so it never
+# touches entries added/renamed by hand - it only fills in the ones missing.
 { config, lib, pkgs, ... }:
 
 with lib;
@@ -44,17 +48,38 @@ in
       default = "hourly";
       description = "systemd OnCalendar expression for how often to scan for new m3u files";
     };
+
+    navidromeSync = {
+      enable = mkEnableOption "Mirror every AzuraCast station into Navidrome as an Internet Radio Station";
+
+      url = mkOption {
+        type = types.str;
+        default = "http://localhost:${toString config.modules.services.media.navidrome.port}";
+        description = "Base URL of the Navidrome Subsonic API";
+      };
+
+      user = mkOption {
+        type = types.str;
+        description = "Navidrome username used to manage Internet Radio Stations. Must have the admin role.";
+      };
+
+      passwordFile = mkOption {
+        type = types.str;
+        description = "Path to a file containing that Navidrome user's password";
+      };
+    };
   };
 
   config = mkIf cfg.enable {
     systemd.services.azuracast-playlist-stations = {
       description = "Create AzuraCast stations for any new m3u file in ${cfg.m3uDir}";
-      after = [ "network-online.target" "docker-azuracast.service" ];
+      after = [ "network-online.target" "docker-azuracast.service" ]
+        ++ optional cfg.navidromeSync.enable "navidrome.service";
       wants = [ "network-online.target" ];
 
       serviceConfig = {
         Type = "oneshot";
-        ExecStart = pkgs.writeShellScript "azuracast-playlist-stations" ''
+        ExecStart = pkgs.writeShellScript "azuracast-playlist-stations" (''
           set -euo pipefail
           URL="${cfg.azuracastUrl}"
           API_KEY=$(cat "${cfg.apiKeyFile}")
@@ -113,7 +138,38 @@ in
 
             existing_shortnames="$existing_shortnames"$'\n'"$shortname"
           done
-        '';
+        ''
+        + optionalString cfg.navidromeSync.enable ''
+          NAV_URL="${cfg.navidromeSync.url}"
+          NAV_USER="${cfg.navidromeSync.user}"
+          NAV_PASS=$(cat "${cfg.navidromeSync.passwordFile}")
+          NAV_SALT=$(${pkgs.openssl}/bin/openssl rand -hex 6)
+          NAV_TOKEN=$(printf '%s%s' "$NAV_PASS" "$NAV_SALT" | ${pkgs.coreutils}/bin/md5sum | ${pkgs.coreutils}/bin/cut -d' ' -f1)
+          nav_curl() {
+            ${pkgs.curl}/bin/curl -sf -G "$@" \
+              --data-urlencode "u=$NAV_USER" --data-urlencode "t=$NAV_TOKEN" --data-urlencode "s=$NAV_SALT" \
+              --data-urlencode "v=1.16.1" --data-urlencode "c=nix-config" --data-urlencode "f=json"
+          }
+
+          navidrome_stream_urls=$(nav_curl "$NAV_URL/rest/getInternetRadioStations.view" \
+            | ${pkgs.jq}/bin/jq -r '.["subsonic-response"].internetRadioStations.internetRadioStation[]?.streamUrl')
+
+          ${pkgs.curl}/bin/curl -sf "$URL/api/stations" | ${pkgs.jq}/bin/jq -c '.[]' | while read -r station; do
+            station_name=$(echo "$station" | ${pkgs.jq}/bin/jq -r '.name')
+            listen_url=$(echo "$station" | ${pkgs.jq}/bin/jq -r '.listen_url')
+
+            if [ -z "$listen_url" ] || [ "$listen_url" = "null" ]; then
+              continue
+            fi
+            if echo "$navidrome_stream_urls" | grep -qxF "$listen_url"; then
+              continue
+            fi
+
+            echo "Registering '$station_name' in Navidrome..."
+            nav_curl "$NAV_URL/rest/createInternetRadioStation.view" \
+              --data-urlencode "name=$station_name" --data-urlencode "streamUrl=$listen_url" > /dev/null
+          done
+        '');
       };
     };
 

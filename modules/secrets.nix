@@ -133,5 +133,10 @@ with lib;
       "azuracast-api-key" = { file = ../secrets/azuracast-api-key.age; mode = "0400"; };
     })
 
+    // (optionalAttrs config.modules.services.media.azuracastPlaylistStations.navidromeSync.enable {
+      # Encrypted to davidKeys only
+      "navidrome-api-password" = { file = ../secrets/navidrome-api-password.age; mode = "0400"; };
+    })
+
     ;
 }
