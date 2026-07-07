@@ -34,7 +34,7 @@
   
   modules.services.infrastructure.tailscale.enable = lib.mkDefault true;
 
-  environment.systemPackages = [ pkgs.feishin pkgs.nmap ];
+  environment.systemPackages = [ pkgs.feishin pkgs.nmap pkgs.tidal-hifi ];
 
   # =============================================================================
   # BOOT SPLASH (desktop only - servers/edge are headless)
