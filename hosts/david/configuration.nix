@@ -87,17 +87,6 @@ in
   # AzuraCast - Internet radio station management (azuracast.* admin, radio.* public player)
   modules.services.media.azuracast.enable = true;
 
-  # AzuraCast "My Daily Discovery" playlist sync - the source M3U regenerates daily,
-  # so re-import it into the station playlist every morning after it's refreshed.
-  modules.services.media.azuracastPlaylistSync = {
-    enable = true;
-    apiKeyFile = config.age.secrets.azuracast-api-key.path;
-    stationShortName = "my_daily_discovery";
-    playlistName = "Daily Discovery";
-    m3uFile = "/data/media/Music/m3u/playlist/My Daily Discovery.m3u";
-    schedule = "04:00";
-  };
-
   # Beets - Auto-organize music library from Downloads into Music
   modules.services.media.beets.enable = true;
 
