@@ -77,10 +77,17 @@ in
       default = [ "Music" "Podcasts" "Audiobooks" ];
       description = ''
         Subdirectories of mediaDir to mount read-only into the container so
-        they can be added as AzuraCast Storage Locations. Read-only because
-        AzuraCast's media manager can rename/tag/reorganize files it can
-        write to, which would fight with beets/Jellyfin's management of the
-        same library. Each is mounted at /var/azuracast/media/<lowercased name>.
+        they can be added as AzuraCast Storage Locations, or referenced
+        directly by a station's remote_url playlists (Liquidsoap's playlist()
+        source, which reads local paths without going through AzuraCast's own
+        media library/scan queue at all). Read-only because AzuraCast's media
+        manager can rename/tag/reorganize files it can write to, which would
+        fight with beets/Jellyfin's management of the same library.
+
+        Mounted at the *same absolute path* inside the container as on the
+        host, so that m3u files elsewhere in the library (which reference
+        tracks by their host path, e.g. Plexamp/Jellyfin-generated playlists)
+        resolve correctly without any path rewriting.
 
         After first login, add a Storage Location (Administration >
         Storage Locations) pointing at the container path for each library
@@ -152,7 +159,7 @@ in
         "${cfg.dataDir}/geoip:/var/azuracast/storage/geoip:rw"
         "${cfg.dataDir}/sftpgo:/var/azuracast/storage/sftpgo:rw"
         "${cfg.dataDir}/acme:/var/azuracast/storage/acme:rw"
-      ] ++ map (name: "${cfg.mediaDir}/${name}:/var/azuracast/media/${toLower name}:ro") cfg.libraryMounts;
+      ] ++ map (name: "${cfg.mediaDir}/${name}:${cfg.mediaDir}/${name}:ro") cfg.libraryMounts;
       ports = [
         "${toString cfg.httpPort}:${toString cfg.httpPort}/tcp"
         "${toString cfg.sftpPort}:${toString cfg.sftpPort}/tcp"

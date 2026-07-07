@@ -3,7 +3,6 @@
   # Import media service modules
   imports = [
     ./azuracast.nix
-    ./azuracast-playlist-sync.nix
     ./beets.nix
     ./feishin.nix
     ./immich.nix
