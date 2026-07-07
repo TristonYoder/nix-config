@@ -43,6 +43,12 @@ in
       environment.WEBHOOK_URL = "https://${cfg.domain}";
     };
 
+    # Community node installs shell out to `npm install`. The systemd unit's
+    # PATH otherwise has no npm/node, so that install fails with
+    # "spawn npm ENOENT". Use nodejs from the same channel as n8n itself
+    # to avoid a node/npm version mismatch against n8n's bundled node_modules.
+    systemd.services.n8n.path = [ unstable.nodejs ];
+
     # Caddy virtual host
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = 5678;
