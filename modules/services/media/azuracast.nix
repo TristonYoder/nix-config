@@ -53,10 +53,16 @@ in
 
     stationPortMax = mkOption {
       type = types.port;
-      default = 9599;
+      default = 9689;
       description = ''
-        Upper bound of the station port range. 100 ports supports up to ~33
-        stations (3 ports each); widen if more are needed.
+        Upper bound of the station port range. AzuraCast reserves a full
+        10-port block per station (frontend/telnet/dj/headroom), not just the
+        3 ports actually bound - confirmed empirically once 10 stations
+        exhausted a 100-port range. Capped at 9689 (rather than rounding up
+        to 9699+) because 9696 and 9980 are already bound by an unrelated
+        docker-proxy on this host; going past 9689 would eventually collide
+        with the 9690-9699 block. Widen further only after checking
+        `ss -tulpn` for occupied ports first.
       '';
     };
 
