@@ -695,6 +695,25 @@ sudo ss -tulpn | grep PORT
 modules.services.category.servicename.port = 8081;
 ```
 
+### AzuraCast Playlist-Station Autosync
+
+**Host:** david — `modules.services.media.azuracastPlaylistStations`
+
+An hourly systemd timer scans `/data/media/Music/m3u/playlist/` and creates a new AzuraCast station for any m3u file that doesn't already have one (matched by slugified filename against existing station short_names). Each station plays directly from its m3u via Liquidsoap's `remote_url`/`playlist` source — no AzuraCast media-library scan involved, and it auto-refreshes on the file's mtime, so daily-regenerated playlists (e.g. Plexamp/Jellyfin mixes) need no further action.
+
+To run the scan immediately instead of waiting for the hourly timer (e.g. right after adding a new m3u file):
+
+```bash
+ssh github-actions@david.vpn.theyoder.family "sudo systemctl start azuracast-playlist-stations.service"
+
+# Watch it run / check the last run's output
+ssh github-actions@david.vpn.theyoder.family "sudo journalctl -u azuracast-playlist-stations.service -f"
+```
+
+It's idempotent — safe to run anytime, only creates stations for m3u files without one yet.
+
+**If station creation fails with "no available ports for new radio stations":** AzuraCast reserves a full 10-port block per station (frontend/telnet/dj/headroom), not just the 3 ports actually bound. Widen `modules.services.media.azuracast.stationPortMax`, but check `sudo ss -tulpn` on david first for a clean gap rather than just incrementing — the original 9500-9599 range was extended once already and had to be relocated entirely to 23000-24999 to get clear of neighboring services.
+
 ## References
 
 Key documentation files in this repository:
