@@ -45,10 +45,12 @@
     after = [
       "docker-network-stageplotifer_default.service"
       "docker-volume-stageplotifer_data.service"
+      "docker-login-ghcr-stageplotifer.service"
     ];
     requires = [
       "docker-network-stageplotifer_default.service"
       "docker-volume-stageplotifer_data.service"
+      "docker-login-ghcr-stageplotifer.service"
     ];
     partOf = [
       "docker-compose-stageplotifer-root.target"
@@ -56,6 +58,23 @@
     wantedBy = [
       "docker-compose-stageplotifer-root.target"
     ];
+  };
+
+  # Logs the host's root docker client in to GHCR before anything tries to
+  # pull the (private) image — both the `docker run` this generates and
+  # watchtower-stageplotifer (via the mounted config.json below) rely on
+  # the resulting /root/.docker/config.json.
+  systemd.services."docker-login-ghcr-stageplotifer" = {
+    path = [ pkgs.docker ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      docker login ghcr.io -u tristonyoder --password-stdin < ${config.age.secrets.ghcr-pull-token.path}
+    '';
+    partOf = [ "docker-compose-stageplotifer-root.target" ];
+    wantedBy = [ "docker-compose-stageplotifer-root.target" ];
   };
 
   # Network
@@ -104,12 +123,21 @@
     image = "nickfedor/watchtower";
     volumes = [
       "/var/run/docker.sock:/var/run/docker.sock"
+      # Reuses the same GHCR login docker-login-ghcr-stageplotifer.service
+      # produces — watchtower needs its own read access to pull-check a
+      # private image, separate from the host docker CLI's own credential use.
+      "/root/.docker/config.json:/config.json:ro"
     ];
     environment = {
       WATCHTOWER_LABEL_ENABLE = "true";
       WATCHTOWER_POLL_INTERVAL = "300"; # 5 minutes
       WATCHTOWER_CLEANUP = "true";
     };
+  };
+
+  systemd.services."docker-watchtower-stageplotifer" = {
+    after = [ "docker-login-ghcr-stageplotifer.service" ];
+    requires = [ "docker-login-ghcr-stageplotifer.service" ];
   };
 
   # Caddy reverse proxy

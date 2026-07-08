@@ -66,6 +66,10 @@ with lib;
       "wordpress-carolineyoder-wp" = { file = ../secrets/wordpress-carolineyoder-wp.age; owner = "root"; group = "docker"; mode = "0440"; };
       "outline-secrets" = { file = ../secrets/outline-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
       "nextdns-link" = { file = ../secrets/nextdns-link.age; owner = "root"; group = "root"; mode = "0400"; };
+      # Classic PAT, read:packages only — lets david's docker daemon pull the
+      # private ghcr.io/tristonyoder/stageplotifer image (repo is private,
+      # staying that way for now). Raw token value only, no KEY=VALUE wrapping.
+      "ghcr-pull-token" = { file = ../secrets/ghcr-pull-token.age; owner = "root"; group = "root"; mode = "0400"; };
       "pocket-id-encryption-key" = { file = ../secrets/pocket-id-encryption-key.age; owner = "root"; group = "docker"; mode = "0440"; };
       # tidarr: docker-only service (docker/media/media-aq.nix), no NixOS module enable
       "tidarr-oidc-secret" = { file = ../secrets/tidarr-oidc-secret.age; mode = "0400"; };
