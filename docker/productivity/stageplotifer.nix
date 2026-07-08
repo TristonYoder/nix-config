@@ -1,0 +1,128 @@
+# Stage Plotifer - Stage plot & mic assignment planning tool for PCO-integrated churches
+# Image is built and published by the app's own repo CI (Nix-built,
+# ghcr.io/tristonyoder/stageplotifer) — see TristonYoder/stagePlotifer.
+# VPN/LAN-only for now: no Cloudflare Tunnel/pits routing, point
+# plotifer.7co.dev's DNS at david's Tailscale or LAN IP, not a public one.
+{ config, pkgs, lib, ... }:
+
+{
+  # Runtime
+  virtualisation.docker = {
+    enable = true;
+    autoPrune.enable = true;
+  };
+  virtualisation.oci-containers.backend = "docker";
+
+  # Container
+  virtualisation.oci-containers.containers."stageplotifer" = {
+    image = "ghcr.io/tristonyoder/stageplotifer:latest";
+    volumes = [
+      "stageplotifer_data:/app/data:rw"
+    ];
+    ports = [
+      "1395:1395/tcp"
+    ];
+    log-driver = "journald";
+    labels = {
+      # Scopes the fast-poll watchtower below to just this container —
+      # the global docker/watchtower.nix instance still covers everything
+      # else at its normal (unconfigured/default) cadence.
+      "com.centurylinklabs.watchtower.enable" = "true";
+    };
+    extraOptions = [
+      "--network-alias=stageplotifer"
+      "--network=stageplotifer_default"
+    ];
+  };
+
+  systemd.services."docker-stageplotifer" = {
+    serviceConfig = {
+      Restart = lib.mkOverride 90 "always";
+      RestartMaxDelaySec = lib.mkOverride 90 "1m";
+      RestartSec = lib.mkOverride 90 "10s";
+      RestartSteps = lib.mkOverride 90 9;
+    };
+    after = [
+      "docker-network-stageplotifer_default.service"
+      "docker-volume-stageplotifer_data.service"
+    ];
+    requires = [
+      "docker-network-stageplotifer_default.service"
+      "docker-volume-stageplotifer_data.service"
+    ];
+    partOf = [
+      "docker-compose-stageplotifer-root.target"
+    ];
+    wantedBy = [
+      "docker-compose-stageplotifer-root.target"
+    ];
+  };
+
+  # Network
+  systemd.services."docker-network-stageplotifer_default" = {
+    path = [ pkgs.docker ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStop = "docker network rm -f stageplotifer_default";
+    };
+    script = ''
+      docker network inspect stageplotifer_default || docker network create stageplotifer_default
+    '';
+    partOf = [ "docker-compose-stageplotifer-root.target" ];
+    wantedBy = [ "docker-compose-stageplotifer-root.target" ];
+  };
+
+  # Volume
+  systemd.services."docker-volume-stageplotifer_data" = {
+    path = [ pkgs.docker ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      docker volume inspect stageplotifer_data || docker volume create stageplotifer_data
+    '';
+    partOf = [ "docker-compose-stageplotifer-root.target" ];
+    wantedBy = [ "docker-compose-stageplotifer-root.target" ];
+  };
+
+  # Root service
+  systemd.targets."docker-compose-stageplotifer-root" = {
+    unitConfig = {
+      Description = "Stage Plotifer stage plot planning tool";
+    };
+    wantedBy = [ "multi-user.target" ];
+  };
+
+  # Fast-poll watchtower — testing phase only. Scoped via WATCHTOWER_LABEL_ENABLE
+  # to containers carrying the label above, so it only touches stageplotifer,
+  # not every other service on this host. Drop this block (and the label above)
+  # once builds have stabilized and the global watchtower's normal cadence is enough.
+  virtualisation.oci-containers.containers."watchtower-stageplotifer" = {
+    autoStart = true;
+    image = "nickfedor/watchtower";
+    volumes = [
+      "/var/run/docker.sock:/var/run/docker.sock"
+    ];
+    environment = {
+      WATCHTOWER_LABEL_ENABLE = "true";
+      WATCHTOWER_POLL_INTERVAL = "300"; # 5 minutes
+      WATCHTOWER_CLEANUP = "true";
+    };
+  };
+
+  # Caddy reverse proxy
+  services.caddy.virtualHosts."plotifer.7co.dev" = {
+    extraConfig = ''
+      reverse_proxy http://localhost:1395 {
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-Host {host}
+      }
+
+      import cloudflare_tls
+    '';
+  };
+}
