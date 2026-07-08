@@ -127,4 +127,7 @@
   ];
 
   home-manager.users.tristonyoder.modules.appShortcuts.enable = true;
+
+  # Passwordless guest account -> locked-down kiosk browser at apps.theyoder.family
+  modules.system.guestKiosk.enable = true;
 }
