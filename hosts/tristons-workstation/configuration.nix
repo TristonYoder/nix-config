@@ -345,4 +345,7 @@
     # KDE/udisks auto-mounts the iPod; no manual mount needed
     autoMount = false;
   };
+
+  # Passwordless guest account -> locked-down kiosk browser at apps.theyoder.family
+  modules.system.guestKiosk.enable = true;
 }

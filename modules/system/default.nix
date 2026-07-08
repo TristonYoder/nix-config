@@ -8,6 +8,7 @@
     ./networking.nix
     ./users.nix
     ./desktop.nix
+    ./guest-kiosk.nix
     ./nix-cache.nix
   ];
 }
