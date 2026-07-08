@@ -73,6 +73,9 @@ with lib;
       "pocket-id-encryption-key" = { file = ../secrets/pocket-id-encryption-key.age; owner = "root"; group = "docker"; mode = "0440"; };
       # tidarr: docker-only service (docker/media/media-aq.nix), no NixOS module enable
       "tidarr-oidc-secret" = { file = ../secrets/tidarr-oidc-secret.age; mode = "0400"; };
+      # stageplotifer: docker-only service (docker/productivity/stageplotifer.nix), no NixOS module enable.
+      # KEY=VALUE file (OIDC_ISSUER_URL/OIDC_CLIENT_ID/OIDC_CLIENT_SECRET) loaded via environmentFiles.
+      "stageplotifer-oidc-secrets" = { file = ../secrets/stageplotifer-oidc-secrets.age; mode = "0400"; };
       # hermes-agent: NixOS module loaded only on david (external flake dep), no universal enable option
       "hermes-env" = { file = ../secrets/hermes-env.age; mode = "0400"; };
       # Deploy key (write access) for the private TristonYoder/hermes-brain repo —

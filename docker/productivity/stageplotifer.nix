@@ -16,6 +16,12 @@
   # Container
   virtualisation.oci-containers.containers."stageplotifer" = {
     image = "ghcr.io/tristonyoder/stageplotifer:latest";
+    # OIDC_ISSUER_URL / OIDC_CLIENT_ID / OIDC_CLIENT_SECRET (Pocket ID) —
+    # all three must be set together to turn on multi-user mode; see
+    # isMultiUserModeEnabled() in server/src/lib/auth/mode.ts.
+    environmentFiles = [
+      config.age.secrets.stageplotifer-oidc-secrets.path
+    ];
     volumes = [
       "stageplotifer_data:/app/data:rw"
     ];
