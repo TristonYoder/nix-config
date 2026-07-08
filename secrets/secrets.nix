@@ -119,6 +119,9 @@ in
   # Tidarr OIDC Client Secret (Pocket ID)
   "tidarr-oidc-secret.age".publicKeys = davidKeys;
 
+  # Stage Plotifer OIDC credentials (Pocket ID) — issuer URL, client ID, client secret
+  "stageplotifer-oidc-secrets.age".publicKeys = davidKeys;
+
   # Plex token for JellyPlex-Watched
   "plex-token.age".publicKeys = davidKeys;
 
