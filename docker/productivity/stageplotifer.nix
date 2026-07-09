@@ -1,8 +1,10 @@
 # Stage Plotifer - Stage plot & mic assignment planning tool for PCO-integrated churches
 # Image is built and published by the app's own repo CI (Nix-built,
 # ghcr.io/tristonyoder/stageplotifer) — see TristonYoder/stagePlotifer.
-# VPN/LAN-only for now: no Cloudflare Tunnel/pits routing, point
-# plotifer.7co.dev's DNS at david's Tailscale or LAN IP, not a public one.
+# Public at plotiphar.com via david's Cloudflare Tunnel (profiles/server.nix
+# enables modules.services.infrastructure.cloudflared) — the tunnel's public
+# hostname mapping lives in the Cloudflare dashboard, not in this repo, so
+# switching this domain also requires updating that mapping there.
 { config, pkgs, lib, ... }:
 
 {
@@ -30,7 +32,7 @@
       # so unlike the request-driven path it has no fallback: without this
       # set, auto-send silently no-ops (logs and skips) instead of crashing.
       # Not a secret — same hostname already appears in the Caddy block below.
-      PUBLIC_BASE_URL = "https://plotifer.7co.dev";
+      PUBLIC_BASE_URL = "https://plotiphar.com";
     };
     volumes = [
       "stageplotifer_data:/app/data:rw"
@@ -157,7 +159,7 @@
   };
 
   # Caddy reverse proxy
-  services.caddy.virtualHosts."plotifer.7co.dev" = {
+  services.caddy.virtualHosts."plotiphar.com" = {
     extraConfig = ''
       reverse_proxy http://localhost:1395 {
         header_up X-Real-IP {remote_host}
