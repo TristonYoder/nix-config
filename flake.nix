@@ -131,7 +131,7 @@
             # ./docker/productivity/outline.nix
             ./docker/productivity/planning-poker.nix
             ./docker/productivity/pocket-id.nix
-            ./docker/productivity/stageplotifer.nix
+            ./docker/productivity/stageplotiphar.nix
 
             # External modules
             nixos-vscode-server.nixosModules.default
