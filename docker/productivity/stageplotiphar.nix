@@ -41,6 +41,9 @@
       # set, auto-send silently no-ops (logs and skips) instead of crashing.
       # Not a secret — same hostname already appears in the Caddy block below.
       PUBLIC_BASE_URL = "https://plotiphar.com";
+
+      # Label for the generic OIDC authentication provider button
+      OIDC_NAME = "Plotiphar";
     };
     volumes = [
       "stageplotiphar_data:/app/data:rw"
