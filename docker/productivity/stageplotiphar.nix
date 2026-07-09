@@ -20,8 +20,9 @@
   # Container
   virtualisation.oci-containers.containers."stageplotiphar" = {
     image = "ghcr.io/tristonyoder/stageplotiphar:latest";
-    # OIDC_ISSUER_URL / OIDC_CLIENT_ID / OIDC_CLIENT_SECRET (Pocket ID) —
-    # all three must be set together to turn on multi-user mode; see
+    # OIDC_ISSUER_URL / OIDC_CLIENT_ID / OIDC_CLIENT_SECRET (Pocket ID) OR
+    # PCO_CLIENT_ID / PCO_CLIENT_SECRET (Planning Center) — at least one full
+    # set must be configured to turn on multi-user mode; see
     # isMultiUserModeEnabled() in server/src/lib/auth/mode.ts.
     #
     # Secret file/name intentionally still says "stageplotifer": renaming it
@@ -40,6 +41,9 @@
       # set, auto-send silently no-ops (logs and skips) instead of crashing.
       # Not a secret — same hostname already appears in the Caddy block below.
       PUBLIC_BASE_URL = "https://plotiphar.com";
+
+      # Label for the generic OIDC authentication provider button
+      OIDC_NAME = "Plotiphar";
     };
     volumes = [
       "stageplotiphar_data:/app/data:rw"
