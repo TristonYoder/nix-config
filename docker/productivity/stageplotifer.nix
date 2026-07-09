@@ -22,6 +22,16 @@
     environmentFiles = [
       config.age.secrets.stageplotifer-oidc-secrets.path
     ];
+    environment = {
+      # Public URL the app stamps into PCO plan attachment links (stage plot
+      # PDF exports) — used both by the manual "Send to PCO" button and the
+      # auto-plot scheduler's auto-send toggle. The scheduler runs on a timer
+      # with no incoming request to derive this from Caddy's X-Forwarded-Host,
+      # so unlike the request-driven path it has no fallback: without this
+      # set, auto-send silently no-ops (logs and skips) instead of crashing.
+      # Not a secret — same hostname already appears in the Caddy block below.
+      PUBLIC_BASE_URL = "https://plotifer.7co.dev";
+    };
     volumes = [
       "stageplotifer_data:/app/data:rw"
     ];
