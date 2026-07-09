@@ -29,7 +29,14 @@ in
     adminTokenFile = mkOption {
       type = types.nullOr types.path;
       default = null;
-      description = "Path to file containing admin token";
+      description = ''
+        Path to a file containing environment variables for Vaultwarden secrets.
+        The file must set ADMIN_TOKEN in the format:
+          ADMIN_TOKEN=your-token-here
+        This file is passed to systemd as EnvironmentFile and is never read
+        at Nix evaluation time — the value never enters the Nix store.
+        Recommended: set this to config.age.secrets.vaultwarden-admin-token.path.
+      '';
     };
     
     signupDomainsWhitelist = mkOption {
@@ -44,6 +51,9 @@ in
     services.vaultwarden = {
       enable = true;
       backupDir = cfg.backupDir;
+      # Pass secret file via systemd EnvironmentFile — value never enters Nix store.
+      # The file must contain: ADMIN_TOKEN=<token>
+      environmentFile = cfg.adminTokenFile;
       config = {
         ROCKET_ADDRESS = "0.0.0.0";
         ROCKET_PORT = cfg.port;
@@ -54,10 +64,6 @@ in
         SENDS_ALLOWED = "true";
         INVITATIONS_ALLOWED = "true";
         INVITATION_ORG_NAME = "7 & Co. Vaultwarden";
-        ADMIN_TOKEN = 
-          if cfg.adminTokenFile != null
-          then builtins.readFile cfg.adminTokenFile
-          else "supersecretadmintoken";  # Fallback during migration
         SIGNUPS_DOMAINS_WHITELIST = cfg.signupDomainsWhitelist;
       };
     };
