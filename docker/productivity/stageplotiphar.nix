@@ -20,8 +20,9 @@
   # Container
   virtualisation.oci-containers.containers."stageplotiphar" = {
     image = "ghcr.io/tristonyoder/stageplotiphar:latest";
-    # OIDC_ISSUER_URL / OIDC_CLIENT_ID / OIDC_CLIENT_SECRET (Pocket ID) —
-    # all three must be set together to turn on multi-user mode; see
+    # OIDC_ISSUER_URL / OIDC_CLIENT_ID / OIDC_CLIENT_SECRET (Pocket ID) OR
+    # PCO_CLIENT_ID / PCO_CLIENT_SECRET (Planning Center) — at least one full
+    # set must be configured to turn on multi-user mode; see
     # isMultiUserModeEnabled() in server/src/lib/auth/mode.ts.
     #
     # Secret file/name intentionally still says "stageplotifer": renaming it
