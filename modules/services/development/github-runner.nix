@@ -54,6 +54,18 @@ let
         default = [ ];
         description = "Extra packages available on PATH to workflow jobs.";
       };
+
+      dockerAccess = mkOption {
+        type = types.bool;
+        default = true;
+        description = ''
+          Put the `docker` CLI on PATH and add the runner's (dynamic) user to
+          the `docker` group so workflow jobs can build/run containers.
+          Requires `virtualisation.docker.enable` on this host. Note the
+          `docker` group is effectively root-equivalent via the socket —
+          same trust level as this repo's other CI automation.
+        '';
+      };
     };
   };
 in
@@ -77,6 +89,13 @@ in
   };
 
   config = mkIf cfg.enable {
+    assertions = mapAttrsToList
+      (name: runner: {
+        assertion = !runner.dockerAccess || config.virtualisation.docker.enable;
+        message = ''modules.services.development.githubRunner.runners."${name}".dockerAccess requires virtualisation.docker.enable on this host.'';
+      })
+      cfg.runners;
+
     services.github-runners = mapAttrs
       (name: runner: {
         enable = true;
@@ -85,7 +104,12 @@ in
         extraLabels = runner.extraLabels;
         replace = runner.replace;
         ephemeral = runner.ephemeral;
-        extraPackages = with pkgs; [ nix git ] ++ runner.extraPackages;
+        extraPackages = with pkgs; [ nix git ]
+          ++ optionals runner.dockerAccess [ config.virtualisation.docker.package pkgs.docker-compose ]
+          ++ runner.extraPackages;
+        serviceOverrides = mkIf runner.dockerAccess {
+          SupplementaryGroups = [ "docker" ];
+        };
       })
       cfg.runners;
   };
