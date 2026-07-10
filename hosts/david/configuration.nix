@@ -321,6 +321,38 @@ in
   # Serve the Nix binary cache over HTTPS so all Tailscale hosts can use it.
   modules.services.infrastructure.nixCacheServer.enable = true;
 
+  # =============================================================================
+  # DEVELOPMENT: GitLab
+  # =============================================================================
+  modules.services.development.gitlab = {
+    enable = true;
+    oidc = {
+      enable = true;
+      clientId = "8022fa8b-0d2c-4e78-973c-717c059cdad2";
+    };
+  };
+
+  # =============================================================================
+  # DEVELOPMENT: GitLab Runner
+  # =============================================================================
+  # Not turned on yet — GitLab itself has to be live first, since a runner
+  # token can only be created from the GitLab UI (Admin Area > CI/CD >
+  # Runners > "New instance runner", or a group/project's own Runners
+  # settings). That's also where tags, protected-branches-only, and
+  # run-untagged-jobs get set now — GitLab >= 17 removed the old
+  # registration-token flow, so those are no longer Nix-side options.
+  #
+  # Once you've created a runner and have its token, give it to me and I'll
+  # encrypt it (same flow as the OIDC secret) and fill in runners.docker below.
+  modules.services.development.gitlabRunner = {
+    enable = false;
+    concurrent = 3;
+    # runners.docker = {
+    #   tokenFile = config.age.secrets.gitlab-runner-docker-token.path;
+    #   dockerPrivileged = true; # for Docker-in-Docker image builds
+    # };
+  };
+
   # david has the cache on local disk — no need to route through HTTPS.
   modules.system.nixCache.cacheUrl = "file:///data/nix-builds/cache";
   modules.system.nixCache.priority = 20;

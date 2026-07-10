@@ -145,5 +145,33 @@ with lib;
       "navidrome-api-password" = { file = ../secrets/navidrome-api-password.age; mode = "0400"; };
     })
 
+    // (optionalAttrs config.modules.services.development.gitlab.enable {
+      # Encrypted to davidKeys only. gitlab-secret-key-base/gitlab-otp-secret/
+      # gitlab-db-secret/gitlab-jws-key/gitlab-active-record-* encrypt data at
+      # rest — generate once and never rotate/lose them (see gitlab.nix option
+      # docs for what breaks if you do).
+      "gitlab-root-password" = { file = ../secrets/gitlab-root-password.age; owner = "gitlab"; group = "gitlab"; mode = "0400"; };
+      "gitlab-db-password" = { file = ../secrets/gitlab-db-password.age; owner = "gitlab"; group = "gitlab"; mode = "0400"; };
+      "gitlab-secret-key-base" = { file = ../secrets/gitlab-secret-key-base.age; owner = "gitlab"; group = "gitlab"; mode = "0400"; };
+      "gitlab-otp-secret" = { file = ../secrets/gitlab-otp-secret.age; owner = "gitlab"; group = "gitlab"; mode = "0400"; };
+      "gitlab-db-secret" = { file = ../secrets/gitlab-db-secret.age; owner = "gitlab"; group = "gitlab"; mode = "0400"; };
+      "gitlab-jws-key" = { file = ../secrets/gitlab-jws-key.age; owner = "gitlab"; group = "gitlab"; mode = "0400"; };
+      "gitlab-active-record-primary-key" = { file = ../secrets/gitlab-active-record-primary-key.age; owner = "gitlab"; group = "gitlab"; mode = "0400"; };
+      "gitlab-active-record-deterministic-key" = { file = ../secrets/gitlab-active-record-deterministic-key.age; owner = "gitlab"; group = "gitlab"; mode = "0400"; };
+      "gitlab-active-record-salt" = { file = ../secrets/gitlab-active-record-salt.age; owner = "gitlab"; group = "gitlab"; mode = "0400"; };
+    })
+
+    // (optionalAttrs config.modules.services.development.gitlab.smtp.enable {
+      # agenix decrypts every declared secret at activation regardless of
+      # whether anything reads it, so this stays gated on smtp.enable
+      # specifically — not just gitlab.enable — or a GitLab install without
+      # SMTP configured would fail to activate over a missing secret file.
+      "gitlab-smtp-password" = { file = ../secrets/gitlab-smtp-password.age; owner = "gitlab"; group = "gitlab"; mode = "0400"; };
+    })
+
+    // (optionalAttrs config.modules.services.development.gitlab.oidc.enable {
+      "gitlab-oidc-secret" = { file = ../secrets/gitlab-oidc-secret.age; owner = "gitlab"; group = "gitlab"; mode = "0400"; };
+    })
+
     ;
 }
