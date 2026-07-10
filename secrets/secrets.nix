@@ -130,7 +130,10 @@ in
 
   # Jellyfin API key for mp3-player-sync
   "jellyfin-api-key.age".publicKeys = davidKeys;
-  
+
+  # GitHub self-hosted runner PAT for TristonYoder/stagePlotiphar (only on david)
+  "github-runner-stageplotiphar-token.age".publicKeys = davidKeys;
+
   # =============================================================================
   # SHARED SECRETS (All Servers)
   # =============================================================================

@@ -145,5 +145,12 @@ with lib;
       "navidrome-api-password" = { file = ../secrets/navidrome-api-password.age; mode = "0400"; };
     })
 
+    // (optionalAttrs config.modules.services.development.githubRunner.enable {
+      # Fine-grained PAT with read/write access to Actions self-hosted runners
+      # for TristonYoder/stagePlotiphar. Read only by the root-context
+      # ExecStartPre configure script, never by the runner service itself.
+      "github-runner-stageplotiphar-token" = { file = ../secrets/github-runner-stageplotiphar-token.age; owner = "root"; group = "root"; mode = "0400"; };
+    })
+
     ;
 }

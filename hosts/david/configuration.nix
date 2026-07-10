@@ -345,4 +345,13 @@ in
     };
   };
 
+  # Self-hosted GitHub Actions runner for TristonYoder/stagePlotiphar
+  modules.services.development.githubRunner = {
+    enable = true;
+    runners.stageplotiphar = {
+      url = "https://github.com/TristonYoder/stagePlotiphar";
+      tokenFile = config.age.secrets.github-runner-stageplotiphar-token.path;
+    };
+  };
+
 }
