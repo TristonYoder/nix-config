@@ -126,6 +126,11 @@ in
   # Stage Plotifer OIDC credentials (Pocket ID) — issuer URL, client ID, client secret
   "stageplotifer-oidc-secrets.age".publicKeys = davidKeys;
 
+  # Stage Plotiphar Postgres credentials — POSTGRES_PASSWORD (stageplotiphar-db
+  # container) and DATABASE_URL (stageplotiphar app container), same value
+  # embedded in both. See docker/productivity/stageplotiphar.nix.
+  "stageplotiphar-postgres-secrets.age".publicKeys = davidKeys;
+
   # Plex token for JellyPlex-Watched
   "plex-token.age".publicKeys = davidKeys;
 

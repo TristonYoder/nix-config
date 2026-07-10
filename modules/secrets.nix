@@ -76,6 +76,10 @@ with lib;
       # stageplotifer: docker-only service (docker/productivity/stageplotifer.nix), no NixOS module enable.
       # KEY=VALUE file (OIDC_ISSUER_URL/OIDC_CLIENT_ID/OIDC_CLIENT_SECRET) loaded via environmentFiles.
       "stageplotifer-oidc-secrets" = { file = ../secrets/stageplotifer-oidc-secrets.age; mode = "0400"; };
+      # stageplotiphar-db + stageplotiphar: KEY=VALUE file (POSTGRES_PASSWORD/
+      # DATABASE_URL) shared via environmentFiles by both containers in
+      # docker/productivity/stageplotiphar.nix.
+      "stageplotiphar-postgres-secrets" = { file = ../secrets/stageplotiphar-postgres-secrets.age; mode = "0400"; };
       # hermes-agent: NixOS module loaded only on david (external flake dep), no universal enable option
       "hermes-env" = { file = ../secrets/hermes-env.age; mode = "0400"; };
       # Deploy key (write access) for the private TristonYoder/hermes-brain repo —

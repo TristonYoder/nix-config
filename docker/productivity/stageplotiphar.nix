@@ -31,6 +31,9 @@
     # actual secrets for. The path is internal/invisible either way.
     environmentFiles = [
       config.age.secrets.stageplotifer-oidc-secrets.path
+      # DATABASE_URL (points at stageplotiphar-db below) — shared with that
+      # container's own POSTGRES_PASSWORD, same pattern as docmost-secrets.
+      config.age.secrets.stageplotiphar-postgres-secrets.path
     ];
     environment = {
       # Public URL the app stamps into PCO plan attachment links (stage plot
@@ -44,6 +47,12 @@
 
       # Label for the generic OIDC authentication provider button
       OIDC_NAME = "Plotiphar";
+
+      # Switches persistence from the default SQLite (a file inside the
+      # stageplotiphar_data volume) to the stageplotiphar-db container below.
+      # DATABASE_URL comes from the secret file, not here — it embeds the
+      # Postgres password.
+      DATABASE_TYPE = "postgres";
     };
     volumes = [
       "stageplotiphar_data:/app/data:rw"
@@ -76,12 +85,14 @@
       "docker-volume-stageplotiphar_data.service"
       "docker-volume-migrate-stageplotiphar-data.service"
       "docker-login-ghcr-stageplotiphar.service"
+      "docker-stageplotiphar-db.service"
     ];
     requires = [
       "docker-network-stageplotiphar_default.service"
       "docker-volume-stageplotiphar_data.service"
       "docker-volume-migrate-stageplotiphar-data.service"
       "docker-login-ghcr-stageplotiphar.service"
+      "docker-stageplotiphar-db.service"
     ];
     partOf = [
       "docker-compose-stageplotiphar-root.target"
@@ -108,6 +119,54 @@
     wantedBy = [ "docker-compose-stageplotiphar-root.target" ];
   };
 
+  # Postgres database — dedicated container per service, matching the
+  # pattern other Docker-backed apps in this repo use (see docker/docmost.nix)
+  # rather than the shared native `services.postgresql` instance, so this
+  # app's data is isolated from other services on that shared instance.
+  virtualisation.oci-containers.containers."stageplotiphar-db" = {
+    image = "postgres:16-alpine";
+    environmentFiles = [
+      config.age.secrets.stageplotiphar-postgres-secrets.path
+    ];
+    environment = {
+      "POSTGRES_DB" = "stageplotiphar";
+      "POSTGRES_USER" = "stageplotiphar";
+      # POSTGRES_PASSWORD loaded from the same secret file as the app
+      # container's DATABASE_URL above — must be the same value.
+    };
+    volumes = [
+      "stageplotiphar_db_data:/var/lib/postgresql/data:rw"
+    ];
+    log-driver = "journald";
+    extraOptions = [
+      "--network-alias=stageplotiphar-db"
+      "--network=stageplotiphar_default"
+    ];
+  };
+
+  systemd.services."docker-stageplotiphar-db" = {
+    serviceConfig = {
+      Restart = lib.mkOverride 90 "always";
+      RestartMaxDelaySec = lib.mkOverride 90 "1m";
+      RestartSec = lib.mkOverride 90 "10s";
+      RestartSteps = lib.mkOverride 90 9;
+    };
+    after = [
+      "docker-network-stageplotiphar_default.service"
+      "docker-volume-stageplotiphar_db_data.service"
+    ];
+    requires = [
+      "docker-network-stageplotiphar_default.service"
+      "docker-volume-stageplotiphar_db_data.service"
+    ];
+    partOf = [
+      "docker-compose-stageplotiphar-root.target"
+    ];
+    wantedBy = [
+      "docker-compose-stageplotiphar-root.target"
+    ];
+  };
+
   # Network
   systemd.services."docker-network-stageplotiphar_default" = {
     path = [ pkgs.docker ];
@@ -132,6 +191,19 @@
     };
     script = ''
       docker volume inspect stageplotiphar_data || docker volume create stageplotiphar_data
+    '';
+    partOf = [ "docker-compose-stageplotiphar-root.target" ];
+    wantedBy = [ "docker-compose-stageplotiphar-root.target" ];
+  };
+
+  systemd.services."docker-volume-stageplotiphar_db_data" = {
+    path = [ pkgs.docker ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      docker volume inspect stageplotiphar_db_data || docker volume create stageplotiphar_db_data
     '';
     partOf = [ "docker-compose-stageplotiphar-root.target" ];
     wantedBy = [ "docker-compose-stageplotiphar-root.target" ];
