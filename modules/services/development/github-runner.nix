@@ -87,7 +87,7 @@ let
 
       containerImage = mkOption {
         type = types.str;
-        default = "ghcr.io/myoung34/github-runner:ubuntu-noble";
+        default = "ghcr.io/myoung34/docker-github-actions-runner:ubuntu-noble";
         description = "Image to use when backend = \"container\".";
       };
     };
