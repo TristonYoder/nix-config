@@ -110,12 +110,12 @@ in
         {
           stageplotiphar-native = {
             url = "https://github.com/TristonYoder/stagePlotiphar";
-            tokenFile = config.age.secrets.github-runner-stageplotiphar-token.path;
+            tokenFile = config.age.secrets.github-runner-token.path;
           };
           stageplotiphar-clean = {
             backend = "container";
             url = "https://github.com/TristonYoder/stagePlotiphar";
-            tokenFile = config.age.secrets.github-runner-stageplotiphar-token.path;
+            tokenFile = config.age.secrets.github-runner-token.path;
           };
         }
       '';

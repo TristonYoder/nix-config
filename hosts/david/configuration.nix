@@ -353,7 +353,7 @@ in
     enable = true;
     runners."stageplotiphar-david" = {
       url = "https://github.com/TristonYoder/stagePlotiphar";
-      tokenFile = config.age.secrets.github-runner-stageplotiphar-token.path;
+      tokenFile = config.age.secrets.github-runner-token.path;
     };
     # Ephemeral, fresh-container-per-job runner — target with
     # `runs-on: [self-hosted, ephemeral-container]` when a job needs a
@@ -361,7 +361,7 @@ in
     runners."stageplotiphar-david-clean" = {
       backend = "container";
       url = "https://github.com/TristonYoder/stagePlotiphar";
-      tokenFile = config.age.secrets.github-runner-stageplotiphar-token.path;
+      tokenFile = config.age.secrets.github-runner-token.path;
     };
   };
 

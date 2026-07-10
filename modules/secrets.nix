@@ -146,10 +146,11 @@ with lib;
     })
 
     // (optionalAttrs config.modules.services.development.githubRunner.enable {
-      # Fine-grained PAT with read/write access to Actions self-hosted runners
-      # for TristonYoder/stagePlotiphar. Read only by the root-context
-      # ExecStartPre configure script, never by the runner service itself.
-      "github-runner-stageplotiphar-token" = { file = ../secrets/github-runner-stageplotiphar-token.age; owner = "root"; group = "root"; mode = "0400"; };
+      # Fine-grained PAT with read/write "Administration" access, all repos.
+      # Shared across every runner instance on this host — read only by the
+      # root-context configure/preStart scripts, never by the runner
+      # service/container itself.
+      "github-runner-token" = { file = ../secrets/github-runner-token.age; owner = "root"; group = "root"; mode = "0400"; };
     })
 
     ;
