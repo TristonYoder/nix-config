@@ -46,7 +46,11 @@ in
   
   # Cloudflare API Token - Used by both servers for Caddy DNS-01 challenge
   "cloudflare-api-token.age".publicKeys = allServers;
-  
+
+  # GitHub self-hosted runner PAT — all-repo access, shared across runner
+  # instances/hosts rather than scoped to one repo
+  "github-runner-token.age".publicKeys = allServers;
+
   # =============================================================================
   # DAVID-SPECIFIC SECRETS
   # =============================================================================
@@ -130,7 +134,7 @@ in
 
   # Jellyfin API key for mp3-player-sync
   "jellyfin-api-key.age".publicKeys = davidKeys;
-  
+
   # =============================================================================
   # SHARED SECRETS (All Servers)
   # =============================================================================
