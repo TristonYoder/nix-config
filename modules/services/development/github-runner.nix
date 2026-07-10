@@ -177,9 +177,14 @@ in
       })
       containerRunners;
 
-    # Regenerate the container's token env file on every (re)start — systemd's
-    # default Restart=always for oci-containers means this runs before each
-    # job's fresh container, same as the native backend's ExecStartPre.
+    # Regenerate the container's token env file on every (re)start, and force
+    # Restart=always so a finished (deregistered) ephemeral container is
+    # immediately replaced by a fresh one for the next job. NOTE: despite
+    # oci-containers.nix setting Restart = "always" unconditionally, the
+    # generated unit on this host's nixpkgs actually comes out as
+    # "on-failure" — every other oci-containers module in this repo already
+    # works around this the same way (mkOverride 500), so don't drop this
+    # override without re-verifying the generated unit.
     systemd.services = mapAttrs'
       (name: runner: nameValuePair "docker-${name}" {
         preStart = ''
@@ -193,6 +198,7 @@ in
           fi
           chmod 600 "$envfile"
         '';
+        serviceConfig.Restart = mkOverride 500 "always";
       })
       containerRunners;
   };
