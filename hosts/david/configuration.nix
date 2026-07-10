@@ -345,13 +345,21 @@ in
     };
   };
 
-  # Self-hosted GitHub Actions runner for TristonYoder/stagePlotiphar.
+  # Self-hosted GitHub Actions runners for TristonYoder/stagePlotiphar.
   # Name must be unique per registered runner across all hosts hitting this
-  # repo — defaults to the attrset key, so don't reuse "stageplotiphar-david"
-  # elsewhere or the later registration will --replace this one.
+  # repo — defaults to the attrset key, so don't reuse these names elsewhere
+  # or the later registration will --replace this one.
   modules.services.development.githubRunner = {
     enable = true;
     runners."stageplotiphar-david" = {
+      url = "https://github.com/TristonYoder/stagePlotiphar";
+      tokenFile = config.age.secrets.github-runner-stageplotiphar-token.path;
+    };
+    # Ephemeral, fresh-container-per-job runner — target with
+    # `runs-on: [self-hosted, ephemeral-container]` when a job needs a
+    # clean environment instead of the persistent native runner above.
+    runners."stageplotiphar-david-clean" = {
+      backend = "container";
       url = "https://github.com/TristonYoder/stagePlotiphar";
       tokenFile = config.age.secrets.github-runner-stageplotiphar-token.path;
     };
