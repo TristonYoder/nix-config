@@ -198,7 +198,7 @@ in
           fi
           chmod 600 "$envfile"
         '';
-        serviceConfig.Restart = mkOverride 500 "always";
+        serviceConfig.Restart = mkForce "always";
       })
       containerRunners;
   };
