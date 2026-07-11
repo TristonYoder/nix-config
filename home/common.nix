@@ -17,6 +17,7 @@ in
     git
     gh
     compose2nix
+    rustup
 
     # Utilities
     wget
