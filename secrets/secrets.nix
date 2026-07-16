@@ -131,6 +131,11 @@ in
   # embedded in both. See docker/productivity/stageplotiphar.nix.
   "stageplotiphar-postgres-secrets.age".publicKeys = davidKeys;
 
+  # Stage Plotiphar Stripe billing credentials — STRIPE_SECRET_KEY and
+  # STRIPE_WEBHOOK_SECRET for the optional billing add-on. Test-mode demo
+  # keys, rotated before real launch. See docker/productivity/stageplotiphar.nix.
+  "stageplotiphar-stripe-secrets.age".publicKeys = davidKeys;
+
   # Plex token for JellyPlex-Watched
   "plex-token.age".publicKeys = davidKeys;
 
