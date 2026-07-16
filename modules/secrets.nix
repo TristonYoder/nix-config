@@ -84,6 +84,11 @@ with lib;
       # STRIPE_WEBHOOK_SECRET) loaded via environmentFiles. Test-mode demo
       # credentials, rotated before real launch.
       "stageplotiphar-stripe-secrets" = { file = ../secrets/stageplotiphar-stripe-secrets.age; mode = "0400"; };
+      # stageplotiphar admin server: KEY=VALUE file (ADMIN_TOKEN) loaded via
+      # environmentFiles. Only present in images built with the private
+      # billing submodule; the app disables the admin server entirely if
+      # ADMIN_PORT is unset and refuses to start it without this token.
+      "stageplotiphar-admin-secrets" = { file = ../secrets/stageplotiphar-admin-secrets.age; mode = "0400"; };
       # hermes-agent: NixOS module loaded only on david (external flake dep), no universal enable option
       "hermes-env" = { file = ../secrets/hermes-env.age; mode = "0400"; };
       # Deploy key (write access) for the private TristonYoder/hermes-brain repo —

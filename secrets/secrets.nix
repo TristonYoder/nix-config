@@ -136,6 +136,11 @@ in
   # keys, rotated before real launch. See docker/productivity/stageplotiphar.nix.
   "stageplotiphar-stripe-secrets.age".publicKeys = davidKeys;
 
+  # Stage Plotiphar admin server token — ADMIN_TOKEN gating the private,
+  # localhost-only admin port (billing add-on). Fail-closed: the app refuses
+  # to start the admin server without it. See docker/productivity/stageplotiphar.nix.
+  "stageplotiphar-admin-secrets.age".publicKeys = davidKeys;
+
   # Plex token for JellyPlex-Watched
   "plex-token.age".publicKeys = davidKeys;
 
