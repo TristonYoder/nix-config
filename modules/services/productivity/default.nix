@@ -11,5 +11,6 @@
     ./babybuddy.nix
     ./companion.nix
     ./stirling-pdf.nix
+    ./paperless-ngx.nix
   ];
 }
