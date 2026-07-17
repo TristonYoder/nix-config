@@ -34,6 +34,12 @@
       # DATABASE_URL (points at stageplotiphar-db below) — shared with that
       # container's own POSTGRES_PASSWORD, same pattern as docmost-secrets.
       config.age.secrets.stageplotiphar-postgres-secrets.path
+      # STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET for the optional billing
+      # add-on (per-venue subscriptions, 40-day free trial). Stripe test-mode
+      # ("demo") credentials — will be rotated before real launch. Billing is
+      # inert unless the deployed image was built with the private billing
+      # submodule.
+      config.age.secrets.stageplotiphar-stripe-secrets.path
     ];
     environment = {
       # Public URL the app stamps into PCO plan attachment links (stage plot
@@ -53,6 +59,13 @@
       # DATABASE_URL comes from the secret file, not here — it embeds the
       # Postgres password.
       DATABASE_TYPE = "postgres";
+
+      # Stripe price IDs for the optional billing add-on — not secret (price
+      # IDs, unlike the API key/webhook secret above). Stripe test-mode
+      # ("demo") prices, rotated before real launch. Billing is inert unless
+      # the deployed image was built with the private billing submodule.
+      STRIPE_PRICE_MONTHLY = "price_1Tte2NDsDKkan45SGIAzSc3z";
+      STRIPE_PRICE_YEARLY = "price_1Tte2NDsDKkan45Ss0vFKWd7";
     };
     volumes = [
       "stageplotiphar_data:/app/data:rw"

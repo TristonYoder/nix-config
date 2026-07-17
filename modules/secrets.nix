@@ -80,6 +80,10 @@ with lib;
       # DATABASE_URL) shared via environmentFiles by both containers in
       # docker/productivity/stageplotiphar.nix.
       "stageplotiphar-postgres-secrets" = { file = ../secrets/stageplotiphar-postgres-secrets.age; mode = "0400"; };
+      # stageplotiphar billing add-on: KEY=VALUE file (STRIPE_SECRET_KEY/
+      # STRIPE_WEBHOOK_SECRET) loaded via environmentFiles. Test-mode demo
+      # credentials, rotated before real launch.
+      "stageplotiphar-stripe-secrets" = { file = ../secrets/stageplotiphar-stripe-secrets.age; mode = "0400"; };
       # hermes-agent: NixOS module loaded only on david (external flake dep), no universal enable option
       "hermes-env" = { file = ../secrets/hermes-env.age; mode = "0400"; };
       # Deploy key (write access) for the private TristonYoder/hermes-brain repo —
