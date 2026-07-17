@@ -40,6 +40,12 @@
       # inert unless the deployed image was built with the private billing
       # submodule.
       config.age.secrets.stageplotiphar-stripe-secrets.path
+      # ADMIN_TOKEN for the private admin server (see ADMIN_PORT below) —
+      # only present in images built with the private billing submodule.
+      # The app is fail-closed: it refuses to start the admin server without
+      # a token of at least 24 chars, so a missing/short secret here just
+      # keeps it disabled rather than exposing an unauthenticated port.
+      config.age.secrets.stageplotiphar-admin-secrets.path
     ];
     environment = {
       # Public URL the app stamps into PCO plan attachment links (stage plot
@@ -66,12 +72,33 @@
       # the deployed image was built with the private billing submodule.
       STRIPE_PRICE_MONTHLY = "price_1Tte2NDsDKkan45SGIAzSc3z";
       STRIPE_PRICE_YEARLY = "price_1Tte2NDsDKkan45Ss0vFKWd7";
+
+      # Private admin server (billing add-on) — listens on a second port
+      # inside the same container, separate from the public app on 1395.
+      # Setting ADMIN_PORT is what turns the admin server on at all; leaving
+      # it unset disables it entirely. ADMIN_HOST is intentionally left
+      # unset so the app defaults to 0.0.0.0 inside the container — the
+      # container's own network namespace already isolates it, and the real
+      # privacy boundary is the host port publishing below (127.0.0.1 only)
+      # plus the ADMIN_TOKEN gate from the secret file above. This port is
+      # deliberately NOT proxied by Caddy and NOT routed through the
+      # Cloudflare tunnel (see the Caddy block at the bottom of this file) —
+      # it must only ever be reachable privately (localhost / SSH tunnel /
+      # Tailscale), never from the public internet.
+      ADMIN_PORT = "1396";
     };
     volumes = [
       "stageplotiphar_data:/app/data:rw"
     ];
     ports = [
       "1395:1395/tcp"
+      # Admin server: bound to loopback only, matching this repo's
+      # established pattern for host-private docker services (see
+      # modules/services/productivity/stirling-pdf.nix,
+      # modules/services/storage/nextcloud/{onlyoffice,collabora}.nix). No
+      # 0.0.0.0 publish, no Caddy vhost, no tunnel route. Reachable from
+      # david itself or via `ssh -L 1396:localhost:1396 david`.
+      "127.0.0.1:1396:1396/tcp"
     ];
     log-driver = "journald";
     labels = {
