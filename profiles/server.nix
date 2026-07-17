@@ -104,6 +104,7 @@
   modules.services.productivity.tandoor.enable = lib.mkDefault true;
   modules.services.productivity.stirlingPdf.enable = lib.mkDefault true;
   modules.services.productivity.paperlessNgx.enable = lib.mkDefault true;
+  modules.services.productivity.miniflux.enable = lib.mkDefault true;
 
   # =============================================================================
   # COMMUNICATION SERVICES
