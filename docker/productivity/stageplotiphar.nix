@@ -66,6 +66,25 @@
       # Postgres password.
       DATABASE_TYPE = "postgres";
 
+      # Makes deletes soft (sets a `deleted_at` tombstone) for the entities
+      # the offline-first Mac app replicates, so a deletion made here in the
+      # web UI actually propagates to those replicas. Without it a delete is
+      # a hard row removal, the delta feed has nothing to report, and every
+      # offline client keeps the deleted item forever.
+      #
+      # Deliberately NOT `SYNC_MODE=cloud` — that is the *replica* mode. It
+      # additionally enables a client-side outbox whose table only exists in
+      # the app's SQLite schema, so setting it on this Postgres-backed server
+      # would break on the first write. The two gates are separate for
+      # exactly this reason: `SYNC_ENABLED` = "produce tombstones others can
+      # sync", `SYNC_MODE=cloud` = "be a replica that syncs".
+      #
+      # Low blast radius on its own: it only changes delete semantics, and
+      # the tombstoned rows are filtered out of every normal read, so the UI
+      # behaves identically. The /api/sync/* endpoints it feeds resolve
+      # through the same per-org auth as every other route.
+      SYNC_ENABLED = "1";
+
       # Stripe price IDs for the optional billing add-on — not secret (price
       # IDs, unlike the API key/webhook secret above). Stripe test-mode
       # ("demo") prices, rotated before real launch. Billing is inert unless
