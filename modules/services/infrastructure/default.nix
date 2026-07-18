@@ -10,5 +10,6 @@
     ./scrutiny.nix
     ./tailscale.nix
     ./technitium.nix
+    ./libvirt.nix
   ];
 }

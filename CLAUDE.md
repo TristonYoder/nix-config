@@ -15,6 +15,7 @@ This is a flake-based, multi-host Nix configuration managing NixOS servers, desk
 - **tristons-nixbook-pro** (NixOS on T2 MacBook Pro 16,1) - Dual-boot, uses `nixos-hardware.apple-t2`. Custom bootable installer ISOs built from the flake (`tristons-nixbook-pro-installer`, `tristons-nixbook-pro-installer-plasma`).
 - **tyoder-mbp** (macOS Apple Silicon) - Work MacBook Pro
 - **Tristons-MacBook-Pro** (macOS Intel) - Personal MacBook Pro
+- **macos-vm** (macOS on QEMU/KVM) - macOS Sequoia VM running on david under libvirt. Used for CI runners, development/testing, and macOS-only services. QEMU disk at `/data/vms/macos-vm/disk.qcow2`, macvtap networking (LAN IP on `theyoder.family`), joined to Tailscale. Guest OS is provisioned manually outside of Nix; host-side config (libvirt, quickemu config, vHosts wiring) is declared in `modules/services/infrastructure/libvirt.nix`.
 
 ## Security — This Repo Is Public
 
@@ -713,6 +714,64 @@ ssh github-actions@david.vpn.theyoder.family "sudo journalctl -u azuracast-playl
 It's idempotent — safe to run anytime, only creates stations for m3u files without one yet.
 
 **If station creation fails with "no available ports for new radio stations":** AzuraCast reserves a full 10-port block per station (frontend/telnet/dj/headroom), not just the 3 ports actually bound. Widen `modules.services.media.azuracast.stationPortMax`, but check `sudo ss -tulpn` on david first for a clean gap rather than just incrementing — the original 9500-9599 range was extended once already and had to be relocated entirely to 23000-24999 to get clear of neighboring services.
+
+### macOS VM on david (QEMU/KVM + libvirt)
+
+**Host:** david — `modules.services.infrastructure.libvirt.macosVm`
+
+The macOS VM (`macos-vm`) runs under libvirt on david. Host-side configuration is declared in `modules/services/infrastructure/libvirt.nix`; the guest OS is provisioned manually outside Nix.
+
+**Storage:** QEMU disk at `/data/vms/macos-vm/disk.qcow2`. `/data` is ZFS-backed, so the disk image still gets compression and snapshots at the filesystem level.
+
+**Networking:** macvtap on david's `enp4s0f0` gives the VM its own LAN IP on `theyoder.family`. The VM then joins Tailscale inside the guest. Set `tailscaleIp` in the host config to enable Caddy reverse-proxy via the vHosts registry.
+
+**Quickemu helper:** `quickemu` is available on david (packaged in `modules/system/core.nix`). With a file-based disk, quickemu handles the entire VM lifecycle — OpenCore firmware, macOS boot, and disk management.
+
+**First-time setup procedure:**
+
+1. **Enable and rebuild:**
+   ```bash
+   git add . && git commit -m "feat: add macOS VM on david (libvirt + QEMU/KVM)"
+   git push
+   rebuild
+   ```
+
+2. **Download the macOS installer + OpenCore** (automated via quickget):
+   ```bash
+   sudo systemctl start get-macos-installer
+   sudo journalctl -u get-macos-installer -f    # watch progress (~12 GB download)
+   ```
+   This runs `quickget macos sequoia` which fetches Apple's `InstallAssistant.pkg`
+   from the softwareupdate catalog and prepares OpenCore — same process as
+   `fetch-macOS.py` used by Docker-OSX and macOS-Simple-KVM.
+
+3. **Launch the macOS installer** via quickemu (spice GUI for the interactive install):
+   ```bash
+   quickemu --vm /etc/quickemu/macos-vm.conf --macvtap --display spice
+   ```
+   - Boots into the macOS recovery system
+   - Use Disk Utility to erase the virtual disk (named something like "QEMU QEMU HARDDISK")
+   - Then install macOS onto it
+
+4. **Stop the VM** after install is complete.
+
+5. **After install:** Join Tailscale inside the VM, note the Tailscale IP, and update `tailscaleIp` in david's `configuration.nix`:
+   ```nix
+   tailscaleIp = "100.XX.XX.XX";  # from Tailscale admin UI or `sudo tailscale ip`
+   ```
+   Rebuild david to wire Caddy.
+
+**Troubleshooting:**
+
+- **Libvirt can't start macOS VM:** Verify KVM is available (`kvm-ok` on AMD) and that the user running the VM is in the `libvirtd` group. Check `sudo virsh capabilities | grep kvm`.
+
+- **No LAN IP via macvtap:** macvtap requires the host NIC to be up. Run `ip link set enp4s0f0 up` if the interface went down. The VM MAC address is random — it gets a DHCP lease like any other device on the network.
+
+- **Quickemu spice display slow:** Add `--display spice` for better performance over the LAN; use a VNC client (e.g. virt-viewer) to connect. For headless operation after setup, omit `--display` to run without a graphical console.
+
+- **Can't erase disk in macOS installer:** The virtual disk may appear as "QEMU QEMU HARDDISK" or similar. In Disk Utility, you may need to select "View > Show All Devices" to see the physical disk (not just volumes), then erase the top-level device, not the partition.
+
+- **quickget fails with "not available for arm64":** This happens when running `quickget` on an Apple Silicon Mac (e.g. tyoder-mbp). It's a host-architecture check; `quickget` only downloads x86_64 macOS images. Run it on david (x86_64) instead.
 
 ## References
 

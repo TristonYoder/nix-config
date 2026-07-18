@@ -345,6 +345,32 @@ in
     };
   };
 
+  # =============================================================================
+  # VIRTUALIZATION: macOS VM
+  # =============================================================================
+  #
+  # macOS VM (Sequoia) running on QEMU/KVM via libvirt. Quickemu manages the VM
+  # lifecycle (disk at /data/vms/macos-vm/disk.qcow2, macvtap for LAN IP on
+  # theyoder.family, joined to Tailscale for mesh access). The guest OS is
+  # provisioned manually outside Nix — this only manages the host side (libvirt,
+  # quickemu config, reverse proxy wiring).
+  #
+  # First-time setup (run on david after rebuild):
+  #   sudo systemctl start get-macos-installer          # download installer + OpenCore
+  #   sudo journalctl -u get-macos-installer -f         # watch progress
+  #   quickemu --vm /etc/quickemu/macos-vm.conf --macvtap --display spice  # install
+  #
+  modules.services.infrastructure.libvirt = {
+    enable = true;
+    macosVm = {
+      enable = true;
+      vcpu = 4;
+      memory = 8192;
+      diskPath = "/data/vms/macos-vm/disk.qcow2";
+      tailscaleIp = null;  # set after VM joins Tailscale
+    };
+  };
+
   # Self-hosted GitHub Actions runners for TristonYoder/stagePlotiphar.
   # Name must be unique per registered runner across all hosts hitting this
   # repo — defaults to the attrset key, so don't reuse these names elsewhere
