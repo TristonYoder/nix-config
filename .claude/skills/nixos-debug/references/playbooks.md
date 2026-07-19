@@ -170,3 +170,26 @@ requires a hard power-cycle (which can corrupt the live USB, requiring a re-flas
 **Note:** Already-built store paths under `/mnt/nix/store` survive a reboot of the live
 session as long as target disk partitions aren't reformatted — remount and resume rather
 than starting over.
+
+---
+
+## Caddy Fixed-Output Hash Mismatch (`caddy-src-with-plugins`)
+
+`modules/services/infrastructure/caddy.nix` builds Caddy via `pkgs.caddy.withPlugins`,
+which fetches Go module sources for the pinned plugin list and checks them against a
+pinned `hash`. This is a fixed-output derivation, so any change to the Go module graph
+for the pinned plugin versions (a transitive dependency release, a proxy re-fetch, or a
+nixpkgs bump to the `caddy` builder itself) changes the fetched content and breaks the
+hash — even though `caddy.nix` itself wasn't touched.
+
+**Symptom:**
+```
+error: hash mismatch in fixed-output derivation '.../caddy-src-with-plugins-....drv':
+         specified: sha256-...
+            got:    sha256-...
+```
+
+**Fix:** copy the `got:` value from the error directly into the `hash` field in
+`caddy.nix` — the mismatch is expected drift, not a security concern, since the fetch
+target (Go module proxy for the pinned `github.com/...@vX.Y.Z` plugin refs) is unchanged.
+Do not use `lib.fakeSha256` as a permanent value; only the real `got` hash belongs there.

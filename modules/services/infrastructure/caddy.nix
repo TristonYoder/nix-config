@@ -37,7 +37,7 @@ in
           "github.com/caddy-dns/cloudflare@v0.2.1"
           "github.com/greenpau/caddy-security@v1.1.29"
         ];
-        hash = "sha256-Sfem9E6lD6BYywQazUdH1qQOeg7vAjwgN3nCzFE/K9I=";
+        hash = "sha256-7thTup87bpk+ew0KtSTXvtqXrvBKPVjhFQHSN5auCFo=";
       };
       globalConfig = ''
         email ${cfg.email}
