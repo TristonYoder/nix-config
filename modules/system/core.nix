@@ -34,7 +34,7 @@ in
     
     systemPackages = mkOption {
       type = types.listOf types.package;
-      default = with pkgs; [ wget gh git zsh quickemu ];
+      default = with pkgs; [ wget gh git zsh ];
       description = "System-wide packages";
     };
   };
@@ -83,8 +83,10 @@ in
     programs.zsh.enable = mkIf cfg.enableZsh true;
     users.defaultUserShell = mkIf cfg.enableZsh pkgs.zsh;
 
-    # Fonts configuration for Powerlevel10k (GUI terminals)
-    fonts = {
+    # Fonts configuration for Powerlevel10k (GUI terminals). These render client-side in
+    # the user's terminal emulator, so they're only needed on hosts with a local display —
+    # a headless server never benefits from having them installed.
+    fonts = mkIf config.modules.system.desktop.enable {
       enableDefaultPackages = true;
       packages = with pkgs; [
         # Nerd Fonts with icons and glyphs for Powerlevel10k
@@ -92,18 +94,18 @@ in
         nerd-fonts.fira-code
         nerd-fonts.jetbrains-mono
         nerd-fonts.hack
-        
+
         # Additional fonts for better terminal experience
         noto-fonts
         noto-fonts-color-emoji
         liberation_ttf
         fira-code
         fira-code-symbols
-        
+
         # Terminus font for console (tty) - has some powerline support
         terminus_font
       ];
-      
+
       fontconfig = {
         defaultFonts = {
           monospace = [ "MesloLGS NF" "FiraCode Nerd Font" "JetBrainsMono Nerd Font" ];

@@ -18,6 +18,10 @@
   modules.system.core.enable = lib.mkDefault true;
   modules.system.networking.enable = lib.mkDefault true;
   modules.system.users.enable = lib.mkDefault true;
+  # Default mainUser.packages (firefox, bitwarden-desktop, vscode, 1password-gui, ...) are
+  # desktop GUI apps with no purpose on a headless edge box. CLI tools go in the host's
+  # environment.systemPackages instead.
+  modules.system.users.mainUser.packages = lib.mkDefault [ ];
   # Desktop disabled for headless edge servers
   modules.system.desktop.enable = lib.mkDefault false;
 

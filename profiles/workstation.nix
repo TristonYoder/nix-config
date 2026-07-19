@@ -56,6 +56,9 @@
     # Video Editing
     davinci-resolve
 
+    # Virtualization
+    quickemu
+
     # Notes & Knowledge Management
     obsidian
 
