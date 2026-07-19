@@ -102,6 +102,9 @@ in
         Type = "oneshot";
         RemainAfterExit = true;
         User = "nextcloud";
+        Restart = "on-failure";
+        RestartSec = "10s";
+        StartLimitIntervalSec = 0;
       };
       script = ''
         ${config.services.nextcloud.occ}/bin/nextcloud-occ config:app:set richdocuments wopi_url \

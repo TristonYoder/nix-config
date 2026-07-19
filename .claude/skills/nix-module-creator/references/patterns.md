@@ -193,6 +193,66 @@ DB_PASSWORD=<password>
 Nix store (world-readable).
 
 
+## Restart policy for custom systemd services
+
+Any time a module defines its own `systemd.services.<name>` unit — a native
+service wrapper, an init/setup oneshot, a sync job — decide its restart
+behavior explicitly. Don't leave it at the systemd/NixOS default without
+thinking about it: several modules in this repo (`services.github-runners`
+native backend, agenix-secret-prep oneshots) default to `Restart=no`, which
+means a transient failure (secret not decrypted yet, dependency not up yet,
+lost network) leaves the service dead until someone notices and manually
+restarts it.
+
+Pick one of these three buckets:
+
+**1. Long-running service (`Type = "simple"/"notify"/"exec"`) that should
+always be up.**
+```nix
+serviceConfig = {
+  Restart = "on-failure";   # or "always" if a clean exit should also restart
+  RestartSec = "10s";       # backoff before retrying
+};
+```
+Add `StartLimitBurst`/`StartLimitIntervalSec` only if repeated crashes should
+eventually give up (e.g. a bad config that will never self-correct). Otherwise
+leave the systemd default (5 restarts / 10s) or widen it — don't let a unit
+go permanently `failed` for a condition that will resolve itself.
+
+**2. Oneshot "gate" service — blocks a dependent unit via `before`/`requiredBy`,
+and can fail on a transient condition (secret path not ready, container not
+warm yet, upstream API racing with a health check).**
+```nix
+serviceConfig = {
+  Type = "oneshot";
+  RemainAfterExit = true;
+  Restart = "on-failure";
+  RestartSec = "10s";        # or longer if it's polling something slow
+  StartLimitIntervalSec = 0; # never permanently give up — this unit blocks
+                              # something else from starting; it must keep
+                              # retrying until whatever broke it is fixed
+};
+```
+Reference examples: `caddy-prepare-env` (modules/services/infrastructure/caddy.nix),
+the postal setup chain (modules/services/communication/postal.nix),
+`nextcloud-configure-collabora`/`nextcloud-configure-onlyoffice`.
+
+**3. Oneshot that is NOT a candidate for `Restart=` — leave it alone.**
+- Already made idempotent/non-failing (script ends in `|| true`, or checks a
+  marker file and exits 0 when already done and there's nothing to retry).
+- Triggered externally on a cadence that already provides retry — a
+  `systemd.timers.*` companion, a udev/hotplug rule, or a `sleep.target`
+  hook. Adding `Restart=` here just risks overlapping runs with the next
+  scheduled trigger.
+- Fails on a condition a retry can't fix (e.g. a database collation mismatch
+  that needs a human to run a migration). Retrying forever just spins for no
+  reason — let it fail and stay `failed` so the alert is visible.
+
+When in doubt, ask: "if this unit fails, will retrying with a delay plausibly
+succeed once the underlying blocker clears on its own?" If yes → bucket 1/2.
+If no → bucket 3, and leave a comment explaining why it's intentionally not
+auto-restarting.
+
 ## Category default.nix format
 
 Every category has a `default.nix` that just lists imports:
@@ -268,6 +328,7 @@ When auditing a module, verify each item:
 - [ ] Service binds to `127.0.0.1` (not `0.0.0.0`) — Caddy handles external access
 - [ ] Module added to its category `default.nix`
 - [ ] Enabled in the right layer (profile vs host config) per placement rules
+- [ ] Any custom `systemd.services.<name>` unit has an explicit restart policy decision (see "Restart policy for custom systemd services") — not left at the silent `Restart=no` default without a reason
 
 ### Common violations by category
 
