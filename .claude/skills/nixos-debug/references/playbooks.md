@@ -193,3 +193,34 @@ error: hash mismatch in fixed-output derivation '.../caddy-src-with-plugins-....
 `caddy.nix` — the mismatch is expected drift, not a security concern, since the fetch
 target (Go module proxy for the pinned `github.com/...@vX.Y.Z` plugin refs) is unchanged.
 Do not use `lib.fakeSha256` as a permanent value; only the real `got` hash belongs there.
+
+---
+
+## GitHub Runner Crashes: "No space left on device"
+**Host:** david
+
+Symptom: runner Worker process throws `System.IO.IOException: No space left on device`
+trying to write its own diagnostic log under `/var/lib/github-runner/<runner>/_diag/`.
+Root cause is unrelated to the runner itself — david's root filesystem (`/`, 907G) filled
+up, mostly from accumulated Docker image layers (`docker system df` showed 170GB+
+reclaimable from ~210 images, most orphaned/untagged from past builds).
+
+**Diagnosis:**
+```bash
+ssh github-actions@david.vpn.theyoder.family "df -h /"
+ssh github-actions@david.vpn.theyoder.family "sudo docker system df"
+```
+`github-actions` has passwordless sudo on david; `tristonyoder` does not — use
+`github-actions@` for any diagnostics requiring `sudo -n`.
+
+**Quick fix:**
+```bash
+ssh github-actions@david.vpn.theyoder.family "sudo docker system prune -af"
+```
+Removes stopped containers, unused networks, build cache, and — critically — all
+images not referenced by a running container (not just dangling ones). Freed ~190GB
+in the 2026-07 incident (100% full → 78% used).
+
+**Permanent fix applied:** `virtualisation.docker.autoPrune` enabled in
+`hosts/david/configuration.nix` (weekly, `--all` flag) so unused images don't
+re-accumulate silently.

@@ -29,6 +29,15 @@ in
   networking.hostName = "david";
   system.stateVersion = "23.11"; # Did you read the comment?
 
+  # Unused image layers accumulate across the many docker/*.nix services and the
+  # GitHub Actions runner's dockerAccess builds, filling the root disk (hit 100%
+  # full in 2026-07 and crashed the runner). Weekly prune keeps it in check.
+  virtualisation.docker.autoPrune = {
+    enable = true;
+    dates = "weekly";
+    flags = [ "--all" ];
+  };
+
   # tristons-workstation is reachable via Tailscale but not via VLAN from david's br0.
   # Pin it to the Tailscale IP so internal service lookups (LiteLLM → Ollama) work.
   networking.hosts.${workstationIp} = [ "tristons-workstation.theyoder.family" "tristons-workstation" ];
