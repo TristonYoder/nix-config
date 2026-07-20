@@ -12,9 +12,6 @@
     # macOS-specific tools
     syncthing
     dockutil
-
-    # Emulators
-    dolphin-emu  # GameCube and Wii emulator
   ];
   
   # =============================================================================
