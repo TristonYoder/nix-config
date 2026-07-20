@@ -1,10 +1,17 @@
 # Apple Mail MCP server (patrickfreyer/apple-mail-mcp)
 #
-# Registers the `mcp-apple-mail` server with the Claude desktop app so Claude
-# can read/search/send Apple Mail. The server is fetched and run on demand by
-# `uvx` (from the `uv` package) — no persistent install.
+# Makes the `mcp-apple-mail` server runnable via `uvx` by installing `uv`.
+# It deliberately does NOT manage the Claude desktop config
+# (claude_desktop_config.json) — that file is the app's live preferences store
+# and is left entirely to the user. Register the server yourself, e.g.:
 #
-# Home Manager module. Import + enable it in a user's home config, e.g.:
+#   claude mcp add apple-mail -- uvx mcp-apple-mail
+#
+# or add this to the app's config manually:
+#
+#   "mcpServers": { "apple-mail": { "command": "uvx", "args": ["mcp-apple-mail"] } }
+#
+# Home Manager module. Import + enable it in a user's home config:
 #   imports = [ ./modules/apple-mail-mcp.nix ];
 #   modules.mcp.appleMail.enable = true;
 #
@@ -20,16 +27,7 @@ let
 in
 {
   options.modules.mcp.appleMail = {
-    enable = mkEnableOption "Apple Mail MCP server for the Claude desktop app";
-
-    readOnly = mkOption {
-      type = types.bool;
-      default = false;
-      description = ''
-        Run the server in read-only mode. Claude can read and search mail but
-        cannot send, move, or delete messages.
-      '';
-    };
+    enable = mkEnableOption "Apple Mail MCP server runtime (uv/uvx) for the Claude desktop app";
 
     package = mkOption {
       type = types.package;
@@ -37,29 +35,12 @@ in
       defaultText = literalExpression "pkgs.uv";
       description = "The uv package providing `uvx`, used to fetch and run mcp-apple-mail.";
     };
-
-    configPath = mkOption {
-      type = types.str;
-      default = "Library/Application Support/Claude/claude_desktop_config.json";
-      description = ''
-        Path (relative to the user's home) of the Claude desktop app's MCP
-        config file this module manages.
-      '';
-    };
   };
 
   config = mkIf cfg.enable {
-    # `uvx` (from uv) fetches and runs the Python server on demand.
+    # `uvx` (from uv) fetches and runs the Python server on demand. The Claude
+    # desktop config is intentionally left untouched — register the server there
+    # manually (see the header comment).
     home.packages = [ cfg.package ];
-
-    # Declaratively own the Claude desktop MCP config. Use an absolute path to
-    # uvx — the app launches servers with a minimal PATH that lacks the nix
-    # profile bin dir.
-    home.file.${cfg.configPath}.text = builtins.toJSON {
-      mcpServers.apple-mail = {
-        command = "${cfg.package}/bin/uvx";
-        args = [ "mcp-apple-mail" ] ++ optional cfg.readOnly "--read-only";
-      };
-    };
   };
 }
