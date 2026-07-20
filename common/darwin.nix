@@ -11,7 +11,12 @@
   # Used for backwards compatibility, please read the changelog before changing.
   # $ darwin-rebuild changelog
   system.stateVersion = 5;
-  
+
+  # Back up pre-existing files (e.g. brew's ~/.zprofile) instead of failing
+  # activation when Home Manager wants to manage a path that already exists.
+  # NixOS hosts already set this per-host in flake.nix; darwin hosts inherit it here.
+  home-manager.backupFileExtension = "backup";
+
   # =============================================================================
   # HOST-SPECIFIC SETTINGS
   # =============================================================================
