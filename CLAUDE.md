@@ -8,7 +8,7 @@ This is a flake-based, multi-host Nix configuration managing NixOS servers, desk
 
 ### Managed Hosts
 
-- **david** (NixOS Server) - Full infrastructure stack with media, productivity, storage services
+- **david** (NixOS Server) - Full infrastructure stack with media, productivity, storage services. Primarily a server, but also used as a workstation at times — hence the multi-profile setup (server profile plus desktop-capable pieces). Don't assume it's headless; desktop-oriented packages (e.g. `mainUser.packages` defaults like `bitwarden-desktop`) are intentionally present, not stray bloat.
 - **pits** (NixOS Edge/Pi) - Lightweight public-facing reverse proxy
 - **tristons-workstation** (NixOS Desktop) - KDE Plasma workstation. RTX 4080 (open NVIDIA kernel modules), btrfs root (`@`, `@nix`, `@snapshots` subvolumes), `/home` symlinked to NFS-mounted `/data` on david (`useDataDrive`). **Always has a 10Gb fiber backhaul to david over the Core Services VLAN** — this is a permanent network characteristic of this host, not a one-off; treat NFS-backed home and any future high-bandwidth dependency on david as safe to assume for this host specifically. Dual-NIC: `enp7s0` carries `10.150.100.0/23` (Core Services, route to david), `eno1` carries `10.150.10.0/24` (User Devices). `network-online.target` may fire on `eno1` before `enp7s0` completes DHCP — see the NFS automount troubleshooting entry before touching boot-time network ordering on this host.
 - **tristons-nixbook** (NixOS Laptop) - Workstation profile on a MacBook. NFS-mounts `/data` from david. Key swap (Command↔Control) via keyd for MacBook keyboard layout.
@@ -694,6 +694,36 @@ sudo ss -tulpn | grep PORT
 # Override port in module options
 modules.services.category.servicename.port = 8081;
 ```
+
+### PostgreSQL Collation Version Mismatch After nixpkgs Bump
+**Host:** david — any host running `services.postgresql`
+
+A nixpkgs update that bumps glibc changes glibc's collation library version. PostgreSQL detects this on next boot and refuses further setup work until acknowledged. Symptom: `postgresql-setup.service` fails during `nixos-rebuild switch`, with journal output like:
+
+```
+WARNING:  database "postgres" has a collation version mismatch
+DETAIL:  The database was created using collation version 2.40, but the operating system provides version 2.42.
+```
+
+The overall `switch-to-configuration switch` command exits non-zero (status 4), but this is isolated to the setup unit — the main `postgresql.service` daemon keeps running unaffected, and the rest of the system activates normally.
+
+**Fix** — acknowledge the new collation version on every database (metadata-only, safe to run live, no data touched):
+
+```bash
+sudo -u postgres psql -c "ALTER DATABASE postgres REFRESH COLLATION VERSION;"
+sudo -u postgres psql -c "ALTER DATABASE template1 REFRESH COLLATION VERSION;"
+sudo -u postgres psql -tAc "SELECT datname FROM pg_database WHERE datistemplate = false AND datname <> 'postgres';" \
+  | while read -r db; do
+      sudo -u postgres psql -c "ALTER DATABASE \"$db\" REFRESH COLLATION VERSION;"
+    done
+
+sudo systemctl restart postgresql-setup.service
+systemctl status postgresql-setup.service   # should show active (exited)
+```
+
+`template1` must be refreshed too — it's the implicit template `ensureDatabases` clones from, so a stale collation there blocks new database creation even after fixing `postgres`.
+
+**Follow-up (not blocking):** glibc collation changes can theoretically reorder sort order and silently corrupt btree indexes on text columns using the default collation. Postgres recommends a `REINDEX` pass after a collation bump; schedule this as low-priority maintenance rather than doing it mid-incident.
 
 ### AzuraCast Playlist-Station Autosync
 
