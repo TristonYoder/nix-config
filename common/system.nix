@@ -38,6 +38,7 @@ in
   # Allow insecure packages for specific applications
   nixpkgs.config.permittedInsecurePackages = [
     "electron-35.7.5"  # Required for gfn-electron (GeForce Now)
+    "electron-39.8.10" # Required for bitwarden-desktop (mainUser.packages, all hosts)
     "electron-40.10.5" # Required for feishin (bumped from electron-39 in nixpkgs-unstable)
     "olm-3.2.16"       # Required for Matrix communication bridges
     "pnpm-10.29.2"     # Required for cherry-studio (pnpm 10.29.3+ breaks its electron-builder step)
