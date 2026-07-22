@@ -394,6 +394,38 @@
             inherit self nixpkgs nixpkgs-unstable nixos-raspberrypi;
           };
         };
+
+        # -----------------------------------------------------------------------------
+        # stage-plotiphar-installer - one-shot Pi 5 SD/NVMe image used only to get
+        # NixOS onto the box; not a host you rebuild day-to-day. Bakes in Triston's
+        # SSH keys so it's reachable the instant it boots (no monitor/keyboard).
+        # Build with: nix build .#nixosConfigurations.stage-plotiphar-installer.config.system.build.sdImage
+        # -----------------------------------------------------------------------------
+        stage-plotiphar-installer = nixos-raspberrypi.lib.nixosInstaller {
+          modules = [
+            {
+              imports = with nixos-raspberrypi.nixosModules; [
+                raspberry-pi-5.base
+              ];
+
+              users.users.root.openssh.authorizedKeys.keys = [
+                "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK5JWm3A5tXTCPq8YTua30QH2+Pa/Mz96QC5KJZKdEsz Triston Yoder"
+              ];
+              users.users.nixos.openssh.authorizedKeys.keys = [
+                "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK5JWm3A5tXTCPq8YTua30QH2+Pa/Mz96QC5KJZKdEsz Triston Yoder"
+              ];
+            }
+          ]
+          # WiFi creds, if present on THIS machine outside the repo entirely — never
+          # committed. See secrets/local-only/README.md. Deliberately an absolute path
+          # outside the flake's own source tree (not e.g. ./secrets/local-only/...):
+          # flakes only see git-tracked files in their own source, so a gitignored file
+          # *inside* the repo directory would silently and invisibly not exist here.
+          # Requires building with --impure (this reads outside the flake's source).
+          ++ nixpkgs.lib.optional
+            (builtins.pathExists "${builtins.getEnv "HOME"}/.config/nix-config-local-only/wifi-installer.nix")
+            (import "${builtins.getEnv "HOME"}/.config/nix-config-local-only/wifi-installer.nix");
+        };
       };
 
       # =============================================================================

@@ -25,5 +25,15 @@
 
   # Set primary user for system defaults
   system.primaryUser = "tyoder";
+
+  # =============================================================================
+  # LINUX BUILDER
+  # =============================================================================
+
+  # Native aarch64-linux build machine (Apple Virtualization framework VM),
+  # registered with the Nix daemon automatically. Needed to build aarch64-linux
+  # derivations locally — e.g. the stage-plotiphar Pi 5 installer image, since
+  # no other host in this repo has aarch64-linux build capability.
+  nix.linux-builder.enable = true;
 }
 

@@ -45,3 +45,9 @@
 
 # Claude Code session-local state
 .claude/scheduled_tasks.lock
+
+# Defense-in-depth: the actual local-only secrets live entirely outside the
+# repo (~/.config/nix-config-local-only/), never here — see
+# secrets/local-only/README.md for why. This just guards against a *.nix file
+# ending up in this directory by mistake.
+secrets/local-only/*.nix
