@@ -1,0 +1,68 @@
+# Kiosk Profile
+# Minimal single-purpose signage host: no desktop environment, just an
+# auto-logged-in X11 session running one fullscreen Chromium instance
+# per connected display output.
+
+{ config, pkgs, lib, ... }:
+{
+  # =============================================================================
+  # HARDWARE MODULES
+  # =============================================================================
+
+  # Pi 5 firmware/bootloader owns /boot/firmware — not systemd-boot/EFI.
+  modules.hardware.boot.enable = lib.mkForce false;
+
+  # =============================================================================
+  # SYSTEM MODULES
+  # =============================================================================
+
+  modules.system.core.enable = lib.mkDefault true;
+  modules.system.networking.enable = lib.mkDefault true;
+  modules.system.users.enable = lib.mkDefault true;
+  # This is an appliance, not a desktop for the admin user — no GUI apps needed
+  # on the admin account. Kiosk display packages live under modules.services.kiosk.
+  modules.system.users.mainUser.packages = lib.mkDefault [ ];
+  # KDE/desktop module not used — kiosk display is handled directly below.
+  modules.system.desktop.enable = lib.mkDefault false;
+
+  # =============================================================================
+  # DISPLAY: minimal X11 + autologin + openbox
+  # =============================================================================
+  # X11 (not Wayland) specifically because Chromium's
+  # --window-position/--window-size + a bare Openbox WM is the reliable,
+  # well-documented way to pin one browser window per physical monitor.
+
+  hardware.graphics.enable = lib.mkDefault true;
+
+  services.xserver = {
+    enable = true;
+    videoDrivers = [ "modesetting" ];
+    displayManager.lightdm.enable = true;
+    windowManager.openbox.enable = true;
+  };
+
+  services.displayManager.autoLogin = {
+    enable = true;
+    user = config.modules.services.kiosk.browserKiosk.user;
+  };
+  services.displayManager.defaultSession = "none+openbox";
+
+  # =============================================================================
+  # KIOSK BROWSER
+  # =============================================================================
+
+  modules.services.kiosk.browserKiosk.enable = lib.mkDefault true;
+
+  # =============================================================================
+  # REMOTE MANAGEMENT
+  # =============================================================================
+
+  modules.services.infrastructure.tailscale.enable = lib.mkDefault true;
+  modules.services.development.vscode-server.enable = lib.mkDefault true;
+
+  # =============================================================================
+  # DNS
+  # =============================================================================
+
+  networking.nameservers = [ "1.1.1.1" "1.0.0.1" ];
+}

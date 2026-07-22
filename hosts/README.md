@@ -45,6 +45,15 @@ Per-host NixOS and macOS configurations managed through this flake.
 - **Auto-Deploy:** ✅ GitHub Actions enabled
 - **Services:** Minimal desktop (KDE Plasma, development tools)
 
+#### stage-plotiphar (Signage Kiosk)
+- **Profile:** [kiosk](../profiles/kiosk.nix)
+- **Architecture:** aarch64-linux (Raspberry Pi 5 / CM5 Lite)
+- **User:** tristonyoder (admin), kiosk (autologin display session)
+- **Auto-Deploy:** ➖ Manual only
+- **Services:** Per-HDMI-output Chromium kiosk, power-button reset (`modules.services.kiosk.browserKiosk`)
+- **Purpose:** Displays the stage-plotifer app fullscreen on venue monitors
+- **Documentation:** [stage-plotiphar/README.md](stage-plotiphar/README.md)
+
 ### macOS Hosts
 
 #### tyoder-mbp (Triston's TPCC MacBook Pro - Work)

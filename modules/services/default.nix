@@ -12,5 +12,6 @@
     ./communication
     ./ai
     ./gaming
+    ./kiosk
   ];
 }

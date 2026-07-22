@@ -32,6 +32,9 @@
     # NixOS hardware support modules (T2, Raspberry Pi, etc.)
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
 
+    # Raspberry Pi 5 firmware/bootloader/kernel support (stage-plotiphar kiosk)
+    nixos-raspberrypi.url = "github:nvmd/nixos-raspberrypi";
+
     # External modules
     nix-bitcoin.url = "github:fort-nix/nix-bitcoin/v0.0.117";
     nixos-vscode-server.url = "github:nix-community/nixos-vscode-server";
@@ -48,7 +51,7 @@
     hermes-agent.url = "github:NousResearch/hermes-agent";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, flake-utils, iopenpod-flake, iopodcli, hermes-agent, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, nixos-raspberrypi, flake-utils, iopenpod-flake, iopodcli, hermes-agent, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -340,6 +343,55 @@
 
           specialArgs = {
             inherit self nixpkgs nixpkgs-unstable;
+          };
+        };
+
+        # -----------------------------------------------------------------------------
+        # stage-plotiphar - Raspberry Pi 5 (CM5 Lite) signage kiosk (aarch64-linux)
+        # -----------------------------------------------------------------------------
+        stage-plotiphar = nixpkgs.lib.nixosSystem {
+          system = "aarch64-linux";
+
+          modules = [
+            nixos-raspberrypi.lib.inject-overlays
+
+            {
+              imports = with nixos-raspberrypi.nixosModules; [
+                raspberry-pi-5.base
+                raspberry-pi-5.display-vc4
+              ];
+            }
+
+            # Common configuration
+            ./common/system.nix
+            ./common/linux.nix
+
+            # Kiosk profile
+            ./profiles/kiosk.nix
+
+            # Host-specific configuration
+            ./hosts/stage-plotiphar/configuration.nix
+            ./hosts/stage-plotiphar/hardware-configuration.nix
+
+            # Custom modules (hardware, system, services)
+            ./modules
+
+            # External modules
+            nixos-vscode-server.nixosModules.default
+            agenix.nixosModules.default
+
+            # Home Manager
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.backupFileExtension = "backup";
+              home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
+            }
+          ];
+
+          specialArgs = {
+            inherit self nixpkgs nixpkgs-unstable nixos-raspberrypi;
           };
         };
       };
