@@ -1,13 +1,15 @@
 # Plymouth boot theme branded for the StagePlotiphar signage kiosks
-# (hosts/stage-plotiphar). Colors and the badge mark are pulled from the
-# live plotiphar.com navbar (teal #0d9488 -> #2dd4bf badge gradient, near-black
-# #07090f background) rather than checked-in binary assets: box.png is
-# rendered from generate-box.py at build time so the theme stays reviewable
-# as plain code.
+# (hosts/stage-plotiphar). Colors, the badge mark, and the wordmark are
+# pulled from the live plotiphar.com navbar (teal #0d9488 -> #2dd4bf badge
+# gradient, near-black #07090f background, GeistSans wordmark — Inter is
+# used here as the closest match available in nixpkgs) rather than
+# checked-in binary assets: box.png is rendered from generate-box.py at
+# build time so the theme stays reviewable as plain code.
 {
   lib,
   stdenvNoCC,
   python3,
+  inter,
 }:
 
 stdenvNoCC.mkDerivation {
@@ -27,7 +29,7 @@ stdenvNoCC.mkDerivation {
     themeDir=$out/share/plymouth/themes/plotiphar
     mkdir -p "$themeDir"
 
-    python3 generate-box.py "$themeDir/box.png"
+    python3 generate-box.py "$themeDir/box.png" "${inter}/share/fonts/truetype/InterVariable.ttf"
     sed "s|@imageDir@|$themeDir|" plotiphar.plymouth.in > "$themeDir/plotiphar.plymouth"
 
     runHook postInstall

@@ -1,28 +1,40 @@
 #!/usr/bin/env python3
-"""Renders box.png: the StagePlotiphar badge mark shown on the boot splash.
+"""Renders box.png: the StagePlotiphar logo lockup shown on the boot splash.
 
 Recreates the plotiphar.com navbar mark (a teal rounded-square badge holding
-a ringed dot, evoking a stage-plot floor marker) at boot-splash resolution.
-Colors are sampled from the live site's computed styles:
-  badge gradient  #0d9488 -> #2dd4bf (135deg)
-  dot/ring        white, 90%/40% opacity
+a ringed dot, evoking a stage-plot floor marker) plus the "Stage"/"Plotiphar"
+wordmark, stacked for a centered splash-screen logo. Colors and the font
+weight are sampled from the live site's computed styles:
+  badge gradient   #0d9488 -> #2dd4bf (135deg)
+  dot/ring         white, 90%/40% opacity
+  wordmark         "Stage" white, "Plotiphar" #14b8a6, Inter (site uses
+                    GeistSans; Inter is the closest match available in
+                    nixpkgs) at variable weight 700
 """
 
 import sys
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 SUPERSAMPLE = 4
-SIZE = 256 * SUPERSAMPLE
 
-BADGE_MARGIN = 20 * SUPERSAMPLE
-BADGE_RADIUS = 62 * SUPERSAMPLE
+CANVAS_W = 520
+CANVAS_H = 300
+
+BADGE_SIZE = 176
+BADGE_TOP = 6
+BADGE_RADIUS = 44
 
 TEAL_DARK = (0x0D, 0x94, 0x88)
 TEAL_LIGHT = (0x2D, 0xD4, 0xBF)
+TEAL_ACCENT = (0x14, 0xB8, 0xA6)
+WHITE = (0xFF, 0xFF, 0xFF)
 
-DOT_RADIUS = 30 * SUPERSAMPLE
-RING_RADIUS = 54 * SUPERSAMPLE
-RING_WIDTH = 9 * SUPERSAMPLE
+DOT_RADIUS = 24
+RING_RADIUS = 43
+RING_WIDTH = 7
+
+WORDMARK_GAP = 26
+WORDMARK_SIZE = 46
 
 
 def diagonal_gradient(size, start, end):
@@ -38,36 +50,70 @@ def diagonal_gradient(size, start, end):
     return gradient
 
 
-def main(out_path):
-    canvas = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+def draw_badge(canvas, top_left):
+    size = BADGE_SIZE * SUPERSAMPLE
+    x0, y0 = top_left
 
-    badge_box = (BADGE_MARGIN, BADGE_MARGIN, SIZE - BADGE_MARGIN, SIZE - BADGE_MARGIN)
-    badge_size = badge_box[2] - badge_box[0]
+    mask = Image.new("L", (size, size), 0)
+    ImageDraw.Draw(mask).rounded_rectangle(
+        (0, 0, size - 1, size - 1), radius=BADGE_RADIUS * SUPERSAMPLE, fill=255
+    )
 
-    mask = Image.new("L", (SIZE, SIZE), 0)
-    ImageDraw.Draw(mask).rounded_rectangle(badge_box, radius=BADGE_RADIUS, fill=255)
+    gradient = diagonal_gradient(size, TEAL_DARK, TEAL_LIGHT).convert("RGBA")
+    badge = Image.composite(gradient, Image.new("RGBA", (size, size), (0, 0, 0, 0)), mask)
 
-    gradient = diagonal_gradient(badge_size, TEAL_DARK, TEAL_LIGHT)
-    gradient_full = Image.new("RGB", (SIZE, SIZE))
-    gradient_full.paste(gradient, (badge_box[0], badge_box[1]))
+    draw = ImageDraw.Draw(badge)
+    cx = cy = size // 2
+    ring_r = RING_RADIUS * SUPERSAMPLE
+    dot_r = DOT_RADIUS * SUPERSAMPLE
+    draw.ellipse(
+        (cx - ring_r, cy - ring_r, cx + ring_r, cy + ring_r),
+        outline=(*WHITE, round(255 * 0.4)),
+        width=RING_WIDTH * SUPERSAMPLE,
+    )
+    draw.ellipse(
+        (cx - dot_r, cy - dot_r, cx + dot_r, cy + dot_r),
+        fill=(*WHITE, round(255 * 0.9)),
+    )
 
-    canvas = Image.composite(gradient_full.convert("RGBA"), canvas, mask)
+    canvas.alpha_composite(badge, (x0, y0))
 
-    cx = cy = SIZE // 2
+
+def draw_wordmark(canvas, font_path, baseline_top):
+    font = ImageFont.truetype(font_path, WORDMARK_SIZE * SUPERSAMPLE)
+    if "Weight" in {axis["name"].decode() for axis in font.get_variation_axes()}:
+        font.set_variation_by_axes([700])
+
     draw = ImageDraw.Draw(canvas)
-    draw.ellipse(
-        (cx - RING_RADIUS, cy - RING_RADIUS, cx + RING_RADIUS, cy + RING_RADIUS),
-        outline=(255, 255, 255, round(255 * 0.4)),
-        width=RING_WIDTH,
-    )
-    draw.ellipse(
-        (cx - DOT_RADIUS, cy - DOT_RADIUS, cx + DOT_RADIUS, cy + DOT_RADIUS),
-        fill=(255, 255, 255, round(255 * 0.9)),
+
+    stage_bbox = draw.textbbox((0, 0), "Stage", font=font)
+    plotiphar_bbox = draw.textbbox((0, 0), "Plotiphar", font=font)
+    stage_w = stage_bbox[2] - stage_bbox[0]
+    total_w = stage_w + (plotiphar_bbox[2] - plotiphar_bbox[0])
+
+    x = (canvas.width - total_w) // 2
+    y = baseline_top * SUPERSAMPLE
+
+    draw.text((x - stage_bbox[0], y), "Stage", font=font, fill=(*WHITE, 255))
+    draw.text(
+        (x + stage_w - plotiphar_bbox[0], y),
+        "Plotiphar",
+        font=font,
+        fill=(*TEAL_ACCENT, 255),
     )
 
-    final = canvas.resize((SIZE // SUPERSAMPLE, SIZE // SUPERSAMPLE), Image.LANCZOS)
+
+def main(out_path, font_path):
+    w, h = CANVAS_W * SUPERSAMPLE, CANVAS_H * SUPERSAMPLE
+    canvas = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+
+    badge_x = (CANVAS_W - BADGE_SIZE) // 2 * SUPERSAMPLE
+    draw_badge(canvas, (badge_x, BADGE_TOP * SUPERSAMPLE))
+    draw_wordmark(canvas, font_path, BADGE_TOP + BADGE_SIZE + WORDMARK_GAP)
+
+    final = canvas.resize((CANVAS_W, CANVAS_H), Image.LANCZOS)
     final.save(out_path)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(sys.argv[1], sys.argv[2])
