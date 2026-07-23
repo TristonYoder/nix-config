@@ -117,6 +117,7 @@ let
 
     STATE_DIR = "${cfg.stateDir}"
 
+
     def find_pwr_button():
         for path in list_devices():
             dev = InputDevice(path)
@@ -124,12 +125,16 @@ let
                 return dev
         return None
 
+
     def reset_kiosk():
         print("kiosk-reset-button: resetting all kiosk profiles")
         for profile_dir in glob.glob(f"{STATE_DIR}/profile-*"):
             subprocess.run(["rm", "-rf", f"{profile_dir}/Default"], check=False)
             subprocess.run(["rm", "-f", f"{profile_dir}/current-url"], check=False)
-        subprocess.run(["systemctl", "restart", "kiosk-launcher.service"], check=False)
+        subprocess.run(
+            ["systemctl", "restart", "kiosk-launcher.service"], check=False
+        )
+
 
     def main():
         dev = None
@@ -145,6 +150,7 @@ let
                 if key.keycode in ("KEY_POWER",) and key.keystate == key.key_down:
                     reset_kiosk()
                     time.sleep(3)  # debounce
+
 
     if __name__ == "__main__":
         main()
@@ -179,14 +185,22 @@ in
       extraGroups = [ "video" "input" "audio" "render" ];
     };
 
+    # root:root + sticky-bit-world-writable (same pattern as /tmp) rather than
+    # owned by cfg.user — avoids a boot-time race where systemd-tmpfiles-setup
+    # runs before the kiosk user is registered, which silently drops a rule
+    # that names an as-yet-unresolvable owner and leaves stateDir missing.
     systemd.tmpfiles.rules = [
-      "d ${cfg.stateDir} 0755 ${cfg.user} ${cfg.user} -"
+      "d ${cfg.stateDir} 1777 root root -"
     ];
 
     systemd.services.kiosk-launcher = {
       description = "Per-output Chromium kiosk launcher";
       after = [ "display-manager.service" ];
       wantedBy = [ "multi-user.target" ];
+      # Bare `grep`/`awk` calls in launcherScript otherwise fail with
+      # "command not found" — systemd units don't inherit an interactive
+      # shell's PATH, so external tools need to be listed explicitly.
+      path = with pkgs; [ xrandr gnugrep gawk coreutils chromium ];
       serviceConfig = {
         Type = "simple";
         User = cfg.user;
@@ -200,6 +214,7 @@ in
       description = "Persist each kiosk instance's assigned screen URL across reboots";
       after = [ "kiosk-launcher.service" ];
       wants = [ "kiosk-launcher.service" ];
+      path = with pkgs; [ curl jq coreutils ];
       serviceConfig = {
         Type = "simple";
         User = cfg.user;
@@ -213,6 +228,8 @@ in
     systemd.services.kiosk-reset-button = {
       description = "Reset all kiosk instances to the pairing URL on power-button press";
       wantedBy = [ "multi-user.target" ];
+      # resetButtonScript shells out to bare `rm`/`systemctl`.
+      path = with pkgs; [ coreutils systemd ];
       serviceConfig = {
         Type = "simple";
         ExecStart = "${pythonWithEvdev}/bin/python3 ${resetButtonScript}";

@@ -396,6 +396,40 @@
         };
 
         # -----------------------------------------------------------------------------
+        # stage-plotiphar-vm - Parallels-bootable live ISO of the same kiosk config,
+        # for testing before deploying to the real Pi 5. See hosts/stage-plotiphar-vm
+        # for what this can/can't validate. Build with:
+        # nix build .#nixosConfigurations.stage-plotiphar-vm.config.system.build.isoImage
+        # -----------------------------------------------------------------------------
+        stage-plotiphar-vm = nixpkgs.lib.nixosSystem {
+          system = "aarch64-linux";
+
+          modules = [
+            # Common configuration
+            ./common/system.nix
+            ./common/linux.nix
+
+            # Kiosk profile — same one the real Pi 5 host uses
+            ./profiles/kiosk.nix
+
+            # Host-specific configuration
+            ./hosts/stage-plotiphar-vm/configuration.nix
+
+            # Custom modules (hardware, system, services)
+            ./modules
+
+            # ./modules/secrets.nix declares `age.secrets.*` unconditionally,
+            # so the agenix module needs to exist even though this throwaway
+            # VM never actually decrypts anything.
+            agenix.nixosModules.default
+          ];
+
+          specialArgs = {
+            inherit self nixpkgs nixpkgs-unstable;
+          };
+        };
+
+        # -----------------------------------------------------------------------------
         # stage-plotiphar-installer - one-shot Pi 5 SD/NVMe image used only to get
         # NixOS onto the box; not a host you rebuild day-to-day. Bakes in Triston's
         # SSH keys so it's reachable the instant it boots (no monitor/keyboard).

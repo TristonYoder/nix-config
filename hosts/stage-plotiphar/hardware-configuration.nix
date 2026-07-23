@@ -1,11 +1,8 @@
-# PLACEHOLDER — this host has not been physically installed yet.
-#
-# Replace this file with the real output of `nixos-generate-config
-# --show-hardware-config` once booted from the nixos-raspberrypi rpi5
-# installer image (see hosts/stage-plotiphar/README.md). Kept buildable in
-# the meantime by assuming the partition labels below — use them when
-# partitioning the NVMe during the physical install and this file will
-# already be correct; if you partition differently, regenerate instead.
+# Real hardware config for stage-plotiphar, physically installed to NVMe.
+# btrfs with @/@nix/@snapshots subvolumes — same convention as
+# tristons-workstation. Partitioning done manually during install (see
+# hosts/stage-plotiphar/README.md); labels below must match what was
+# actually created (FIRMWARE / NIXOS_ROOT).
 
 { config, lib, pkgs, modulesPath, ... }:
 
@@ -19,7 +16,14 @@
 
   fileSystems."/" = {
     device = "/dev/disk/by-label/NIXOS_ROOT";
-    fsType = "ext4";
+    fsType = "btrfs";
+    options = [ "subvol=@" "compress=zstd" "noatime" ];
+  };
+
+  fileSystems."/nix" = {
+    device = "/dev/disk/by-label/NIXOS_ROOT";
+    fsType = "btrfs";
+    options = [ "subvol=@nix" "compress=zstd" "noatime" ];
   };
 
   fileSystems."/boot/firmware" = {

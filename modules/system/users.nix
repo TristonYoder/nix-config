@@ -98,6 +98,16 @@ in
 
     security.pam.services.sudo.sshAgentAuth = mkIf cfg.enableSshAgentSudo true;
 
+    # sudo's `env_reset` strips SSH_AUTH_SOCK before PAM auth even runs, so
+    # pam_ssh_agent_auth never sees a forwarded agent to check against —
+    # `sudo -A`/agent forwarding silently falls through to "a password is
+    # required" with no indication the agent was ever consulted. Without
+    # this, enableSshAgentSudo only works for local console logins, not the
+    # remote-SSH-administration case it's actually meant for.
+    security.sudo.extraConfig = mkIf cfg.enableSshAgentSudo ''
+      Defaults env_keep += "SSH_AUTH_SOCK"
+    '';
+
     users.users.${cfg.mainUser.name} = {
       isNormalUser = true;
       uid = cfg.mainUser.uid;

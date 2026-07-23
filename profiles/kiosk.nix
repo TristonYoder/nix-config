@@ -9,8 +9,10 @@
   # HARDWARE MODULES
   # =============================================================================
 
-  # Pi 5 firmware/bootloader owns /boot/firmware — not systemd-boot/EFI.
-  modules.hardware.boot.enable = lib.mkForce false;
+  # Default: normal systemd-boot/EFI. Kiosk hosts whose bootloader is owned by
+  # something else (e.g. the Pi 5's own firmware/config.txt boot chain) override
+  # this to false in their own host config — see hosts/stage-plotiphar.
+  modules.hardware.boot.enable = lib.mkDefault true;
 
   # =============================================================================
   # SYSTEM MODULES
