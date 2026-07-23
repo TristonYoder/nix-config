@@ -1,0 +1,167 @@
+# Self-hosted single-subscriber podcast feed for the daily brief audio
+# script. A `daily-brief-podcast publish` CLI synthesizes speech locally via
+# Piper, encodes it to mp3, and regenerates an RSS 2.0 feed with an iTunes
+# namespace so `iopod` (see ipod-sync.nix) can subscribe to it exactly like
+# any other podcast. Caddy serves the episode directory as static files —
+# internal-only, since the brief contains personal/ministry content.
+{ config, lib, pkgs, ... }:
+
+with lib;
+let
+  cfg = config.modules.services.media.dailyBriefPodcast;
+
+  voiceModel = pkgs.fetchurl {
+    url = "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/ryan/high/en_US-ryan-high.onnx";
+    hash = "sha256-s5kNdgbhg+yNv7pwpGBwdPFi3hoMQS4BgNH/YLsVTso=";
+  };
+  voiceConfig = pkgs.fetchurl {
+    url = "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/ryan/high/en_US-ryan-high.onnx.json";
+    hash = "sha256-xtO5jwgxXLS+vw1J1Q/E/0kbUDxkuUDNPVyihUO0gBE=";
+  };
+
+  publishScript = pkgs.writeShellApplication {
+    name = "daily-brief-podcast";
+    runtimeInputs = [ pkgs.piper-tts pkgs.ffmpeg pkgs.coreutils pkgs.gnused pkgs.findutils ];
+    text = ''
+      usage() {
+        echo "Usage: daily-brief-podcast publish --title TITLE --text-file PATH [--date YYYY-MM-DD]" >&2
+        exit 1
+      }
+
+      [ "''${1:-}" = "publish" ] || usage
+      shift
+
+      TITLE=""
+      TEXT_FILE=""
+      EP_DATE="$(date +%F)"
+
+      while [ $# -gt 0 ]; do
+        case "$1" in
+          --title) TITLE="$2"; shift 2 ;;
+          --text-file) TEXT_FILE="$2"; shift 2 ;;
+          --date) EP_DATE="$2"; shift 2 ;;
+          *) usage ;;
+        esac
+      done
+
+      [ -n "$TITLE" ] && [ -n "$TEXT_FILE" ] || usage
+      [ -f "$TEXT_FILE" ] || { echo "text file not found: $TEXT_FILE" >&2; exit 1; }
+
+      OUT_DIR="${cfg.dataDir}"
+      mkdir -p "$OUT_DIR"
+
+      SLUG="daily-brief-$EP_DATE"
+      WAV="$OUT_DIR/$SLUG.wav"
+      MP3="$OUT_DIR/$SLUG.mp3"
+
+      piper --model ${voiceModel} --config ${voiceConfig} --output_file "$WAV" < "$TEXT_FILE"
+      ffmpeg -y -loglevel error -i "$WAV" -codec:a libmp3lame -qscale:a 4 "$MP3"
+      rm -f "$WAV"
+
+      # Prune to the newest N episodes
+      # shellcheck disable=SC2012
+      ls -1t "$OUT_DIR"/daily-brief-*.mp3 | tail -n +$((${toString cfg.keepEpisodes} + 1)) | while read -r old; do
+        rm -f "$old"
+      done
+
+      FEED="$OUT_DIR/feed.xml"
+      {
+        echo '<?xml version="1.0" encoding="UTF-8"?>'
+        echo '<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">'
+        echo '<channel>'
+        echo "<title>${cfg.feedTitle}</title>"
+        echo "<link>https://${cfg.domain}/</link>"
+        echo "<description>${cfg.feedDescription}</description>"
+        echo '<language>en-us</language>'
+        echo '<itunes:explicit>false</itunes:explicit>'
+
+        # shellcheck disable=SC2012
+        ls -1t "$OUT_DIR"/daily-brief-*.mp3 | while read -r ep; do
+          BASENAME="$(basename "$ep")"
+          EP_TITLE="$BASENAME"
+          SIZE="$(stat -c %s "$ep")"
+          PUBDATE="$(date -R -r "$ep")"
+          echo '<item>'
+          echo "<title>$EP_TITLE</title>"
+          echo "<guid>https://${cfg.domain}/$BASENAME</guid>"
+          echo "<pubDate>$PUBDATE</pubDate>"
+          echo "<enclosure url=\"https://${cfg.domain}/$BASENAME\" length=\"$SIZE\" type=\"audio/mpeg\"/>"
+          echo '</item>'
+        done
+
+        echo '</channel>'
+        echo '</rss>'
+      } > "$FEED.tmp"
+      mv "$FEED.tmp" "$FEED"
+
+      echo "Published $MP3"
+      echo "Feed: $OUT_DIR/feed.xml"
+
+      if [ "''${DAILY_BRIEF_PODCAST_SKIP_RESYNC:-}" != "1" ]; then
+        systemctl start ipod-sync.service || echo "ipod-sync.service did not run (iPod likely not connected) -- it will pick this episode up on next connect via iopod-prepare" >&2
+      fi
+    '';
+  };
+in
+{
+  options.modules.services.media.dailyBriefPodcast = {
+    enable = mkEnableOption "Self-hosted podcast feed for the daily brief audio script";
+
+    domain = mkOption {
+      type = types.str;
+      default = "brief.${config.networking.domain}";
+      description = "FQDN the feed and episodes are served at.";
+    };
+
+    dataDir = mkOption {
+      type = types.str;
+      default = "/data/media/podcasts/daily-brief";
+      description = "Directory holding episode mp3s and feed.xml.";
+    };
+
+    owner = mkOption {
+      type = types.str;
+      description = "User that owns dataDir and runs the publish script.";
+    };
+
+    keepEpisodes = mkOption {
+      type = types.int;
+      default = 3;
+      description = "Number of most-recent episodes to retain; older ones are pruned on publish.";
+    };
+
+    feedTitle = mkOption {
+      type = types.str;
+      default = "Daily Brief";
+      description = "Podcast feed title.";
+    };
+
+    feedDescription = mkOption {
+      type = types.str;
+      default = "A daily audio rundown of the day ahead.";
+      description = "Podcast feed description.";
+    };
+  };
+
+  config = mkIf cfg.enable {
+    environment.systemPackages = [ publishScript ];
+
+    systemd.tmpfiles.rules = [
+      "d ${cfg.dataDir} 0755 ${cfg.owner} ${cfg.owner} -"
+    ];
+
+    modules.services.vHosts.hosts."brief" = {
+      virtualHost = cfg.domain;
+      rawConfig = true;
+      public = false;
+      monitor = false;
+      shortcut = false;
+      displayName = "Daily Brief";
+      category = "productivity";
+      extraConfig = ''
+        root * ${cfg.dataDir}
+        file_server
+      '';
+    };
+  };
+}

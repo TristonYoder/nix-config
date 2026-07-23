@@ -309,6 +309,11 @@ in
     autoMount = true;  # headless server — no udisks desktop session
   };
 
+  modules.services.media.dailyBriefPodcast = {
+    enable = true;
+    owner = "tristonyoder";
+  };
+
   modules.services.storage.mp3PlayerSync = {
     enable = true;
     uuid = "EC95-4FBB";
