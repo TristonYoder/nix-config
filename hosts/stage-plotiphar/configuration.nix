@@ -27,16 +27,29 @@
 
   # Boot splash — branded for plotiphar.com rather than the generic theme
   # profiles/kiosk.nix defaults to. See pkgs/plymouth-plotiphar-theme.
+  #
+  # extraConfig is appended *inside* the [Daemon] section the NixOS module
+  # already generates from `theme`/`showDelay` — it must not re-open
+  # "[Daemon]" itself (that produced a duplicate-header plymouthd.conf,
+  # harmless to the ini parser but confusing to read). Only DeviceTimeout
+  # has no dedicated option, so that's all that belongs here.
   boot.plymouth = {
     theme = "plotiphar";
     themePackages = [ (pkgs.callPackage ../../pkgs/plymouth-plotiphar-theme { }) ];
-    extraConfig = ''
-      [Daemon]
-      Theme=plotiphar
-      ShowDelay=0
-      DeviceTimeout=5
-    '';
+    extraConfig = "DeviceTimeout=5";
   };
+
+  # vc4 (the real KMS driver for the Pi 5's HDMI outputs) otherwise only
+  # loads in stage 2, ~4s after Plymouth already started against the
+  # generic simpledrm device from initrd — confirmed via `journalctl -b`:
+  # "Initialized simpledrm ... minor 0" precedes "Show Plymouth Boot
+  # Screen" by well under a second, while "Initialized vc4 ... minor 1"
+  # and the per-connector HDMI bind messages don't finish until ~4s later,
+  # during switch-root. Plymouth doesn't hand off from one DRM device to
+  # another mid-boot, so it keeps drawing to simpledrm while vc4 takes over
+  # the actual scanout — net effect, the splash never appears on screen.
+  # Loading vc4 in the initrd itself avoids the handoff entirely.
+  boot.initrd.availableKernelModules = [ "vc4" ];
 
   # btrfs recommends periodic scrubs to catch bitrot early; unlike
   # tristons-workstation this box has no admin routinely poking at it, so

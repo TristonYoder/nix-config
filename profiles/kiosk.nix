@@ -54,9 +54,13 @@
 
   # Belt-and-suspenders: some drivers ignore serverFlagsSection, so also
   # disable the screensaver/DPMS explicitly once the kiosk session starts.
+  # Also hide the (unused, no-mouse-attached-in-practice) cursor immediately
+  # rather than waiting on unclutter's normal idle timeout — a signage
+  # display should never show a pointer at all.
   services.xserver.displayManager.sessionCommands = ''
     ${pkgs.xset}/bin/xset s off
     ${pkgs.xset}/bin/xset -dpms
+    ${pkgs.unclutter-xfixes}/bin/unclutter --timeout 0 --jitter 0 --start-hidden &
   '';
 
   services.displayManager.autoLogin = {
