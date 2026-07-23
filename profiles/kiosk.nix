@@ -50,6 +50,17 @@
       Option "SuspendTime" "0"
       Option "OffTime" "0"
     '';
+    # vc4's multi-CRTC/multi-plane setup (see stage-plotiphar's dual-HDMI
+    # hardware) trips up the generic modesetting driver's async page-flip
+    # path — confirmed via /var/log/X.0.log spamming
+    # "Present-flip: queue flip during flip on CRTC 2 failed: Invalid
+    # argument" continuously, which means the display never advances past
+    # whatever frame was on screen when X started (looks like a frozen/stuck
+    # console). Disabling kernel page-flipping falls back to a copy-based
+    # update path that isn't affected by this CRTC quirk.
+    deviceSection = ''
+      Option "PageFlip" "false"
+    '';
   };
 
   # Belt-and-suspenders: some drivers ignore serverFlagsSection, so also
