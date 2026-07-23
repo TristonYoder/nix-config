@@ -52,14 +52,17 @@
   # Boot splash — same theme as profiles/desktop.nix. A kiosk sits on a wall
   # showing its boot process to whoever's nearby otherwise; worth covering.
   boot.plymouth = {
-    enable = true;
-    theme = "colorful";
-    themePackages = with pkgs; [
+    enable = lib.mkDefault true;
+    # Generic default for this shared profile — kiosk hosts with their own
+    # brand identity (e.g. stage-plotiphar) override theme/themePackages in
+    # their host config rather than changing this default for everyone.
+    theme = lib.mkDefault "colorful";
+    themePackages = lib.mkDefault (with pkgs; [
       (adi1090x-plymouth-themes.override {
         selected_themes = [ "colorful" ];
       })
-    ];
-    extraConfig = ''
+    ]);
+    extraConfig = lib.mkDefault ''
       [Daemon]
       Theme=colorful
       ShowDelay=0

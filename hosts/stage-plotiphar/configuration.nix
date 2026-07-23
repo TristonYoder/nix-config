@@ -25,6 +25,19 @@
   # Only one of the two micro-HDMI ports has a monitor attached today;
   # kiosk-launcher detects connected outputs at boot rather than assuming both.
 
+  # Boot splash — branded for plotiphar.com rather than the generic theme
+  # profiles/kiosk.nix defaults to. See pkgs/plymouth-plotiphar-theme.
+  boot.plymouth = {
+    theme = "plotiphar";
+    themePackages = [ (pkgs.callPackage ../../pkgs/plymouth-plotiphar-theme { }) ];
+    extraConfig = ''
+      [Daemon]
+      Theme=plotiphar
+      ShowDelay=0
+      DeviceTimeout=5
+    '';
+  };
+
   # btrfs recommends periodic scrubs to catch bitrot early; unlike
   # tristons-workstation this box has no admin routinely poking at it, so
   # automate it rather than relying on someone remembering.

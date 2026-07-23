@@ -1,0 +1,31 @@
+[Plymouth Theme]
+Name=StagePlotiphar
+Description=Boot splash branded for StagePlotiphar signage kiosks (plotiphar.com)
+ModuleName=two-step
+
+[two-step]
+ImageDir=@imageDir@
+BackgroundStartColor=0x07090f
+BackgroundEndColor=0x07090f
+HorizontalAlignment=0.5
+VerticalAlignment=0.46
+DialogHorizontalAlignment=0.5
+DialogVerticalAlignment=0.46
+ProgressBarHorizontalAlignment=0.5
+ProgressBarVerticalAlignment=0.68
+ProgressBarWidth=360
+ProgressBarHeight=6
+ProgressBarBackgroundColor=0x1c2430
+ProgressBarForegroundColor=0x2dd4bf
+
+[boot-up]
+UseProgressBar=true
+UseAnimation=false
+
+[shutdown]
+UseProgressBar=false
+UseAnimation=false
+
+[reboot]
+UseProgressBar=false
+UseAnimation=false
