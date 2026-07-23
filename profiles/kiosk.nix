@@ -90,11 +90,21 @@
   boot.kernelParams = [
     "splash"
     # A kiosk display should never show boot text, even when Plymouth loses
-    # the race for the console (see stage-plotiphar's fbcon/vc4 timing notes)
-    # — a black or blank screen reads far better than scrolling boot log.
-    "systemd.show_status=auto"
+    # the race for the console (see stage-plotiphar's fbcon/vc4 timing notes).
+    # "auto" tries to detect whether Plymouth "owns" the screen and still
+    # printed status text here — "false" hides it unconditionally instead.
+    # Both the plain and rd.-prefixed (initrd-scoped) forms are needed;
+    # they're independent settings for the two systemd instances, and this
+    # host's own base modules already contribute an rd.systemd.show_status
+    # of their own earlier in the list, so ours needs to come after to win
+    # (kernel cmdline is last-value-wins for duplicate keys).
+    "systemd.show_status=false"
+    "rd.systemd.show_status=false"
     "vt.global_cursor_default=0"
   ];
+  # NOTE: common/linux.nix sets this to 3 as a plain (non-mkDefault) value,
+  # which wins over this — kept as documentation of intent, but see the
+  # show_status params above for what's actually suppressing console text.
   boot.consoleLogLevel = lib.mkDefault 0;
   # No login prompt should ever be visible on the signage output either —
   # SSH remains available regardless, and tty2+ still work for physical
