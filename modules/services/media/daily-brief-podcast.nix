@@ -10,14 +10,25 @@ with lib;
 let
   cfg = config.modules.services.media.dailyBriefPodcast;
 
-  voiceModel = pkgs.fetchurl {
+  voiceModelRaw = pkgs.fetchurl {
     url = "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/ryan/high/en_US-ryan-high.onnx";
     hash = "sha256-s5kNdgbhg+yNv7pwpGBwdPFi3hoMQS4BgNH/YLsVTso=";
   };
-  voiceConfig = pkgs.fetchurl {
+  voiceConfigRaw = pkgs.fetchurl {
     url = "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/ryan/high/en_US-ryan-high.onnx.json";
     hash = "sha256-xtO5jwgxXLS+vw1J1Q/E/0kbUDxkuUDNPVyihUO0gBE=";
   };
+
+  # piper's --config flag is parsed but never forwarded to PiperVoice.load()
+  # (it always looks for "<model_path>.json"), so the config must sit next
+  # to the model on disk under a matching name rather than being passed
+  # explicitly on the command line.
+  voiceDir = pkgs.runCommand "piper-voice-en_US-ryan-high" { } ''
+    mkdir -p "$out"
+    ln -s ${voiceModelRaw} "$out/en_US-ryan-high.onnx"
+    ln -s ${voiceConfigRaw} "$out/en_US-ryan-high.onnx.json"
+  '';
+  voiceModel = "${voiceDir}/en_US-ryan-high.onnx";
 
   publishScript = pkgs.writeShellApplication {
     name = "daily-brief-podcast";
@@ -54,7 +65,7 @@ let
       WAV="$OUT_DIR/$SLUG.wav"
       MP3="$OUT_DIR/$SLUG.mp3"
 
-      piper --model ${voiceModel} --config ${voiceConfig} --output_file "$WAV" < "$TEXT_FILE"
+      piper --model ${voiceModel} --output_file "$WAV" < "$TEXT_FILE"
       ffmpeg -y -loglevel error -i "$WAV" -codec:a libmp3lame -qscale:a 4 "$MP3"
       rm -f "$WAV"
 
