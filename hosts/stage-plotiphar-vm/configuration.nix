@@ -72,6 +72,6 @@
   boot.plymouth = {
     theme = "plotiphar";
     themePackages = [ (pkgs.callPackage ../../pkgs/plymouth-plotiphar-theme { }) ];
-    extraConfig = "DeviceTimeout=5";
+    extraConfig = "DeviceTimeout=15";
   };
 }

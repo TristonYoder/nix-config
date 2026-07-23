@@ -36,7 +36,7 @@
   boot.plymouth = {
     theme = "plotiphar";
     themePackages = [ (pkgs.callPackage ../../pkgs/plymouth-plotiphar-theme { }) ];
-    extraConfig = "DeviceTimeout=5";
+    extraConfig = "DeviceTimeout=15";
   };
 
   # vc4 (the real KMS driver for the Pi 5's HDMI outputs) otherwise only
