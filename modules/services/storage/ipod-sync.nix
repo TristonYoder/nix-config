@@ -101,7 +101,7 @@ in
             MOUNT="${cfg.mountPoint}"
 
             DEVICE=$(${pkgs.util-linux}/bin/lsblk -ndo NAME,VENDOR \
-              | ${pkgs.gnugrep}/bin/grep -i "apple" \
+              | { ${pkgs.gnugrep}/bin/grep -i "apple" || true; } \
               | ${pkgs.gawk}/bin/awk '{print "/dev/" $1}' \
               | head -1)
 
@@ -150,8 +150,12 @@ in
       };
     };
 
+    # Triggered on the block/disk uevent (not the raw USB device uevent) so that
+    # /dev/sdX already exists by the time the service runs. Triggering on the USB
+    # device add event instead races the kernel's SCSI probe: the service can start
+    # and run lsblk before the block device is enumerated, finding nothing.
     services.udev.extraRules = ''
-      ACTION=="add", SUBSYSTEM=="usb", ATTR{idVendor}=="05ac", ATTR{idProduct}=="12[0-9a-f][0-9a-f]", TAG+="systemd", ENV{SYSTEMD_WANTS}+="ipod-sync.service"
+      ACTION=="add", SUBSYSTEM=="block", ENV{DEVTYPE}=="disk", ENV{ID_VENDOR_ID}=="05ac", ENV{ID_MODEL_ID}=="12[0-9a-f][0-9a-f]", TAG+="systemd", ENV{SYSTEMD_WANTS}+="ipod-sync.service"
     '';
   };
 }
