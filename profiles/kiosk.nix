@@ -82,31 +82,14 @@
         selected_themes = [ "colorful" ];
       })
     ]);
-    # Appended *inside* the [Daemon] section the module already generates
-    # from theme/showDelay — must not re-open "[Daemon]" itself (see the
-    # stage-plotiphar override for the DeviceTimeout-mismatch this caused).
-    extraConfig = lib.mkDefault "DeviceTimeout=5";
+    extraConfig = lib.mkDefault ''
+      [Daemon]
+      Theme=colorful
+      ShowDelay=0
+      DeviceTimeout=5
+    '';
   };
-  boot.kernelParams = [
-    "splash"
-    # A kiosk display should never show boot text, even when Plymouth loses
-    # the race for the console (see stage-plotiphar's fbcon/vc4 timing notes)
-    # — a black or blank screen reads far better than scrolling boot log.
-    "systemd.show_status=auto"
-    "vt.global_cursor_default=0"
-  ];
-  boot.consoleLogLevel = lib.mkDefault 0;
-  # No login prompt should ever be visible on the signage output either —
-  # SSH remains available regardless, and tty2+ still work for physical
-  # debugging with a keyboard attached.
-  systemd.services."getty@tty1".enable = lib.mkDefault false;
-
-  # Plymouth's default trigger (multi-user.target) fires well before lightdm
-  # has actually started Xorg painting — on stage-plotiphar this left a gap
-  # where the splash quit and boot/console text was visible again before X
-  # took over. Ordering after display-manager.service narrows that gap.
-  systemd.services.plymouth-quit.after = [ "display-manager.service" ];
-  systemd.services.plymouth-quit-wait.after = [ "display-manager.service" ];
+  boot.kernelParams = [ "splash" ];
 
   # =============================================================================
   # KIOSK BROWSER
