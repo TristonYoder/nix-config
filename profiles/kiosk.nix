@@ -41,7 +41,23 @@
     videoDrivers = [ "modesetting" ];
     displayManager.lightdm.enable = true;
     windowManager.openbox.enable = true;
+    # A kiosk display is meant to always be showing something — disable DPMS
+    # power-down and the blank-screen screensaver at the X server level, not
+    # just in the session, so nothing (greeter included) can blank it.
+    serverFlagsSection = ''
+      Option "BlankTime" "0"
+      Option "StandbyTime" "0"
+      Option "SuspendTime" "0"
+      Option "OffTime" "0"
+    '';
   };
+
+  # Belt-and-suspenders: some drivers ignore serverFlagsSection, so also
+  # disable the screensaver/DPMS explicitly once the kiosk session starts.
+  services.xserver.displayManager.sessionCommands = ''
+    ${pkgs.xset}/bin/xset s off
+    ${pkgs.xset}/bin/xset -dpms
+  '';
 
   services.displayManager.autoLogin = {
     enable = true;
