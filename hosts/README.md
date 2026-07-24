@@ -45,6 +45,14 @@ Per-host NixOS and macOS configurations managed through this flake.
 - **Auto-Deploy:** ✅ GitHub Actions enabled
 - **Services:** Minimal desktop (KDE Plasma, development tools)
 
+#### installer (Barebones Tailscale/SSH Installer ISO)
+- **Profile:** none (`installation-cd-minimal.nix` base, no host-specific hardware)
+- **Architecture:** x86_64-linux (`installer`) and aarch64-linux (`installer-aarch64`)
+- **User:** root (key-only SSH, no password)
+- **Auto-Deploy:** ➖ Not a deployed host — build the ISO and boot it manually
+- **Purpose:** Generic live ISO for remote `nixos-install` — auto-joins the headscale tailnet on boot (QR code + login URL, no embedded authkey)
+- **Documentation:** [installer/README.md](installer/README.md)
+
 ### macOS Hosts
 
 #### tyoder-mbp (Triston's TPCC MacBook Pro - Work)
