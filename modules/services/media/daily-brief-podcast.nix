@@ -221,10 +221,14 @@ in
   config = mkIf cfg.enable {
     environment.systemPackages = [ publishScript watchScript ];
 
-    systemd.tmpfiles.rules = [
-      "d ${cfg.dataDir} 0755 ${cfg.owner} ${cfg.owner} -"
-      "d ${cfg.stateDir} 0755 ${cfg.owner} ${cfg.owner} -"
-      "d ${cfg.stateDir}/published 0755 ${cfg.owner} ${cfg.owner} -"
+    # owner's primary group isn't necessarily a group of the same name (e.g.
+    # tristonyoder's is "users", gid 100) — derive it rather than assume.
+    systemd.tmpfiles.rules = let
+      ownerGroup = config.users.users.${cfg.owner}.group;
+    in [
+      "d ${cfg.dataDir} 0755 ${cfg.owner} ${ownerGroup} -"
+      "d ${cfg.stateDir} 0755 ${cfg.owner} ${ownerGroup} -"
+      "d ${cfg.stateDir}/published 0755 ${cfg.owner} ${ownerGroup} -"
     ];
 
     systemd.services.daily-brief-podcast-watch = {
