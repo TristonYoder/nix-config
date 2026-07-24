@@ -17,6 +17,11 @@
 #   ssh root@<hostname>.<tailnet-domain>
 { lib, pkgs, modulesPath, ... }:
 let
+  # Cached here so it survives past the scrolling boot log — printed again
+  # by environment.interactiveShellInit below every time a shell/terminal
+  # starts, not just once during the systemd unit's boot-time output.
+  qrCacheFile = "/run/tailscale-qr.txt";
+
   tailscaleUp = pkgs.writeShellScript "tailscale-autoconnect" ''
     set -eu
 
@@ -41,10 +46,12 @@ let
     done
 
     if [ -n "$url" ]; then
-      echo ""
-      echo "Scan to join the tailnet: $url"
-      echo ""
-      ${lib.getExe pkgs.qrencode} -t ANSIUTF8 "$url"
+      {
+        echo ""
+        echo "Scan to join the tailnet: $url"
+        echo ""
+        ${lib.getExe pkgs.qrencode} -t ANSIUTF8 "$url"
+      } | tee ${qrCacheFile}
     fi
 
     wait "$tsPid"
@@ -74,6 +81,14 @@ in
   ];
 
   services.tailscale.enable = true;
+
+  # Re-print the cached QR code/URL (see qrCacheFile above) whenever a shell
+  # starts — the autologin console shell on boot, or reconnecting to tty1 —
+  # so it's still there once the terminal has settled, not just a one-shot
+  # flash buried in the scrolling boot log.
+  environment.interactiveShellInit = ''
+    cat ${qrCacheFile} 2>/dev/null || true
+  '';
 
   # No authkey embedded (public repo). tailscale-autoconnect prints the
   # headscale login URL (and a QR code) to the console on boot — open it,
