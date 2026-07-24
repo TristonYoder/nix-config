@@ -318,6 +318,24 @@
           };
         };
 
+        # Same installer config, built for aarch64 (Raspberry Pi / ARM boards).
+        # Building this requires an aarch64-linux builder — either a native ARM
+        # machine or `boot.binfmt.emulatedSystems = [ "aarch64-linux" ];` on an
+        # x86_64 builder host. Neither is currently set up on any host in this
+        # fleet (david included) — building this output will fail with
+        # "don't know how to build for system aarch64-linux" until one is.
+        installer-aarch64 = nixpkgs.lib.nixosSystem {
+          system = "aarch64-linux";
+
+          modules = [
+            ./hosts/installer/configuration.nix
+          ];
+
+          specialArgs = {
+            inherit nixpkgs;
+          };
+        };
+
         # -----------------------------------------------------------------------------
         # pits - Pi in the Sky - Edge Server (Cloud VPS)
         # -----------------------------------------------------------------------------
