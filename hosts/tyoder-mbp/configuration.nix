@@ -25,5 +25,15 @@
 
   # Set primary user for system defaults
   system.primaryUser = "tyoder";
+
+  # =============================================================================
+  # LINUX BUILDER
+  # =============================================================================
+
+  # nix-darwin's built-in linux-builder VM. On Apple Silicon this builds
+  # aarch64-linux natively (no emulation) — needed to build the
+  # nixosConfigurations.installer-aarch64 ISO, which no other host in the
+  # fleet can currently build.
+  nix.linux-builder.enable = true;
 }
 
