@@ -86,7 +86,12 @@
   
   # Configure Syncthing to start automatically at login using launchd
   # This ensures Syncthing runs in the background after user login
-  # Launch agents run in the user's context, so HOME is automatically set
+  #
+  # environment.launchAgents installs into /Library/LaunchAgents (system-wide,
+  # root-owned). Despite running in the logged-in user's GUI session, launchd
+  # does NOT populate $HOME for these — syncthing panics on startup
+  # ("Failed to get user home dir") and crash-loops indefinitely under
+  # KeepAlive without it. HOME/USER must be set explicitly per primary user.
   environment.launchAgents."com.syncthing.syncthing" = {
     enable = true;
     target = "com.syncthing.syncthing.plist";
@@ -129,6 +134,10 @@
   <dict>
     <key>PATH</key>
     <string>${lib.concatStringsSep ":" [ "/usr/bin" "/bin" "/usr/sbin" "/sbin" "${pkgs.syncthing}/bin" ]}</string>
+    <key>HOME</key>
+    <string>${config.users.users.${config.system.primaryUser}.home}</string>
+    <key>USER</key>
+    <string>${config.system.primaryUser}</string>
   </dict>
 </dict>
 </plist>
