@@ -312,6 +312,7 @@ in
   modules.services.media.dailyBriefPodcast = {
     enable = true;
     owner = "tristonyoder";
+    audioScriptDir = "/data/tristonyoder/home/Documents/Obsidian Vault/AIOS/history/daily-briefs";
   };
 
   modules.services.storage.mp3PlayerSync = {

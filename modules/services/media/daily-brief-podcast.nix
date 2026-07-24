@@ -113,6 +113,48 @@ let
       fi
     '';
   };
+
+  # Watches the Syncthing-synced vault copy of AIOS/history/daily-briefs/ for
+  # new spoken-word scripts and publishes each one exactly once. Runs
+  # entirely on david's own pull; nothing outbound from wherever the script
+  # is written reaches this host directly.
+  #
+  # Publish markers are kept in a separate stateDir, not alongside the
+  # scripts themselves — the scripts directory is bidirectionally synced by
+  # Syncthing, so a marker written there would propagate back out to every
+  # other paired device as vault noise.
+  watchScript = pkgs.writeShellApplication {
+    name = "daily-brief-podcast-watch";
+    runtimeInputs = [ publishScript pkgs.coreutils ];
+    text = ''
+      WATCH_DIR="${cfg.audioScriptDir}"
+      STATE_DIR="${cfg.stateDir}/published"
+      mkdir -p "$STATE_DIR"
+
+      shopt -s nullglob
+      for f in "$WATCH_DIR"/*.audio.txt; do
+        base="$(basename "$f" .audio.txt)"
+
+        if ! [[ "$base" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+          echo "skipping $f: expected filename format YYYY-MM-DD.audio.txt" >&2
+          continue
+        fi
+
+        marker="$STATE_DIR/$base"
+        if [ -e "$marker" ]; then
+          continue
+        fi
+
+        echo "publishing daily brief audio for $base"
+        if daily-brief-podcast publish --title "Daily Brief - $base" --text-file "$f" --date "$base"; then
+          touch "$marker"
+          echo "published $base"
+        else
+          echo "failed to publish $base -- will retry next tick" >&2
+        fi
+      done
+    '';
+  };
 in
 {
   options.modules.services.media.dailyBriefPodcast = {
@@ -152,14 +194,61 @@ in
       default = "A daily audio rundown of the day ahead.";
       description = "Podcast feed description.";
     };
+
+    audioScriptDir = mkOption {
+      type = types.str;
+      description = ''
+        Directory scanned for spoken-word scripts to publish, synced in from
+        the Obsidian vault (e.g. via Syncthing). Filenames must be
+        YYYY-MM-DD.audio.txt; anything else is skipped and logged.
+      '';
+      example = "/data/tristonyoder/home/Documents/Obsidian Vault/AIOS/history/daily-briefs";
+    };
+
+    stateDir = mkOption {
+      type = types.str;
+      default = "/var/lib/daily-brief-podcast";
+      description = "Directory holding publish markers, kept outside audioScriptDir so they don't sync back out as vault noise.";
+    };
+
+    watchInterval = mkOption {
+      type = types.str;
+      default = "*:0/15";
+      description = "systemd OnCalendar expression for how often to scan audioScriptDir for new scripts.";
+    };
   };
 
   config = mkIf cfg.enable {
-    environment.systemPackages = [ publishScript ];
+    environment.systemPackages = [ publishScript watchScript ];
 
     systemd.tmpfiles.rules = [
       "d ${cfg.dataDir} 0755 ${cfg.owner} ${cfg.owner} -"
+      "d ${cfg.stateDir} 0755 ${cfg.owner} ${cfg.owner} -"
+      "d ${cfg.stateDir}/published 0755 ${cfg.owner} ${cfg.owner} -"
     ];
+
+    systemd.services.daily-brief-podcast-watch = {
+      description = "Scan for new daily-brief audio scripts and publish them as podcast episodes";
+      after = [ "network-online.target" ];
+      serviceConfig = {
+        Type = "oneshot";
+        User = cfg.owner;
+        StandardOutput = "journal";
+        StandardError = "journal";
+        SyslogIdentifier = "daily-brief-podcast-watch";
+        ExecStart = "${watchScript}/bin/daily-brief-podcast-watch";
+      };
+    };
+
+    systemd.timers.daily-brief-podcast-watch = {
+      description = "Periodically scan for new daily-brief audio scripts";
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnCalendar = cfg.watchInterval;
+        Persistent = true;
+        RandomizedDelaySec = "1min";
+      };
+    };
 
     modules.services.vHosts.hosts."brief" = {
       virtualHost = cfg.domain;
