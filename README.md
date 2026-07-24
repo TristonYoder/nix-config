@@ -34,7 +34,7 @@
 | Host | Type | Profile | Auto-Deploy | Purpose |
 |------|------|---------|-------------|---------|
 | **david** | NixOS Server | Server | ✅ | Full infrastructure stack |
-| **hermes-agent** | NixOS Edge Server | Edge | — | Hermes AI agent host |
+| **hermes-agent** | NixOS Edge Server | Edge | ✅ | Hermes AI agent host |
 | **pits** | NixOS Edge Server | Edge | ✅ | Public-facing reverse proxy |
 | **tristons-workstation** | NixOS Desktop | Desktop | ✅ | Development workstation |
 | **tristons-nixbook** | NixOS Laptop | Desktop | ✅ | Family Laptop workstation |
