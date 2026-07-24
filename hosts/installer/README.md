@@ -68,6 +68,15 @@ sudo nix build '.#nixosConfigurations.installer-aarch64.config.system.build.isoI
 path (`/etc/nix/builder_ed25519`). Nix automatically dispatches the build to
 the VM via `/etc/nix/machines` — no `--builders` flag needed.
 
+## Downloading a pre-built ISO
+
+Both variants are also hosted on david at **https://nix-iso.theyoder.family/**
+(internal-only — LAN/tailnet, per Caddy's default `@internal` restriction; not
+reachable from the public internet) — a plain directory listing served
+straight out of `/data/nix-iso`, a ZFS dataset (`data/nix-iso`) created for
+this purpose. Rebuild and re-upload after any change to
+`hosts/installer/configuration.nix`; nothing regenerates this automatically.
+
 ## Using it
 
 1. Flash the ISO to a USB drive and boot the target machine from it.
