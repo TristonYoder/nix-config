@@ -17,6 +17,59 @@ let
 
   pythonWithEvdev = pkgs.python3.withPackages (ps: [ ps.evdev ]);
 
+  # Chromium's own offline interstitial (the big white "no internet" page)
+  # otherwise shows for however long it takes the network to come up after
+  # boot, before ever reaching the pairing/screen URL. This local page loads
+  # instantly instead, and redirects to the real target itself as soon as a
+  # (no-cors, so cross-origin is fine) fetch to it actually succeeds — a
+  # normal top-level navigation to the target follows once we know it's
+  # reachable, so Chromium never has to render its own offline page.
+  loadingPage = pkgs.writeText "kiosk-loading.html" ''
+    <!doctype html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        html, body {
+          margin: 0;
+          height: 100%;
+          background: #07090f;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .dot {
+          width: 10px;
+          height: 10px;
+          margin: 0 6px;
+          border-radius: 50%;
+          background: #14b8a6;
+          display: inline-block;
+          animation: pulse 1.4s ease-in-out infinite;
+        }
+        .dot:nth-child(2) { animation-delay: .2s; }
+        .dot:nth-child(3) { animation-delay: .4s; }
+        @keyframes pulse {
+          0%, 80%, 100% { opacity: .25; transform: scale(.8); }
+          40% { opacity: 1; transform: scale(1); }
+        }
+      </style>
+    </head>
+    <body>
+      <div><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+      <script>
+        const target = new URLSearchParams(location.search).get('redirect');
+        function tryConnect() {
+          fetch(target, { mode: 'no-cors', cache: 'no-store' })
+            .then(() => { location.href = target; })
+            .catch(() => setTimeout(tryConnect, 1000));
+        }
+        tryConnect();
+      </script>
+    </body>
+    </html>
+  '';
+
   # Detects connected outputs, enables any that aren't yet active, and
   # launches one Chromium kiosk instance per output at that output's
   # native geometry. Writes "<output> <cdp-port>" pairs to outputs.env
@@ -65,7 +118,7 @@ let
         --autoplay-policy=no-user-gesture-required \
         --check-for-update-interval=31536000 \
         --no-first-run \
-        "$start_url" &
+        "file://${loadingPage}?redirect=$(jq -rn --arg v "$start_url" '$v|@uri')" &
       pids+=("$!")
       port=$((port + 1))
     done < <(${pkgs.xrandr}/bin/xrandr --query | awk '/ connected/ {geom="0x0+0+0"; for (i=1;i<=NF;i++) if ($i ~ /^[0-9]+x[0-9]+\+[0-9]+\+[0-9]+$/) geom=$i; print $1, "connected", geom}')
@@ -200,7 +253,7 @@ in
       # Bare `grep`/`awk` calls in launcherScript otherwise fail with
       # "command not found" — systemd units don't inherit an interactive
       # shell's PATH, so external tools need to be listed explicitly.
-      path = with pkgs; [ xrandr gnugrep gawk coreutils chromium ];
+      path = with pkgs; [ xrandr gnugrep gawk coreutils chromium jq ];
       serviceConfig = {
         Type = "simple";
         User = cfg.user;
