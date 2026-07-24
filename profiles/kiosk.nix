@@ -101,19 +101,6 @@
     '';
   };
   boot.kernelParams = [ "splash" ];
-  # Plymouth binds to whichever DRM device it finds first and never
-  # re-scans — on both the real Pi (vc4) and the Parallels test VM
-  # (virtio_gpu), the generic simpledrm device comes up in initrd well
-  # before the real GPU driver finishes probing, so Plymouth grabs
-  # simpledrm, can't render our theme on it properly, and falls back to
-  # its built-in text splash for the whole boot. Blacklisting simpledrm
-  # forces Plymouth to wait for the real driver as the only option —
-  # confirmed via journalctl on both targets:
-  #   stage-plotiphar:    vc4 ready ~4s after Plymouth starts
-  #   stage-plotiphar-vm: virtio_gpu ready ~8-9s after Plymouth starts
-  # DeviceTimeout in each host's theme extraConfig should stay comfortably
-  # above the slower of those two.
-  boot.blacklistedKernelModules = [ "simpledrm" ];
 
   # =============================================================================
   # KIOSK BROWSER

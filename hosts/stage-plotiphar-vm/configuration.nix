@@ -65,13 +65,4 @@
   # test VM anyway: every boot starts fresh, no stale cookies/URLs carried
   # over from a previous test run.
   modules.services.kiosk.browserKiosk.stateDir = "/run/kiosk";
-
-  # Same branded boot splash as the real Pi (hosts/stage-plotiphar) — without
-  # this override the VM just inherits profiles/kiosk.nix's generic default
-  # theme, which defeats the point of using this VM to check the splash.
-  boot.plymouth = {
-    theme = "plotiphar";
-    themePackages = [ (pkgs.callPackage ../../pkgs/plymouth-plotiphar-theme { }) ];
-    extraConfig = "DeviceTimeout=15";
-  };
 }
