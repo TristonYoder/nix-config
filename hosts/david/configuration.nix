@@ -198,6 +198,20 @@ in
     monitor = false; # runs on workstation, not always reachable
   };
 
+  # Nix installer ISOs - static file server over /data/nix-iso (ZFS dataset).
+  # Internal-only (public defaults false) — these are install media, no
+  # secrets, but no reason to expose them to the open internet either.
+  modules.services.vHosts.hosts."nix-iso.${config.networking.domain}" = {
+    rawConfig = true;
+    displayName = "Nix ISOs";
+    category = "infrastructure";
+    monitor = false; # directory listing, not a service with a stable 200
+    extraConfig = ''
+      root * /data/nix-iso
+      file_server browse
+    '';
+  };
+
   # Home Assistant - runs on a separate device on the LAN.
   # DNS-only (A record); no Caddy reverse proxy, so casting/discovery/local
   # network features keep working and outages here can't take david's proxy down.
