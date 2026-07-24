@@ -102,7 +102,7 @@ sudo darwin-rebuild switch --flake 'github:TristonYoder/nix-config#Tristons-MacB
 
 **Current host detection**:
 ```bash
-hostname  # Returns: tyoder-mbp, Tristons-MacBook-Pro, david, tristons-workstation, or pits
+hostname  # Returns: tyoder-mbp, Tristons-MacBook-Pro, david, tristons-workstation, pits, or hermes-agent
 ```
 
 **Testing policy by host**:
@@ -112,7 +112,7 @@ hostname  # Returns: tyoder-mbp, Tristons-MacBook-Pro, david, tristons-workstati
   - SSH to target NixOS host for testing instead
   - Can safely run: `nix flake update`, `nix flake show`, `darwin-rebuild build`
 
-- **On NixOS hosts** (david, tristons-workstation, pits):
+- **On NixOS hosts** (david, tristons-workstation, pits, hermes-agent):
   - Can run builds and tests directly on the local host
   - No need to SSH elsewhere
 

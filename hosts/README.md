@@ -31,6 +31,15 @@ Per-host NixOS and macOS configurations managed through this flake.
 - **Purpose:** Public-facing reverse proxy optimized for low-resource devices
 - **Documentation:** [pits/README.md](pits/README.md)
 
+#### hermes-agent (Edge Agent Host)
+- **Profile:** [edge](../profiles/edge.nix)
+- **Architecture:** x86_64-linux
+- **User:** tristonyoder
+- **Auto-Deploy:** — (pending Tailnet join)
+- **Services:** None (edge infrastructure only)
+- **Purpose:** Hermes AI agent host
+- **Documentation:** [hermes-agent/README.md](hermes-agent/README.md)
+
 #### tristons-workstation (Desktop Workstation)
 - **Profile:** [desktop](../profiles/desktop.nix)
 - **Architecture:** x86_64-linux
@@ -81,6 +90,7 @@ darwin-rebuild switch --flake .
 # NixOS
 sudo nixos-rebuild switch --flake .#david
 sudo nixos-rebuild switch --flake .#pits
+sudo nixos-rebuild switch --flake .#hermes-agent
 sudo nixos-rebuild switch --flake .#tristons-workstation
 sudo nixos-rebuild switch --flake .#tristons-nixbook
 
@@ -386,6 +396,6 @@ killall Dock && killall Finder
 
 ---
 
-**Managed Hosts:** 6 (david, pits, tristons-workstation, tristons-nixbook, tyoder-mbp, Tristons-MacBook-Pro)
+**Managed Hosts:** 7 (david, pits, hermes-agent, tristons-workstation, tristons-nixbook, tyoder-mbp, Tristons-MacBook-Pro), tyoder-mbp, Tristons-MacBook-Pro)
 **Auto-Deploy:** 4 NixOS hosts via GitHub Actions
 **Platforms:** NixOS (x86_64, aarch64) + macOS (aarch64, x86_64)
