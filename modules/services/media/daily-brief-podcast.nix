@@ -4,6 +4,11 @@
 # namespace so `iopod` (see ipod-sync.nix) can subscribe to it exactly like
 # any other podcast. Caddy serves the episode directory as static files —
 # internal-only, since the brief contains personal/ministry content.
+#
+# Episode metadata (title, transcript, description) is stored as sidecar
+# files next to each mp3 rather than in a database — feed.xml is fully
+# regenerated from whatever mp3s + sidecars are on disk on every publish,
+# so pruning old episodes is just deleting files.
 { config, lib, pkgs, ... }:
 
 with lib;
@@ -35,8 +40,20 @@ let
     runtimeInputs = [ pkgs.piper-tts pkgs.ffmpeg pkgs.coreutils pkgs.gnused pkgs.findutils ];
     text = ''
       usage() {
-        echo "Usage: daily-brief-podcast publish --title TITLE --text-file PATH [--date YYYY-MM-DD]" >&2
+        echo "Usage: daily-brief-podcast publish --title TITLE --text-file PATH [--date YYYY-MM-DD] [--description-file PATH]" >&2
         exit 1
+      }
+
+      # Escapes for a plain XML text node (element content, not inside CDATA).
+      xml_escape() {
+        sed -e 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g'
+      }
+
+      # CDATA can hold any text verbatim except a literal "]]>" — split that
+      # one sequence across two CDATA sections so the rest passes through
+      # unescaped (markdown show notes shouldn't need manual entity-escaping).
+      cdata_escape() {
+        sed 's/]]>/]]]]><![CDATA[>/g'
       }
 
       [ "''${1:-}" = "publish" ] || usage
@@ -44,6 +61,7 @@ let
 
       TITLE=""
       TEXT_FILE=""
+      DESC_FILE=""
       EP_DATE="$(date +%F)"
 
       while [ $# -gt 0 ]; do
@@ -51,12 +69,17 @@ let
           --title) TITLE="$2"; shift 2 ;;
           --text-file) TEXT_FILE="$2"; shift 2 ;;
           --date) EP_DATE="$2"; shift 2 ;;
+          --description-file) DESC_FILE="$2"; shift 2 ;;
           *) usage ;;
         esac
       done
 
       [ -n "$TITLE" ] && [ -n "$TEXT_FILE" ] || usage
       [ -f "$TEXT_FILE" ] || { echo "text file not found: $TEXT_FILE" >&2; exit 1; }
+      if [ -n "$DESC_FILE" ] && [ ! -f "$DESC_FILE" ]; then
+        echo "description file not found: $DESC_FILE" >&2
+        exit 1
+      fi
 
       OUT_DIR="${cfg.dataDir}"
       mkdir -p "$OUT_DIR"
@@ -64,21 +87,35 @@ let
       SLUG="daily-brief-$EP_DATE"
       WAV="$OUT_DIR/$SLUG.wav"
       MP3="$OUT_DIR/$SLUG.mp3"
+      TRANSCRIPT="$OUT_DIR/$SLUG.txt"
+      DESC="$OUT_DIR/$SLUG.desc"
+      TITLE_FILE="$OUT_DIR/$SLUG.title"
 
       piper --model ${voiceModel} --output_file "$WAV" < "$TEXT_FILE"
       ffmpeg -y -loglevel error -i "$WAV" -codec:a libmp3lame -qscale:a 4 "$MP3"
       rm -f "$WAV"
 
-      # Prune to the newest N episodes
+      # The transcript is exactly the text that was spoken — no separate
+      # transcription step needed, it's the TTS input verbatim.
+      cp "$TEXT_FILE" "$TRANSCRIPT"
+      printf '%s' "$TITLE" > "$TITLE_FILE"
+      if [ -n "$DESC_FILE" ]; then
+        cp "$DESC_FILE" "$DESC"
+      else
+        rm -f "$DESC"
+      fi
+
+      # Prune to the newest N episodes, and their sidecars
       # shellcheck disable=SC2012
       ls -1t "$OUT_DIR"/daily-brief-*.mp3 | tail -n +$((${toString cfg.keepEpisodes} + 1)) | while read -r old; do
-        rm -f "$old"
+        old_slug="$(basename "$old" .mp3)"
+        rm -f "$old" "$OUT_DIR/$old_slug.txt" "$OUT_DIR/$old_slug.desc" "$OUT_DIR/$old_slug.title"
       done
 
       FEED="$OUT_DIR/feed.xml"
       {
         echo '<?xml version="1.0" encoding="UTF-8"?>'
-        echo '<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">'
+        echo '<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:podcast="https://podcastindex.org/namespace/1.0">'
         echo '<channel>'
         echo "<title>${cfg.feedTitle}</title>"
         echo "<link>https://${cfg.domain}/</link>"
@@ -89,14 +126,31 @@ let
         # shellcheck disable=SC2012
         ls -1t "$OUT_DIR"/daily-brief-*.mp3 | while read -r ep; do
           BASENAME="$(basename "$ep")"
-          EP_TITLE="$BASENAME"
+          CUR_SLUG="$(basename "$ep" .mp3)"
           SIZE="$(stat -c %s "$ep")"
           PUBDATE="$(date -R -r "$ep")"
+
+          if [ -f "$OUT_DIR/$CUR_SLUG.title" ]; then
+            EP_TITLE="$(xml_escape < "$OUT_DIR/$CUR_SLUG.title")"
+          else
+            EP_TITLE="$BASENAME"
+          fi
+
+          if [ -f "$OUT_DIR/$CUR_SLUG.desc" ]; then
+            EP_DESC="$(cdata_escape < "$OUT_DIR/$CUR_SLUG.desc")"
+          else
+            EP_DESC="${cfg.feedDescription}"
+          fi
+
           echo '<item>'
           echo "<title>$EP_TITLE</title>"
           echo "<guid>https://${cfg.domain}/$BASENAME</guid>"
           echo "<pubDate>$PUBDATE</pubDate>"
+          echo "<description><![CDATA[$EP_DESC]]></description>"
           echo "<enclosure url=\"https://${cfg.domain}/$BASENAME\" length=\"$SIZE\" type=\"audio/mpeg\"/>"
+          if [ -f "$OUT_DIR/$CUR_SLUG.txt" ]; then
+            echo "<podcast:transcript url=\"https://${cfg.domain}/$CUR_SLUG.txt\" type=\"text/plain\"/>"
+          fi
           echo '</item>'
         done
 
@@ -145,8 +199,16 @@ let
           continue
         fi
 
+        # The written brief for the same date (already present alongside the
+        # audio script per the daily-brief skill's existing output) becomes
+        # the episode's show notes/description, if present.
+        desc_args=()
+        if [ -f "$WATCH_DIR/$base.md" ]; then
+          desc_args=(--description-file "$WATCH_DIR/$base.md")
+        fi
+
         echo "publishing daily brief audio for $base"
-        if daily-brief-podcast publish --title "Daily Brief - $base" --text-file "$f" --date "$base"; then
+        if daily-brief-podcast publish --title "Daily Brief - $base" --text-file "$f" --date "$base" "''${desc_args[@]}"; then
           touch "$marker"
           echo "published $base"
         else
