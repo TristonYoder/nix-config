@@ -304,6 +304,21 @@
         };
 
         # -----------------------------------------------------------------------------
+        # installer - Barebones installer ISO (generic hardware, Tailscale + SSH)
+        # -----------------------------------------------------------------------------
+        installer = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+
+          modules = [
+            ./hosts/installer/configuration.nix
+          ];
+
+          specialArgs = {
+            inherit nixpkgs;
+          };
+        };
+
+        # -----------------------------------------------------------------------------
         # pits - Pi in the Sky - Edge Server (Cloud VPS)
         # -----------------------------------------------------------------------------
         pits = nixpkgs.lib.nixosSystem {
