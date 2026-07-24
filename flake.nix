@@ -342,6 +342,40 @@
             inherit self nixpkgs nixpkgs-unstable;
           };
         };
+        
+        # -----------------------------------------------------------------------------
+        # hermes-agent - Edge Agent Host (Cloud VPS)
+        # -----------------------------------------------------------------------------
+        hermes-agent = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+          
+          modules = [
+            ./common/system.nix
+            ./common/linux.nix
+            
+            ./profiles/edge.nix
+            
+            ./hosts/hermes-agent/configuration.nix
+            ./hosts/hermes-agent/hardware-configuration.nix
+            
+            ./modules
+            
+            nixos-vscode-server.nixosModules.default
+            agenix.nixosModules.default
+
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.backupFileExtension = "backup";
+              home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
+            }
+          ];
+
+          specialArgs = {
+            inherit self nixpkgs nixpkgs-unstable;
+          };
+        };
       };
 
       # =============================================================================
