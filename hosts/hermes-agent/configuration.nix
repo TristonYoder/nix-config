@@ -6,7 +6,32 @@
 
   modules.hardware.boot.enable = lib.mkForce false;
 
-  networking.useDHCP = lib.mkDefault true;
+  # DHCP on ens3 only ever handed out the CGNAT address with no default
+  # route — Vultr's own docs (instance networking tab) give a static
+  # config with a real gateway instead. NetworkManager was also fighting
+  # us on ens7 (VPC) activation, so go fully declarative/static and drop
+  # NetworkManager for this host.
+  networking.networkmanager.enable = lib.mkForce false;
+  networking.useDHCP = lib.mkForce false;
+
+  networking.interfaces.ens3 = {
+    ipv4.addresses = [{ address = "100.68.119.228"; prefixLength = 18; }];
+    # Vultr's metadata service (169.254.169.254) lives behind this gateway,
+    # not on the local /18 — needs its own route, per Vultr's docs.
+    ipv4.routes = [{ address = "169.254.0.0"; prefixLength = 16; }];
+  };
+  networking.defaultGateway = { address = "100.68.64.1"; interface = "ens3"; };
+  # IPv6 keeps working via SLAAC/RA (already confirmed reachable) — no
+  # static v6 config needed.
+  networking.nameservers = lib.mkForce [ "108.61.10.10" "2001:19f0:300:1704::6" ];
+
+  # Private VPC 2.0 network to pits (10.151.100.4) — no DHCP server on
+  # this network, Vultr's docs require a static assignment.
+  networking.interfaces.ens7 = {
+    useDHCP = false;
+    mtu = 1450;
+    ipv4.addresses = [{ address = "10.151.100.3"; prefixLength = 23; }];
+  };
 
   networking.firewall = {
     enable = true;
@@ -39,6 +64,10 @@
     advertiseExitNode = lib.mkForce false;
     advertiseRoutes = lib.mkForce "";
     advertiseTags = [ "tag:infra-theyoder-family" ];
+    # net.ipv6.conf.all.forwarding=1 (the default here) silently disables
+    # accept_ra, which would kill the SLAAC-derived IPv6 default route
+    # this host actually depends on for internet access.
+    enableIPForwarding = lib.mkForce false;
   };
 
   # profiles/edge.nix's min-free/max-free (5GB/10GB) assumes a bigger disk
