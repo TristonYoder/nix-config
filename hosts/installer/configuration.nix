@@ -37,14 +37,12 @@ in
 
   nixpkgs.config.allowUnfree = true;
 
-  # isoImage.isoName/image.fileName do NOT control the real output
-  # filename for this cd-dvd-based ISO builder in this nixpkgs snapshot —
-  # confirmed by testing: setting isoName has no effect on the actual file
-  # under system.build.isoImage's iso/ subdir, which is instead built from
-  # isoBaseName + system.nixos.label + the target platform. Override
-  # isoBaseName instead; the resulting filename is e.g.
-  # "nixos-installer-x86_64-26.05.20260710.8f0500b-x86_64-linux.iso" —
-  # verbose, but the actual, working way to get "installer" and the
-  # architecture into the real filename here.
+  # isoImage.isoName/image.fileName do NOT control the real output filename
+  # for this cd-dvd-based ISO builder in this nixpkgs snapshot — confirmed
+  # by building both ways: setting isoName had zero effect on the actual
+  # file under system.build.isoImage's iso/ subdir (stayed
+  # "nixos-minimal-<label>-<arch>.iso" regardless). isoBaseName is the
+  # option that's actually load-bearing here; overriding it produces the
+  # intended "nixos-installer-<arch>.iso" exactly.
   isoImage.isoBaseName = lib.mkForce "nixos-installer-${archLabel}";
 }
