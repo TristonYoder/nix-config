@@ -20,14 +20,47 @@ anywhere.
   (`environment.interactiveShellInit`), so it's still visible once the boot
   log has scrolled past and you're sitting at the console prompt.
 
-## Building
+## Flake outputs
 
-There are two flake outputs — build the one matching the target machine's CPU:
+There are two flake outputs today, each producing a clearly-labeled ISO
+(`nixos-installer-<arch>.iso`, via the `archLabel` let-binding in
+`configuration.nix`):
 
-| Output | Architecture | Builder |
+| Output | Architecture | ISO filename |
 |---|---|---|
-| `nixosConfigurations.installer` | x86_64-linux | any x86_64-linux host (e.g. david) |
-| `nixosConfigurations.installer-aarch64` | aarch64-linux | needs an aarch64-linux builder (see below) |
+| `nixosConfigurations.installer` | x86_64-linux | `nixos-installer-x86_64.iso` |
+| `nixosConfigurations.installer-aarch64` | aarch64-linux | `nixos-installer-aarch64.iso` |
+
+A future Raspberry Pi target would need a separate `sdImage`-based output
+(RPi boots from an SD card image via U-Boot, not a generic UEFI ISO — a
+materially different build, not just a rename) — e.g.
+`nixosConfigurations.installer-rpi` producing `nixos-installer-rpi.img`,
+following the same naming convention.
+
+## CI: automatic rebuilds
+
+[`.github/workflows/build-installer-iso.yml`](../../.github/workflows/build-installer-iso.yml)
+builds and publishes both ISOs to `/data/nix-iso` on david whenever something
+that actually changes their contents lands on `main`: `hosts/installer/**`,
+`modules/system/users.nix` (the baked-in SSH key), or `flake.nix`. Every
+other push is a no-op for this workflow — it doesn't run on a schedule or on
+every commit.
+
+It builds x86_64 natively and aarch64 via QEMU emulation
+(`boot.binfmt.emulatedSystems = [ "aarch64-linux" ];` in
+`hosts/david/configuration.nix` — added specifically so CI, which can only
+reach david, doesn't depend on a personal Mac being online). Each ISO is
+written under a `.new` suffix and `mv`'d into place, so Caddy never serves a
+half-written file mid-build.
+
+Trigger a manual rebuild any time from the Actions tab ("Build Installer
+ISOs" → Run workflow), or:
+
+```bash
+gh workflow run build-installer-iso.yml
+```
+
+## Building manually
 
 ### x86_64 (from any NixOS x86_64-linux host, e.g. david)
 
@@ -46,36 +79,40 @@ The result is a directory; the actual `.iso` file is under `<out-link>/iso/`.
 
 ### aarch64 (Raspberry Pi / ARM boards)
 
-No host in the fleet is natively aarch64-linux, and david has no QEMU binfmt
-emulation configured. The supported path is nix-darwin's built-in
-`linux-builder` VM, enabled on `tyoder-mbp` (Apple Silicon) — it builds
-`aarch64-linux` **natively**, no emulation needed:
+Two options:
 
-```nix
-# hosts/tyoder-mbp/configuration.nix
-nix.linux-builder.enable = true;
-```
+- **On david** (same path CI uses): `boot.binfmt.emulatedSystems` makes it a
+  normal cross-build via QEMU emulation —
+  `nix build '.#nixosConfigurations.installer-aarch64.config.system.build.isoImage' --refresh`.
+  Slower than native (emulated), but needs nothing extra set up.
+- **On `tyoder-mbp`** (Apple Silicon): nix-darwin's built-in `linux-builder`
+  VM builds `aarch64-linux` **natively**, no emulation:
 
-After a `darwin-rebuild switch` picks that up (first boot spins up the VM,
-which takes a minute or two — check with `sudo launchctl list | grep
-linux-builder`), build from that Mac:
+  ```nix
+  # hosts/tyoder-mbp/configuration.nix
+  nix.linux-builder.enable = true;
+  ```
 
-```bash
-sudo nix build '.#nixosConfigurations.installer-aarch64.config.system.build.isoImage' --refresh
-```
+  After a `darwin-rebuild switch` picks that up (first boot spins up the VM,
+  which takes a minute or two — check with `sudo launchctl list | grep
+  linux-builder`), build from that Mac:
 
-`sudo` is required because the linux-builder SSH key lives in a root-only
-path (`/etc/nix/builder_ed25519`). Nix automatically dispatches the build to
-the VM via `/etc/nix/machines` — no `--builders` flag needed.
+  ```bash
+  sudo nix build '.#nixosConfigurations.installer-aarch64.config.system.build.isoImage' --refresh
+  ```
+
+  `sudo` is required because the linux-builder SSH key lives in a root-only
+  path (`/etc/nix/builder_ed25519`). Nix automatically dispatches the build to
+  the VM via `/etc/nix/machines` — no `--builders` flag needed.
 
 ## Downloading a pre-built ISO
 
-Both variants are also hosted on david at **https://nix-iso.theyoder.family/**
+Both variants are hosted on david at **https://nix-iso.theyoder.family/**
 (internal-only — LAN/tailnet, per Caddy's default `@internal` restriction; not
 reachable from the public internet) — a plain directory listing served
 straight out of `/data/nix-iso`, a ZFS dataset (`data/nix-iso`) created for
-this purpose. Rebuild and re-upload after any change to
-`hosts/installer/configuration.nix`; nothing regenerates this automatically.
+this purpose. CI keeps this current automatically (see above) — no manual
+rebuild/upload needed unless you're testing an unmerged change.
 
 ## Using it
 

@@ -40,6 +40,12 @@ in
   # which drops postDeviceCommands support.
   boot.initrd.systemd.enable = lib.mkForce false;
 
+  # QEMU user-mode emulation for aarch64-linux — lets `nix build` cross-build
+  # ARM outputs (e.g. nixosConfigurations.installer-aarch64) directly on this
+  # x86_64 host, so CI (which only reaches david, not a personal Mac) can
+  # build both installer ISO architectures without a native ARM builder.
+  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+
   # =============================================================================
   # HOST-SPECIFIC SETTINGS
   # =============================================================================

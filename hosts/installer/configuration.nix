@@ -17,6 +17,15 @@
 #   ssh root@<hostname>.<tailnet-domain>
 { lib, pkgs, modulesPath, ... }:
 let
+  # Clear per-architecture label for the built ISO's filename — keeps
+  # x86_64/aarch64 unambiguous when both sit side by side in a downloads
+  # directory. A future dedicated Raspberry Pi image (sdImage, not isoImage —
+  # different boot mechanism) should follow the same "nixos-installer-<label>"
+  # convention, e.g. "nixos-installer-rpi.img".
+  archLabel =
+    { x86_64-linux = "x86_64"; aarch64-linux = "aarch64"; }
+    .${pkgs.stdenv.hostPlatform.system} or pkgs.stdenv.hostPlatform.system;
+
   # Cached here so it survives past the scrolling boot log — printed again
   # by environment.interactiveShellInit below every time a shell/terminal
   # starts, not just once during the systemd unit's boot-time output.
@@ -107,5 +116,5 @@ in
     };
   };
 
-  isoImage.isoName = lib.mkForce "nixos-installer-barebones.iso";
+  isoImage.isoName = lib.mkForce "nixos-installer-${archLabel}.iso";
 }
