@@ -32,6 +32,11 @@
     # NixOS hardware support modules (T2, Raspberry Pi, etc.)
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
 
+    # Raspberry Pi 5 firmware/bootloader/kernel support (also used by the
+    # stage-plotiphar kiosk host on the host/plotiphar branch) — vanilla
+    # nixpkgs sdImage doesn't support the Pi 5's boot process.
+    nixos-raspberrypi.url = "github:nvmd/nixos-raspberrypi";
+
     # External modules
     nix-bitcoin.url = "github:fort-nix/nix-bitcoin/v0.0.117";
     nixos-vscode-server.url = "github:nix-community/nixos-vscode-server";
@@ -48,7 +53,7 @@
     hermes-agent.url = "github:NousResearch/hermes-agent";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, flake-utils, iopenpod-flake, iopodcli, hermes-agent, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, nixos-raspberrypi, flake-utils, iopenpod-flake, iopodcli, hermes-agent, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -334,6 +339,23 @@
           specialArgs = {
             inherit nixpkgs;
           };
+        };
+
+        # Barebones installer for Raspberry Pi 5 (CM5/Pi 5) specifically —
+        # generic aarch64-linux UEFI ISOs don't boot on the Pi 5, it needs
+        # its own firmware/bootloader/kernel handling. Uses the same
+        # nixos-raspberrypi flake (and raspberry-pi-5.base module) as the
+        # stage-plotiphar kiosk host on the host/plotiphar branch, so this
+        # is a proven-working pattern, not a first attempt.
+        installer-rpi5 = nixos-raspberrypi.lib.nixosInstaller {
+          modules = [
+            {
+              imports = with nixos-raspberrypi.nixosModules; [
+                raspberry-pi-5.base
+              ];
+            }
+            ./hosts/installer/rpi5.nix
+          ];
         };
 
         # -----------------------------------------------------------------------------
