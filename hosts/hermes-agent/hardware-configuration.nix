@@ -11,15 +11,34 @@
   boot.kernelModules = [ ];
   boot.extraModulePackages = [ ];
 
+  virtualisation.hypervGuest.enable = true;
+
+  # BIOS/legacy boot (no EFI on this Vultr VC2) — GPT with a dedicated
+  # bios_grub partition since GRUB needs somewhere to embed its core.img
+  # when the disk uses a GPT label instead of MBR.
   boot.loader.grub.enable = true;
   boot.loader.grub.device = "/dev/vda";
+  boot.loader.grub.efiSupport = false;
 
   fileSystems."/" =
-    { device = "/dev/disk/by-uuid/00000000-0000-0000-0000-000000000000";
-      fsType = "ext4";
+    { device = "/dev/disk/by-uuid/9a854f25-a353-4e32-a0c7-5ae20473b979";
+      fsType = "btrfs";
+      options = [ "subvol=@" "compress=zstd" "noatime" ];
     };
 
-  swapDevices = [ ];
+  fileSystems."/nix" =
+    { device = "/dev/disk/by-uuid/9a854f25-a353-4e32-a0c7-5ae20473b979";
+      fsType = "btrfs";
+      options = [ "subvol=@nix" "compress=zstd" "noatime" ];
+    };
+
+  fileSystems."/.snapshots" =
+    { device = "/dev/disk/by-uuid/9a854f25-a353-4e32-a0c7-5ae20473b979";
+      fsType = "btrfs";
+      options = [ "subvol=@snapshots" "compress=zstd" "noatime" ];
+    };
+
+  swapDevices = [ { device = "/swapfile"; } ];
 
   networking.useDHCP = lib.mkDefault true;
 
