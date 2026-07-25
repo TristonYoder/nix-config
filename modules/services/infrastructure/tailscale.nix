@@ -62,6 +62,19 @@ in
         tag approval instead.
       '';
     };
+
+    showLoginQr = mkOption {
+      type = types.bool;
+      default = true;
+      description = ''
+        Render a scannable QR code of the tailscale login URL on the
+        physical/virtual console (tty1) whenever the node needs
+        interactive authentication — e.g. authKeyFile is unset, expired,
+        or already consumed. Lets you complete login from a phone with
+        console-only access (no SSH, no Tailscale yet). A no-op once the
+        node is already logged in — the service just exits.
+      '';
+    };
   };
 
   config = mkIf cfg.enable {
@@ -79,6 +92,50 @@ in
         "--snat-subnet-routes=false"
         "--accept-routes=false"
       ];
+    };
+
+    systemd.services.tailscale-login-qr = mkIf cfg.showLoginQr {
+      description = "Show a QR code on the console for interactive tailscale login, if needed";
+      after = [ "tailscaled.service" ] ++ optional (cfg.authKeyFile != null) "tailscaled-autoconnect.service";
+      wants = [ "tailscaled.service" ];
+      wantedBy = [ "multi-user.target" ];
+      path = [ config.services.tailscale.package pkgs.qrencode pkgs.jq ];
+      serviceConfig = {
+        Type = "simple";
+        StandardInput = "tty";
+        StandardOutput = "tty";
+        StandardError = "tty";
+        TTYPath = "/dev/tty1";
+        TTYReset = true;
+        TTYVHangup = true;
+        Restart = "on-failure";
+        RestartSec = "5s";
+      };
+      script = ''
+        # Give tailscaled-autoconnect (if configured) a head start to log
+        # in via authKeyFile before falling back to interactive/QR login.
+        sleep 10
+
+        getState() { tailscale status --json --peers=false | jq -r '.BackendState'; }
+
+        while true; do
+          case "$(getState)" in
+            Running)
+              exit 0
+              ;;
+            NeedsLogin|NeedsMachineAuth|Stopped)
+              echo "=== Tailscale needs authentication — scan this QR code or visit the URL below ==="
+              tailscale up ${optionalString (cfg.loginServer != "") "--login-server=${cfg.loginServer}"} 2>&1 | while IFS= read -r line; do
+                echo "$line"
+                case "$line" in
+                  https://*) echo "$line" | qrencode -t ANSIUTF8 ;;
+                esac
+              done
+              ;;
+          esac
+          sleep 5
+        done
+      '';
     };
 
     # Workaround for Tailscale Wireguard Bug
