@@ -32,7 +32,9 @@
     # NixOS hardware support modules (T2, Raspberry Pi, etc.)
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
 
-    # Raspberry Pi 5 firmware/bootloader/kernel support (stage-plotiphar kiosk)
+    # Raspberry Pi 5 firmware/bootloader/kernel support — used by the
+    # stage-plotiphar kiosk host and the installer-rpi5 flake output.
+    # Vanilla nixpkgs sdImage doesn't support the Pi 5's boot process.
     nixos-raspberrypi.url = "github:nvmd/nixos-raspberrypi";
 
     # External modules
@@ -304,6 +306,56 @@
           specialArgs = {
             inherit nixpkgs nixpkgs-unstable;
           };
+        };
+
+        # -----------------------------------------------------------------------------
+        # installer - Barebones installer ISO (generic hardware, Tailscale + SSH)
+        # -----------------------------------------------------------------------------
+        installer = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+
+          modules = [
+            ./hosts/installer/configuration.nix
+          ];
+
+          specialArgs = {
+            inherit nixpkgs;
+          };
+        };
+
+        # Same installer config, built for aarch64 (Raspberry Pi / ARM boards).
+        # Building this requires an aarch64-linux builder — either a native ARM
+        # machine or `boot.binfmt.emulatedSystems = [ "aarch64-linux" ];` on an
+        # x86_64 builder host. Neither is currently set up on any host in this
+        # fleet (david included) — building this output will fail with
+        # "don't know how to build for system aarch64-linux" until one is.
+        installer-aarch64 = nixpkgs.lib.nixosSystem {
+          system = "aarch64-linux";
+
+          modules = [
+            ./hosts/installer/configuration.nix
+          ];
+
+          specialArgs = {
+            inherit nixpkgs;
+          };
+        };
+
+        # Barebones installer for Raspberry Pi 5 (CM5/Pi 5) specifically —
+        # generic aarch64-linux UEFI ISOs don't boot on the Pi 5, it needs
+        # its own firmware/bootloader/kernel handling. Uses the same
+        # nixos-raspberrypi flake (and raspberry-pi-5.base module) as the
+        # stage-plotiphar kiosk host on the host/plotiphar branch, so this
+        # is a proven-working pattern, not a first attempt.
+        installer-rpi5 = nixos-raspberrypi.lib.nixosInstaller {
+          modules = [
+            {
+              imports = with nixos-raspberrypi.nixosModules; [
+                raspberry-pi-5.base
+              ];
+            }
+            ./hosts/installer/rpi5.nix
+          ];
         };
 
         # -----------------------------------------------------------------------------

@@ -45,6 +45,14 @@ Per-host NixOS and macOS configurations managed through this flake.
 - **Auto-Deploy:** ✅ GitHub Actions enabled
 - **Services:** Minimal desktop (KDE Plasma, development tools)
 
+#### installer (Barebones Tailscale/SSH Installer ISO/Image)
+- **Profile:** none (`installation-cd-minimal.nix` base for ISOs; no host-specific hardware beyond the Pi 5 firmware modules on `installer-rpi5`)
+- **Architecture:** x86_64-linux (`installer`), aarch64-linux (`installer-aarch64`), aarch64-linux Raspberry Pi 5 (`installer-rpi5`, via the `nixos-raspberrypi` flake)
+- **User:** root (key-only SSH, no password)
+- **Auto-Deploy:** ➖ Not a deployed host — CI builds and publishes the images, boot them manually
+- **Purpose:** Generic install media for remote `nixos-install` — auto-joins the headscale tailnet on boot (QR code + login URL, no embedded authkey)
+- **Documentation:** [installer/README.md](installer/README.md)
+
 #### stage-plotiphar (Signage Kiosk)
 - **Profile:** [kiosk](../profiles/kiosk.nix)
 - **Architecture:** aarch64-linux (Raspberry Pi 5 / CM5 Lite)

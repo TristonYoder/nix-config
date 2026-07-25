@@ -40,6 +40,26 @@ in
   # which drops postDeviceCommands support.
   boot.initrd.systemd.enable = lib.mkForce false;
 
+  # QEMU user-mode emulation for aarch64-linux — lets `nix build` cross-build
+  # ARM outputs (e.g. nixosConfigurations.installer-aarch64) directly on this
+  # x86_64 host, so CI (which only reaches david, not a personal Mac) can
+  # build both installer ISO architectures without a native ARM builder.
+  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+
+  # nixos-raspberrypi's binary cache — required for nixosConfigurations.
+  # installer-rpi5 (and the stage-plotiphar host). Their custom Pi 5 kernel
+  # build fails under QEMU emulation (a HOSTCC-vs-target-binary mismatch in
+  # the kernel's kconfig tooling — confirmed: "Exec format error" trying to
+  # build linux_rpi-bcm2712 via boot.binfmt above). Trusting this cache
+  # means david fetches the prebuilt kernel instead of compiling it —
+  # strictly less rebuilding, not more.
+  nix.settings = {
+    substituters = lib.mkAfter [ "https://nixos-raspberrypi.cachix.org" ];
+    trusted-public-keys = lib.mkAfter [
+      "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI="
+    ];
+  };
+
   # =============================================================================
   # HOST-SPECIFIC SETTINGS
   # =============================================================================
@@ -196,6 +216,20 @@ in
     category = "ai";
     icon = "invoke-ai";
     monitor = false; # runs on workstation, not always reachable
+  };
+
+  # Nix installer ISOs - static file server over /data/nix-iso (ZFS dataset).
+  # Internal-only (public defaults false) — these are install media, no
+  # secrets, but no reason to expose them to the open internet either.
+  modules.services.vHosts.hosts."nix-iso.${config.networking.domain}" = {
+    rawConfig = true;
+    displayName = "Nix ISOs";
+    category = "infrastructure";
+    monitor = false; # directory listing, not a service with a stable 200
+    extraConfig = ''
+      root * /data/nix-iso
+      file_server browse
+    '';
   };
 
   # Home Assistant - runs on a separate device on the LAN.
