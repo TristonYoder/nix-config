@@ -96,7 +96,11 @@ in
 
     systemd.services.tailscale-login-qr = mkIf cfg.showLoginQr {
       description = "Show a QR code on the console for interactive tailscale login, if needed";
-      after = [ "tailscaled.service" ] ++ optional (cfg.authKeyFile != null) "tailscaled-autoconnect.service";
+      # getty@tty1 owns /dev/tty1 by default — without conflicting it out,
+      # our TTYPath grab either fails to attach or gets silently stomped by
+      # the login prompt redrawing, so the QR never actually appears.
+      conflicts = [ "getty@tty1.service" ];
+      after = [ "tailscaled.service" "getty@tty1.service" ] ++ optional (cfg.authKeyFile != null) "tailscaled-autoconnect.service";
       wants = [ "tailscaled.service" ];
       wantedBy = [ "multi-user.target" ];
       path = [ config.services.tailscale.package pkgs.qrencode pkgs.jq ];
@@ -110,6 +114,9 @@ in
         TTYVHangup = true;
         Restart = "on-failure";
         RestartSec = "5s";
+        # Hand tty1 back to a normal login prompt once we're done with it
+        # (success or failure), rather than leaving it dark.
+        ExecStopPost = "-${pkgs.systemd}/bin/systemctl start getty@tty1.service";
       };
       script = ''
         # Give tailscaled-autoconnect (if configured) a head start to log
