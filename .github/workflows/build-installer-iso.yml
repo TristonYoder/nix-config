@@ -37,7 +37,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          🔵 Building installer ISOs (x86_64 + aarch64) on david
+          🔵 Building installer images (x86_64 + aarch64 + rpi5) on david
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
@@ -53,10 +53,13 @@ jobs:
     - name: Wait for Tailscale connection
       run: sleep 10
 
-    # Both ISOs are built and published to /data/nix-iso on david — x86_64
-    # natively, aarch64 via david's QEMU binfmt emulation
-    # (boot.binfmt.emulatedSystems in hosts/david/configuration.nix).
-    - name: Build and publish ISOs
+    # All three images are built and published to /data/nix-iso on david:
+    # x86_64 natively, aarch64 and rpi5 via david's QEMU binfmt emulation
+    # (boot.binfmt.emulatedSystems in hosts/david/configuration.nix). rpi5's
+    # kernel doesn't build under emulation (a HOSTCC/target-binary mismatch
+    # in its kconfig step) — it's fetched pre-built from
+    # nixos-raspberrypi.cachix.org instead (also configured on david).
+    - name: Build and publish images
       run: |
         mkdir -p ~/.ssh
         echo "Host *" >> ~/.ssh/config
@@ -71,25 +74,31 @@ jobs:
 
           build_and_publish() {
             local attr="$1"
-            echo "--- Building nixosConfigurations.$attr ---"
-            local out_link="/tmp/installer-iso-$attr"
+            local build_attr="$2"  # isoImage or sdImage
+            echo "--- Building nixosConfigurations.$attr.config.system.build.$build_attr ---"
+            local out_link="/tmp/installer-image-$attr"
             sudo nix build \
-              "github:TristonYoder/nix-config#nixosConfigurations.$attr.config.system.build.isoImage" \
+              "github:TristonYoder/nix-config#nixosConfigurations.$attr.config.system.build.$build_attr" \
               --refresh --out-link "$out_link"
 
-            iso_path=$(find "$out_link/iso" -maxdepth 1 -name '*.iso')
-            iso_name=$(basename "$iso_path")
+            # isoImage lands under $out_link/iso/, sdImage under
+            # $out_link/sd-image/ — search rather than hardcode the subdir.
+            # Trailing slash matters: find only descends into a symlinked
+            # directory given as its starting path if it's slash-terminated.
+            image_path=$(find "$out_link/" -maxdepth 2 -type f \( -name '*.iso' -o -name '*.img.zst' \) | head -n1)
+            image_name=$(basename "$image_path")
 
             # Write under a temp name and rename into place — mv is atomic on
             # the same filesystem, so Caddy never serves a partially-written file.
-            sudo install -m 644 -o caddy -g caddy "$iso_path" "/data/nix-iso/${iso_name}.new"
-            sudo mv "/data/nix-iso/${iso_name}.new" "/data/nix-iso/${iso_name}"
+            sudo install -m 644 -o caddy -g caddy "$image_path" "/data/nix-iso/${image_name}.new"
+            sudo mv "/data/nix-iso/${image_name}.new" "/data/nix-iso/${image_name}"
             sudo rm -f "$out_link"
-            echo "✅ Published $iso_name"
+            echo "✅ Published $image_name"
           }
 
-          build_and_publish installer
-          build_and_publish installer-aarch64
+          build_and_publish installer isoImage
+          build_and_publish installer-aarch64 isoImage
+          build_and_publish installer-rpi5 sdImage
         EOF
 
     - name: Notify success
@@ -98,7 +107,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ✅ Installer ISOs published to https://nix-iso.theyoder.family/
+          ✅ Installer images published to https://nix-iso.theyoder.family/
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
@@ -110,7 +119,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ❌ Installer ISO build failed
+          ❌ Installer image build failed
           ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
