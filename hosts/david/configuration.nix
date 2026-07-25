@@ -46,6 +46,20 @@ in
   # build both installer ISO architectures without a native ARM builder.
   boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
 
+  # nixos-raspberrypi's binary cache — required for nixosConfigurations.
+  # installer-rpi5 (and the stage-plotiphar host). Their custom Pi 5 kernel
+  # build fails under QEMU emulation (a HOSTCC-vs-target-binary mismatch in
+  # the kernel's kconfig tooling — confirmed: "Exec format error" trying to
+  # build linux_rpi-bcm2712 via boot.binfmt above). Trusting this cache
+  # means david fetches the prebuilt kernel instead of compiling it —
+  # strictly less rebuilding, not more.
+  nix.settings = {
+    substituters = lib.mkAfter [ "https://nixos-raspberrypi.cachix.org" ];
+    trusted-public-keys = lib.mkAfter [
+      "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI="
+    ];
+  };
+
   # =============================================================================
   # HOST-SPECIFIC SETTINGS
   # =============================================================================
