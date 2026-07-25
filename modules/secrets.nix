@@ -166,5 +166,13 @@ with lib;
       "github-runner-token" = { file = ../secrets/github-runner-token.age; owner = "root"; group = "root"; mode = "0400"; };
     })
 
+    // (optionalAttrs (config.networking.hostName == "hermes-agent") {
+      # Headscale preauth key so hermes-agent joins the tailnet unattended on
+      # first boot — see modules/services/infrastructure/tailscale.nix.
+      # Hostname-gated (like the david block above): encryption in
+      # secrets/secrets.nix (hermesAgentKeys) is the real access control.
+      "tailscale-authkey-hermes-agent" = { file = ../secrets/tailscale-authkey-hermes-agent.age; owner = "root"; group = "root"; mode = "0400"; };
+    })
+
     ;
 }

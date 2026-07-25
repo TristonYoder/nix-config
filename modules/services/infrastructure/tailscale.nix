@@ -37,6 +37,31 @@ in
       default = "https://ts.theyoder.family";
       description = "Headscale login server URL (empty uses default Tailscale coordination)";
     };
+
+    authKeyFile = mkOption {
+      type = types.nullOr types.path;
+      default = null;
+      description = ''
+        Path to a decrypted preauth key (e.g. an agenix secret path). When
+        set, forwarded to services.tailscale.authKeyFile, which makes
+        NixOS run `tailscale up` automatically via tailscaled-autoconnect.service
+        on every boot — needed for unattended hosts that can't run
+        `tailscale up` interactively (e.g. a headless first boot).
+        Generate with: sudo headscale preauthkeys create --user <user> --expiration <duration>
+      '';
+    };
+
+    advertiseTags = mkOption {
+      type = types.listOf types.str;
+      default = [ ];
+      example = [ "tag:infra-theyoder-family" ];
+      description = ''
+        Tags to self-advertise via --advertise-tags (requires the preauthkey's
+        user to be a tagOwner of each tag in headscale's ACL policy). Only
+        useful alongside authKeyFile — interactive `tailscale up` prompts for
+        tag approval instead.
+      '';
+    };
   };
 
   config = mkIf cfg.enable {
@@ -44,11 +69,13 @@ in
     services.tailscale = {
       enable = true;
       useRoutingFeatures = "both";
+      authKeyFile = cfg.authKeyFile;
       extraUpFlags = [
         (optionalString (cfg.loginServer != "") "--login-server=${cfg.loginServer}")
         (optionalString cfg.enableSSH "--ssh")
-        "--advertise-routes=${cfg.advertiseRoutes}"
+        (optionalString (cfg.advertiseRoutes != "") "--advertise-routes=${cfg.advertiseRoutes}")
         (optionalString cfg.advertiseExitNode "--advertise-exit-node")
+        (optionalString (cfg.advertiseTags != [ ]) "--advertise-tags=${concatStringsSep "," cfg.advertiseTags}")
         "--snat-subnet-routes=false"
         "--accept-routes=false"
       ];

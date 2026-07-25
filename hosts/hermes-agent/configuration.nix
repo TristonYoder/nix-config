@@ -22,9 +22,24 @@
   # until there's an actual reason to run them here. Tailscale client stays on
   # so this host can reach the rest of the tailnet through pits' headscale.
   modules.services.infrastructure.headscale.enable = lib.mkForce false;
+  # oidc.enable is checked independently of the parent enable in
+  # modules/secrets.nix's secret declaration, so it has to be forced off too
+  # or agenix still tries (and fails) to decrypt headscale-oidc-secret here.
+  modules.services.infrastructure.headscale.oidc.enable = lib.mkForce false;
   modules.services.infrastructure.technitium.enable = lib.mkForce false;
   modules.services.providers.dns-technitium.enable = lib.mkForce false;
   modules.services.infrastructure.caddy.enable = lib.mkForce false;
+
+  # Join the tailnet unattended on first boot — no IPv4 egress at all on this
+  # VPS (Vultr gave it a CGNAT-only private v4 + real public v6, no default
+  # v4 route), so it can't usefully advertise routes into the home LAN or
+  # serve as an exit node the way pits/david do.
+  modules.services.infrastructure.tailscale = {
+    authKeyFile = config.age.secrets.tailscale-authkey-hermes-agent.path;
+    advertiseExitNode = lib.mkForce false;
+    advertiseRoutes = lib.mkForce "";
+    advertiseTags = [ "tag:infra-theyoder-family" ];
+  };
 
   # profiles/edge.nix's min-free/max-free (5GB/10GB) assumes a bigger disk
   # than this host's 10GB total — on a disk this size that range would have
