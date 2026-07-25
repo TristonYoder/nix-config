@@ -22,13 +22,21 @@ a key-only SSH shell to drive `nixos-install` from anywhere.
 
 ## Flake outputs
 
-Three flake outputs today, each producing a clearly-labeled image:
+Five flake outputs today — three ISO/sdImage builds, plus two netboot
+builds for PXE (see "PXE netboot" below):
 
-| Output | Architecture | Filename | Base |
+| Output | Architecture | Output | Base |
 |---|---|---|---|
 | `nixosConfigurations.installer` | x86_64-linux | `nixos-installer-x86_64.iso` | `installation-cd-minimal.nix` |
 | `nixosConfigurations.installer-aarch64` | aarch64-linux | `nixos-installer-aarch64.iso` | `installation-cd-minimal.nix` |
 | `nixosConfigurations.installer-rpi5` | aarch64-linux (Raspberry Pi 5 / CM5) | `nixos-installer-rpi5.img.zst` | `nixos-raspberrypi` flake (`raspberry-pi-5.base`) |
+| `nixosConfigurations.installer-netboot` | x86_64-linux | `netbootBundle` (kernel + initrd + iPXE script) | `netboot-minimal.nix` |
+| `nixosConfigurations.installer-netboot-aarch64` | aarch64-linux | `netbootBundle` | `netboot-minimal.nix` |
+
+The netboot outputs share [common.nix](common.nix) with the ISO builds — see
+[netboot.nix](netboot.nix). Pi 5 has no netboot output: it network-boots via
+its own EEPROM/TFTP mechanism (no iPXE chainload involved), which is a
+materially different implementation not covered here.
 
 `installer-rpi5` needs its own base — generic aarch64 UEFI ISOs don't boot on
 the Pi 5, it needs Pi-specific firmware/bootloader/kernel handling. See
@@ -47,7 +55,8 @@ option that's actually load-bearing is `isoImage.isoBaseName` (used in
 ## CI: automatic rebuilds
 
 [`.github/workflows/build-installer-iso.yml`](../../.github/workflows/build-installer-iso.yml)
-builds and publishes all three images to `/data/nix-iso` on david whenever
+builds and publishes all five images (ISO x86_64/aarch64/rpi5 to
+`/data/nix-iso`, netboot x86_64/aarch64 to `/data/nix-pxe`) on david whenever
 something that actually changes their contents lands on `main`:
 `hosts/installer/**`, `modules/system/users.nix` (the baked-in SSH key), or
 `flake.nix`. Every other push is a no-op for this workflow — it doesn't run
@@ -67,7 +76,7 @@ written under a `.new` suffix and `mv`'d into place, so Caddy never serves a
 half-written file mid-build.
 
 Trigger a manual rebuild any time from the Actions tab ("Build Installer
-ISOs" → Run workflow), or:
+Images" → Run workflow), or:
 
 ```bash
 gh workflow run build-installer-iso.yml
@@ -130,6 +139,18 @@ the kernel — see CI section above) or from `tyoder-mbp`'s native
 pre-built). The result is a directory; the actual `.img.zst` file is under
 `<out-link>/sd-image/`.
 
+### Netboot (PXE) bundle
+
+```bash
+nix build '.#nixosConfigurations.installer-netboot.config.system.build.netbootBundle' --refresh
+# or installer-netboot-aarch64 — same emulation/linux-builder options as aarch64 above
+```
+
+The result is a directory containing `bzImage`, `initrd`, and `netboot.ipxe`
+— publish all three together into `/data/nix-pxe/x86_64/` (or `aarch64/`) on
+david. `netboot.ipxe` references the other two by relative filename, so they
+must stay siblings.
+
 ## Downloading a pre-built image
 
 All three variants are hosted on david at **https://nix-iso.theyoder.family/**
@@ -153,3 +174,48 @@ rebuild/upload needed unless you're testing an unmerged change.
    `nixos-generate-config`, `nixos-install --flake
    github:TristonYoder/nix-config#<hostname>` — per the remote-install
    workflow in the `host-provisioner` skill.
+
+## PXE netboot — no USB stick required
+
+Any PXE-capable x86_64 or aarch64 client on **VLAN 10 (User Devices,
+`10.150.10.0/24`)** can netboot straight into the installer, served by
+`modules.services.infrastructure.pxeBoot` on david (`enp4s0f1`, tagged VLAN
+10, `10.150.10.30`). See
+[`modules/services/infrastructure/pxe-boot.nix`](../../modules/services/infrastructure/pxe-boot.nix)
+for the dnsmasq proxyDHCP/TFTP config. Pi 5 is **not** covered — it needs its
+own EEPROM/TFTP boot flow, unrelated to iPXE chainloading.
+
+**david only answers proxyDHCP/TFTP requests on VLAN 10.** UniFi still owns
+real DHCP for that network — david never hands out IP leases, it only
+answers the PXE-specific boot-file questions a client asks in parallel with
+its normal DHCP request. This is a one-time UniFi change, done manually
+(not scripted — infrequent, low value to automate, real risk of a
+self-inflicted DHCP outage on the wrong network if scripted against the
+wrong target):
+
+1. **UniFi Network app → Settings → Networks → (the VLAN 10 / User Devices
+   network) → DHCP.**
+2. Set these two options under "DHCP Option 66/67" (or the equivalent
+   advanced DHCP fields, depending on controller version):
+   - **Option 66 (TFTP server name):** `10.150.10.30` — david's `vlan10` IP.
+   - **Option 67 (bootfile name):** `undionly.kpxe` — the BIOS chainload
+     binary. **Leave this as the single BIOS filename, even though UEFI and
+     aarch64 clients exist.** UniFi's DHCP option 67 is a single static
+     value with no per-client-architecture logic. Getting UEFI/aarch64
+     clients the *correct* loader (`ipxe-x86_64.efi` / `ipxe-aarch64.efi`)
+     is exactly why dnsmasq runs in **proxyDHCP** mode alongside UniFi's
+     real DHCP: proxyDHCP answers the PXE-specific option-93
+     (client-architecture) query itself and overrides the bootfile per
+     client, so UniFi's single static value only actually matters as a
+     fallback for clients that don't get a proxyDHCP answer in time. Legacy
+     BIOS is the safest fallback value.
+   - If your controller only exposes one plain "TFTP Server" / "Boot
+     Filename" field pair rather than named "Option 66/67", these are the
+     same setting under a different label.
+3. Save and apply. No reboot of UniFi devices needed — new DHCP option
+   values take effect on the next client DHCP transaction.
+4. **Verify:** boot a spare PXE-capable machine on VLAN 10 and watch it
+   reach the iPXE boot menu / installer. If it hangs at "PXE-E51: No DHCP or
+   proxyDHCP offers were received," double check david's `vlan10` interface
+   is up (`ip a show vlan10` on david) and that the UniFi switch port
+   `enp4s0f1` is plugged into is still trunking VLAN 10.
