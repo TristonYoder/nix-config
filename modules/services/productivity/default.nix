@@ -13,6 +13,5 @@
     ./stirling-pdf.nix
     ./paperless-ngx.nix
     ./miniflux.nix
-    ./blueprint.nix
   ];
 }
