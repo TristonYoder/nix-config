@@ -64,10 +64,7 @@ in
 
     srcHash = mkOption {
       type = types.str;
-      # Placeholder — `nix build` on david will fail with the real hash in
-      # its error message the first time; paste it in here. Same pattern as
-      # the npmDepsHash placeholder already in Blueprint's own flake.nix.
-      default = lib.fakeHash;
+      default = "sha256-VxpeHdvY7AuG1Sf+t4T1hS4JxHqUrlg/Q20SNrmI/qs=";
       description = "Output hash of the fetched source tree at `rev`";
     };
 
