@@ -64,9 +64,7 @@ in
 
     srcHash = mkOption {
       type = types.str;
-      # Source changed (font self-hosting fix) — both hashes below are
-      # stale for the new rev until the next build failure supplies them.
-      default = lib.fakeHash;
+      default = "sha256-RUtPB/kg8dOZoN70DlJ5KH1bxklFeKDFJwqoEBBI11M=";
       description = "Output hash of the fetched source tree at `rev`";
     };
 
