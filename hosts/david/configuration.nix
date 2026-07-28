@@ -107,6 +107,12 @@ in
   # AzuraCast - Internet radio station management (azuracast.* admin, radio.* public player)
   modules.services.media.azuracast.enable = true;
 
+  # Blueprint - personal dashboard (native, non-Docker, from TristonYoder/blueprint's own flake)
+  modules.services.productivity.blueprint = {
+    enable = true;
+    domain = "blueprint.tristonyoder.com";
+  };
+
   # Auto-create an AzuraCast station for each m3u file (Plexamp/Jellyfin mixes)
   # dropped into the shared m3u/playlist folder, and mirror every station into
   # Navidrome as an Internet Radio Station
