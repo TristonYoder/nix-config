@@ -58,19 +58,21 @@ in
 
     rev = mkOption {
       type = types.str;
-      default = "fe6a98f61c1c13701a4276327319b9f15c298ec4";
+      default = "b5988685f4d4dce07823eb5789ed4a52ecc5f13a";
       description = "Git rev of TristonYoder/blueprint (public) to build";
     };
 
     srcHash = mkOption {
       type = types.str;
-      default = "sha256-VxpeHdvY7AuG1Sf+t4T1hS4JxHqUrlg/Q20SNrmI/qs=";
+      # Source changed (font self-hosting fix) — both hashes below are
+      # stale for the new rev until the next build failure supplies them.
+      default = lib.fakeHash;
       description = "Output hash of the fetched source tree at `rev`";
     };
 
     npmDepsHash = mkOption {
       type = types.str;
-      default = "sha256-FLKyt0DSr1dboOdE3dhx5fsaCUfW+4SC2EmZ6cY2GUg=";
+      default = lib.fakeHash;
       description = "npm dependency hash for buildNpmPackage";
     };
 
