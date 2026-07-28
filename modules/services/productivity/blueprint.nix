@@ -35,7 +35,10 @@ let
       cp -r .next/standalone/. $out/
       mkdir -p $out/.next
       cp -r .next/static $out/.next/static
-      cp -r public $out/public
+      # public/ is currently empty in the source repo, and git doesn't track
+      # empty directories — it won't exist at all in a fresh fetch. Handle
+      # both cases rather than requiring the repo to carry a placeholder file.
+      if [ -d public ]; then cp -r public $out/public; else mkdir -p $out/public; fi
       runHook postInstall
     '';
   };
