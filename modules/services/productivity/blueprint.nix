@@ -70,7 +70,7 @@ in
 
     npmDepsHash = mkOption {
       type = types.str;
-      default = lib.fakeHash;
+      default = "sha256-0KLJJYgbqdcPFwEoEy5+Vv+L0rk3vJ4P34uezItnPnU=";
       description = "npm dependency hash for buildNpmPackage";
     };
 
