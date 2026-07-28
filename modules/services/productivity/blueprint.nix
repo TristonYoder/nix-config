@@ -70,8 +70,8 @@ in
 
     npmDepsHash = mkOption {
       type = types.str;
-      default = lib.fakeHash;
-      description = "npm dependency hash for buildNpmPackage — also a placeholder, fill from the build error";
+      default = "sha256-FLKyt0DSr1dboOdE3dhx5fsaCUfW+4SC2EmZ6cY2GUg=";
+      description = "npm dependency hash for buildNpmPackage";
     };
 
     user = mkOption {
