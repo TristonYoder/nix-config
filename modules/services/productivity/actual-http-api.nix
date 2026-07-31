@@ -35,8 +35,8 @@ in
 
     containerPort = mkOption {
       type = types.port;
-      default = 3000;
-      description = "Container port for the Actual HTTP API";
+      default = 5007;
+      description = "Container port for the Actual HTTP API (the app's own PORT default)";
     };
 
     image = mkOption {
