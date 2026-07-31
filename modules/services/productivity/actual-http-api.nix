@@ -8,7 +8,7 @@ let
     if cfg.actualServerUrl != "" then
       cfg.actualServerUrl
     else
-      "http://host.containers.internal:${toString actualModule.port}";
+      "http://host.docker.internal:${toString actualModule.port}";
   baseEnvironment = cfg.environment
     // optionalAttrs (resolvedActualServerUrl != "") {
       ACTUAL_SERVER_URL = resolvedActualServerUrl;
@@ -95,6 +95,7 @@ in
       volumes = [
         "${cfg.dataDir}:/data:rw"
       ];
+      extraOptions = [ "--add-host=host.docker.internal:host-gateway" ];
       log-driver = "journald";
     };
 
