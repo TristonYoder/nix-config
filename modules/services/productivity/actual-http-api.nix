@@ -41,7 +41,7 @@ in
 
     image = mkOption {
       type = types.str;
-      default = "ghcr.io/jhonderson/actual-http-api:latest";
+      default = "jhonderson/actual-http-api:latest";
       description = "OCI image for the Actual HTTP API";
     };
 
