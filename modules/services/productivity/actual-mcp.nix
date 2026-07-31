@@ -94,7 +94,6 @@ in
 
     virtualisation.oci-containers.containers."actual-mcp" = {
       image = cfg.image;
-      cmd = [ "--http" ];
       environment = baseEnvironment;
       environmentFiles = cfg.environmentFiles;
       ports = [
