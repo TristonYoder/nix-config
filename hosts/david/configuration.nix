@@ -90,6 +90,13 @@ in
   # this host and already owns that port.
   modules.services.productivity.stirlingPdf.port = 7879;
 
+  # Actual Budget: plain REST wrapper (jhonderson/actual-http-api) and MCP
+  # server (agigante80/actual-mcp-server), both talking to the actual.nix
+  # service directly via @actual-app/api. Credentials in
+  # actual-http-api-secrets.age / actual-mcp-secrets.age (modules/secrets.nix).
+  modules.services.productivity.actualHttpApi.enable = true;
+  modules.services.productivity.actualMcp.enable = true;
+
   # Scrutiny and Pixelfed both default to port 8085. Pixelfed's port is
   # externally referenced (PITS reverse proxy, ActivityPub webfinger), so
   # move Scrutiny instead — it's Caddy-proxied and localhost-only.

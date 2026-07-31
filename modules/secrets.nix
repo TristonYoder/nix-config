@@ -71,6 +71,8 @@ with lib;
       # staying that way for now). Raw token value only, no KEY=VALUE wrapping.
       "ghcr-pull-token" = { file = ../secrets/ghcr-pull-token.age; owner = "root"; group = "root"; mode = "0400"; };
       "pocket-id-encryption-key" = { file = ../secrets/pocket-id-encryption-key.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "actual-http-api-secrets" = { file = ../secrets/actual-http-api-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
+      "actual-mcp-secrets" = { file = ../secrets/actual-mcp-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
       # tidarr: docker-only service (docker/media/media-aq.nix), no NixOS module enable
       "tidarr-oidc-secret" = { file = ../secrets/tidarr-oidc-secret.age; mode = "0400"; };
       # stageplotifer: docker-only service (docker/productivity/stageplotifer.nix), no NixOS module enable.
