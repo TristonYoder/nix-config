@@ -37,7 +37,7 @@ in
     };
 
     # NVIDIA container toolkit — required for GPU passthrough in OCI containers
-    hardware.nvidia.container-toolkit.enable = mkIf (cfg.proxyHost == null) true;
+    hardware.nvidia-container-toolkit.enable = mkIf (cfg.proxyHost == null) true;
 
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
