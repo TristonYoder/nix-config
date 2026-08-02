@@ -101,6 +101,11 @@ jobs:
       run: |
         DEFAULT_BRANCH=$(gh repo view "$GITHUB_REPOSITORY" --json defaultBranchRef --jq '.defaultBranchRef.name')
 
+        if [ -z "$DEFAULT_BRANCH" ]; then
+          echo "::error::Could not resolve default branch, aborting to avoid deleting the wrong ref"
+          exit 1
+        fi
+
         # Never touch a branch that still has an open PR pointing at it
         OPEN_BRANCHES=$(gh pr list --state open --json headRefName --limit 300 --jq '.[].headRefName' | sort -u)
 
