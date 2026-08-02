@@ -9,11 +9,12 @@ name: NixOS Flake Updater
 #
 # Workflow:
 #   1. Close any old open flake update PRs from previous runs
-#   2. Update flake.lock with latest versions
-#   3. Create timestamped branch with changes
-#   4. Test configurations in parallel on all NixOS hosts (dry-run)
-#   5. If tests pass: Create PR for manual review
-#   6. If tests fail: Create issue mentioning @claude to attempt automated fixes
+#   2. Delete branches left behind by any closed/merged PR repo-wide (not just flake updates)
+#   3. Update flake.lock with latest versions
+#   4. Create timestamped branch with changes
+#   5. Test configurations in parallel on all NixOS hosts (dry-run)
+#   6. If tests pass: Create PR for manual review
+#   7. If tests fail: Create issue mentioning @claude to attempt automated fixes
 #
 # Required Secrets:
 #   - GITHUB_TOKEN: For PR/issue creation (automatically provided)
@@ -70,18 +71,70 @@ jobs:
           exit 0
         fi
 
-        # Close each old PR with explanation and delete matching branch
+        # Close each old PR with explanation; branch deletion is handled by the
+        # cleanup-stale-branches job below, which sweeps all closed PR branches
         echo "$OLD_PRS" | while read -r PR_NUMBER BRANCH_NAME; do
           if [ -n "$PR_NUMBER" ]; then
             echo "Closing PR #$PR_NUMBER"
             gh pr close "$PR_NUMBER" \
               --comment "This flake update PR has been superseded by a new automated run. Closing to avoid clutter."
           fi
+        done
 
-          if [ -n "$BRANCH_NAME" ]; then
-            echo "Deleting branch $BRANCH_NAME"
-            gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/${BRANCH_NAME}" || true
+  # Delete branches left behind by any closed or merged PR across the whole repo.
+  # Catches branches GitHub's "auto-delete head branches" setting misses (e.g. PRs
+  # closed without merging) and branches from old workflow runs before this job existed.
+  cleanup-stale-branches:
+    runs-on: ubuntu-latest
+    needs: close-old-prs
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Delete branches from closed/merged PRs
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        DEFAULT_BRANCH=$(gh repo view "$GITHUB_REPOSITORY" --json defaultBranchRef --jq '.defaultBranchRef.name')
+
+        if [ -z "$DEFAULT_BRANCH" ]; then
+          echo "::error::Could not resolve default branch, aborting to avoid deleting the wrong ref"
+          exit 1
+        fi
+
+        # Never touch a branch that still has an open PR pointing at it
+        OPEN_BRANCHES=$(gh pr list --state open --json headRefName --limit 300 --jq '.[].headRefName' | sort -u)
+
+        # Every branch behind a closed (merged or rejected) PR is a cleanup candidate.
+        # A branch can have had multiple PRs over time, so dedupe after listing.
+        CLOSED_BRANCHES=$(gh pr list --state closed --json headRefName --limit 300 --jq '.[].headRefName' | sort -u)
+
+        if [ -z "$CLOSED_BRANCHES" ]; then
+          echo "No closed PR branches to check"
+          exit 0
+        fi
+
+        echo "$CLOSED_BRANCHES" | while read -r BRANCH_NAME; do
+          [ -z "$BRANCH_NAME" ] && continue
+          [ "$BRANCH_NAME" = "$DEFAULT_BRANCH" ] && continue
+
+          if echo "$OPEN_BRANCHES" | grep -qx "$BRANCH_NAME"; then
+            echo "Skipping $BRANCH_NAME (still has an open PR)"
+            continue
           fi
+
+          if ! gh api "repos/${GITHUB_REPOSITORY}/git/refs/heads/${BRANCH_NAME}" >/dev/null 2>&1; then
+            echo "Branch $BRANCH_NAME already gone"
+            continue
+          fi
+
+          echo "Deleting stale branch $BRANCH_NAME"
+          gh api -X DELETE "repos/${GITHUB_REPOSITORY}/git/refs/heads/${BRANCH_NAME}" || \
+            echo "Failed to delete $BRANCH_NAME (may be protected), skipping"
         done
 
   # Update flake.lock
