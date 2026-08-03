@@ -86,4 +86,18 @@
       ipv6.method = "auto";
     };
   };
+
+  # =============================================================================
+  # CEC REMOTE CONTROL
+  # =============================================================================
+
+  # Tools for CEC display power control (power on/off connected TVs via HDMI)
+  environment.systemPackages = with pkgs; [
+    v4l-utils
+    libcec
+  ];
+
+  # Allow the main user to control CEC devices (/dev/cec*) without sudo
+  users.users.${config.modules.system.users.mainUser.name}.extraGroups = [ "video" ];
 }
+
