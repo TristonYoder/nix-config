@@ -12,7 +12,7 @@ let
 
   tristons-workstation = "age1t09tawcxnv7dk36jwqdt0ah5qragmta2gg52n93adydhzdz48esqv0lwv4";
 
-  hermes-agent = "age1p2mfakq0lwchprjj4tkk8v0qak0frj7ktc4h8nkrz7tm6kpmydsslfdnt3";
+  hermes-agent = "age16am5harvtrguyk4dn3ykh2u6npz2mrlvdhgln98mfrgrj5pypf8stkdwxe";
 
   stage-plotiphar = "age179pg3ncsgc50zmcsw67wrgatu0vzdulj475ftphcmkrdpx6cl4xszw0dfa";
 
