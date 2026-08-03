@@ -185,9 +185,12 @@ jobs:
 
         # All NixOS configs are tested on david (x86_64-linux) via the GitHub flake URL.
         # --refresh ensures nix fetches the latest pushed commit rather than a cached ref.
-        echo "Testing ${{ matrix.host }} on david..."
+        # Pin to the PR's own head branch (github.head_ref) so this actually validates
+        # the PR's diff instead of always resolving to main's default ref.
+        BRANCH="${{ github.head_ref || github.ref_name }}"
+        echo "Testing ${{ matrix.host }} on david (branch: $BRANCH)..."
         ssh ${{ secrets.NIXOS_SERVER_USER }}@david.vpn.theyoder.family \
-          "sudo nixos-rebuild dry-run --flake 'github:TristonYoder/nix-config#${{ matrix.host }}' --refresh"
+          "sudo nixos-rebuild dry-run --flake 'github:TristonYoder/nix-config/${BRANCH}#${{ matrix.host }}' --refresh"
 
     - name: Notify success
       if: success()

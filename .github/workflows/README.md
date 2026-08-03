@@ -56,8 +56,9 @@ No rsync. No temp directories. Every rebuild — in CI and locally via `rebuild`
 1. `check-flake-syntax` — installs nix on the runner, runs `nix flake check --all-systems`
 2. `test-configurations` (matrix: all NixOS hosts) — SSHes to david via Tailscale and runs:
    ```
-   sudo nixos-rebuild dry-run --flake 'github:TristonYoder/nix-config#<host>' --refresh
+   sudo nixos-rebuild dry-run --flake 'github:TristonYoder/nix-config/<branch>#<host>' --refresh
    ```
+   `<branch>` is the PR's own head branch (`github.head_ref`), falling back to the pushed branch on direct pushes — so this validates the PR's actual diff instead of always resolving to `main`.
 
 All tests are parallel. One failing host doesn't stop others.
 
@@ -79,6 +80,21 @@ All tests are parallel. One failing host doesn't stop others.
 **Closure build order within `build-all-closures`:**
 - `david`, `pits` — must succeed (blocks deployment if either fails)
 - `hermes-agent`, `tristons-workstation`, `tristons-nixbook`, `tristons-nixbook-pro` — best-effort (logged but non-blocking)
+
+### build-installer-iso.yml
+
+**Triggers:**
+- Push to `main` touching `hosts/installer/**`, `modules/system/users.nix`, `flake.nix`, or the workflow file itself — nothing else re-triggers it
+- Manual trigger (`workflow_dispatch`)
+
+**Jobs:**
+1. `build-and-publish` — SSHes to david and builds both installer ISO
+   flake outputs (`nixosConfigurations.installer`, `.installer-aarch64`;
+   aarch64 cross-builds via `boot.binfmt.emulatedSystems` on david), then
+   publishes each as `/data/nix-iso/nixos-installer-<arch>.iso` (owned by
+   `caddy:caddy`, written under a `.new` suffix and renamed into place so
+   Caddy never serves a partial file). Served at
+   `nix-iso.theyoder.family` — see `hosts/installer/README.md`.
 
 ## Usage
 

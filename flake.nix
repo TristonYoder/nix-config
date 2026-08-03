@@ -32,6 +32,11 @@
     # NixOS hardware support modules (T2, Raspberry Pi, etc.)
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
 
+    # Raspberry Pi 5 firmware/bootloader/kernel support — used by the
+    # stage-plotiphar kiosk host and the installer-rpi5 flake output.
+    # Vanilla nixpkgs sdImage doesn't support the Pi 5's boot process.
+    nixos-raspberrypi.url = "github:nvmd/nixos-raspberrypi";
+
     # External modules
     nix-bitcoin.url = "github:fort-nix/nix-bitcoin/v0.0.117";
     nixos-vscode-server.url = "github:nix-community/nixos-vscode-server";
@@ -43,12 +48,13 @@
     # External app flakes
     iopenpod-flake.url = "github:TristonYoder/iopenpod-flake";
     iopodcli.url = "github:TristonYoder/iOpenPodCLI";
+    blueprint.url = "github:TristonYoder/blueprint";
 
     # Hermes Agent (NousResearch) — official NixOS module
     hermes-agent.url = "github:NousResearch/hermes-agent";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, flake-utils, iopenpod-flake, iopodcli, hermes-agent, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, nixos-raspberrypi, flake-utils, iopenpod-flake, iopodcli, blueprint, hermes-agent, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -154,7 +160,7 @@
           ];
           
           specialArgs = {
-            inherit self nixpkgs nixpkgs-unstable nix-bitcoin iopenpod-flake iopodcli;
+            inherit self nixpkgs nixpkgs-unstable nix-bitcoin iopenpod-flake iopodcli blueprint;
           };
         };
 
@@ -304,6 +310,56 @@
         };
 
         # -----------------------------------------------------------------------------
+        # installer - Barebones installer ISO (generic hardware, Tailscale + SSH)
+        # -----------------------------------------------------------------------------
+        installer = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+
+          modules = [
+            ./hosts/installer/configuration.nix
+          ];
+
+          specialArgs = {
+            inherit nixpkgs;
+          };
+        };
+
+        # Same installer config, built for aarch64 (Raspberry Pi / ARM boards).
+        # Building this requires an aarch64-linux builder — either a native ARM
+        # machine or `boot.binfmt.emulatedSystems = [ "aarch64-linux" ];` on an
+        # x86_64 builder host. Neither is currently set up on any host in this
+        # fleet (david included) — building this output will fail with
+        # "don't know how to build for system aarch64-linux" until one is.
+        installer-aarch64 = nixpkgs.lib.nixosSystem {
+          system = "aarch64-linux";
+
+          modules = [
+            ./hosts/installer/configuration.nix
+          ];
+
+          specialArgs = {
+            inherit nixpkgs;
+          };
+        };
+
+        # Barebones installer for Raspberry Pi 5 (CM5/Pi 5) specifically —
+        # generic aarch64-linux UEFI ISOs don't boot on the Pi 5, it needs
+        # its own firmware/bootloader/kernel handling. Uses the same
+        # nixos-raspberrypi flake (and raspberry-pi-5.base module) as the
+        # stage-plotiphar kiosk host on the host/plotiphar branch, so this
+        # is a proven-working pattern, not a first attempt.
+        installer-rpi5 = nixos-raspberrypi.lib.nixosInstaller {
+          modules = [
+            {
+              imports = with nixos-raspberrypi.nixosModules; [
+                raspberry-pi-5.base
+              ];
+            }
+            ./hosts/installer/rpi5.nix
+          ];
+        };
+
+        # -----------------------------------------------------------------------------
         # pits - Pi in the Sky - Edge Server (Cloud VPS)
         # -----------------------------------------------------------------------------
         pits = nixpkgs.lib.nixosSystem {
@@ -342,24 +398,23 @@
             inherit self nixpkgs nixpkgs-unstable;
           };
         };
-        
         # -----------------------------------------------------------------------------
         # hermes-agent - Edge Agent Host (Cloud VPS)
         # -----------------------------------------------------------------------------
         hermes-agent = nixpkgs.lib.nixosSystem {
           system = "x86_64-linux";
-          
+
           modules = [
             ./common/system.nix
             ./common/linux.nix
-            
+
             ./profiles/edge.nix
-            
+
             ./hosts/hermes-agent/configuration.nix
             ./hosts/hermes-agent/hardware-configuration.nix
-            
+
             ./modules
-            
+
             nixos-vscode-server.nixosModules.default
             agenix.nixosModules.default
 
@@ -375,6 +430,121 @@
           specialArgs = {
             inherit self nixpkgs nixpkgs-unstable;
           };
+        };
+
+        # -----------------------------------------------------------------------------
+        # stage-plotiphar - Raspberry Pi 5 (CM5 Lite) signage kiosk (aarch64-linux)
+        # -----------------------------------------------------------------------------
+        stage-plotiphar = nixpkgs.lib.nixosSystem {
+          system = "aarch64-linux";
+
+          modules = [
+            nixos-raspberrypi.lib.inject-overlays
+
+            {
+              imports = with nixos-raspberrypi.nixosModules; [
+                raspberry-pi-5.base
+                raspberry-pi-5.display-vc4
+              ];
+            }
+
+            # Common configuration
+            ./common/system.nix
+            ./common/linux.nix
+
+            # Kiosk profile
+            ./profiles/kiosk.nix
+
+            # Host-specific configuration
+            ./hosts/stage-plotiphar/configuration.nix
+            ./hosts/stage-plotiphar/hardware-configuration.nix
+
+            # Custom modules (hardware, system, services)
+            ./modules
+
+            # External modules
+            nixos-vscode-server.nixosModules.default
+            agenix.nixosModules.default
+
+            # Home Manager
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.backupFileExtension = "backup";
+              home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
+            }
+          ];
+
+          specialArgs = {
+            inherit self nixpkgs nixpkgs-unstable nixos-raspberrypi;
+          };
+        };
+
+        # -----------------------------------------------------------------------------
+        # stage-plotiphar-vm - Parallels-bootable live ISO of the same kiosk config,
+        # for testing before deploying to the real Pi 5. See hosts/stage-plotiphar-vm
+        # for what this can/can't validate. Build with:
+        # nix build .#nixosConfigurations.stage-plotiphar-vm.config.system.build.isoImage
+        # -----------------------------------------------------------------------------
+        stage-plotiphar-vm = nixpkgs.lib.nixosSystem {
+          system = "aarch64-linux";
+
+          modules = [
+            # Common configuration
+            ./common/system.nix
+            ./common/linux.nix
+
+            # Kiosk profile — same one the real Pi 5 host uses
+            ./profiles/kiosk.nix
+
+            # Host-specific configuration
+            ./hosts/stage-plotiphar-vm/configuration.nix
+
+            # Custom modules (hardware, system, services)
+            ./modules
+
+            # ./modules/secrets.nix declares `age.secrets.*` unconditionally,
+            # so the agenix module needs to exist even though this throwaway
+            # VM never actually decrypts anything.
+            agenix.nixosModules.default
+          ];
+
+          specialArgs = {
+            inherit self nixpkgs nixpkgs-unstable;
+          };
+        };
+
+        # -----------------------------------------------------------------------------
+        # stage-plotiphar-installer - one-shot Pi 5 SD/NVMe image used only to get
+        # NixOS onto the box; not a host you rebuild day-to-day. Bakes in Triston's
+        # SSH keys so it's reachable the instant it boots (no monitor/keyboard).
+        # Build with: nix build .#nixosConfigurations.stage-plotiphar-installer.config.system.build.sdImage
+        # -----------------------------------------------------------------------------
+        stage-plotiphar-installer = nixos-raspberrypi.lib.nixosInstaller {
+          modules = [
+            {
+              imports = with nixos-raspberrypi.nixosModules; [
+                raspberry-pi-5.base
+              ];
+
+              users.users.root.openssh.authorizedKeys.keys = [
+                "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK5JWm3A5tXTCPq8YTua30QH2+Pa/Mz96QC5KJZKdEsz Triston Yoder"
+              ];
+              users.users.nixos.openssh.authorizedKeys.keys = [
+                "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK5JWm3A5tXTCPq8YTua30QH2+Pa/Mz96QC5KJZKdEsz Triston Yoder"
+              ];
+            }
+          ]
+          # WiFi creds, if present on THIS machine outside the repo entirely — never
+          # committed. See secrets/local-only/README.md. Deliberately an absolute path
+          # outside the flake's own source tree (not e.g. ./secrets/local-only/...):
+          # flakes only see git-tracked files in their own source, so a gitignored file
+          # *inside* the repo directory would silently and invisibly not exist here.
+          # Requires building with --impure (this reads outside the flake's source).
+          ++ nixpkgs.lib.optional
+            (builtins.pathExists "${builtins.getEnv "HOME"}/.config/nix-config-local-only/wifi-installer.nix")
+            (import "${builtins.getEnv "HOME"}/.config/nix-config-local-only/wifi-installer.nix");
         };
       };
 

@@ -40,6 +40,26 @@ in
   # which drops postDeviceCommands support.
   boot.initrd.systemd.enable = lib.mkForce false;
 
+  # QEMU user-mode emulation for aarch64-linux — lets `nix build` cross-build
+  # ARM outputs (e.g. nixosConfigurations.installer-aarch64) directly on this
+  # x86_64 host, so CI (which only reaches david, not a personal Mac) can
+  # build both installer ISO architectures without a native ARM builder.
+  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+
+  # nixos-raspberrypi's binary cache — required for nixosConfigurations.
+  # installer-rpi5 (and the stage-plotiphar host). Their custom Pi 5 kernel
+  # build fails under QEMU emulation (a HOSTCC-vs-target-binary mismatch in
+  # the kernel's kconfig tooling — confirmed: "Exec format error" trying to
+  # build linux_rpi-bcm2712 via boot.binfmt above). Trusting this cache
+  # means david fetches the prebuilt kernel instead of compiling it —
+  # strictly less rebuilding, not more.
+  nix.settings = {
+    substituters = lib.mkAfter [ "https://nixos-raspberrypi.cachix.org" ];
+    trusted-public-keys = lib.mkAfter [
+      "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI="
+    ];
+  };
+
   # =============================================================================
   # HOST-SPECIFIC SETTINGS
   # =============================================================================
@@ -70,6 +90,13 @@ in
   # this host and already owns that port.
   modules.services.productivity.stirlingPdf.port = 7879;
 
+  # Actual Budget: plain REST wrapper (jhonderson/actual-http-api) and MCP
+  # server (agigante80/actual-mcp-server), both talking to the actual.nix
+  # service directly via @actual-app/api. Credentials in
+  # actual-http-api-secrets.age / actual-mcp-secrets.age (modules/secrets.nix).
+  modules.services.productivity.actualHttpApi.enable = true;
+  modules.services.productivity.actualMcp.enable = true;
+
   # Scrutiny and Pixelfed both default to port 8085. Pixelfed's port is
   # externally referenced (PITS reverse proxy, ActivityPub webfinger), so
   # move Scrutiny instead — it's Caddy-proxied and localhost-only.
@@ -86,6 +113,12 @@ in
 
   # AzuraCast - Internet radio station management (azuracast.* admin, radio.* public player)
   modules.services.media.azuracast.enable = true;
+
+  # Blueprint - personal dashboard (native, non-Docker, from TristonYoder/blueprint's own flake)
+  modules.services.productivity.blueprint = {
+    enable = true;
+    domain = "blueprint.tristonyoder.com";
+  };
 
   # Auto-create an AzuraCast station for each m3u file (Plexamp/Jellyfin mixes)
   # dropped into the shared m3u/playlist folder, and mirror every station into
@@ -188,14 +221,24 @@ in
     category = "media";
   };
 
-  # InvokeAI
-  modules.services.vHosts.hosts."invoke.${config.networking.domain}" = {
-    reverseProxyHost = "tristons-workstation.${config.networking.domain}";
-    reverseProxyPort = 9090;
-    displayName = "InvokeAI";
-    category = "ai";
-    icon = "invoke-ai";
-    monitor = false; # runs on workstation, not always reachable
+  # InvokeAI — proxy to tristons-workstation (RTX 4080)
+  modules.services.ai.invokeAi = {
+    enable = true;
+    proxyHost = "tristons-workstation.${config.networking.domain}";
+  };
+
+  # Nix installer ISOs - static file server over /data/nix-iso (ZFS dataset).
+  # Internal-only (public defaults false) — these are install media, no
+  # secrets, but no reason to expose them to the open internet either.
+  modules.services.vHosts.hosts."nix-iso.${config.networking.domain}" = {
+    rawConfig = true;
+    displayName = "Nix ISOs";
+    category = "infrastructure";
+    monitor = false; # directory listing, not a service with a stable 200
+    extraConfig = ''
+      root * /data/nix-iso
+      file_server browse
+    '';
   };
 
   # Home Assistant - runs on a separate device on the LAN.

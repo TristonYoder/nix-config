@@ -1,0 +1,127 @@
+name: Build Installer ISOs
+
+# Only runs when something that actually changes the installer ISO's
+# contents changes — the installer config itself, the SSH key baked into
+# it (modules/system/users.nix), or the flake outputs that define it.
+# Everything else on main is a no-op for this workflow.
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'hosts/installer/**'
+      - 'modules/system/users.nix'
+      - 'flake.nix'
+      - '.github/workflows/build-installer-iso.yml'
+  workflow_dispatch: {}
+
+concurrency:
+  group: build-installer-iso
+  cancel-in-progress: false
+
+env:
+  MATRIX_HOMESERVER_URL: ${{ secrets.MATRIX_HOMESERVER_URL }}
+  MATRIX_ROOM_ID: ${{ secrets.MATRIX_ROOM_ID }}
+  MATRIX_ACCESS_TOKEN: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Notify start
+      id: notify-start
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          🔵 Building installer images (x86_64 + aarch64 + rpi5) on david
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+
+    - name: Setup Tailscale (Headscale)
+      uses: tailscale/github-action@v2
+      with:
+        authkey: ${{ secrets.HEADSCALE_AUTHKEY }}
+        tags: tag:github-actions
+        version: 1.78.1
+        args: --login-server ${{ secrets.HEADSCALE_LOGIN_SERVER }}
+
+    - name: Wait for Tailscale connection
+      run: sleep 10
+
+    # All three images are built and published to /data/nix-iso on david:
+    # x86_64 natively, aarch64 and rpi5 via david's QEMU binfmt emulation
+    # (boot.binfmt.emulatedSystems in hosts/david/configuration.nix). rpi5's
+    # kernel doesn't build under emulation (a HOSTCC/target-binary mismatch
+    # in its kconfig step) — it's fetched pre-built from
+    # nixos-raspberrypi.cachix.org instead (also configured on david).
+    - name: Build and publish images
+      run: |
+        mkdir -p ~/.ssh
+        echo "Host *" >> ~/.ssh/config
+        echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+        echo "  UserKnownHostsFile /dev/null" >> ~/.ssh/config
+        chmod 600 ~/.ssh/config
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+        chmod 600 ~/.ssh/id_ed25519
+
+        ssh ${{ secrets.NIXOS_SERVER_USER }}@david.vpn.theyoder.family << 'EOF'
+          set -e
+
+          build_and_publish() {
+            local attr="$1"
+            local build_attr="$2"  # isoImage or sdImage
+            echo "--- Building nixosConfigurations.$attr.config.system.build.$build_attr ---"
+            local out_link="/tmp/installer-image-$attr"
+            sudo nix build \
+              "github:TristonYoder/nix-config#nixosConfigurations.$attr.config.system.build.$build_attr" \
+              --refresh --out-link "$out_link"
+
+            # isoImage lands under $out_link/iso/, sdImage under
+            # $out_link/sd-image/ — search rather than hardcode the subdir.
+            # Trailing slash matters: find only descends into a symlinked
+            # directory given as its starting path if it's slash-terminated.
+            image_path=$(find "$out_link/" -maxdepth 2 -type f \( -name '*.iso' -o -name '*.img.zst' \) | head -n1)
+            image_name=$(basename "$image_path")
+
+            # Write under a temp name and rename into place — mv is atomic on
+            # the same filesystem, so Caddy never serves a partially-written file.
+            sudo install -m 644 -o caddy -g caddy "$image_path" "/data/nix-iso/${image_name}.new"
+            sudo mv "/data/nix-iso/${image_name}.new" "/data/nix-iso/${image_name}"
+            sudo rm -f "$out_link"
+            echo "✅ Published $image_name"
+          }
+
+          build_and_publish installer isoImage
+          build_and_publish installer-aarch64 isoImage
+          build_and_publish installer-rpi5 sdImage
+        EOF
+
+    - name: Notify success
+      if: success()
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ✅ Installer images published to https://nix-iso.theyoder.family/
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ steps.notify-start.outputs.event_id }}
+
+    - name: Notify failure
+      if: failure()
+      continue-on-error: true
+      uses: ./.github/actions/matrix-notification
+      with:
+        message: |
+          ❌ Installer image build failed
+          ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        room_id: ${{ secrets.MATRIX_ROOM_ID }}
+        homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
+        access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
+        thread_id: ${{ steps.notify-start.outputs.event_id }}

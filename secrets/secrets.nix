@@ -14,6 +14,8 @@ let
 
   hermes-agent = "age1p2mfakq0lwchprjj4tkk8v0qak0frj7ktc4h8nkrz7tm6kpmydsslfdnt3";
 
+  stage-plotiphar = "age179pg3ncsgc50zmcsw67wrgatu0vzdulj475ftphcmkrdpx6cl4xszw0dfa";
+
   # =============================================================================
   # ADMIN KEYS - Keys for managing secrets from local machines
   # =============================================================================
@@ -43,6 +45,9 @@ let
 
   # Secrets for hermes-agent only
   hermesAgentKeys = [ hermes-agent ] ++ adminKeys;
+
+  # Secrets for stage-plotiphar only
+  stagePlotipharKeys = [ stage-plotiphar ] ++ adminKeys;
 in
 {
   # =============================================================================
@@ -186,4 +191,13 @@ in
   "postal-signing-key.age".publicKeys = pitsKeys;
   "postal-admin-email.age".publicKeys = pitsKeys;
   "postal-admin-password.age".publicKeys = pitsKeys;
+
+  # =============================================================================
+  # STAGE-PLOTIPHAR-SPECIFIC SECRETS
+  # =============================================================================
+
+  # WiFi PSK for the TPCC_Production network — decrypted at activation via this
+  # host's own SSH host key, substituted into the declarative NetworkManager
+  # profile at boot (never in the Nix store). See modules/system/wifi.nix.
+  "stage-plotiphar-wifi-psk.age".publicKeys = stagePlotipharKeys;
 }

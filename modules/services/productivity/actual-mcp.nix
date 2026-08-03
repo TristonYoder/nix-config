@@ -2,7 +2,7 @@
 
 with lib;
 let
-  cfg = config.modules.services.productivity.actualHttpApi;
+  cfg = config.modules.services.productivity.actualMcp;
   actualModule = config.modules.services.productivity.actual;
   resolvedActualServerUrl =
     if cfg.actualServerUrl != "" then
@@ -18,37 +18,43 @@ let
     };
 in
 {
-  options.modules.services.productivity.actualHttpApi = {
-    enable = mkEnableOption "Actual Budget HTTP API";
+  options.modules.services.productivity.actualMcp = {
+    enable = mkEnableOption "Actual Budget MCP Server";
 
     domain = mkOption {
       type = types.str;
-      default = "api.budget.theyoder.family";
-      description = "Domain for the Actual HTTP API";
+      default = "mcp.budget.${config.networking.domain}";
+      description = "Domain for the Actual MCP Server";
     };
 
     port = mkOption {
       type = types.port;
-      default = 5007;
-      description = "Host port for the Actual HTTP API";
+      default = 3600;
+      description = "Host port for the Actual MCP Server";
     };
 
     containerPort = mkOption {
       type = types.port;
-      default = 5007;
-      description = "Container port for the Actual HTTP API (the app's own PORT default)";
+      default = 3600;
+      description = "Container port for the Actual MCP Server";
     };
 
     image = mkOption {
       type = types.str;
-      default = "jhonderson/actual-http-api:latest";
-      description = "OCI image for the Actual HTTP API";
+      default = "ghcr.io/agigante80/actual-mcp-server:latest";
+      description = "OCI image for the Actual MCP Server";
     };
 
     dataDir = mkOption {
       type = types.str;
-      default = "/data/docker-appdata/actual-http-api";
-      description = "Data directory for the Actual HTTP API container";
+      default = "/data/docker-appdata/actual-mcp";
+      description = "Data directory for the Actual MCP Server container (local budget cache)";
+    };
+
+    logsDir = mkOption {
+      type = types.str;
+      default = "/data/docker-appdata/actual-mcp-logs";
+      description = "Logs directory for the Actual MCP Server container";
     };
 
     actualServerUrl = mkOption {
@@ -60,32 +66,33 @@ in
     environment = mkOption {
       type = types.attrsOf types.str;
       default = { };
-      description = "Additional environment variables for the Actual HTTP API container";
+      description = "Additional environment variables for the Actual MCP Server container";
     };
 
     environmentFiles = mkOption {
       type = types.listOf types.path;
-      default = optional (config.age.secrets ? actual-http-api-secrets) config.age.secrets.actual-http-api-secrets.path;
-      description = "Environment files passed to the Actual HTTP API container (must provide ACTUAL_SERVER_PASSWORD and API_KEY)";
+      default = optional (config.age.secrets ? actual-mcp-secrets) config.age.secrets.actual-mcp-secrets.path;
+      description = "Environment files passed to the Actual MCP Server container (must provide ACTUAL_PASSWORD, ACTUAL_BUDGET_SYNC_ID, MCP_SSE_AUTHORIZATION)";
     };
 
     openFirewall = mkOption {
       type = types.bool;
-      default = true;
-      description = "Open firewall port";
+      default = false;
+      description = "Open firewall port (leave closed; reach the server through the reverse proxy)";
     };
   };
 
   config = mkIf cfg.enable {
     systemd.tmpfiles.rules = [
       "d ${cfg.dataDir} 0755 root root -"
+      "d ${cfg.logsDir} 0755 root root -"
     ];
 
     networking.firewall = mkIf cfg.openFirewall {
       allowedTCPPorts = [ cfg.port ];
     };
 
-    virtualisation.oci-containers.containers."actual-http-api" = {
+    virtualisation.oci-containers.containers."actual-mcp" = {
       image = cfg.image;
       environment = baseEnvironment;
       environmentFiles = cfg.environmentFiles;
@@ -93,7 +100,8 @@ in
         "${toString cfg.port}:${toString cfg.containerPort}/tcp"
       ];
       volumes = [
-        "${cfg.dataDir}:/data:rw"
+        "${cfg.dataDir}:/app/data:rw"
+        "${cfg.logsDir}:/app/logs:rw"
       ];
       extraOptions = [ "--add-host=host.docker.internal:host-gateway" ];
       log-driver = "journald";
@@ -101,9 +109,10 @@ in
 
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
-      displayName = "Actual API";
+      displayName = "Actual MCP";
       category = "productivity";
       monitor = false;
+      public = false;
     };
   };
 }

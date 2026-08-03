@@ -1,44 +1,14 @@
-{ config, lib, pkgs, nixpkgs-unstable, ... }:
+{ config, lib, pkgs, blueprint, ... }:
 
 with lib;
 let
   cfg = config.modules.services.productivity.blueprint;
-  unstable = import nixpkgs-unstable { system = pkgs.system; };
 
-  # No buildNpmPackage precedent exists anywhere else in this repo (grepped
-  # the whole tree) — this is the first native (non-Docker) Next.js
-  # deployment here. Builds the "standalone" server.js output the same way
-  # Blueprint's own Dockerfile does, just without the container layer.
-  blueprint = pkgs.buildNpmPackage {
-    pname = "blueprint";
-    version = cfg.rev;
-    src = pkgs.fetchFromGitHub {
-      owner = "TristonYoder";
-      repo = "blueprint";
-      rev = cfg.rev;
-      hash = cfg.srcHash;
-    };
-
-    npmDepsHash = cfg.npmDepsHash;
-    nodejs = unstable.nodejs_22;
-    npmBuildScript = "build";
-
-    # DATABASE_URL only needs to resolve at runtime, not build time — `next
-    # build` doesn't touch the DB (every route is force-dynamic) — but the
-    # Postgres client library still wants *a* well-formed value present to
-    # construct its Pool without throwing at import time during the build.
-    DATABASE_URL = "postgresql://build:build@localhost/build";
-
-    installPhase = ''
-      runHook preInstall
-      mkdir -p $out
-      cp -r .next/standalone/. $out/
-      mkdir -p $out/.next
-      cp -r .next/static $out/.next/static
-      cp -r public $out/public
-      runHook postInstall
-    '';
-  };
+  # blueprint's own flake.nix owns the buildNpmPackage derivation (source,
+  # npmDepsHash, standalone installPhase) — this module just consumes the
+  # package output and wires it into systemd/postgres/vHosts, same pattern
+  # as iopodcli's overlay in modules/services/storage/ipod-sync.nix.
+  blueprintPkg = blueprint.packages.${pkgs.system}.default;
 in
 {
   options.modules.services.productivity.blueprint = {
@@ -54,27 +24,6 @@ in
       type = types.port;
       default = 3212;
       description = "Port Blueprint's Next.js server listens on";
-    };
-
-    rev = mkOption {
-      type = types.str;
-      default = "fe6a98f61c1c13701a4276327319b9f15c298ec4";
-      description = "Git rev of TristonYoder/blueprint (public) to build";
-    };
-
-    srcHash = mkOption {
-      type = types.str;
-      # Placeholder — `nix build` on david will fail with the real hash in
-      # its error message the first time; paste it in here. Same pattern as
-      # the npmDepsHash placeholder already in Blueprint's own flake.nix.
-      default = lib.fakeHash;
-      description = "Output hash of the fetched source tree at `rev`";
-    };
-
-    npmDepsHash = mkOption {
-      type = types.str;
-      default = lib.fakeHash;
-      description = "npm dependency hash for buildNpmPackage — also a placeholder, fill from the build error";
     };
 
     user = mkOption {
@@ -122,7 +71,7 @@ in
         Type = "simple";
         User = cfg.user;
         Group = cfg.user;
-        ExecStart = "${unstable.nodejs_22}/bin/node ${blueprint}/server.js";
+        ExecStart = "${pkgs.nodejs_22}/bin/node ${blueprintPkg}/server.js";
         Restart = "on-failure";
         RestartSec = 5;
       };
@@ -131,13 +80,13 @@ in
     # Not automated yet: `drizzle-kit migrate` is a build-time devDependency,
     # not part of the standalone runtime output, so there's no migration
     # runner wired into the service start. Run it manually after first
-    # deploy and after any future schema change:
+    # deploy and after any future schema change, from a checkout with
+    # node_modules (the systemd unit's own build output doesn't carry
+    # drizzle-kit itself):
     #   DATABASE_URL="postgresql:///blueprint?host=/run/postgresql" \
     #     sudo -u blueprint npx drizzle-kit migrate
-    # (from a checkout with node_modules — the systemd unit's own build
-    # output doesn't carry drizzle-kit itself).
 
-    modules.services.vHosts.hosts."blueprint" = {
+    modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
       displayName = "Blueprint";
       category = "productivity";

@@ -2,10 +2,12 @@
 {
   # Import productivity service modules
   imports = [
+    ./blueprint.nix
     ./vaultwarden.nix
     ./n8n.nix
     ./actual.nix
     ./actual-http-api.nix
+    ./actual-mcp.nix
     ./outline.nix
     ./tandoor.nix
     ./babybuddy.nix
