@@ -6,24 +6,14 @@
 
   modules.hardware.boot.enable = lib.mkForce false;
 
-  # DHCP on ens3 only ever handed out the CGNAT address with no default
-  # route — Vultr's own docs (instance networking tab) give a static
-  # config with a real gateway instead. NetworkManager was also fighting
-  # us on ens7 (VPC) activation, so go fully declarative/static and drop
-  # NetworkManager for this host.
+  # NetworkManager fights us on ens7 (VPC) static activation, so go fully
+  # declarative and drop NetworkManager for this host.
   networking.networkmanager.enable = lib.mkForce false;
-  networking.useDHCP = lib.mkForce false;
 
-  networking.interfaces.ens3 = {
-    ipv4.addresses = [{ address = "100.68.119.228"; prefixLength = 18; }];
-    # Vultr's metadata service (169.254.169.254) lives behind this gateway,
-    # not on the local /18 — needs its own route, per Vultr's docs.
-    ipv4.routes = [{ address = "169.254.0.0"; prefixLength = 16; }];
-  };
-  networking.defaultGateway = { address = "100.68.64.1"; interface = "ens3"; };
-  # IPv6 keeps working via SLAAC/RA (already confirmed reachable) — no
-  # static v6 config needed.
-  networking.nameservers = lib.mkForce [ "108.61.10.10" "2001:19f0:300:1704::6" ];
+  # ens3 (public) gets a real public IPv4 + gateway via DHCP — confirmed on
+  # the actual instance (not the CGNAT-only address an earlier revision of
+  # this file assumed). IPv6 works via SLAAC/RA already.
+  networking.interfaces.ens3.useDHCP = true;
 
   # Private VPC 2.0 network to pits (10.151.100.4) — no DHCP server on
   # this network, Vultr's docs require a static assignment.
