@@ -83,12 +83,20 @@ in
       enable = true;
       useRoutingFeatures = "both";
       authKeyFile = cfg.authKeyFile;
-      extraUpFlags = [
-        (optionalString (cfg.loginServer != "") "--login-server=${cfg.loginServer}")
-        (optionalString cfg.enableSSH "--ssh")
-        (optionalString (cfg.advertiseRoutes != "") "--advertise-routes=${cfg.advertiseRoutes}")
-        (optionalString cfg.advertiseExitNode "--advertise-exit-node")
-        (optionalString (cfg.advertiseTags != [ ]) "--advertise-tags=${concatStringsSep "," cfg.advertiseTags}")
+      # optionalString returns "" (not omitted) when the condition is false,
+      # and that empty string becomes a real positional shell argument once
+      # NixOS builds the `tailscale up` command line — which `tailscale up`
+      # then rejects as "too many non-flag arguments", breaking the whole
+      # command (confirmed on hermes-agent, where advertiseRoutes/
+      # advertiseExitNode are both disabled). Use optional/optionals (which
+      # return [] instead of [""]) and concatenate instead.
+      extraUpFlags =
+        (optional (cfg.loginServer != "") "--login-server=${cfg.loginServer}")
+        ++ (optional cfg.enableSSH "--ssh")
+        ++ (optional (cfg.advertiseRoutes != "") "--advertise-routes=${cfg.advertiseRoutes}")
+        ++ (optional cfg.advertiseExitNode "--advertise-exit-node")
+        ++ (optional (cfg.advertiseTags != [ ]) "--advertise-tags=${concatStringsSep "," cfg.advertiseTags}")
+        ++ [
         "--snat-subnet-routes=false"
         "--accept-routes=false"
       ];
