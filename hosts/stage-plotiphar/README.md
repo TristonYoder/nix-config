@@ -68,6 +68,11 @@ journalctl -u kiosk-url-tracker -f
 # physical button:
 sudo rm -rf /var/lib/kiosk/profile-*/Default /var/lib/kiosk/profile-*/current-url
 sudo systemctl restart kiosk-launcher
+
+# Remote display power control via HDMI-CEC:
+cec-ctl -d /dev/cec0 --playback --to 0 --image-view-on   # Power on TV on Port 1
+cec-ctl -d /dev/cec0 --playback --to 0 --standby         # Power off TV on Port 1
+cec-ctl -d /dev/cec1 --playback --to 0 --image-view-on   # Power on TV on Port 2
 ```
 
 ## Troubleshooting
