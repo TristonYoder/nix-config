@@ -21,19 +21,19 @@
   boot.loader.grub.efiSupport = false;
 
   fileSystems."/" =
-    { device = "/dev/disk/by-uuid/9a854f25-a353-4e32-a0c7-5ae20473b979";
+    { device = "/dev/disk/by-uuid/badaa621-c316-4bb3-8111-2978c10ef9b5";
       fsType = "btrfs";
       options = [ "subvol=@" "compress=zstd" "noatime" ];
     };
 
   fileSystems."/nix" =
-    { device = "/dev/disk/by-uuid/9a854f25-a353-4e32-a0c7-5ae20473b979";
+    { device = "/dev/disk/by-uuid/badaa621-c316-4bb3-8111-2978c10ef9b5";
       fsType = "btrfs";
       options = [ "subvol=@nix" "compress=zstd" "noatime" ];
     };
 
   fileSystems."/.snapshots" =
-    { device = "/dev/disk/by-uuid/9a854f25-a353-4e32-a0c7-5ae20473b979";
+    { device = "/dev/disk/by-uuid/badaa621-c316-4bb3-8111-2978c10ef9b5";
       fsType = "btrfs";
       options = [ "subvol=@snapshots" "compress=zstd" "noatime" ];
     };
