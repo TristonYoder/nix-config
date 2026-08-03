@@ -3,6 +3,15 @@
 with lib;
 let
   cfg = config.modules.services.ai.hermes-agent;
+  # Container mode bind-mounts stateDir at container path /data (see
+  # containerMode below). obsidianVault must live nested under stateDir so its
+  # container-side path is a computable offset from /data — used both for the
+  # activation script's relative symlinks and for OBSIDIAN_VAULT_PATH below.
+  vaultRelToState =
+    if lib.hasPrefix "${cfg.stateDir}/" cfg.obsidianVault
+    then lib.removePrefix "${cfg.stateDir}/" cfg.obsidianVault
+    else throw "modules.services.ai.hermes-agent.obsidianVault must be nested under stateDir (${cfg.stateDir}) so the container can see it";
+  obsidianVaultContainerPath = "/data/${vaultRelToState}";
 in
 {
   options.modules.services.ai.hermes-agent = {
@@ -167,7 +176,14 @@ in
 
       environmentFiles = optional (cfg.environmentFile != null) cfg.environmentFile;
 
-      environment = optionalAttrs (cfg.homeRoom != null) {
+      environment = {
+        # Container-side path to the shared vault root (obsidianVault), used
+        # by the bundled "obsidian" skill's OBSIDIAN_VAULT_PATH convention.
+        # Points one level above the Hermes/ namespace so that convention
+        # (documented as "the vault") matches what other folders in the same
+        # vault (e.g. AIOS/, Homelab/) would expect a shared root to mean.
+        OBSIDIAN_VAULT_PATH = obsidianVaultContainerPath;
+      } // optionalAttrs (cfg.homeRoom != null) {
         MATRIX_HOME_ROOM = cfg.homeRoom;
       };
 
@@ -226,11 +242,7 @@ in
         # the container's entrypoint fails to dereference it on chown. Vault
         # links must be relative to resolve under both the host path and the
         # container's remapped one — which requires obsidianVault to live
-        # under stateDir.
-        vaultRelToState =
-          if lib.hasPrefix "${stateDir}/" cfg.obsidianVault
-          then lib.removePrefix "${stateDir}/" cfg.obsidianVault
-          else throw "modules.services.ai.hermes-agent.obsidianVault must be nested under stateDir (${stateDir}) so the container can see it";
+        # under stateDir. (vaultRelToState is computed once, at module scope.)
       in ''
         mkdir -p ${vaultDir}
         chown ${user}:${group} ${cfg.obsidianVault} ${vaultDir}
