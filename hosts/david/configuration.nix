@@ -331,6 +331,7 @@ in
       remote = "git@github.com:TristonYoder/hermes-brain.git";
       deployKeyFile = config.age.secrets.hermes-brain-deploy-key.path;
     };
+    dashboard.enable = true;
   };
 
   modules.services.ai.open-webui = {

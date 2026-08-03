@@ -3,6 +3,17 @@
 with lib;
 let
   cfg = config.modules.services.ai.hermes-agent;
+
+  # Mirrors the upstream module's own `effectivePackage` (nix/nixosModules.nix)
+  # so the dashboard's native-mode fallback runs the exact same build as the
+  # gateway (extraDependencyGroups = [ "matrix" ] pulls in mautrix etc.).
+  # Container mode doesn't need this — it execs into the already-resolved
+  # /data/current-package symlink inside the running container instead.
+  effectiveHermesPackage =
+    let hcfg = config.services.hermes-agent;
+    in if hcfg.extraPythonPackages == [ ] && hcfg.extraDependencyGroups == [ ]
+       then hcfg.package
+       else hcfg.package.override { inherit (hcfg) extraPythonPackages extraDependencyGroups; };
 in
 {
   options.modules.services.ai.hermes-agent = {
@@ -117,6 +128,34 @@ in
           safety net, not the primary sync path — Hermes is expected to commit
           its own deliberate changes; this timer only catches what it forgets,
           with a generic "auto-sync" commit message.
+        '';
+      };
+    };
+
+    dashboard = {
+      enable = mkEnableOption ''
+        Hermes's browser web dashboard (`hermes dashboard`) — config, API keys,
+        and session management UI — as a second service alongside the gateway
+      '';
+
+      port = mkOption {
+        type = types.port;
+        default = 9119;
+        description = ''
+          Port for the dashboard backend. Always bound to 127.0.0.1, never
+          publicly — reached only through the vHosts/Caddy reverse proxy (or
+          an SSH/Tailscale tunnel directly to the port).
+        '';
+      };
+
+      domain = mkOption {
+        type = types.str;
+        default = "hermes.${config.networking.domain}";
+        description = ''
+          vHosts domain the dashboard is registered under. Kept `public =
+          false` — the dashboard has no auth of its own when bound to
+          loopback (see module comment), so it's reachable over LAN/Tailscale
+          only, the same trust model as this repo's other internal admin UIs.
         '';
       };
     };
@@ -322,6 +361,66 @@ in
       timerConfig = {
         OnBootSec = "5min";
         OnUnitActiveSec = cfg.vaultGit.interval;
+      };
+    };
+
+    modules.services.vHosts.hosts = mkIf cfg.dashboard.enable {
+      ${cfg.dashboard.domain} = {
+        reverseProxyPort = cfg.dashboard.port;
+        displayName = "Hermes Dashboard";
+        category = "ai";
+        icon = "hermes";
+        public = false;
+      };
+    };
+
+    # `hermes dashboard` is a second, independent process from the gateway
+    # (`hermes gateway run`) — both read/write the same HERMES_HOME state, so
+    # it's safe to run side by side. `--no-open` skips the (headless-hostile)
+    # browser launch; `--skip-build` serves the SPA already built into the
+    # package (HERMES_WEB_DIST, set by the wrapper in nixosModules.nix)
+    # instead of shelling out to npm, which isn't available in this context.
+    #
+    # No dashboard-level auth is configured: it never binds beyond 127.0.0.1,
+    # so upstream's own auth gate (which only engages on non-loopback binds)
+    # stays off. Caddy is the sole ingress, same trust boundary as this
+    # repo's other internal-only admin UIs.
+    systemd.services.hermes-dashboard = mkIf cfg.dashboard.enable {
+      description = "Hermes Agent web dashboard";
+      after = [ "hermes-agent.service" ] ++ optional cfg.containerMode "docker.service";
+      requires = [ "hermes-agent.service" ];
+      wantedBy = [ "multi-user.target" ];
+
+      path = [ pkgs.coreutils ] ++ optional cfg.containerMode pkgs.docker;
+
+      # Container mode: exec into the *running* gateway container rather than
+      # spinning up a second one — network=host means a loopback bind here is
+      # already the host's loopback, and /data/current-package is the same
+      # symlink the upstream module keeps pointed at effectivePackage, so this
+      # always runs the exact build the gateway is running. `docker exec`
+      # defaults to root, which would leave dashboard-written state
+      # root-owned inside a dir the gateway process (running as cfg.user)
+      # can't write back to — resolve the uid/gid at run time and match it,
+      # same as the upstream module's own preStart does for container create.
+      script =
+        if cfg.containerMode then ''
+          HERMES_UID=$(id -u ${config.services.hermes-agent.user})
+          HERMES_GID=$(id -g ${config.services.hermes-agent.group})
+          exec docker exec --user "$HERMES_UID:$HERMES_GID" hermes-agent \
+            /data/current-package/bin/hermes dashboard \
+            --no-open --skip-build \
+            --host 127.0.0.1 --port ${toString cfg.dashboard.port}
+        ''
+        else ''
+          exec ${effectiveHermesPackage}/bin/hermes dashboard \
+            --no-open --skip-build \
+            --host 127.0.0.1 --port ${toString cfg.dashboard.port}
+        '';
+
+      serviceConfig = {
+        Type = "simple";
+        Restart = "on-failure";
+        RestartSec = 5;
       };
     };
   };
