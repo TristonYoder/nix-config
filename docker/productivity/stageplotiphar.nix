@@ -120,12 +120,6 @@
       "127.0.0.1:1396:1396/tcp"
     ];
     log-driver = "journald";
-    labels = {
-      # Scopes the fast-poll watchtower below to just this container —
-      # the global docker/watchtower.nix instance still covers everything
-      # else at its normal (unconfigured/default) cadence.
-      "com.centurylinklabs.watchtower.enable" = "true";
-    };
     extraOptions = [
       "--network-alias=stageplotiphar"
       "--network=stageplotiphar_default"
@@ -162,9 +156,8 @@
   };
 
   # Logs the host's root docker client in to GHCR before anything tries to
-  # pull the (private) image — both the `docker run` this generates and
-  # watchtower-stageplotiphar (via the mounted config.json below) rely on
-  # the resulting /root/.docker/config.json.
+  # pull the (private) image — the `docker run` this generates relies on the
+  # resulting /root/.docker/config.json.
   systemd.services."docker-login-ghcr-stageplotiphar" = {
     path = [ pkgs.docker ];
     serviceConfig = {
@@ -294,38 +287,77 @@
     wantedBy = [ "docker-compose-stageplotiphar-root.target" ];
   };
 
+  # Daily snapshots — Postgres logical dump + the app data volume.
+  #
+  # Lives under /data/docker-appdata rather than /data/backups on purpose:
+  # /data/backups is a browsable Samba share (see modules/services/storage/
+  # samba.nix) and this dump contains every tenant's data. Mode 0700 root:root
+  # keeps it unreadable to NFS clients too — /data/docker-appdata is exported
+  # rw but without no_root_squash, so a remote root maps to nobody.
+  systemd.tmpfiles.rules = [
+    "d /data/docker-appdata/stageplotiphar 0700 root root -"
+    "d /data/docker-appdata/stageplotiphar/snapshots 0700 root root -"
+  ];
+
+  systemd.services."stageplotiphar-snapshot" = {
+    description = "Daily snapshot of Stage Plotiphar database and data volume";
+    path = [ pkgs.docker pkgs.gzip pkgs.findutils pkgs.coreutils ];
+    after = [ "docker-stageplotiphar-db.service" ];
+    requires = [ "docker-stageplotiphar-db.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      TimeoutStartSec = "1h";
+      SyslogIdentifier = "stageplotiphar-snapshot";
+    };
+    script = ''
+      set -euo pipefail
+
+      DEST=/data/docker-appdata/stageplotiphar/snapshots
+      STAMP="$(date +%Y-%m-%d)"
+
+      # Postgres — the authoritative store (DATABASE_TYPE=postgres above).
+      # Run inside the db container so the credentials come from that
+      # container's own environment; the password only ever exists in the
+      # agenix env file, never on the host filesystem or in this script.
+      docker exec stageplotiphar-db sh -c \
+        'PGPASSWORD="$POSTGRES_PASSWORD" pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
+        | gzip -c > "$DEST/db-$STAMP.sql.gz.partial"
+      mv "$DEST/db-$STAMP.sql.gz.partial" "$DEST/db-$STAMP.sql.gz"
+
+      # /app/data volume — uploads and generated PDF exports. Taken live
+      # rather than stopping the app: these are whole files written once, and
+      # anything relational that would need a consistent point-in-time view is
+      # in the Postgres dump above.
+      docker run --rm \
+        -v stageplotiphar_data:/from:ro \
+        -v "$DEST":/to \
+        alpine tar czf "/to/data-$STAMP.tar.gz.partial" -C /from .
+      mv "$DEST/data-$STAMP.tar.gz.partial" "$DEST/data-$STAMP.tar.gz"
+
+      # Retention. The .partial sweep cleans up after a dump that died
+      # mid-write — `set -o pipefail` means the mv is skipped in that case, so
+      # a truncated file is never promoted to a real snapshot name.
+      find "$DEST" -maxdepth 1 -type f -name '*.gz' -mtime +14 -delete
+      find "$DEST" -maxdepth 1 -type f -name '*.partial' -mtime +1 -delete
+    '';
+  };
+
+  systemd.timers."stageplotiphar-snapshot" = {
+    description = "Run the Stage Plotiphar snapshot daily";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "daily";
+      Persistent = true;
+      RandomizedDelaySec = "30min";
+    };
+  };
+
   # Root service
   systemd.targets."docker-compose-stageplotiphar-root" = {
     unitConfig = {
       Description = "Stage Plotiphar stage plot planning tool";
     };
     wantedBy = [ "multi-user.target" ];
-  };
-
-  # Fast-poll watchtower — testing phase only. Scoped via WATCHTOWER_LABEL_ENABLE
-  # to containers carrying the label above, so it only touches stageplotiphar,
-  # not every other service on this host. Drop this block (and the label above)
-  # once builds have stabilized and the global watchtower's normal cadence is enough.
-  virtualisation.oci-containers.containers."watchtower-stageplotiphar" = {
-    autoStart = true;
-    image = "nickfedor/watchtower";
-    volumes = [
-      "/var/run/docker.sock:/var/run/docker.sock"
-      # Reuses the same GHCR login docker-login-ghcr-stageplotiphar.service
-      # produces — watchtower needs its own read access to pull-check a
-      # private image, separate from the host docker CLI's own credential use.
-      "/root/.docker/config.json:/config.json:ro"
-    ];
-    environment = {
-      WATCHTOWER_LABEL_ENABLE = "true";
-      WATCHTOWER_POLL_INTERVAL = "300"; # 5 minutes
-      WATCHTOWER_CLEANUP = "true";
-    };
-  };
-
-  systemd.services."docker-watchtower-stageplotiphar" = {
-    after = [ "docker-login-ghcr-stageplotiphar.service" ];
-    requires = [ "docker-login-ghcr-stageplotiphar.service" ];
   };
 
   # Caddy reverse proxy
