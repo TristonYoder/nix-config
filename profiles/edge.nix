@@ -120,9 +120,9 @@
   
   # Daily GC for space-constrained VPS — prune generations older than 7 days
   nix.gc = {
-    automatic = lib.mkDefault true;
-    dates = lib.mkDefault "daily";
-    options = lib.mkDefault "--delete-older-than 7d";
+    automatic = true;
+    dates = "daily";
+    options = "--delete-older-than 7d";
   };
 
   # Prune unused Docker images daily (keeps disk free on space-constrained VPS)
