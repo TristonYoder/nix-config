@@ -39,11 +39,11 @@
     },
     "b1church": {
       "locked": {
-        "lastModified": 1786373112,
-        "narHash": "sha256-fM7g2cZ9Sr1ZINrQp94/Ik2NTkfILj+ANQsGu3QkqMU=",
+        "lastModified": 1786373599,
+        "narHash": "sha256-qLCj47Zntp6VqIroVmNHEeFcfSM0YrDG9ScJ1yialAo=",
         "owner": "TristonYoder",
         "repo": "b1church-flake",
-        "rev": "6239996456d5e6c627be7037d4dfb4182c17ba19",
+        "rev": "14b34c0fd5d9803dfb1b44968b9acdd3ff2339b0",
         "type": "github"
       },
       "original": {
