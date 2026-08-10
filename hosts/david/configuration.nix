@@ -183,11 +183,52 @@ in
     '';
   };
 
-  # Elizabeth Allen Photography - WordPress site
+  # ---------------------------------------------------------------------------
+  # WordPress sites (containers defined in docker/websites/)
+  #
+  # Domains below are the canonical siteurl/home values stored in each site's
+  # wp_options table — not the (stale) hostnames in the docker/websites/ file
+  # headers. All three are Cloudflare-proxied publicly and resolve to david
+  # internally via Technitium split-horizon DNS.
+  # ---------------------------------------------------------------------------
+
+  # carolineyoder.com — WordPress personal site
+  modules.services.vHosts.hosts."carolineyoder.com" = {
+    public = true;
+    reverseProxyPort = 1128;
+    displayName = "Caroline Yoder";
+    category = "public";
+  };
+
+  # elizabethallen.photography — WordPress photography portfolio.
+  # This is the CANONICAL domain: wp-config.php pins WP_HOME/WP_SITEURL here,
+  # and those constants override the wp_options values, so every other hostname
+  # 301s to this one.
   modules.services.vHosts.hosts."elizabethallen.photography" = {
     public = true;
     reverseProxyPort = 1996;
     displayName = "Elizabeth Allen Photography";
+    category = "public";
+  };
+
+  # Secondary domain for the same site. WordPress 301s it to the canonical host
+  # above, so it is served but not monitored separately.
+  modules.services.vHosts.hosts."carolineelizabeth.photography" = {
+    public = true;
+    reverseProxyPort = 1996;
+    displayName = "Caroline Elizabeth Photography";
+    category = "public";
+    monitor = false;
+  };
+
+  # 7andco.studio — WordPress studio site.
+  # Subdomain multisite (SUBDOMAIN_INSTALL = true). Only the root blog exists
+  # today; adding a subsite means adding a wildcard *.7andco.studio vHost here,
+  # otherwise Caddy will not have a cert or route for it.
+  modules.services.vHosts.hosts."7andco.studio" = {
+    public = true;
+    reverseProxyPort = 7777;
+    displayName = "7 and Co Studio";
     category = "public";
   };
 
