@@ -183,12 +183,48 @@ in
     '';
   };
 
-  # Elizabeth Allen Photography - WordPress site
+  # ---------------------------------------------------------------------------
+  # WordPress sites (containers defined in docker/websites/)
+  #
+  # Domains below are the canonical siteurl/home values stored in each site's
+  # wp_options table — not the (stale) hostnames in the docker/websites/ file
+  # headers. All three are Cloudflare-proxied publicly and resolve to david
+  # internally via Technitium split-horizon DNS.
+  # ---------------------------------------------------------------------------
+
+  # carolineyoder.com — WordPress personal site
+  modules.services.vHosts.hosts."carolineyoder.com" = {
+    public = true;
+    reverseProxyPort = 1128;
+    displayName = "Caroline Yoder";
+    category = "public";
+  };
+
+  # carolineelizabeth.photography — WordPress photography portfolio
+  modules.services.vHosts.hosts."carolineelizabeth.photography" = {
+    public = true;
+    reverseProxyPort = 1996;
+    displayName = "Caroline Elizabeth Photography";
+    category = "public";
+  };
+
+  # 7andco.studio — WordPress studio site
+  modules.services.vHosts.hosts."7andco.studio" = {
+    public = true;
+    reverseProxyPort = 7777;
+    displayName = "7 and Co Studio";
+    category = "public";
+  };
+
+  # Legacy internal name for the photography site (same upstream as
+  # carolineelizabeth.photography above). Public DNS points this at a Tailscale
+  # address, so it is an internal-access alias rather than a published domain.
   modules.services.vHosts.hosts."elizabethallen.photography" = {
     public = true;
     reverseProxyPort = 1996;
     displayName = "Elizabeth Allen Photography";
     category = "public";
+    monitor = false;  # duplicate upstream; carolineelizabeth.photography is the monitored one
   };
 
   # Tunarr - Virtual IPTV tuner for Plex/Jellyfin

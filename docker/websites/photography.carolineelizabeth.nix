@@ -3,6 +3,19 @@
 # Auto-generated using compose2nix v0.2.0-pre.
 { config, pkgs, lib, ... }:
 
+let
+  # PHP upload limits for the WordPress container. The official image ships
+  # upload_max_filesize=2M / post_max_size=8M, which caps media uploads well
+  # below what the site needs. Mounted into conf.d so it overrides the defaults.
+  phpUploadsIni = pkgs.writeText "photography-carolineelizabeth-uploads.ini" ''
+    file_uploads = On
+    upload_max_filesize = 1G
+    post_max_size = 1G
+    memory_limit = 1G
+    max_execution_time = 600
+    max_input_time = 600
+  '';
+in
 {
   # Runtime
   virtualisation.docker = {
@@ -13,7 +26,11 @@
 
   # Containers
   virtualisation.oci-containers.containers."photography_carolineelizabeth-db" = {
-    image = "mysql:5.7";
+    # MySQL 5.7 went EOL in Oct 2023. Migrated to 8.0 via dump/restore rather
+    # than an in-place upgrade: 8.0 rewrites the data dir irreversibly, so this
+    # points at a NEW directory and leaves the 5.7 data untouched. Rollback is
+    # reverting this file — see scripts/wordpress-mysql-upgrade.sh.
+    image = "mysql:8.0";
     environmentFiles = [
       config.age.secrets.wordpress-photography-mysql.path
     ];
@@ -24,7 +41,7 @@
       MYSQL_USER = "wordpress";
     };
     volumes = [
-      "/data/docker-appdata/photography-carolineelizabeth/database:/var/lib/mysql:rw"
+      "/data/docker-appdata/photography-carolineelizabeth/database-8.0:/var/lib/mysql:rw"
     ];
     log-driver = "journald";
     extraOptions = [
@@ -53,7 +70,12 @@
     ];
   };
   virtualisation.oci-containers.containers."photography_carolineelizabeth-wordpress" = {
-    image = "wordpress:latest";
+    # Pinned to the php8.3 line rather than :latest. Watchtower updates every
+    # container on this host unfiltered, so :latest would let it move the site
+    # onto a new PHP major without warning — the usual way plugins/themes break.
+    # WP core itself lives in the bind-mounted webroot and self-updates, so this
+    # pins the runtime only, not the CMS version.
+    image = "wordpress:php8.3-apache";
     environmentFiles = [
       config.age.secrets.wordpress-photography-wp.path
     ];
@@ -64,6 +86,7 @@
     };
     volumes = [
       "/data/docker-appdata/photography-carolineelizabeth/wp-backup/:/var/www/html:rw"
+      "${phpUploadsIni}:/usr/local/etc/php/conf.d/uploads.ini:ro"
     ];
     ports = [
       "1996:80/tcp"

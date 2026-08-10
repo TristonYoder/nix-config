@@ -301,6 +301,21 @@ modules.services.vHosts.hosts."myservice" = {
 
 All providers are enabled/disabled independently. The server profile enables Caddy, Technitium, Gatus, and Homepage by default.
 
+### Split-Horizon DNS — The Standing Pattern
+
+**This is how DNS works for every service from here on out.** Every domain we serve — including public, customer-facing ones — resolves two different ways depending on who is asking:
+
+- **Internally** (clients using Technitium as their resolver): the domain resolves to david, so traffic stays on the LAN and never leaves the network.
+- **Externally** (public resolvers like 1.1.1.1): the domain resolves to its real public IP — normally Cloudflare's proxy IPs, with the Cloudflare tunnel carrying traffic back to the host.
+
+Registering a vHost is what creates the internal half. `modules.services.providers.dns-technitium` walks the vHosts registry and creates a record pointing at david for every domain, auto-creating a forwarder zone at TLD+1 when the domain isn't under `networking.domain`. The public half lives in Cloudflare and is managed there.
+
+**Consequences when adding a service:**
+- Registering a public apex domain (e.g. `carolineyoder.com`) in the vHosts registry is expected and correct, not a mistake. It creates the internal leg of the split.
+- Caddy requests certs via Cloudflare DNS-01, so the `CLOUDFLARE_API_TOKEN` must have Zone:DNS:Edit on **every** zone registered as a vHost — including zones outside `theyoder.family`. A missing zone means repeated failed cert issuance, which burns Let's Encrypt rate limits.
+- `public = true` is a declaration that the domain is published externally. It only drives routing when `providers.cloudflare-tunnel` is enabled; david currently runs the token-based `infrastructure.cloudflared` instead, whose ingress rules live in the Cloudflare dashboard, not in this repo.
+- Don't "fix" a public domain appearing in Technitium by removing it. That breaks internal routing.
+
 ### Configuration Hierarchy
 
 Hosts import configurations in this order:
