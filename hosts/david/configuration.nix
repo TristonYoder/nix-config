@@ -200,31 +200,36 @@ in
     category = "public";
   };
 
-  # carolineelizabeth.photography — WordPress photography portfolio
-  modules.services.vHosts.hosts."carolineelizabeth.photography" = {
-    public = true;
-    reverseProxyPort = 1996;
-    displayName = "Caroline Elizabeth Photography";
-    category = "public";
-  };
-
-  # 7andco.studio — WordPress studio site
-  modules.services.vHosts.hosts."7andco.studio" = {
-    public = true;
-    reverseProxyPort = 7777;
-    displayName = "7 and Co Studio";
-    category = "public";
-  };
-
-  # Legacy internal name for the photography site (same upstream as
-  # carolineelizabeth.photography above). Public DNS points this at a Tailscale
-  # address, so it is an internal-access alias rather than a published domain.
+  # elizabethallen.photography — WordPress photography portfolio.
+  # This is the CANONICAL domain: wp-config.php pins WP_HOME/WP_SITEURL here,
+  # and those constants override the wp_options values, so every other hostname
+  # 301s to this one.
   modules.services.vHosts.hosts."elizabethallen.photography" = {
     public = true;
     reverseProxyPort = 1996;
     displayName = "Elizabeth Allen Photography";
     category = "public";
-    monitor = false;  # duplicate upstream; carolineelizabeth.photography is the monitored one
+  };
+
+  # Secondary domain for the same site. WordPress 301s it to the canonical host
+  # above, so it is served but not monitored separately.
+  modules.services.vHosts.hosts."carolineelizabeth.photography" = {
+    public = true;
+    reverseProxyPort = 1996;
+    displayName = "Caroline Elizabeth Photography";
+    category = "public";
+    monitor = false;
+  };
+
+  # 7andco.studio — WordPress studio site.
+  # Subdomain multisite (SUBDOMAIN_INSTALL = true). Only the root blog exists
+  # today; adding a subsite means adding a wildcard *.7andco.studio vHost here,
+  # otherwise Caddy will not have a cert or route for it.
+  modules.services.vHosts.hosts."7andco.studio" = {
+    public = true;
+    reverseProxyPort = 7777;
+    displayName = "7 and Co Studio";
+    category = "public";
   };
 
   # Tunarr - Virtual IPTV tuner for Plex/Jellyfin

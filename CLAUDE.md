@@ -759,6 +759,37 @@ It's idempotent — safe to run anytime, only creates stations for m3u files wit
 
 **If station creation fails with "no available ports for new radio stations":** AzuraCast reserves a full 10-port block per station (frontend/telnet/dj/headroom), not just the 3 ports actually bound. Widen `modules.services.media.azuracast.stationPortMax`, but check `sudo ss -tulpn` on david first for a clean gap rather than just incrementing — the original 9500-9599 range was extended once already and had to be relocated entirely to 23000-24999 to get clear of neighboring services.
 
+### WordPress Sites — Upload Limits and Canonical Domains
+
+**Hosts:** david — `docker/websites/*.nix`
+
+Three WordPress sites run as Docker containers behind the vHosts registry:
+
+| Container port | Canonical domain | Notes |
+|---|---|---|
+| 1128 | `carolineyoder.com` | single-site |
+| 1996 | `elizabethallen.photography` | single-site; `carolineelizabeth.photography` 301s here |
+| 7777 | `7andco.studio` | **subdomain multisite** |
+
+**Do not trust the hostnames in the file headers of `docker/websites/*.nix`** — several are stale. The authoritative source is `WP_HOME`/`WP_SITEURL` in each site's `wp-config.php`, which **override** the `siteurl`/`home` values in `wp_options`. The photography site is the trap: its DB says `carolineelizabeth.photography` but the constants pin it to `elizabethallen.photography`, so that is what it actually serves.
+
+**Raising the upload limit takes up to three separate changes:**
+
+1. **PHP** — a `writeText` ini bind-mounted to `/usr/local/etc/php/conf.d/uploads.ini` in the container (`upload_max_filesize`, `post_max_size`, `memory_limit`). The official image ships 2M/8M/128M. `memory_limit` matters: WordPress buffers uploads in memory during media processing, so leaving it low caps real uploads regardless of `upload_max_filesize`.
+
+2. **WordPress Multisite network setting** — multisite installs enforce `fileupload_maxk` (in KB) from `wp_sitemeta`, which overrides PHP entirely in the media uploader. Default is 1500 (≈1.5 MB). This lives in the **database, not this repo**, so it survives rebuilds and is invisible to `nixos-rebuild`. Only `7andco.studio` is multisite. Check and set it with:
+   ```bash
+   sudo docker exec studio_7andco-wordpress php -r 'include "/var/www/html/wp-config.php";
+     $c=new mysqli(DB_HOST,DB_USER,DB_PASSWORD,DB_NAME);
+     $r=$c->query("SELECT meta_value FROM wp_sitemeta WHERE meta_key=\"fileupload_maxk\"");
+     echo $r->fetch_row()[0]."\n";'
+   ```
+   Equivalent UI path: Network Admin → Settings → Max upload file size.
+
+3. **Cloudflare edge** — all three domains are CF-proxied, and the edge caps request bodies at **100 MB** on Free/Pro (200 MB Business). Nothing in this repo can lift that. Uploads over the local network bypass it; uploads through the public hostname do not.
+
+**Image pinning:** these use `wordpress:php8.3-apache`, not `:latest`. Watchtower runs unfiltered on david, so `:latest` would let it move a live site onto a new PHP major. WP core lives in the bind-mounted webroot and self-updates independently of the image — the three sites have run different core versions off the same tag.
+
 ## References
 
 Key documentation files in this repository:
