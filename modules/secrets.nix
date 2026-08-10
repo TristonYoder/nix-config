@@ -105,9 +105,11 @@ with lib;
       # keeping them in one file means they cannot drift apart.
       "b1church-db-secrets" = { file = ../secrets/b1church-db-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
       # b1church-api: KEY=VALUE file with JWT_SECRET, ENCRYPTION_KEY and the
-      # Mailgun SMTP_USER/SMTP_PASS. ENCRYPTION_KEY must be exactly 32 chars —
-      # changing it after first boot makes existing encrypted columns
-      # unreadable, so treat it as permanent once the stack has data.
+      # Mailgun SMTP_USER/SMTP_PASS. Use 32 chars for ENCRYPTION_KEY —
+      # upstream's own default is exactly that length, and the Api only
+      # checks that it is set, not that it is valid. Changing it after first
+      # boot makes existing encrypted columns unreadable, so treat it as
+      # permanent once the stack holds data.
       "b1church-api-secrets" = { file = ../secrets/b1church-api-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
     })
 
