@@ -104,8 +104,9 @@ with lib;
       # seven *_CONNECTION_STRING values, which embed that same password —
       # keeping them in one file means they cannot drift apart.
       "b1church-db-secrets" = { file = ../secrets/b1church-db-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
-      # b1church-api: KEY=VALUE file with JWT_SECRET, ENCRYPTION_KEY and the
-      # Mailgun SMTP_USER/SMTP_PASS. Use 32 chars for ENCRYPTION_KEY —
+      # b1church-api: KEY=VALUE file with JWT_SECRET and ENCRYPTION_KEY. Add
+      # SMTP_USER/SMTP_PASS here when turning on b1church.smtp.enable — mail
+      # is deliberately unconfigured for now. Use 32 chars for ENCRYPTION_KEY —
       # upstream's own default is exactly that length, and the Api only
       # checks that it is set, not that it is valid. Changing it after first
       # boot makes existing encrypted columns unreadable, so treat it as

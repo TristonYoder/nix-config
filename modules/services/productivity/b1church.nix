@@ -107,9 +107,22 @@ in
     };
 
     smtp = {
+      enable = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Configure an SMTP relay for transactional mail. While disabled, the
+          Api starts and registration works — the first account still becomes
+          server admin — but password resets and member invites are generated
+          with nowhere to send them and silently do nothing.
+
+          Turning this on additionally requires SMTP_USER and SMTP_PASS in the
+          b1church-api-secrets file.
+        '';
+      };
       host = mkOption {
         type = types.str;
-        default = "smtp.mailgun.org";
+        default = "";
         description = "SMTP relay hostname. SMTP_USER/SMTP_PASS come from the api secret file.";
       };
       port = mkOption {
@@ -188,6 +201,10 @@ in
         assertion = hasPrefix "/" cfg.apiPath && !(hasSuffix "/" cfg.apiPath);
         message = "b1church.apiPath must start with / and must not end with / (got \"${cfg.apiPath}\").";
       }
+      {
+        assertion = cfg.smtp.enable -> cfg.smtp.host != "";
+        message = "b1church.smtp.enable is set but smtp.host is empty.";
+      }
     ];
 
     warnings = optional (cfg.imageTag == "latest")
@@ -257,6 +274,10 @@ in
         B1ADMIN_ROOT = adminUrl;
 
         SUPPORT_EMAIL = cfg.supportEmail;
+      }
+      # Leaving MAIL_SYSTEM unset is what disables outbound mail; the Api
+      # treats an empty value as "no mail provider" rather than failing.
+      // optionalAttrs cfg.smtp.enable {
         MAIL_SYSTEM = "SMTP";
         SMTP_HOST = cfg.smtp.host;
         SMTP_PORT = toString cfg.smtp.port;
