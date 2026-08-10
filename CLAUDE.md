@@ -685,6 +685,70 @@ ls /etc/systemd/system/local-fs.target.wants/
 ip route get 10.150.100.30
 ```
 
+### Cloudflare Tunnel → Caddy Returns 502 (`tls: internal error`)
+**Host:** david — any public hostname whose tunnel origin points at Caddy
+
+Most public services on david's tunnel bypass Caddy entirely, with the origin set
+to `http://10.150.100.30:<app port>`. A service that *needs* Caddy in the path —
+path-mounted APIs, wildcard/multi-tenant vHosts — must use an `https://` origin,
+and that introduces an SNI problem.
+
+cloudflared sends the **origin address** as the TLS SNI, not the request's Host
+header. With an origin of `https://10.150.100.30` (or `https://david`), Caddy
+receives an SNI it holds no certificate for, aborts the handshake, and cloudflared
+reports:
+
+```
+error="Unable to reach the origin service...: remote error: tls: internal error"
+originService=https://10.150.100.30
+```
+
+Everything looks healthy on the host — Caddy answers 200 locally — while every
+public request 502s.
+
+**Fix:** on the public hostname in the Zero Trust dashboard, set
+**TLS → Origin Server Name** to a hostname the Caddy cert actually covers:
+- `b1.plotiphar.com` → origin server name `b1.plotiphar.com`
+- `*.b1.plotiphar.com` → any single-label subdomain, e.g. `app.b1.plotiphar.com`
+  (the wildcard cert covers it)
+
+Routing is unaffected: cloudflared still forwards the original Host header, which
+is what Caddy matches vHosts on. Only the SNI needs to be a name Caddy can serve.
+
+**Diagnostics** — this pinpoints it in one step, since SNI is the only variable:
+```bash
+curl -sk -o /dev/null -w '%{http_code}\n' https://10.150.100.30/            # fails
+curl -sk -o /dev/null -w '%{http_code}\n' \
+  --resolve b1.plotiphar.com:443:10.150.100.30 https://b1.plotiphar.com/    # 200
+
+sudo journalctl -u cloudflared_tunnel --no-pager | grep -i 'tls\|originService'
+```
+
+Note the unit is `cloudflared_tunnel.service`, not `cloudflared.service`.
+
+### Docker Network Missing After autoPrune (`network <x>_default not found`)
+**Host:** david — any oci-container service whose container has been down a while
+
+`virtualisation.docker.autoPrune` removes unused networks. If a service's
+container is absent, its network becomes unused and gets pruned — but the
+`docker-network-<name>_default.service` unit is `RemainAfterExit=true` and still
+shows `active (exited)`, so it never recreates it. Nothing fails until something
+restarts the container, at which point it dies with exit 125 and hits the systemd
+start limit. A `nixos-rebuild` is a common trigger, which makes this look like the
+rebuild broke the service when it was already broken.
+
+**Fix:**
+```bash
+sudo systemctl restart docker-network-<name>_default.service
+sudo systemctl reset-failed docker-<name>.service
+sudo systemctl restart docker-<name>.service
+```
+
+**Diagnostics** — the unit being `active` proves nothing; check the network itself:
+```bash
+sudo docker network ls --format '{{.Name}}' | grep -x <name>_default
+```
+
 ### Port Conflicts
 
 ```bash
