@@ -58,7 +58,7 @@
     # image tag, so this input's revision *is* the deployed version: upgrading
     # is `nix flake update b1church`, which the weekly flake updater already
     # dry-runs and PRs. Takes no inputs of its own, so it adds no lock churn.
-    b1church.url = "github:TristonYoder/b1church";
+    b1church.url = "github:TristonYoder/b1church-flake";
   };
 
   outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, nixos-raspberrypi, flake-utils, iopenpod-flake, iopodcli, blueprint, hermes-agent, b1church, ... }:
