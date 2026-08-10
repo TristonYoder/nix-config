@@ -191,14 +191,15 @@ in
   # david's Caddy. The wildcard also needs a wildcard CNAME in Cloudflare DNS
   # and a Cloudflare API token with edit rights on the plotiphar.com zone, or
   # Caddy's DNS-01 challenge for the portal cert will fail.
-  modules.services.productivity.b1church = {
+  # The domain lives in the b1church flake's deployment.nix, not here: it is
+  # baked into the frontend images at build time, so it belongs with the build.
+  # The module asserts the two still agree.
+  services.b1church = {
     enable = true;
-    domain = "b1.plotiphar.com";
-    portalBaseDomain = "b1.plotiphar.com";
     supportEmail = "triston@7andco.studio";
-    # Pin a sha-<commit> tag from the nightly build once the build repo has
-    # published one; "latest" warns at eval time for exactly this reason.
-    imageTag = "latest";
+    # Mail deliberately unconfigured — registration works, password resets and
+    # invites no-op until an SMTP relay is chosen.
+    smtp.enable = false;
   };
 
   # Elizabeth Allen Photography - WordPress site

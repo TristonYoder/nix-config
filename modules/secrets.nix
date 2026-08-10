@@ -98,7 +98,11 @@ with lib;
       "hermes-brain-deploy-key" = { file = ../secrets/hermes-brain-deploy-key.age; mode = "0400"; };
     })
 
-    // (optionalAttrs config.modules.services.productivity.b1church.enable {
+    // (optionalAttrs (config.networking.hostName == "david") {
+      # b1church: the module comes from an external flake imported only in
+      # david's module list, so services.b1church.enable does not exist on
+      # other hosts and cannot be the gate here. Same as hermes-env above.
+      #
       # b1church-mysql + b1church-api: KEY=VALUE file shared via
       # environmentFiles by both containers. Holds MYSQL_ROOT_PASSWORD and the
       # seven *_CONNECTION_STRING values, which embed that same password —
