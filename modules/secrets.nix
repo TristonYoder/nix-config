@@ -98,6 +98,19 @@ with lib;
       "hermes-brain-deploy-key" = { file = ../secrets/hermes-brain-deploy-key.age; mode = "0400"; };
     })
 
+    // (optionalAttrs config.modules.services.productivity.b1church.enable {
+      # b1church-mysql + b1church-api: KEY=VALUE file shared via
+      # environmentFiles by both containers. Holds MYSQL_ROOT_PASSWORD and the
+      # seven *_CONNECTION_STRING values, which embed that same password —
+      # keeping them in one file means they cannot drift apart.
+      "b1church-db-secrets" = { file = ../secrets/b1church-db-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
+      # b1church-api: KEY=VALUE file with JWT_SECRET, ENCRYPTION_KEY and the
+      # Mailgun SMTP_USER/SMTP_PASS. ENCRYPTION_KEY must be exactly 32 chars —
+      # changing it after first boot makes existing encrypted columns
+      # unreadable, so treat it as permanent once the stack has data.
+      "b1church-api-secrets" = { file = ../secrets/b1church-api-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
+    })
+
     // (optionalAttrs config.modules.services.gaming.romm.enable {
       # Encrypted to davidKeys only — enabling romm on another host requires
       # re-encrypting these secrets to that host's key first.

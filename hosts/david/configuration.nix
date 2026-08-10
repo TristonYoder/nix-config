@@ -183,6 +183,24 @@ in
     '';
   };
 
+  # B1 Church — self-hosted ChurchApps stack (admin UI + API + member portal).
+  #
+  # Public hostnames live on plotiphar.com, so — like plotiphar.com itself —
+  # the tunnel route is configured in the Cloudflare Zero Trust dashboard
+  # rather than here: b1.plotiphar.com and *.b1.plotiphar.com both point at
+  # david's Caddy. The wildcard also needs a wildcard CNAME in Cloudflare DNS
+  # and a Cloudflare API token with edit rights on the plotiphar.com zone, or
+  # Caddy's DNS-01 challenge for the portal cert will fail.
+  modules.services.productivity.b1church = {
+    enable = true;
+    domain = "b1.plotiphar.com";
+    portalBaseDomain = "b1.plotiphar.com";
+    supportEmail = "triston@7andco.studio";
+    # Pin a sha-<commit> tag from the nightly build once the build repo has
+    # published one; "latest" warns at eval time for exactly this reason.
+    imageTag = "latest";
+  };
+
   # Elizabeth Allen Photography - WordPress site
   modules.services.vHosts.hosts."elizabethallen.photography" = {
     public = true;

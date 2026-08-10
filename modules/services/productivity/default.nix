@@ -15,5 +15,6 @@
     ./stirling-pdf.nix
     ./paperless-ngx.nix
     ./miniflux.nix
+    ./b1church.nix
   ];
 }
