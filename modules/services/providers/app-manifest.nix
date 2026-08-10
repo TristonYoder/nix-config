@@ -8,10 +8,20 @@ let
   shortcutHosts = filter (h: h.enable && h.shortcut)
     (attrValues config.modules.services.vHosts.hosts);
 
+  # A virtualHost may carry an explicit scheme — Caddy treats a leading
+  # "http://" as a site address that disables automatic HTTPS (the well-known
+  # endpoint does this on the host server). Strip any scheme before rebuilding
+  # the URL, otherwise the manifest emits "https://http://domain". Mirrors the
+  # normalisation in providers/dns-technitium.nix.
+  urlOf = vhost:
+    if hasPrefix "http://" vhost
+    then vhost
+    else "https://${removePrefix "https://" vhost}";
+
   appsJson = builtins.toJSON {
     apps = map (h: {
       name     = h.displayName;
-      url      = "https://${h.virtualHost}";
+      url      = urlOf h.virtualHost;
       category = if h.category != "" then h.category else "services";
       icon     = h.icon;
     }) shortcutHosts;
@@ -32,7 +42,10 @@ in
     modules.services.vHosts.hosts.${cfg.domain} = {
       shortcut    = false;
       monitor     = false;
-      dnsChallenge = false;
+      # dnsChallenge must stay true (the default). This domain is internal-only
+      # — it is NXDOMAIN on public resolvers — so HTTP-01 and TLS-ALPN-01 can
+      # never validate, and Caddy retries forever. DNS-01 only needs a TXT
+      # record in the Cloudflare zone, which works without any public A record.
       rawConfig   = true;
       extraConfig = ''
         header Access-Control-Allow-Origin "*"
