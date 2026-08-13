@@ -381,6 +381,14 @@ in
     environmentFile = config.age.secrets.hermes-env.path;
   };
 
+  # New/single-host — enabled directly here rather than lib.mkDefault in
+  # profiles/server.nix, same reasoning as hermes-agent above. Native
+  # (non-Docker) deploy; see modules/services/productivity/blueprint.nix for
+  # the still-open items (real srcHash/npmDepsHash, manual db:migrate step).
+  modules.services.productivity.blueprint = {
+    enable = true;
+  };
+
   # =============================================================================
   # STORAGE: USB Drive Sync
   # =============================================================================

@@ -171,7 +171,7 @@ jobs:
       id: set-hosts
       run: |
         # Define all NixOS hosts to test/deploy (single source of truth)
-        ALL_HOSTS='[{"name": "david", "hostname": "david"}, {"name": "pits", "hostname": "pits"}]'
+        ALL_HOSTS='[{"name": "david", "hostname": "david"}, {"name": "pits", "hostname": "pits"}, {"name": "hermes-agent", "hostname": "hermes-agent"}]'
         echo "hosts=$ALL_HOSTS" >> $GITHUB_OUTPUT
 
     - name: Install Nix

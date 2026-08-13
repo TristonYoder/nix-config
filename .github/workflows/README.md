@@ -41,6 +41,7 @@ No rsync. No temp directories. Every rebuild — in CI and locally via `rebuild`
 |------|------|---------|-------------|-------------|
 | **david** | Main Server | ✅ | ✅ | ✅ |
 | **pits** | Edge VPS | ✅ | ✅ | ✅ |
+| **hermes-agent** | Edge VPS | ✅ | — (pending) | ✅ best-effort |
 | **tristons-workstation** | Desktop | ✅ | ✅ | ✅ best-effort |
 | **tristons-nixbook** | Laptop | ✅ | ❌ (offline) | ✅ best-effort |
 | **tristons-nixbook-pro** | Laptop | ✅ | ❌ (offline) | ✅ best-effort |
@@ -78,7 +79,7 @@ All tests are parallel. One failing host doesn't stop others.
 
 **Closure build order within `build-all-closures`:**
 - `david`, `pits` — must succeed (blocks deployment if either fails)
-- `tristons-workstation`, `tristons-nixbook`, `tristons-nixbook-pro` — best-effort (logged but non-blocking)
+- `hermes-agent`, `tristons-workstation`, `tristons-nixbook`, `tristons-nixbook-pro` — best-effort (logged but non-blocking)
 
 ### build-installer-iso.yml
 
@@ -106,7 +107,7 @@ Push or merge to `main`. Tests run, then if all pass:
 ### Manual Deployment
 
 1. GitHub → Actions → "Deploy NixOS Flake Configuration" → Run workflow
-2. Set `hosts` to `all` (default) or a comma-separated subset: `david,pits`
+2. Set `hosts` to `all` (default) or a comma-separated subset: `david,pits,hermes-agent`
 
 ### Test a Feature Branch
 
@@ -158,7 +159,7 @@ This creates the `github-actions` user with sudo access and the authorized SSH k
    ```
 4. If it should be auto-deployed, add it to `ALL_HOSTS` in `deploy-nixos-config.yml`:
    ```bash
-   ALL_HOSTS='["david", "pits", "tristons-workstation", "new-hostname"]'
+   ALL_HOSTS='["david", "pits", "hermes-agent", "tristons-workstation", "new-hostname"]'
    ```
    And add `build_and_cache new-hostname` to the `build-all-closures` job.
 5. Enable `modules.services.development.github-actions.enable = true` on the host

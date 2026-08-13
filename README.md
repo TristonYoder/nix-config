@@ -34,6 +34,7 @@
 | Host | Type | Profile | Auto-Deploy | Purpose |
 |------|------|---------|-------------|---------|
 | **david** | NixOS Server | Server | ✅ | Full infrastructure stack |
+| **hermes-agent** | NixOS Edge Server | Edge | ✅ | Hermes AI agent host |
 | **pits** | NixOS Edge Server | Edge | ✅ | Public-facing reverse proxy |
 | **tristons-workstation** | NixOS Desktop | Desktop | ✅ | Development workstation |
 | **tristons-nixbook** | NixOS Laptop | Desktop | ✅ | Family Laptop workstation |
@@ -631,7 +632,7 @@ sudo /nix/var/nix/profiles/system/bin/switch-to-configuration switch
 ## Status
 
 ✅ **Multi-host configuration active**
-✅ **5 hosts configured** (david, pits, tristons-workstation, tristons-nixbook, tyoder-mbp)
+✅ **6 hosts configured** (david, pits, hermes-agent, tristons-workstation, tristons-nixbook, tyoder-mbp)
 ✅ **Automated CI/CD** (GitHub Actions)
 ✅ **40+ custom modules**
 ✅ **Home Manager integrated**

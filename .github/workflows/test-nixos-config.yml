@@ -139,6 +139,7 @@ jobs:
         host:
           - david
           - pits
+          - hermes-agent
           - tristons-nixbook-pro
           - tristons-nixbook
           - tristons-workstation

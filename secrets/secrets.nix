@@ -12,6 +12,8 @@ let
 
   tristons-workstation = "age1t09tawcxnv7dk36jwqdt0ah5qragmta2gg52n93adydhzdz48esqv0lwv4";
 
+  hermes-agent = "age16am5harvtrguyk4dn3ykh2u6npz2mrlvdhgln98mfrgrj5pypf8stkdwxe";
+
   stage-plotiphar = "age179pg3ncsgc50zmcsw67wrgatu0vzdulj475ftphcmkrdpx6cl4xszw0dfa";
 
   # =============================================================================
@@ -40,6 +42,9 @@ let
   
   # Secrets for pits only
   pitsKeys = [ pits ] ++ adminKeys;
+
+  # Secrets for hermes-agent only
+  hermesAgentKeys = [ hermes-agent ] ++ adminKeys;
 
   # Secrets for stage-plotiphar only
   stagePlotipharKeys = [ stage-plotiphar ] ++ adminKeys;
@@ -166,7 +171,15 @@ in
   
   # Tailscale auth key for pits edge server
   "tailscale-authkey-pits.age".publicKeys = pitsKeys;
-  
+
+  # =============================================================================
+  # HERMES-AGENT-SPECIFIC SECRETS
+  # =============================================================================
+
+  # Tailscale (headscale) preauth key so hermes-agent joins the tailnet
+  # unattended on first boot. See modules/services/infrastructure/tailscale.nix.
+  "tailscale-authkey-hermes-agent.age".publicKeys = hermesAgentKeys;
+
   # Stalwart Mail Server passwords (accessible by all servers for flexibility)
   "stalwart-postmaster-password.age".publicKeys = allServers;
   "stalwart-admin-password.age".publicKeys = allServers;

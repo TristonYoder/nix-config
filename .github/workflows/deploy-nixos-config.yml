@@ -79,7 +79,7 @@ jobs:
     - name: Determine deployment hosts
       id: set-hosts
       run: |
-        ALL_HOSTS='["david", "pits", "tristons-workstation"]'
+        ALL_HOSTS='["david", "pits", "hermes-agent", "tristons-workstation"]'
 
         if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
           INPUT_HOSTS="${{ github.event.inputs.hosts }}"
@@ -168,6 +168,8 @@ jobs:
           build_and_cache pits
 
           # Best-effort hosts — logged but non-blocking
+          build_and_cache hermes-agent \
+            || echo "⚠️ hermes-agent build failed, continuing"
           build_and_cache tristons-workstation \
             || echo "⚠️ tristons-workstation build failed, continuing"
           build_and_cache tristons-nixbook \
@@ -346,7 +348,7 @@ jobs:
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
         chmod 600 ~/.ssh/id_ed25519
 
-        for HOST in tristons-workstation tristons-nixbook tristons-nixbook-pro; do
+        for HOST in hermes-agent tristons-workstation tristons-nixbook tristons-nixbook-pro; do
           echo "Notifying $HOST..."
           ssh ${{ secrets.NIXOS_SERVER_USER }}@$HOST.vpn.theyoder.family \
             "sudo systemctl start auto-update-check.service" \

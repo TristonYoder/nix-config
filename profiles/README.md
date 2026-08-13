@@ -271,4 +271,4 @@ Add to this README with:
 ---
 
 **Available Profiles:** 4 (server, desktop, edge, darwin)  
-**Hosts Using Profiles:** 4 (david, pits, tristons-workstation, tyoder-mbp)
+**Hosts Using Profiles:** 5 (david, pits, hermes-agent, tristons-workstation, tyoder-mbp)
