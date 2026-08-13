@@ -91,10 +91,11 @@
   # CEC REMOTE CONTROL
   # =============================================================================
 
-  # Tools for CEC display power control (power on/off connected TVs via HDMI)
+  # Tools for CEC display power control (power on/off connected TVs via HDMI).
+  # v4l-utils provides cec-ctl; libcec provides cec-client.
   environment.systemPackages = with pkgs; [
-    v4l-utils
-    libcec
+    v4l-utils  # cec-ctl
+    libcec     # cec-client
   ];
 
   # Allow the main user to control CEC devices (/dev/cec*) without sudo
