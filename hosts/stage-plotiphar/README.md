@@ -68,7 +68,52 @@ journalctl -u kiosk-url-tracker -f
 # physical button:
 sudo rm -rf /var/lib/kiosk/profile-*/Default /var/lib/kiosk/profile-*/current-url
 sudo systemctl restart kiosk-launcher
+
 ```
+
+## CEC display power control
+
+Requires `v4l-utils` installed (see `hosts/stage-plotiphar/configuration.nix`) and the
+user in the `video` group. Once the NixOS config is deployed, `cec-ctl` is on `$PATH`
+and runs without `sudo`.
+
+**TV prerequisites** (must be enabled once in the TV's menu):
+- **SimpLink / HDMI-CEC**: On
+- **Auto Power Sync** (or *Auto Power Link*): On
+
+### Port 1 (`/dev/cec0`)
+
+```bash
+# Power ON — two-step: wake the TV then claim the active input
+cec-ctl -s -d /dev/cec0 --playback --to 0 --image-view-on
+cec-ctl -s -d /dev/cec0 --playback --active-source phys-addr=2.0.0.0
+
+# Power OFF — broadcast standby opcode (0x36) to all devices on the bus
+cec-ctl -s -d /dev/cec0 --playback --to 15 --custom-command cmd=0x36
+
+# Power status check
+cec-ctl -s -d /dev/cec0 --playback --to 0 --give-device-power-status
+
+# Topology scan (shows all connected CEC devices and their addresses)
+cec-ctl -s -d /dev/cec0 --playback -S
+```
+
+### Port 2 (`/dev/cec1`)
+
+Same commands, substitute `/dev/cec1`. Physical address on Port 2 is `3.0.0.0`:
+
+```bash
+cec-ctl -s -d /dev/cec1 --playback --to 0 --image-view-on
+cec-ctl -s -d /dev/cec1 --playback --active-source phys-addr=3.0.0.0
+
+cec-ctl -s -d /dev/cec1 --playback --to 15 --custom-command cmd=0x36
+
+cec-ctl -s -d /dev/cec1 --playback --to 0 --give-device-power-status
+```
+
+> [!NOTE]
+> LG TVs (and some others) take 20–30 s to fully power on from standby. The power status
+> will read `in transition from standby to on` during that window — this is normal.
 
 ## Troubleshooting
 
