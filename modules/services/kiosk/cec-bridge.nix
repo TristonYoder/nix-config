@@ -192,6 +192,20 @@ let
     )
 
 
+    def format_code(code):
+        """Groups the code the same way the app does.
+
+        Mirrors formatPairingCodeForDisplay in the app (an 8-character
+        Crockford-base32 code split 4-4). Someone reads this off a wall-mounted
+        TV and types it into a field that shows XXXX-XXXX, so the two should
+        not disagree about where the break goes. The approve endpoint strips
+        separators anyway, so this is purely about being readable.
+        """
+        if len(code) <= 4:
+            return code
+        return code[:4] + "-" + code[4:]
+
+
     def write_pairing_page(output, code, device_label):
         """Renders the code fullscreen on the display itself.
 
@@ -211,7 +225,7 @@ let
             "<div class='code'>%s</div>"
             "<div class='name'>%s</div>"
             "</div></body></html>"
-        ) % (PAGE_STYLE, code, device_label)
+        ) % (PAGE_STYLE, format_code(code), device_label)
         write_page(output, html)
 
 
