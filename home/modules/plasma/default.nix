@@ -120,6 +120,17 @@ in
       themes.ant-dark
       themes.andromeda-launcher
       themes.kde-control-station
+
+      # Ant-Dark is a folder-icon theme: its index.theme inherits
+      # Reversal-dark, then Papirus-Dark, for everything else. Upstream ships
+      # only the folder icons, whereas the KDE Store build that was installed
+      # by hand on nixbook-pro also bundled ~2800 app icons of its own with no
+      # git source to package. Providing the inherited themes covers the same
+      # ground reproducibly — app icons will resolve to Reversal/Papirus rather
+      # than that bundle, so a handful will look different from the machine
+      # this was captured on.
+      pkgs.reversal-icon-theme
+      pkgs.papirus-icon-theme
     ];
 
     programs.plasma = {

@@ -21,6 +21,12 @@ in
 {
   # Ant-Dark by EliverLara — look-and-feel, desktop theme, Aurorae decoration,
   # color scheme, icon theme, SDDM theme and wallpapers, all from one repo.
+  #
+  # Upstream master is still the Plasma 5 release. Verified against the KDE
+  # Store's Plasma 6 build (what was installed by hand on tristons-nixbook-pro):
+  # the desktop theme, Aurorae theme and the look-and-feel's defaults/previews/
+  # splash are byte-identical, and only the look-and-feel wrapper differs. So we
+  # reshape just that wrapper below rather than hunting for another source.
   ant-dark = stdenvNoCC.mkDerivation {
     pname = "ant-dark-plasma";
     version = "0-unstable-2026-03-24";
@@ -49,11 +55,42 @@ in
         $out/share/color-schemes \
         $out/share/wallpapers
 
-      cp -r $kde/plasma/look-and-feel/Ant-Dark $out/share/plasma/look-and-feel/
-      cp -r $kde/plasma/desktoptheme/Ant-Dark  $out/share/plasma/desktoptheme/
-      cp -r $kde/aurorae/Ant-Dark              $out/share/aurorae/themes/
-      cp -r $kde/icons/Ant-Dark                $out/share/icons/
-      cp -r $kde/sddm/Ant-Dark                 $out/share/sddm/themes/
+      cp -r $kde/plasma/desktoptheme/Ant-Dark $out/share/plasma/desktoptheme/
+      cp -r $kde/aurorae/Ant-Dark             $out/share/aurorae/themes/
+      cp -r $kde/icons/Ant-Dark               $out/share/icons/
+      cp -r $kde/sddm/Ant-Dark                $out/share/sddm/themes/
+
+      # The look-and-feel package needs two fixups for Plasma 6:
+      #
+      # 1. KF6's KPackage no longer reads metadata.desktop, so an upstream
+      #    checkout is simply invisible to Plasma 6. Write the JSON form
+      #    instead. (kns:// dependency hints are dropped — they only tell the
+      #    KDE Store what else to download, which is our job now.)
+      # 2. contents/{components,lockscreen,logout,osd} are KF5-era QML that the
+      #    Plasma 6 package dropped. Shipping them risks a broken lock screen
+      #    and logout dialog, so keep only what the Plasma 6 build ships.
+      lnf=$out/share/plasma/look-and-feel/Ant-Dark
+      mkdir -p $lnf/contents
+      for c in defaults previews splash; do
+        cp -r $kde/plasma/look-and-feel/Ant-Dark/contents/$c $lnf/contents/
+      done
+
+      cat > $lnf/metadata.json <<'EOF'
+      {
+          "KPackageStructure": "Plasma/LookAndFeel",
+          "KPlugin": {
+              "Authors": [ { "Email": "eliverlara@gmail.com", "Name": "EliverLara" } ],
+              "Category": "Plasma Look And Feel",
+              "EnabledByDefault": true,
+              "Id": "Ant-Dark",
+              "License": "GPL 3+",
+              "Name": "Ant-Dark",
+              "ServiceTypes": [ "Plasma/LookAndFeel" ],
+              "Version": "0.1",
+              "Website": "https://github.com/EliverLara/Ant/tree/master/kde/Dark"
+          }
+      }
+      EOF
 
       install -m444 $kde/color-schemes/Ant-Dark.colors $out/share/color-schemes/
       install -m444 $kde/wallpaper/Ant-Dark.jpg    $out/share/wallpapers/
