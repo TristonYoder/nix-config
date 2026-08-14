@@ -64,9 +64,19 @@
   # =============================================================================
   # SECURITY
   # =============================================================================
-  
+
   # Enable sudo
   security.sudo.enable = lib.mkDefault true;
+
+  # =============================================================================
+  # DEPLOYMENT
+  # =============================================================================
+
+  # Deploy account for CI and for driving rebuilds over SSH. Every NixOS host
+  # gets it -- previously only the server and edge profiles did, which left the
+  # laptops unreachable for remote testing. Hidden from the login screen; see
+  # modules/services/development/github-actions.nix.
+  modules.services.development.github-actions.enable = lib.mkDefault true;
 
   # =============================================================================
   # BOOT CONFIGURATION

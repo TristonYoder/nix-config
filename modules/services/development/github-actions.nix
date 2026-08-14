@@ -30,6 +30,13 @@ in
       openssh.authorizedKeys.keys = [ cfg.sshKey ];
     };
 
+    # Keep the deploy account out of the graphical login screen. isSystemUser
+    # normally allocates a UID below SDDM's MinimumUid (1000) so it's hidden
+    # anyway, but hosts where the account predates isSystemUser kept a
+    # grandfathered UID above 1000 (david is uid 1001) and would otherwise
+    # show it as a pickable user. Inert on hosts that don't run SDDM.
+    services.displayManager.sddm.settings.Users.HideUsers = "github-actions";
+
     # Sudo permissions for GitHub Actions user
     security.sudo.extraRules = [
       {

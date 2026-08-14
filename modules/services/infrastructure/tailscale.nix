@@ -47,7 +47,10 @@ in
         interactive authentication — e.g. it has no preauth key yet, or
         an existing one expired. Lets you complete login from a phone
         with console-only access (no SSH, no Tailscale yet). A no-op
-        once the node is already logged in — the service just exits.
+        once the node is already logged in — nothing touches tty1.
+
+        Note: while the QR is up it owns /dev/tty1, so a display manager
+        on the same host cannot start until login completes.
       '';
     };
   };
@@ -67,20 +70,22 @@ in
       ];
     };
 
-    systemd.services.tailscale-login-qr = mkIf cfg.showLoginQr {
-      description = "Show a QR code on the console for interactive tailscale login, if needed";
+    # Split in two on purpose. systemd opens TTYPath when the unit starts,
+    # regardless of what the script does, and StandardInput=tty makes that
+    # TTY the service's controlling terminal. A single always-started unit
+    # therefore owned /dev/tty1 for as long as it polled, which made
+    # sddm-helper's ioctl(TIOCSCTTY) on tty1 fail with EPERM and took
+    # display-manager.service down with a start-limit-hit on every host with
+    # a graphical greeter. So the polling half runs with no TTY at all, and
+    # only starts the TTY-owning half when login is actually needed.
+    systemd.services.tailscale-login-qr-watch = mkIf cfg.showLoginQr {
+      description = "Watch for tailscale needing interactive login";
       after = [ "tailscaled.service" "tailscaled-autoconnect.service" ];
       wants = [ "tailscaled.service" ];
       wantedBy = [ "multi-user.target" ];
-      path = [ config.services.tailscale.package pkgs.qrencode pkgs.jq ];
+      path = [ config.services.tailscale.package pkgs.jq ];
       serviceConfig = {
         Type = "simple";
-        StandardInput = "tty";
-        StandardOutput = "tty";
-        StandardError = "tty";
-        TTYPath = "/dev/tty1";
-        TTYReset = true;
-        TTYVHangup = true;
         Restart = "on-failure";
         RestartSec = "5s";
       };
@@ -97,16 +102,36 @@ in
               exit 0
               ;;
             NeedsLogin|NeedsMachineAuth|Stopped)
-              echo "=== Tailscale needs authentication — scan this QR code or visit the URL below ==="
-              tailscale up ${optionalString (cfg.loginServer != "") "--login-server=${cfg.loginServer}"} 2>&1 | while IFS= read -r line; do
-                echo "$line"
-                case "$line" in
-                  https://*) echo "$line" | qrencode -t ANSIUTF8 ;;
-                esac
-              done
+              systemctl start --wait tailscale-login-qr.service || true
               ;;
           esac
           sleep 5
+        done
+      '';
+    };
+
+    systemd.services.tailscale-login-qr = mkIf cfg.showLoginQr {
+      description = "Show a QR code on the console for interactive tailscale login";
+      # Deliberately not wantedBy any target -- tailscale-login-qr-watch
+      # starts it on demand. Anything that puts this in the boot transaction
+      # takes /dev/tty1 away from the display manager.
+      path = [ config.services.tailscale.package pkgs.qrencode ];
+      serviceConfig = {
+        Type = "simple";
+        StandardInput = "tty";
+        StandardOutput = "tty";
+        StandardError = "tty";
+        TTYPath = "/dev/tty1";
+        TTYReset = true;
+        TTYVHangup = true;
+      };
+      script = ''
+        echo "=== Tailscale needs authentication — scan this QR code or visit the URL below ==="
+        tailscale up ${optionalString (cfg.loginServer != "") "--login-server=${cfg.loginServer}"} 2>&1 | while IFS= read -r line; do
+          echo "$line"
+          case "$line" in
+            https://*) echo "$line" | qrencode -t ANSIUTF8 ;;
+          esac
         done
       '';
     };
