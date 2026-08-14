@@ -159,6 +159,20 @@ let
         adapters = {}
         for device in sorted(glob.glob("/dev/cec*")):
             info = run_cec(["-d", device])
+
+            # Re-claim a logical address if the adapter has lost one. It does
+            # lose one: re-driving the HDMI output (a kiosk-launcher restart, a
+            # mode change, the panel waking) resets the adapter's configuration
+            # while leaving its physical address intact, and without a logical
+            # address nothing can be transmitted -- every cec-ctl call fails
+            # with "Adapter is unconfigured, please configure it first."
+            # Observed on the live kiosk, where the mask had silently gone to
+            # 0x0000 and CEC had been dead ever since. Only re-run when it's
+            # actually unconfigured; allocation puts traffic on the bus, so it
+            # shouldn't happen every poll.
+            if re.search(r"Logical Address Mask\s*:\s*0x0000", info):
+                info = run_cec(["-d", device, "--playback"])
+
             connector = re.search(r"DRM Connector Info\s*:\s*card \d+, connector (\d+)", info)
             phys = re.search(r"Physical Address\s*:\s*([0-9a-fA-F.]+)", info)
             if not connector:
