@@ -46,7 +46,6 @@ let
   ];
 
   systemTray = {
-    name = "org.kde.plasma.systemtray";
     systemTray.items.extra = trayItems;
     # Note: per-tray-applet config (e.g. battery showPercentage) is accepted by
     # plasma-manager's `items.configs` but silently dropped — the Plasma
