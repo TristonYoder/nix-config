@@ -65,6 +65,20 @@
     mode = "0400";
   };
 
+  # =============================================================================
+  # DISPLAY POWER (PLOTIPHAR OUTPUT DEVICE)
+  # =============================================================================
+
+  # Makes this Pi a Plotiphar Output Device: the app can power the venue TV
+  # on/standby and switch it to this Pi's HDMI input, manually or on a
+  # schedule. See modules/services/kiosk/cec-bridge.nix.
+  #
+  # No secret to provision: the display shows a pairing code on screen, and
+  # approving it in the app (Settings → Screens → Pair a Display) issues this
+  # host its own credential, creates or binds its screen, and logs the kiosk
+  # browser in — all from that one code.
+  modules.services.kiosk.cecBridge.enable = true;
+
   networking.networkmanager.ensureProfiles = {
     environmentFiles = [ config.age.secrets.stage-plotiphar-wifi-psk.path ];
     profiles."TPCC_Production" = {

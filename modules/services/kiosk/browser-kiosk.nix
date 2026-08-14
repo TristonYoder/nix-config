@@ -15,6 +15,36 @@ let
   screenUrlPrefix = "${cfg.originUrl}/screens/";
   pairUrl = "${cfg.originUrl}/pair";
 
+  # Shown instead of the app's own /pair page when something else on this host
+  # owns pairing (see modules/services/kiosk/cec-bridge.nix, where the Output
+  # Device pairs on the browser's behalf so one code provisions the display,
+  # its screen, and this browser's session together). Without this the browser
+  # would race ahead and mint its own pairing code — a code that logs the
+  # browser in but leaves the Output Device unpaired, which is exactly the
+  # confusing half-provisioned state the single-code flow exists to avoid.
+  waitingPage = pkgs.writeText "kiosk-waiting.html" ''
+    <!doctype html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta http-equiv="refresh" content="5">
+      <style>
+        html, body {
+          margin: 0;
+          height: 100%;
+          background: #07090f;
+          color: #94a3b8;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-family: system-ui, -apple-system, sans-serif;
+        }
+      </style>
+    </head>
+    <body><div>Preparing this display&hellip;</div></body>
+    </html>
+  '';
+
   pythonWithEvdev = pkgs.python3.withPackages (ps: [ ps.evdev ]);
 
   # Chromium's own offline interstitial (the big white "no internet" page)
@@ -97,12 +127,23 @@ let
       profile_dir="${cfg.stateDir}/profile-$name"
       mkdir -p "$profile_dir"
       url_file="$profile_dir/current-url"
-      start_url="${pairUrl}"
+      start_url="${if cfg.pairingHandledExternally then "file://${waitingPage}" else pairUrl}"
       if [ -s "$url_file" ]; then
         start_url="$(cat "$url_file")"
       fi
 
       echo "$name $port" >> "${cfg.stateDir}/outputs.env"
+
+      # A file:// target is opened directly rather than through the
+      # connectivity pre-check page: that page proves the target is reachable
+      # by fetching it first, which a file:// page can't do cross-origin — and
+      # for the Output Device's handoff URL a pre-fetch would be actively
+      # wrong, since it would spend the single-use token before the real
+      # navigation could redeem it.
+      case "$start_url" in
+        file://*) open_url="$start_url" ;;
+        *) open_url="file://${loadingPage}?redirect=$(jq -rn --arg v "$start_url" '$v|@uri')" ;;
+      esac
 
       ${pkgs.chromium}/bin/chromium \
         --user-data-dir="$profile_dir" \
@@ -118,7 +159,7 @@ let
         --autoplay-policy=no-user-gesture-required \
         --check-for-update-interval=31536000 \
         --no-first-run \
-        "file://${loadingPage}?redirect=$(jq -rn --arg v "$start_url" '$v|@uri')" &
+        "$open_url" &
       pids+=("$!")
       port=$((port + 1))
     done < <(${pkgs.xrandr}/bin/xrandr --query | awk '/ connected/ {geom="0x0+0+0"; for (i=1;i<=NF;i++) if ($i ~ /^[0-9]+x[0-9]+\+[0-9]+\+[0-9]+$/) geom=$i; print $1, "connected", geom}')
@@ -229,6 +270,22 @@ in
       type = types.str;
       default = "kiosk";
       description = "Local user the X session and Chromium instances run as. Created by this module, kept separate from the admin user.";
+    };
+
+    pairingHandledExternally = mkOption {
+      type = types.bool;
+      default = false;
+      description = ''
+        Suppresses the automatic fallback to <originUrl>/pair for an output
+        with no assigned screen, showing a neutral holding page instead and
+        waiting for something else to write that output's current-url.
+
+        Set by modules.services.kiosk.cecBridge, which pairs on the browser's
+        behalf so that a single code provisions the Output Device's credential,
+        its screen, and this browser's session at once. Leave this off unless
+        something really is going to write current-url — otherwise an unpaired
+        display just sits on the holding page forever.
+      '';
     };
   };
 
