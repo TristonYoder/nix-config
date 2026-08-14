@@ -456,4 +456,20 @@ in
     };
   };
 
+  # ===========================================================================
+  # DESKTOP
+  # ===========================================================================
+
+  # Shared Plasma look and panel layout. david is a server that gets used as a
+  # workstation, so it gets the same desktop as everything else.
+  #
+  # NOTE: this host and tristons-workstation share /home/tristonyoder — the
+  # workstation NFS-mounts this host's /data and both symlink the home to
+  # /data/tristonyoder/home, so ~/.config is one directory. plasma-manager
+  # rebuilds plasma-org.kde.plasma.desktop-appletsrc at every login, so
+  # whichever host you log into last wins that file. Keep the plasma options
+  # here identical to the workstation's — including externalMonitor — or the
+  # two will fight over the panel layout.
+  home-manager.users.tristonyoder.modules.plasma.enable = true;
+
 }

@@ -547,6 +547,13 @@ build has. The desktop theme, Aurorae theme and the look-and-feel's defaults/pre
 byte-identical to the KDE Store's Plasma 6 package, so nothing else needs reshaping. Note also
 that nixpkgs' `ant-theme` is the **GTK** theme only — none of the Plasma pieces.
 
+**david and tristons-workstation share `~/.config`.** Both set `useDataDrive`, so both symlink
+`/home/tristonyoder` to `/data/tristonyoder/home` on david's NFS export. plasma-manager rebuilds
+`plasma-org.kde.plasma.desktop-appletsrc` at every login, so the host you logged into last owns
+that file. Their `modules.plasma` options must stay identical — `externalMonitor` especially —
+or the two will fight over the panel layout. On the workstation `~/.local` is a host-local btrfs
+subvolume, so each host does keep its own plasma-manager last-run markers.
+
 **Known gaps:** per-tray-applet config (e.g. battery `showPercentage`) is accepted by
 plasma-manager's `items.configs` but silently dropped upstream — the Plasma scripting API has no
 support for nested containments. KWin custom tiling layouts are keyed by per-machine virtual
