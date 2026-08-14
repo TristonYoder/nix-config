@@ -246,6 +246,12 @@
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.backupFileExtension = "backup";
+              # Declarative Plasma. Loaded for every user on this host but inert
+              # until modules.plasma.enable is set in the host config.
+              home-manager.sharedModules = [
+                plasma-manager.homeModules.plasma-manager
+                ./home/modules/plasma
+              ];
               home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
               home-manager.users.carolineyoder = import ./home/carolineyoder.nix;
             }
