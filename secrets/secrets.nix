@@ -187,4 +187,5 @@ in
   # host's own SSH host key, substituted into the declarative NetworkManager
   # profile at boot (never in the Nix store). See modules/system/wifi.nix.
   "stage-plotiphar-wifi-psk.age".publicKeys = stagePlotipharKeys;
+
 }
