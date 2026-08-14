@@ -597,7 +597,7 @@ The live installer environment runs entirely in RAM with **no swap by default**.
 
 A systemd service with `StandardInput=tty` and `TTYPath=/dev/tty1` makes systemd acquire tty1 as that service's *controlling terminal*. sddm-helper's `ioctl(STDIN_FILENO, TIOCSCTTY)` on tty1 then returns EPERM, the greeter exits with `SDDM::Auth::HELPER_TTY_ERROR`, and `display-manager.service` burns its 3 restarts within 30s and gives up with `start-limit-hit` — permanently, even after the offending service releases tty1.
 
-This bit `tailscale-login-qr` (fixed in PR #322): it was `wantedBy = multi-user.target` and slept 10s before its first check, holding tty1 straight through the display-manager start window. The symptom looks like a boot failure — the machine comes up, SSH works, but there's never a login screen.
+This bit `tailscale-login-qr` (fixed in PR #323): it was `wantedBy = multi-user.target` and slept 10s before its first check, holding tty1 straight through the display-manager start window. The symptom looks like a boot failure — the machine comes up, SSH works, but there's never a login screen.
 
 **Rule:** any unit that writes to the console must be started *on demand*, never placed in the boot transaction, on hosts that run a display manager. Split "decide whether the console output is needed" (no TTY) from "show it" (TTY, started via `systemctl start --wait`).
 
