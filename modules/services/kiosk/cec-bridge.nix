@@ -22,6 +22,56 @@ let
   cfg = config.modules.services.kiosk.cecBridge;
   kioskCfg = config.modules.services.kiosk.browserKiosk;
 
+  # Reports what a given TV actually supports, for someone commissioning a new
+  # venue. Deliberately a thin wrapper around cec-compliance (shipped with
+  # v4l-utils) rather than a bespoke probe: it is a maintained, spec-driven
+  # conformance suite that already tests exactly the features this module
+  # depends on, and it reports per-feature OK/FAIL instead of one verdict.
+  probeScript = pkgs.writeShellApplication {
+    name = "plotiphar-cec-probe";
+    runtimeInputs = with pkgs; [ v4l-utils gnugrep coreutils ];
+    text = ''
+      set -uo pipefail
+      DEVICE="''${1:-/dev/cec0}"
+
+      echo "== Plotiphar Output Device — CEC probe on $DEVICE =="
+      echo
+      echo "-- Adapter --"
+      cec-ctl -d "$DEVICE" | grep -E "Adapter Name|Physical Address|Logical Address Mask" || true
+      echo
+      echo "-- What's on the other end --"
+      cec-ctl -d "$DEVICE" --skip-info -S         | grep -E "CEC Version|Vendor ID|OSD Name|Power Status" || true
+      echo
+      echo "-- Does it survive standby? --"
+      echo "   (If the physical address stays valid while the TV is off, this"
+      echo "    display can be woken remotely. f.f.f.f means it kills the HDMI"
+      echo "    link when it sleeps and no CEC message can reach it.)"
+      echo
+      echo "-- Conformance --"
+      echo "   NOTE: this powers the display OFF and ON again."
+      read -r -p "   Continue? [y/N] " reply
+      case "$reply" in
+        [yY]*) ;;
+        *) echo "   skipped."; exit 0 ;;
+      esac
+      cec-compliance -d "$DEVICE" -r 0         --test-power-status         --test-one-touch-play         --test-standby-resume         --test-system-information || true
+      echo
+      echo "Read the results as:"
+      echo "  Wake up / One Touch Play FAIL -> raise verifyTimeoutSeconds, or add"
+      echo "     text-view-on / power-on-key to wakeSteps."
+      echo "  Standby FAIL -> add power-off-key (or, as a last resort and only"
+      echo "     if nothing else shares the bus, standby-broadcast) to standbySteps."
+      echo "  Give Device Power Status FAIL -> this TV never reports its state, so"
+      echo "     the whole ladder is sent blind. That is supported, just slower."
+    '';
+  };
+
+  # Renders a Nix list of step names as a Python list literal.
+  toPyList = xs: "[" + concatMapStringsSep ", " (x: "\"" + x + "\"") xs + "]";
+  wakeStepsPy = toPyList cfg.wakeSteps;
+  standbyStepsPy = toPyList cfg.standbySteps;
+  inputStepsPy = toPyList cfg.inputSteps;
+
   # Drives the CEC bus via v4l-utils' cec-ctl. libcec/cec-client is the more
   # commonly cited tool but needs a persistent daemon-ish session; cec-ctl is
   # one-shot per message, which suits a poll loop and keeps this service
@@ -468,29 +518,149 @@ let
         return "unknown"
 
 
+    # ── Command ladders ──────────────────────────────────────────────────────
+    #
+    # CEC is only loosely honoured in practice, and TVs disagree about which
+    # message actually does a thing. IMAGE_VIEW_ON wakes an LG; plenty of
+    # Samsung/Sony/Philips sets only answer TEXT_VIEW_ON, and stubborn ones
+    # only a simulated remote power key. So rather than sending one message and
+    # assuming, each action is a ladder: send a step, ask the TV what state it
+    # is in, and only escalate if it didn't take.
+    #
+    # Every step within a ladder is idempotent and points the same direction --
+    # all the wake steps wake, all the standby steps sleep -- so when a TV
+    # doesn't report its power status at all (many don't), running the whole
+    # ladder blind is safe. That's deliberate: it's the difference between
+    # "works on the panel I tested" and "works on most of them".
+    #
+    # Notably absent: the POWER_TOGGLE key (0x40). It would turn a working
+    # display OFF whenever power status is misreported, and misreported power
+    # status is exactly the case these ladders exist to handle.
+    UI_POWER_ON = "0x6d"   # Power On Function
+    UI_POWER_OFF = "0x6c"  # Power Off Function
+
+    WAKE_STEPS = ${wakeStepsPy}
+    STANDBY_STEPS = ${standbyStepsPy}
+    INPUT_STEPS = ${inputStepsPy}
+    VERIFY_TIMEOUT = ${toString cfg.verifyTimeoutSeconds}
+    VERIFY_POLL = 2
+
+
+    def send_step(device, phys_addr, step):
+        """Sends one rung of a ladder. Unknown steps are ignored, not fatal --
+        they come from host config, and a typo shouldn't stop the rest."""
+        if step == "image-view-on":
+            run_cec(["-d", device, "--skip-info", "--to", TV_ADDR, "--image-view-on"])
+        elif step == "text-view-on":
+            run_cec(["-d", device, "--skip-info", "--to", TV_ADDR, "--text-view-on"])
+        elif step == "power-on-key":
+            press_key(device, UI_POWER_ON)
+        elif step == "standby":
+            run_cec(["-d", device, "--skip-info", "--to", TV_ADDR, "--standby"])
+        elif step == "power-off-key":
+            press_key(device, UI_POWER_OFF)
+        elif step == "standby-broadcast":
+            # Sleeps every device on the bus, not just the TV. Off by default
+            # for that reason -- an AVR or another player sharing the bus has
+            # no business being turned off by this host's schedule.
+            run_cec(["-d", device, "--skip-info", "--to", "15", "--standby"])
+        elif step == "active-source":
+            run_cec(["-d", device, "--skip-info",
+                     "--active-source", "phys-addr=" + phys_addr])
+        elif step == "set-stream-path":
+            # Normally a TV/switch sends this; sending it as a source is the
+            # documented way to ask a TV that ignores ACTIVE_SOURCE to route to
+            # a given physical address anyway.
+            run_cec(["-d", device, "--skip-info",
+                     "--set-stream-path", "phys-addr=" + phys_addr])
+        else:
+            log("ignoring unknown CEC step: %s" % step)
+
+
+    def press_key(device, ui_cmd):
+        """Simulates a remote keypress. Press and release are separate CEC
+        messages; a TV that never sees the release can sit on a stuck key."""
+        run_cec(["-d", device, "--skip-info", "--to", TV_ADDR,
+                 "--user-control-pressed", "ui-cmd=" + ui_cmd])
+        run_cec(["-d", device, "--skip-info", "--to", TV_ADDR,
+                 "--user-control-released"])
+
+
+    def await_state(device, want, timeout):
+        """Polls power status until the TV reports `want`, or time runs out.
+
+        Waiting, rather than checking once, matters more than it looks: a real
+        panel took 19 seconds to reach a stable "on" here, and was briefly
+        unresponsive twice on the way (measured with cec-compliance against the
+        LG on stage-plotiphar). A single check a second or two after the
+        message would call that a failure and escalate through every remaining
+        rung of the ladder against a TV that was already doing the right thing.
+        An unresponsive TV mid-transition reads as "unknown", which is treated
+        as "still waiting" for the same reason.
+        """
+        deadline = time.time() + timeout
+        while True:
+            if query_power_state(device) == want:
+                return True
+            if time.time() >= deadline:
+                return False
+            time.sleep(VERIFY_POLL)
+
+
+    def climb(device, phys_addr, steps, want):
+        """Runs a ladder until the TV reports `want`, or the rungs run out.
+
+        Returns (reached, tried) — `reached` is True only when the TV actually
+        confirmed the target state, so a caller can tell "it worked" from
+        "we sent everything and it never told us".
+        """
+        tried = []
+        for step in steps:
+            send_step(device, phys_addr, step)
+            tried.append(step)
+            if await_state(device, want, VERIFY_TIMEOUT):
+                return True, tried
+        return False, tried
+
+
     def send_action(device, phys_addr, action):
         """Executes one CEC action. Returns None on success, else an error string."""
         if phys_addr == INVALID_PHYS_ADDR:
-            return ("HDMI link is down (no physical address) -- the display "
-                    "cannot be reached over CEC until it is powered on at the set")
+            if action == "on":
+                # The specific, actionable case: this display drops its HDMI
+                # link when it powers off, so there is no bus left to wake it
+                # over. No message ladder rescues that.
+                return ("This display can't be woken over CEC — it powers down "
+                        "its HDMI link in standby. Turn it on at the set, and "
+                        "check the TV's CEC setting (Anynet+ / Bravia Sync / "
+                        "SIMPLINK / VIERA Link / EasyLink) and any Eco or "
+                        "Quick Start option, which often cause this.")
+            return ("HDMI link is down — the display is unreachable over CEC "
+                    "(powered off at the set, or cable disconnected)")
 
         if action == "standby":
-            run_cec(["-d", device, "--skip-info", "--to", TV_ADDR, "--standby"])
+            reached, tried = climb(device, phys_addr, STANDBY_STEPS, "standby")
+            if not reached:
+                return "sent %s; the display never reported standby" % ", ".join(tried)
             return None
 
         if action == "active-source":
-            run_cec(["-d", device, "--skip-info",
-                     "--active-source", "phys-addr=" + phys_addr])
+            # Deliberately not a verified ladder: CEC has no reliable way to
+            # ask which input a TV is showing (see lib/cec.ts), so there is
+            # nothing to check against. Both messages are sent instead.
+            for step in INPUT_STEPS:
+                send_step(device, phys_addr, step)
             return None
 
         if action == "on":
-            # One Touch Play: wake the panel, then claim its input. Sending
-            # only IMAGE_VIEW_ON commonly powers a TV on but leaves it on
-            # whatever input it was last showing.
-            run_cec(["-d", device, "--skip-info", "--to", TV_ADDR, "--image-view-on"])
-            time.sleep(1)
-            run_cec(["-d", device, "--skip-info",
-                     "--active-source", "phys-addr=" + phys_addr])
+            reached, tried = climb(device, phys_addr, WAKE_STEPS, "on")
+            # Claim the input either way: a TV that woke but didn't say so
+            # still needs pointing at this HDMI port, and One Touch Play is
+            # only half done without it.
+            for step in INPUT_STEPS:
+                send_step(device, phys_addr, step)
+            if not reached:
+                return "sent %s; the display never reported powering on" % ", ".join(tried)
             return None
 
         return "unknown action: " + str(action)
@@ -732,6 +902,65 @@ in
       '';
     };
 
+    # ── Per-brand tuning ─────────────────────────────────────────────────────
+    # The defaults cover the common cases. These exist so a venue with a
+    # stubborn panel can be accommodated in its host config rather than
+    # needing a change here — run `plotiphar-cec-probe` on the box to find out
+    # what a given TV actually answers to.
+
+    wakeSteps = mkOption {
+      type = types.listOf (types.enum [ "image-view-on" "text-view-on" "power-on-key" ]);
+      default = [ "image-view-on" "text-view-on" "power-on-key" ];
+      description = ''
+        Messages tried, in order, to wake a display — stopping as soon as it
+        reports being on. IMAGE_VIEW_ON is the standard One Touch Play trigger
+        and satisfies most sets; TEXT_VIEW_ON covers those that only answer
+        that; power-on-key simulates the remote's Power On button for the rest.
+
+        All three point the same direction, so a TV that never reports its
+        power status just receives all of them, which is harmless.
+      '';
+    };
+
+    standbySteps = mkOption {
+      type = types.listOf (types.enum [ "standby" "power-off-key" "standby-broadcast" ]);
+      default = [ "standby" "power-off-key" ];
+      description = ''
+        Messages tried, in order, to put a display into standby.
+
+        `standby-broadcast` is available but deliberately not a default: it
+        sleeps every device on the CEC bus, so an AVR or another player sharing
+        the cable would be switched off by this host's schedule too. Only add
+        it for a display that ignores a directed STANDBY.
+      '';
+    };
+
+    inputSteps = mkOption {
+      type = types.listOf (types.enum [ "active-source" "set-stream-path" ]);
+      default = [ "active-source" "set-stream-path" ];
+      description = ''
+        Messages sent to make the TV show this host's HDMI input. Unlike the
+        other two, this is not a verified ladder — CEC has no reliable way to
+        ask a TV which input it is showing — so every listed message is sent.
+      '';
+    };
+
+    verifyTimeoutSeconds = mkOption {
+      type = types.ints.positive;
+      default = 25;
+      description = ''
+        How long to keep asking a display whether it reached the requested
+        state before escalating to the next message in the ladder.
+
+        Generous on purpose. Panels are slow to settle and go briefly
+        unresponsive while they do: the LG on stage-plotiphar takes ~19s to
+        report a stable "on", dropping two polls on the way. Too short a value
+        declares a working TV a failure and fires every remaining rung at it;
+        the only cost of too long is how quickly a genuinely deaf display gets
+        escalated against.
+      '';
+    };
+
     pollInterval = mkOption {
       type = types.ints.positive;
       default = 15;
@@ -789,7 +1018,15 @@ in
 
     # cec-ctl for this service, plus cec-client so an admin debugging a CEC issue
     # on the box has the tool most CEC documentation refers to.
-    environment.systemPackages = with pkgs; [ v4l-utils libcec ];
+    environment.systemPackages = [
+      pkgs.v4l-utils
+      # cec-client, for an admin following any of the CEC documentation that
+      # exists — nearly all of it is written against libcec. Not used by this
+      # module: libcec enumerates a single adapter and cannot be pointed at a
+      # specific /dev/cecN, so it can't drive a host with two HDMI outputs.
+      pkgs.libcec
+      probeScript
+    ];
 
     # This service owns pairing for every output, so the browser must not also
     # go mint its own code — see the option's description.
