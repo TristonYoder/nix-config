@@ -34,6 +34,14 @@ SUBVOL=""
 BTRFS_DEV=""
 
 die() { echo "error: $*" >&2; exit 1; }
+
+# Leave no mounts behind on failure -- a stale /mnt/btrfs-top makes the next
+# run's mount fail and obscures the original error.
+cleanup() {
+  mountpoint -q /mnt/btrfs-top 2>/dev/null && umount /mnt/btrfs-top || true
+  [[ -d /mnt/btrfs-top ]] && rmdir /mnt/btrfs-top 2>/dev/null || true
+}
+trap cleanup EXIT
 run() {
   if [[ "$APPLY" -eq 1 ]]; then
     echo "  + $*"
@@ -127,8 +135,11 @@ if [[ -n "$SUBVOL" ]]; then
     # state/ move down one level into .local/. Both operations stay inside the
     # subvolume, so they are renames, not copies -- this matters because the
     # subvolume holds Steam libraries.
+    # A subvolume is a directory entry at the top level, so it is renamed with
+    # mv -- there is no `btrfs subvolume rename` subcommand. The mount stays
+    # bound to the subvolume ID, so an active mount survives the rename.
     echo "  + reusing ${OLD_SUBVOL} as ${SUBVOL}"
-    btrfs subvolume rename "/mnt/btrfs-top/${OLD_SUBVOL}" "/mnt/btrfs-top/${SUBVOL}"
+    mv "/mnt/btrfs-top/${OLD_SUBVOL}" "/mnt/btrfs-top/${SUBVOL}"
     mkdir -p "/mnt/btrfs-top/${SUBVOL}/.local"
     for d in share state; do
       if [[ -d "/mnt/btrfs-top/${SUBVOL}/${d}" ]]; then
