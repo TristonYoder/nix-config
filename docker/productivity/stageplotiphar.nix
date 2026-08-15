@@ -155,6 +155,36 @@
     ];
   };
 
+  # Lets the app repo's own CI deploy job (TristonYoder/stagePlotiphar,
+  # .github/workflows/build-container.yml `deploy` job, running on the
+  # "stageplotiphar-david" self-hosted runner) restart this one unit after
+  # `docker pull`ing a new `:latest` image, without granting it broader sudo.
+  # Mirrors the manual `sudo docker pull ...; sudo systemctl restart
+  # docker-stageplotiphar.service` the site owner ran by hand before that
+  # deploy job existed.
+  #
+  # `docker pull`/`docker tag` themselves need no sudo — dockerAccess in
+  # modules/services/development/github-runner.nix already puts the runner
+  # in the "docker" group, and that alone is already root-equivalent host
+  # access via the docker socket (see that module's comment on
+  # `dockerAccess`). Scoping this rule to the "docker" group rather than to
+  # the runner's actual (DynamicUser-assigned, unpredictable) username is
+  # what makes it robust to that: anyone able to reach root via the socket
+  # gains nothing new from also being able to restart this one systemd
+  # unit, so matching on group membership costs no real security margin
+  # while sidestepping DynamicUser's generated-username fragility.
+  security.sudo.extraRules = [
+    {
+      groups = [ "docker" ];
+      commands = [
+        {
+          command = "${pkgs.systemd}/bin/systemctl restart docker-stageplotiphar.service";
+          options = [ "NOPASSWD" ];
+        }
+      ];
+    }
+  ];
+
   # Logs the host's root docker client in to GHCR before anything tries to
   # pull the (private) image — the `docker run` this generates relies on the
   # resulting /root/.docker/config.json.
