@@ -80,10 +80,13 @@ let
     # clients this must not happen: creating anything under /data would
     # trigger the automount during early boot.
     ++ optionals cfg.manageSharedRoot (
+      let
+        modeOf = p: userCfg.modes.${p} or "0755";
+      in
       [ "d ${q sharedHome} 0755 ${name} ${cfg.sharedGroup} -" ]
-      ++ map (p: "d ${q "${sharedHome}/${p}"} 0755 ${name} ${cfg.sharedGroup} -")
+      ++ map (p: "d ${q "${sharedHome}/${p}"} ${modeOf p} ${name} ${cfg.sharedGroup} -")
         (unique (parents ++ userCfg.sharedPaths))
-      ++ map (p: "f ${q "${sharedHome}/${p}"} 0644 ${name} ${cfg.sharedGroup} -")
+      ++ map (p: "f ${q "${sharedHome}/${p}"} ${userCfg.modes.${p} or "0644"} ${name} ${cfg.sharedGroup} -")
         userCfg.sharedFiles
     );
 in
@@ -151,6 +154,21 @@ in
               directory would break the application that owns it.
             '';
           };
+
+          modes = mkOption {
+            type = types.attrsOf types.str;
+            default = { };
+            example = { ".ssh" = "0700"; };
+            description = ''
+              Per-path mode override applied under sharedRoot, for paths whose
+              permissions matter to the application that owns them.
+
+              These modes are reapplied to existing directories on every boot,
+              not just at creation: systemd-tmpfiles only leaves an existing
+              entry alone when the mode field is "-", and "-" would create new
+              entries as root rather than as the owning user.
+            '';
+          };
         };
       });
       default = {
@@ -192,6 +210,11 @@ in
         ];
 
         tristonyoder.sharedFiles = [ ".zsh_history" ];
+
+        # ssh refuses to use a private key whose directory is group- or
+        # world-writable, and sshd's StrictModes checks the same for
+        # authorized_keys. The shared-root default of 0755 is wrong here.
+        tristonyoder.modes.".ssh" = "0700";
 
         carolineyoder.sharedPaths = [
           "Desktop"
