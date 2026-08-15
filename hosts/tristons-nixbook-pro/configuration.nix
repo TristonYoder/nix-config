@@ -128,6 +128,21 @@
 
   home-manager.users.tristonyoder.modules.appShortcuts.enable = true;
 
+  # ===========================================================================
+  # DESKTOP
+  # ===========================================================================
+
+  # Declarative Plasma look and panel layout. This host is where the layout
+  # originated, so it is the reference implementation — see home/modules/plasma.
+  home-manager.users.tristonyoder.modules.plasma = {
+    enable = true;
+    externalMonitor = true;
+  };
+
+  # HiDPI on the built-in Retina panel. Host-specific: this would be wrong on
+  # any of the other Plasma hosts, so it stays out of the shared module.
+  home-manager.users.tristonyoder.programs.plasma.configFile.kwinrc.Xwayland.Scale = 1.5;
+
   # Passwordless guest account -> locked-down kiosk browser at apps.theyoder.family
   modules.system.guestKiosk.enable = true;
 }

@@ -89,6 +89,14 @@
 
   home-manager.users.tristonyoder.modules.appShortcuts.enable = true;
 
+  # =============================================================================
+  # DESKTOP
+  # =============================================================================
+
+  # Shared Plasma look and panel layout. Single built-in display, so no
+  # second-screen panel set.
+  home-manager.users.tristonyoder.modules.plasma.enable = true;
+
   # Passwordless guest account -> locked-down kiosk browser at apps.theyoder.family
   modules.system.guestKiosk.enable = true;
 }

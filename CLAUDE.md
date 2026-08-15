@@ -517,6 +517,48 @@ Docker services are organized in `docker/` by category. Changes to Docker servic
 - User configs in `home/` are imported via `flake.nix`
 - Changes to Home Manager configs require full system rebuild
 
+### Plasma Desktop Config (plasma-manager)
+
+The shared KDE Plasma look and panel layout lives in `home/modules/plasma/`, built on
+[plasma-manager](https://github.com/nix-community/plasma-manager). It originated on
+tristons-nixbook-pro — a macOS-shaped desktop: global menu top-left, tray/clock top-right,
+floating centered dock, window buttons on the left.
+
+Wiring per host: add both modules to `home-manager.sharedModules` in that host's `flake.nix`
+block, then set `home-manager.users.<user>.modules.plasma.enable = true` in the host config.
+Set `externalMonitor = true` on hosts that regularly drive a second display.
+
+**Panels are rebuilt from scratch at every login.** plasma-manager's startup script deletes
+`plasma-org.kde.plasma.desktop-appletsrc` and replays a generated `layout.js`. Editing panels
+through the GUI works until the next login, then reverts — change `home/modules/plasma/` instead.
+Everything else (themes, kwin, screen locker) is written additively, so unlisted settings keep
+whatever the machine had. `programs.plasma.overrideConfig = true` makes that strict, at the cost
+of deleting the KDE config files on activation.
+
+**Capturing GUI changes:** `nix run github:nix-community/plasma-manager` (rc2nix) dumps the live
+config as Nix. It does not emit panels, and its output carries a lot of noise — activity and
+screen UUIDs, kwallet/baloo state, host-specific values like `kwinrc.Xwayland.Scale`. Treat it as
+a diffing tool, not a drop-in.
+
+**Ant-Dark upstream is still Plasma 5.** `EliverLara/Ant` master ships `metadata.desktop`, which
+KF6's KPackage cannot read at all, plus KF5-era `contents/{components,lockscreen,logout,osd}`.
+`home/modules/plasma/themes.nix` writes a `metadata.json` and ships only the parts the Plasma 6
+build has. The desktop theme, Aurorae theme and the look-and-feel's defaults/previews/splash are
+byte-identical to the KDE Store's Plasma 6 package, so nothing else needs reshaping. Note also
+that nixpkgs' `ant-theme` is the **GTK** theme only — none of the Plasma pieces.
+
+**david and tristons-workstation share `~/.config`.** Both set `useDataDrive`, so both symlink
+`/home/tristonyoder` to `/data/tristonyoder/home` on david's NFS export. plasma-manager rebuilds
+`plasma-org.kde.plasma.desktop-appletsrc` at every login, so the host you logged into last owns
+that file. Their `modules.plasma` options must stay identical — `externalMonitor` especially —
+or the two will fight over the panel layout. On the workstation `~/.local` is a host-local btrfs
+subvolume, so each host does keep its own plasma-manager last-run markers.
+
+**Known gaps:** per-tray-applet config (e.g. battery `showPercentage`) is accepted by
+plasma-manager's `items.configs` but silently dropped upstream — the Plasma scripting API has no
+support for nested containments. KWin custom tiling layouts are keyed by per-machine virtual
+desktop and screen UUIDs, so only `tiling.padding` is portable.
+
 ### macOS Homebrew/MAS Performance
 
 The Homebrew and Mac App Store (mas) modules use batch-checking for optimal rebuild performance:

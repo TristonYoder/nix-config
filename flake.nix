@@ -12,6 +12,16 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     
+    # Declarative KDE Plasma 6 config, as a Home Manager module.
+    # Upstream tracks home-manager master; we point it at our pinned
+    # release-26.05 instead. Bump this input deliberately rather than letting
+    # `nix flake update` drag it, since it can drift ahead of stable HM.
+    plasma-manager = {
+      url = "github:nix-community/plasma-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
+
     # Home Manager for Darwin (matches unstable)
     home-manager-unstable = {
       url = "github:nix-community/home-manager";
@@ -54,7 +64,7 @@
     hermes-agent.url = "github:NousResearch/hermes-agent";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, nixos-raspberrypi, flake-utils, iopenpod-flake, iopodcli, blueprint, hermes-agent, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, plasma-manager, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, nixos-raspberrypi, flake-utils, iopenpod-flake, iopodcli, blueprint, hermes-agent, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -155,10 +165,16 @@
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.backupFileExtension = "backup";
+              # Declarative Plasma. Loaded for every user on this host but inert
+              # until modules.plasma.enable is set in the host config.
+              home-manager.sharedModules = [
+                plasma-manager.homeModules.plasma-manager
+                ./home/modules/plasma
+              ];
               home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
             }
           ];
-          
+
           specialArgs = {
             inherit self nixpkgs nixpkgs-unstable nix-bitcoin iopenpod-flake iopodcli blueprint;
           };
@@ -195,6 +211,12 @@
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.backupFileExtension = "backup";
+              # Declarative Plasma. Loaded for every user on this host but inert
+              # until modules.plasma.enable is set in the host config.
+              home-manager.sharedModules = [
+                plasma-manager.homeModules.plasma-manager
+                ./home/modules/plasma
+              ];
               home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
               home-manager.users.carolineyoder = import ./home/carolineyoder.nix;
             }
@@ -236,6 +258,12 @@
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.backupFileExtension = "backup";
+              # Declarative Plasma. Loaded for every user on this host but inert
+              # until modules.plasma.enable is set in the host config.
+              home-manager.sharedModules = [
+                plasma-manager.homeModules.plasma-manager
+                ./home/modules/plasma
+              ];
               home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
               home-manager.users.carolineyoder = import ./home/carolineyoder.nix;
             }
@@ -267,6 +295,12 @@
               home-manager.useGlobalPkgs = true;
               home-manager.useUserPackages = true;
               home-manager.backupFileExtension = "backup";
+              # Declarative Plasma. Loaded for every user on this host but inert
+              # until modules.plasma.enable is set in the host config.
+              home-manager.sharedModules = [
+                plasma-manager.homeModules.plasma-manager
+                ./home/modules/plasma
+              ];
               home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
               home-manager.users.carolineyoder = import ./home/carolineyoder.nix;
             }
