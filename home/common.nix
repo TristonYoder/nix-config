@@ -58,6 +58,41 @@ in
   home.sessionPath = [
     "$HOME/.local/bin"
   ];
+
+  # =============================================================================
+  # XDG USER DIRECTORIES
+  # =============================================================================
+
+  # Pin the XDG user dirs declaratively. Without this, xdg-user-dirs-update runs
+  # at session start, rewrites ~/.config/user-dirs.dirs, and collapses to
+  # XDG_<x>_DIR="$HOME/" any directory it cannot stat.
+  #
+  # Under modules.system.users.homeSplit these directories are symlinks into
+  # /data, which on NFS clients is an *automount*. If the automount has not
+  # triggered yet when xdg-user-dirs-update runs at login, every entry collapses
+  # to $HOME -- which shows up as Plasma putting the whole home directory on the
+  # desktop, and file dialogs defaulting to $HOME. (Confirmed on
+  # tristons-workstation; david was unaffected because its /data is a local ZFS
+  # mount that is always present.)
+  #
+  # home-manager writes this file read-only into the store, so
+  # xdg-user-dirs-update cannot rewrite it regardless of mount state.
+  #
+  # createDirectories stays false: these paths are tmpfiles-managed symlinks
+  # onto shared storage, not directories for home-manager to create.
+  xdg.userDirs = lib.mkIf (!isDarwin) {
+    enable = true;
+    createDirectories = false;
+
+    desktop     = "${config.home.homeDirectory}/Desktop";
+    documents   = "${config.home.homeDirectory}/Documents";
+    download    = "${config.home.homeDirectory}/Downloads";
+    music       = "${config.home.homeDirectory}/Music";
+    pictures    = "${config.home.homeDirectory}/Pictures";
+    publicShare = "${config.home.homeDirectory}/Public";
+    templates   = "${config.home.homeDirectory}/Templates";
+    videos      = "${config.home.homeDirectory}/Videos";
+  };
   
   # Let Home Manager install and manage itself
   programs.home-manager.enable = true;
