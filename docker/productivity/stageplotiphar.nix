@@ -158,32 +158,41 @@
   # Lets the app repo's own CI deploy job (TristonYoder/stagePlotiphar,
   # .github/workflows/build-container.yml `deploy` job, running on the
   # "stageplotiphar-david" self-hosted runner) restart this one unit after
-  # `docker pull`ing a new `:latest` image, without granting it broader sudo.
-  # Mirrors the manual `sudo docker pull ...; sudo systemctl restart
+  # `docker pull`ing a new `:latest` image. Mirrors the manual
+  # `sudo docker pull ...; sudo systemctl restart
   # docker-stageplotiphar.service` the site owner ran by hand before that
   # deploy job existed.
   #
-  # `docker pull`/`docker tag` themselves need no sudo — dockerAccess in
-  # modules/services/development/github-runner.nix already puts the runner
-  # in the "docker" group, and that alone is already root-equivalent host
-  # access via the docker socket (see that module's comment on
-  # `dockerAccess`). Scoping this rule to the "docker" group rather than to
-  # the runner's actual (DynamicUser-assigned, unpredictable) username is
-  # what makes it robust to that: anyone able to reach root via the socket
-  # gains nothing new from also being able to restart this one systemd
-  # unit, so matching on group membership costs no real security margin
-  # while sidestepping DynamicUser's generated-username fragility.
-  security.sudo.extraRules = [
-    {
-      groups = [ "docker" ];
-      commands = [
-        {
-          command = "${pkgs.systemd}/bin/systemctl restart docker-stageplotiphar.service";
-          options = [ "NOPASSWD" ];
-        }
-      ];
-    }
-  ];
+  # `docker pull`/`docker tag` themselves need no privilege escalation —
+  # dockerAccess in modules/services/development/github-runner.nix already
+  # puts the runner in the "docker" group, and that alone is already
+  # root-equivalent host access via the docker socket (see that module's
+  # comment on `dockerAccess`).
+  #
+  # A polkit rule, not a sudoers entry: the native runner's systemd unit
+  # (services.github-runners, upstream hardening) sets
+  # NoNewPrivileges=true, which blocks setuid `sudo` outright — confirmed
+  # live: `sudo: The "no new privileges" flag is set, which prevents sudo
+  # from running as root.` `systemctl restart` as a non-root user instead
+  # goes over D-Bus to systemd, authorized by polkit — no local privilege
+  # escalation involved, so NoNewPrivileges doesn't block it. Scoped to the
+  # "docker" group rather than the runner's actual (DynamicUser-assigned,
+  # unpredictable) username: anyone able to reach root via the docker
+  # socket gains nothing new from also being able to restart this one
+  # unit, so matching on group membership costs no real security margin.
+  # Same pattern as modules/services/kiosk/cec-bridge.nix's
+  # kiosk-launcher.service rule, just scoped to a group instead of a
+  # single static user.
+  security.polkit.extraConfig = ''
+    polkit.addRule(function(action, subject) {
+      if (action.id == "org.freedesktop.systemd1.manage-units" &&
+          action.lookup("unit") == "docker-stageplotiphar.service" &&
+          action.lookup("verb") == "restart" &&
+          subject.isInGroup("docker")) {
+        return polkit.Result.YES;
+      }
+    });
+  '';
 
   # Logs the host's root docker client in to GHCR before anything tries to
   # pull the (private) image — the `docker run` this generates relies on the
