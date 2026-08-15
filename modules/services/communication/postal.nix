@@ -252,12 +252,15 @@ in
       description = "Install Postal signing key from secrets";
       wantedBy = [ "multi-user.target" ];
       before = [ "docker-postal_runner.service" ];
-      
+
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
+        Restart = "on-failure";
+        RestartSec = "10s";
+        StartLimitIntervalSec = 0;
       };
-      
+
       script = ''
         echo "Installing Postal signing key..."
         cp ${config.age.secrets.postal-signing-key.path} ${cfg.dataDir}/config/signing.key
@@ -273,12 +276,15 @@ in
       before = [ "docker-postal_runner.service" ];
       after = [ "postal-install-signing-key.service" ];
       requires = [ "postal-install-signing-key.service" ];
-      
+
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
+        Restart = "on-failure";
+        RestartSec = "10s";
+        StartLimitIntervalSec = 0;
       };
-      
+
       script = ''
         echo "Generating Postal configuration..."
         
@@ -302,12 +308,15 @@ in
       description = "Create Postal environment file with database password";
       wantedBy = [ "multi-user.target" ];
       before = [ "docker-postal_mariadb.service" ];
-      
+
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
+        Restart = "on-failure";
+        RestartSec = "10s";
+        StartLimitIntervalSec = 0;
       };
-      
+
       script = ''
         echo "Creating database environment file..."
         DB_PASSWORD=$(cat ${config.age.secrets.postal-db-password.path})
@@ -338,12 +347,15 @@ EOF
         "docker-postal_runner.service"
         "postal-generate-config.service"
       ];
-      
+
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
+        Restart = "on-failure";
+        RestartSec = "15s";
+        StartLimitIntervalSec = 0;
       };
-      
+
       script = ''
         # Check if database is already initialized
         if [ -f ${cfg.dataDir}/data/.db-initialized ]; then
@@ -389,8 +401,11 @@ EOF
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
+        Restart = "on-failure";
+        RestartSec = "15s";
+        StartLimitIntervalSec = 0;
       };
-      
+
       script = ''
         # Check if admin user already created
         if [ -f ${cfg.dataDir}/data/.admin-created ]; then

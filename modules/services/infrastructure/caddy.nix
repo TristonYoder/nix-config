@@ -69,6 +69,9 @@ in
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
+        Restart = "on-failure";
+        RestartSec = "10s";
+        StartLimitIntervalSec = 0;
       };
       script = ''
         # Read the raw token from agenix secret and format it for systemd EnvironmentFile

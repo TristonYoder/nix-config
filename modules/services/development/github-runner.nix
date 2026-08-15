@@ -149,7 +149,15 @@ in
         extraPackages = with pkgs; [ nix git ]
           ++ optionals runner.dockerAccess [ config.virtualisation.docker.package pkgs.docker-compose ]
           ++ runner.extraPackages;
-        serviceOverrides = mkIf runner.dockerAccess {
+        # Upstream default is Restart=no, so a crashed listener (e.g. lost
+        # connectivity to GitHub) stays down until someone notices. Retry with
+        # backoff and no burst limit so it comes back on its own once
+        # whatever broke it is fixed.
+        serviceOverrides = {
+          Restart = "on-failure";
+          RestartSec = "30s";
+          StartLimitIntervalSec = 0;
+        } // optionalAttrs runner.dockerAccess {
           SupplementaryGroups = [ "docker" ];
         };
       })

@@ -110,6 +110,9 @@ in
         Type = "oneshot";
         RemainAfterExit = true;
         User = "nextcloud";
+        Restart = "on-failure";
+        RestartSec = "10s";
+        StartLimitIntervalSec = 0;
       };
       script = ''
         JWT_SECRET=$(cat ${jwtFile})
