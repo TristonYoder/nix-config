@@ -312,7 +312,30 @@ deleting the data. The module has an activation-script preflight that aborts the
 state; activation runs before systemd-tmpfiles, so the abort is safe. Run
 `scripts/migrate-home-split.sh --user <name> --apply` on each host first. It reads the shared
 list from the flake (so it cannot drift), refuses to run against a live session, prunes store
-symlinks that do not resolve on that host, and deletes nothing under `/data`.
+symlinks that do not resolve on that host, and deletes nothing under `/data`. Use
+`--extra-exclude <path>` to leave a bulk directory in place under the shared root rather than
+copying it — david's 97G `.local/share/Steam` and 23G `.local/share/iOpenPod` are excluded this
+way pending a decision on where they belong.
+
+**After migrating, restart Home Manager — the rebuild is not enough.**
+
+```bash
+sudo systemctl restart home-manager-<user>.service
+```
+
+The migration deliberately does not copy `.zshrc`, `.zshenv`, or `.p10k.zsh`, since those are
+store symlinks belonging to whichever host wrote them. Home Manager regenerates them, but only
+when its activation service actually runs — and if the HM generation is unchanged (the usual
+case, since homeSplit only alters system-level tmpfiles and mounts), `nixos-rebuild switch` does
+not re-run it. The result is a new local home with **no shell config at all**. Restarting the
+unit forces `linkGeneration` to recreate the missing files.
+
+**On hosts where the local home is a mounted subvolume, re-run tmpfiles once after the switch.**
+If the rebuild starts `/home/<user>`'s mount in the same transaction that runs
+systemd-tmpfiles, the shared symlinks land in the directory *underneath* and are then hidden by
+the mount — the home looks like it has no shared data. `sudo systemd-tmpfiles --create` fixes it.
+Boot ordering is correct on its own (`home-<user>.mount` is `Before=local-fs.target`,
+`systemd-tmpfiles-setup` is `After=` it), so this only affects the live switch.
 
 ### Agnostic Module Design
 

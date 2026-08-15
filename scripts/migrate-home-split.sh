@@ -245,6 +245,24 @@ fi
 echo
 echo "==> done. Next:"
 echo "    sudo nixos-rebuild switch --refresh --flake '${FLAKE}#${HOSTNAME_SHORT}'"
+echo "    sudo systemctl restart home-manager-${USER_NAME}.service"
 echo
+echo "    The Home Manager restart is REQUIRED, not a formality. This script"
+echo "    deliberately does not copy .zshrc/.zshenv/.p10k.zsh -- they are store"
+echo "    symlinks belonging to whichever host wrote them. Home Manager"
+echo "    regenerates them, but the rebuild alone will not: if the HM generation"
+echo "    itself is unchanged, its activation service does not re-run, so the new"
+echo "    local home is left with no shell config at all. Restarting the unit"
+echo "    forces linkGeneration to recreate the missing files."
+echo
+if [[ -n "$SUBVOL" ]]; then
+  echo "    If the rebuild started ${LOCAL_HOME}'s mount in the same switch that"
+  echo "    ran systemd-tmpfiles, the shared symlinks were written to the"
+  echo "    directory underneath and are now hidden by the mount. Re-run"
+  echo "    'sudo systemd-tmpfiles --create' once, and check a shared path"
+  echo "    resolves. Boot order is fine (the mount is Before=local-fs.target,"
+  echo "    tmpfiles is After=it); this only affects the live switch."
+  echo
+fi
 echo "    Nothing under ${SHARED_HOME} was deleted. To roll back, remove"
 echo "    ${LOCAL_HOME} and rebuild the previous generation."
