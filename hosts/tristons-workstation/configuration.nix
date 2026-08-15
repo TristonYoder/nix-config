@@ -62,6 +62,48 @@
     wants = [ "network-online.target" ];
   };
 
+  # Keep directly-attached LAN traffic off Tailscale.
+  #
+  # david advertises 10.150.100.0/23 (and 10.150.10.0/23) as Tailscale subnet
+  # routes. This host is physically ON both of those LANs — enp7s0 and eno1 —
+  # but Tailscale installs its policy rule at priority 5270, above the main
+  # table at 32766, so table 52 wins and traffic to 10.150.100.30 leaves via
+  # tailscale0 instead of the 10Gb fiber on enp7s0:
+  #
+  #   ip route get 10.150.100.30
+  #     -> dev tailscale0 table 52 src 100.110.37.61 uid 0
+  #
+  # david's subnet router then SNATs it, so the NFS server sees the mount
+  # arriving from 10.150.2.117, which matches none of its exports and is
+  # refused: "mount.nfs: access denied by server". Confirmed on david via
+  # /proc/net/rpc/auth.unix.ip/content showing "10.150.2.117 -no-domain-".
+  #
+  # Pinning these two prefixes to the main table at priority 5000 (above
+  # Tailscale's 5270) restores the direct path. Every other advertised route
+  # still goes over Tailscale — this only reclaims the LANs we are already on.
+  #
+  # Ordered after tailscaled so the rule is re-added if Tailscale restarts and
+  # rebuilds its own rules.
+  systemd.services.lan-route-priority = {
+    description = "Pin directly-attached LAN prefixes to the main routing table";
+    after = [ "network-online.target" "tailscaled.service" ];
+    wants = [ "network-online.target" ];
+    wantedBy = [ "multi-user.target" ];
+    partOf = [ "tailscaled.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+    };
+    script = ''
+      for prefix in 10.150.100.0/23 10.150.10.0/23; do
+        # Idempotent: drop any existing copy before adding, so repeated
+        # activations don't stack duplicate rules.
+        ${pkgs.iproute2}/bin/ip rule del to "$prefix" lookup main priority 5000 2>/dev/null || true
+        ${pkgs.iproute2}/bin/ip rule add to "$prefix" lookup main priority 5000
+      done
+    '';
+  };
+
   # Automount unit: presents /data on first access and triggers data.mount.
   #
   # DefaultDependencies=false is required to break the boot ordering cycle.
