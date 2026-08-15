@@ -43,6 +43,55 @@ rsync -av ~/.claude/projects/-Users-tyoder-Projects-nix-config/memory/ \
 
 Run this when switching machines if there's active in-progress memory that hasn't been promoted yet.
 
+## MCP Tooling — mcp-nixos
+
+[mcp-nixos](https://mcp-nixos.io/usage) is registered as an MCP server for Claude Code. It queries live
+nixpkgs/option indexes, so it is the authority on what exists in a channel — model training data lags
+nixpkgs by months. **Use it instead of guessing an attribute path or option name, and instead of
+`nix search`, scraping search.nixos.org, or `gh api` against NixOS/nixpkgs.**
+
+Registered at user scope (`~/.claude.json`), not in this repo — each machine needs it added once:
+
+```bash
+claude mcp add --scope user nixos -- nix run github:utensils/mcp-nixos --
+```
+
+The flake ref is unpinned, so the first launch after upstream publishes a new commit can exceed Claude
+Code's 30s MCP startup timeout while it builds. Pre-warm with `nix build --no-link github:utensils/mcp-nixos`
+and reconnect.
+
+### Tools
+
+**`nix`** — one tool, dispatched by `action` + `source`:
+
+| action | What it does |
+|---|---|
+| `search` | Keyword lookup. `type`: `packages` (default), `options`, `programs`, `flakes` |
+| `info` | Exact-name details. `type`: `package` or `option` |
+| `browse` | Walk an option tree by prefix — **home-manager/darwin/nixvim/nvf/noogle only**, not nixos |
+| `channels` | List channels and the commit each index was built from |
+| `stats` | Package/option counts |
+| `cache` | Whether a package has binary cache coverage (`version`, `system` args) |
+| `flake-inputs` | List/ls/read inputs of a flake — defaults to the current project's flake |
+| `store` | `ls` or `read` an explicit `/nix/store/...` path |
+
+`source`: `nixos` (default), `home-manager`, `darwin`, `flakes`, `flakehub`, `nixvim`, `nvf`, `wiki`,
+`nix-dev`, `noogle`, `nixhub`. `channel`: `unstable` (default), `stable`, or a release like `25.05`.
+
+**`nix_versions`** — package version history from NixHub: which commit shipped a given version, and when.
+Use this for "when did pkg X hit version N", not the `nix` tool.
+
+### Repo-specific usage
+
+- **Always pass `channel` explicitly.** The tool defaults to `unstable`, but NixOS hosts here build against
+  **25.05 stable** while Darwin hosts use unstable (see Version Consistency). A package confirmed on
+  unstable may not exist on 25.05 — verify against the channel the target host actually uses.
+- `action: browse` with `source: home-manager` or `darwin` is the fastest way to check what an upstream
+  module exposes before writing a `home/modules/` or profile override.
+- `action: search, type: options` against `source: nixos` answers "does upstream already have an option
+  for this?" — worth checking before adding a custom option to a `modules/` module.
+- `flake-inputs` reads this repo's own `flake.nix` when run from the project root.
+
 ## Build & Rebuild Commands
 
 Use the `rebuild` shorthand — it auto-detects the host, fetches from GitHub, and runs the appropriate command:
