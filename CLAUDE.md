@@ -10,7 +10,7 @@ This is a flake-based, multi-host Nix configuration managing NixOS servers, desk
 
 - **david** (NixOS Server) - Full infrastructure stack with media, productivity, storage services. Primarily a server, but also used as a workstation at times — hence the multi-profile setup (server profile plus desktop-capable pieces). Don't assume it's headless; desktop-oriented packages (e.g. `mainUser.packages` defaults like `bitwarden-desktop`) are intentionally present, not stray bloat.
 - **pits** (NixOS Edge/Pi) - Lightweight public-facing reverse proxy
-- **tristons-workstation** (NixOS Desktop) - KDE Plasma workstation. RTX 4080 (open NVIDIA kernel modules), btrfs root (`@`, `@nix`, `@snapshots` subvolumes), `/home` symlinked to NFS-mounted `/data` on david (`useDataDrive`). **Always has a 10Gb fiber backhaul to david over the Core Services VLAN** — this is a permanent network characteristic of this host, not a one-off; treat NFS-backed home and any future high-bandwidth dependency on david as safe to assume for this host specifically. Dual-NIC: `enp7s0` carries `10.150.100.0/23` (Core Services, route to david), `eno1` carries `10.150.10.0/24` (User Devices). `network-online.target` may fire on `eno1` before `enp7s0` completes DHCP — see the NFS automount troubleshooting entry before touching boot-time network ordering on this host.
+- **tristons-workstation** (NixOS Desktop) - KDE Plasma workstation. RTX 4080 (open NVIDIA kernel modules), btrfs root (`@`, `@nix`, `@snapshots` subvolumes), plus `@tristonyoder-home`/`@carolineyoder-home` mounted at `/home/<user>`. Home is host-local; shared data is symlinked to NFS-mounted `/data` on david (`homeSplit`). **Always has a 10Gb fiber backhaul to david over the Core Services VLAN** — this is a permanent network characteristic of this host, not a one-off; treat NFS-backed home and any future high-bandwidth dependency on david as safe to assume for this host specifically. Dual-NIC: `enp7s0` carries `10.150.100.0/23` (Core Services, route to david), `eno1` carries `10.150.10.0/24` (User Devices). `network-online.target` may fire on `eno1` before `enp7s0` completes DHCP — see the NFS automount troubleshooting entry before touching boot-time network ordering on this host.
 - **tristons-nixbook** (NixOS Laptop) - Workstation profile on a MacBook. NFS-mounts `/data` from david. Key swap (Command↔Control) via keyd for MacBook keyboard layout.
 - **tristons-nixbook-pro** (NixOS on T2 MacBook Pro 16,1) - Dual-boot, uses `nixos-hardware.apple-t2`. Custom bootable installer ISOs built from the flake (`tristons-nixbook-pro-installer`, `tristons-nixbook-pro-installer-plasma`).
 - **tyoder-mbp** (macOS Apple Silicon) - Work MacBook Pro
@@ -34,11 +34,13 @@ CLAUDE.md is the primary knowledge store for this repo. It is committed to git a
 
 **What belongs in `~/.claude/` memory:** In-progress work, open design questions, and transient session context. When something in memory stabilizes (a bug fix pattern, a finalized design), promote it to CLAUDE.md and delete the memory file. Never store secret values in memory files either.
 
-**Cross-machine sync for in-progress memory:**
+**Cross-machine sync for in-progress memory:** not needed between david and
+tristons-workstation — `~/.claude` is on the shared list in `homeSplit`, so both hosts read one
+directory. Only the macOS hosts need syncing:
+
 ```bash
-# Sync from local to david (or reverse)
 rsync -av ~/.claude/projects/-Users-tyoder-Projects-nix-config/memory/ \
-  tristonyoder@david:~/.claude/projects/-data-tristonyoder-home-Projects-nix-config/memory/
+  tristonyoder@david:~/.claude/projects/-home-tristonyoder-Projects-nix-config/memory/
 ```
 
 Run this when switching machines if there's active in-progress memory that hasn't been promoted yet.
@@ -260,6 +262,57 @@ Enable modules in host configurations:
   };
 }
 ```
+
+### Home Directory Split — Local by Default, Shared by List
+
+`modules.system.users.homeSplit` (in `modules/system/home-split.nix`) is how home directories
+work on hosts that share data with david. `$HOME` is **host-local storage**, and only the paths
+named in the module's `users.<name>.sharedPaths`/`sharedFiles` lists are symlinked out to
+`/data/<user>/home`.
+
+**Why not the other way round.** The predecessor, `useDataDrive`, symlinked all of
+`/home/<user>` onto `/data`. That cannot work for two hosts sharing one home, because Home
+Manager writes `/nix/store` paths *into* the home directory:
+
+```
+~/.zshrc -> /nix/store/<hash>-home-manager-files/.zshrc
+```
+
+Each host builds its own `home-manager-files` derivation. Whichever host activated last wins the
+file, and on the other host that store path does not exist — so `~/.zshrc` dangles and the shell
+comes up unconfigured. Both hosts keep overwriting each other, because each tracks its own
+generation state and so each believes it owns the file. The same applied to `.zshenv`,
+`.p10k.zsh`, `.config/git/config`, and the plasma-manager autostart entry.
+
+Shared-by-default also means every new app that drops a dotfile in `$HOME` is a fresh conflict to
+notice and hand-patch. Local-by-default has no blocklist to maintain.
+
+**Rules when touching this:**
+
+- **The shared list lives in the module, not in host configs.** Hosts that share a home must
+  agree on the split; a shared default is structural agreement rather than a comment asking two
+  files to stay in sync.
+- **`manageSharedRoot` is true on david only.** It creates the directories under `/data`. On NFS
+  clients it must stay false — creating anything under `/data` at boot would trigger the
+  automount early and reintroduce the ordering cycle documented in the NFS troubleshooting entry.
+- **Symlinks (`tmpfiles L+`), never bind mounts.** `L+` only calls `symlink(2)`, so these rules
+  never touch the shared filesystem and a shared path resolves lazily on first access. A bind
+  mount would have to be established at boot and would force the automount.
+- **Quote the tmpfiles *path* field for paths with spaces, never the argument field.**
+  systemd-tmpfiles quote-strips the path but not the trailing argument, so a quoted symlink
+  target produces a link whose destination contains literal quote characters.
+- **Modes under the shared root are reapplied every boot.** An explicit mode is required (`-`
+  would create new entries as root), so anything needing non-0755 goes in `users.<name>.modes` —
+  `.ssh` is 0700 there.
+
+**Migration is not optional and not reversible by accident.** Activating homeSplit while
+`/home/<user>` is still the `useDataDrive` symlink would make the `L+` rules resolve *through*
+that symlink onto the real shared directories and replace them with self-referential links —
+deleting the data. The module has an activation-script preflight that aborts the switch in that
+state; activation runs before systemd-tmpfiles, so the abort is safe. Run
+`scripts/migrate-home-split.sh --user <name> --apply` on each host first. It reads the shared
+list from the flake (so it cannot drift), refuses to run against a live session, prunes store
+symlinks that do not resolve on that host, and deletes nothing under `/data`.
 
 ### Agnostic Module Design
 
@@ -547,12 +600,11 @@ build has. The desktop theme, Aurorae theme and the look-and-feel's defaults/pre
 byte-identical to the KDE Store's Plasma 6 package, so nothing else needs reshaping. Note also
 that nixpkgs' `ant-theme` is the **GTK** theme only — none of the Plasma pieces.
 
-**david and tristons-workstation share `~/.config`.** Both set `useDataDrive`, so both symlink
-`/home/tristonyoder` to `/data/tristonyoder/home` on david's NFS export. plasma-manager rebuilds
-`plasma-org.kde.plasma.desktop-appletsrc` at every login, so the host you logged into last owns
-that file. Their `modules.plasma` options must stay identical — `externalMonitor` especially —
-or the two will fight over the panel layout. On the workstation `~/.local` is a host-local btrfs
-subvolume, so each host does keep its own plasma-manager last-run markers.
+**david and tristons-workstation no longer share `~/.config`.** They used to, via `useDataDrive`,
+and their `modules.plasma` options had to stay byte-identical or the two would fight over
+`plasma-org.kde.plasma.desktop-appletsrc`. `modules.system.users.homeSplit` made `~/.config`
+host-local, so each host owns its own panel layout and `externalMonitor` is free to differ.
+See the Home Directory Split section.
 
 **Known gaps:** per-tray-applet config (e.g. battery `showPercentage`) is accepted by
 plasma-manager's `items.configs` but silently dropped upstream — the Plasma scripting API has no
