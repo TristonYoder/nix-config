@@ -301,6 +301,21 @@ modules.services.vHosts.hosts."myservice" = {
 
 All providers are enabled/disabled independently. The server profile enables Caddy, Technitium, Gatus, and Homepage by default.
 
+### Split-Horizon DNS — The Standing Pattern
+
+**This is how DNS works for every service from here on out.** Every domain we serve — including public, customer-facing ones — resolves two different ways depending on who is asking:
+
+- **Internally** (clients using Technitium as their resolver): the domain resolves to david, so traffic stays on the LAN and never leaves the network.
+- **Externally** (public resolvers like 1.1.1.1): the domain resolves to its real public IP — normally Cloudflare's proxy IPs, with the Cloudflare tunnel carrying traffic back to the host.
+
+Registering a vHost is what creates the internal half. `modules.services.providers.dns-technitium` walks the vHosts registry and creates a record pointing at david for every domain, auto-creating a forwarder zone at TLD+1 when the domain isn't under `networking.domain`. The public half lives in Cloudflare and is managed there.
+
+**Consequences when adding a service:**
+- Registering a public apex domain (e.g. `carolineyoder.com`) in the vHosts registry is expected and correct, not a mistake. It creates the internal leg of the split.
+- Caddy requests certs via Cloudflare DNS-01, so the `CLOUDFLARE_API_TOKEN` must have Zone:DNS:Edit on **every** zone registered as a vHost — including zones outside `theyoder.family`. A missing zone means repeated failed cert issuance, which burns Let's Encrypt rate limits.
+- `public = true` is a declaration that the domain is published externally. It only drives routing when `providers.cloudflare-tunnel` is enabled; david currently runs the token-based `infrastructure.cloudflared` instead, whose ingress rules live in the Cloudflare dashboard, not in this repo.
+- Don't "fix" a public domain appearing in Technitium by removing it. That breaks internal routing.
+
 ### Configuration Hierarchy
 
 Hosts import configurations in this order:
@@ -502,6 +517,48 @@ Docker services are organized in `docker/` by category. Changes to Docker servic
 - User configs in `home/` are imported via `flake.nix`
 - Changes to Home Manager configs require full system rebuild
 
+### Plasma Desktop Config (plasma-manager)
+
+The shared KDE Plasma look and panel layout lives in `home/modules/plasma/`, built on
+[plasma-manager](https://github.com/nix-community/plasma-manager). It originated on
+tristons-nixbook-pro — a macOS-shaped desktop: global menu top-left, tray/clock top-right,
+floating centered dock, window buttons on the left.
+
+Wiring per host: add both modules to `home-manager.sharedModules` in that host's `flake.nix`
+block, then set `home-manager.users.<user>.modules.plasma.enable = true` in the host config.
+Set `externalMonitor = true` on hosts that regularly drive a second display.
+
+**Panels are rebuilt from scratch at every login.** plasma-manager's startup script deletes
+`plasma-org.kde.plasma.desktop-appletsrc` and replays a generated `layout.js`. Editing panels
+through the GUI works until the next login, then reverts — change `home/modules/plasma/` instead.
+Everything else (themes, kwin, screen locker) is written additively, so unlisted settings keep
+whatever the machine had. `programs.plasma.overrideConfig = true` makes that strict, at the cost
+of deleting the KDE config files on activation.
+
+**Capturing GUI changes:** `nix run github:nix-community/plasma-manager` (rc2nix) dumps the live
+config as Nix. It does not emit panels, and its output carries a lot of noise — activity and
+screen UUIDs, kwallet/baloo state, host-specific values like `kwinrc.Xwayland.Scale`. Treat it as
+a diffing tool, not a drop-in.
+
+**Ant-Dark upstream is still Plasma 5.** `EliverLara/Ant` master ships `metadata.desktop`, which
+KF6's KPackage cannot read at all, plus KF5-era `contents/{components,lockscreen,logout,osd}`.
+`home/modules/plasma/themes.nix` writes a `metadata.json` and ships only the parts the Plasma 6
+build has. The desktop theme, Aurorae theme and the look-and-feel's defaults/previews/splash are
+byte-identical to the KDE Store's Plasma 6 package, so nothing else needs reshaping. Note also
+that nixpkgs' `ant-theme` is the **GTK** theme only — none of the Plasma pieces.
+
+**david and tristons-workstation share `~/.config`.** Both set `useDataDrive`, so both symlink
+`/home/tristonyoder` to `/data/tristonyoder/home` on david's NFS export. plasma-manager rebuilds
+`plasma-org.kde.plasma.desktop-appletsrc` at every login, so the host you logged into last owns
+that file. Their `modules.plasma` options must stay identical — `externalMonitor` especially —
+or the two will fight over the panel layout. On the workstation `~/.local` is a host-local btrfs
+subvolume, so each host does keep its own plasma-manager last-run markers.
+
+**Known gaps:** per-tray-applet config (e.g. battery `showPercentage`) is accepted by
+plasma-manager's `items.configs` but silently dropped upstream — the Plasma scripting API has no
+support for nested containments. KWin custom tiling layouts are keyed by per-machine virtual
+desktop and screen UUIDs, so only `tiling.padding` is portable.
+
 ### macOS Homebrew/MAS Performance
 
 The Homebrew and Mac App Store (mas) modules use batch-checking for optimal rebuild performance:
@@ -576,6 +633,25 @@ The live installer environment runs entirely in RAM with **no swap by default**.
 3. Already-built store paths under `/mnt/nix/store` survive a reboot of the live session as long as the target disk partitions aren't reformatted — remount and resume rather than starting over.
 
 **Diagnostics:** `free -h` on the installer (check `Swap: 0B` to confirm no cushion exists) before starting a heavy install.
+
+### Never Give a Boot-Time Service `TTYPath=/dev/tty1`
+**Hosts:** any host with a display manager (server, desktop, kiosk profiles)
+
+A systemd service with `StandardInput=tty` and `TTYPath=/dev/tty1` makes systemd acquire tty1 as that service's *controlling terminal*. sddm-helper's `ioctl(STDIN_FILENO, TIOCSCTTY)` on tty1 then returns EPERM, the greeter exits with `SDDM::Auth::HELPER_TTY_ERROR`, and `display-manager.service` burns its 3 restarts within 30s and gives up with `start-limit-hit` — permanently, even after the offending service releases tty1.
+
+This bit `tailscale-login-qr` (fixed in PR #323): it was `wantedBy = multi-user.target` and slept 10s before its first check, holding tty1 straight through the display-manager start window. The symptom looks like a boot failure — the machine comes up, SSH works, but there's never a login screen.
+
+**Rule:** any unit that writes to the console must be started *on demand*, never placed in the boot transaction, on hosts that run a display manager. Split "decide whether the console output is needed" (no TTY) from "show it" (TTY, started via `systemctl start --wait`).
+
+**Diagnostics:**
+```bash
+journalctl -b -u display-manager | grep -c HELPER_TTY_ERROR   # >0 = tty1 contention
+journalctl -b | grep -iE 'take control of'                    # names the tty and its owner
+# find who claimed it -- compare unit start times against the display-manager window
+systemctl show -p TTYPath -p StandardInput '*.service' 2>/dev/null | grep -B1 tty1
+```
+
+Note the failure survives a rollback of the *running* system only if you also boot an older generation — the profile symlink still points at the broken one.
 
 ### SDDM Blinking Cursor (No Login Screen)
 **Host:** david — Plasma 6 + NVIDIA
@@ -807,6 +883,37 @@ ssh github-actions@david.vpn.theyoder.family "sudo journalctl -u azuracast-playl
 It's idempotent — safe to run anytime, only creates stations for m3u files without one yet.
 
 **If station creation fails with "no available ports for new radio stations":** AzuraCast reserves a full 10-port block per station (frontend/telnet/dj/headroom), not just the 3 ports actually bound. Widen `modules.services.media.azuracast.stationPortMax`, but check `sudo ss -tulpn` on david first for a clean gap rather than just incrementing — the original 9500-9599 range was extended once already and had to be relocated entirely to 23000-24999 to get clear of neighboring services.
+
+### WordPress Sites — Upload Limits and Canonical Domains
+
+**Hosts:** david — `docker/websites/*.nix`
+
+Three WordPress sites run as Docker containers behind the vHosts registry:
+
+| Container port | Canonical domain | Notes |
+|---|---|---|
+| 1128 | `carolineyoder.com` | single-site |
+| 1996 | `elizabethallen.photography` | single-site; `carolineelizabeth.photography` 301s here |
+| 7777 | `7andco.studio` | **subdomain multisite** |
+
+**Do not trust the hostnames in the file headers of `docker/websites/*.nix`** — several are stale. The authoritative source is `WP_HOME`/`WP_SITEURL` in each site's `wp-config.php`, which **override** the `siteurl`/`home` values in `wp_options`. The photography site is the trap: its DB says `carolineelizabeth.photography` but the constants pin it to `elizabethallen.photography`, so that is what it actually serves.
+
+**Raising the upload limit takes up to three separate changes:**
+
+1. **PHP** — a `writeText` ini bind-mounted to `/usr/local/etc/php/conf.d/uploads.ini` in the container (`upload_max_filesize`, `post_max_size`, `memory_limit`). The official image ships 2M/8M/128M. `memory_limit` matters: WordPress buffers uploads in memory during media processing, so leaving it low caps real uploads regardless of `upload_max_filesize`.
+
+2. **WordPress Multisite network setting** — multisite installs enforce `fileupload_maxk` (in KB) from `wp_sitemeta`, which overrides PHP entirely in the media uploader. Default is 1500 (≈1.5 MB). This lives in the **database, not this repo**, so it survives rebuilds and is invisible to `nixos-rebuild`. Only `7andco.studio` is multisite. Check and set it with:
+   ```bash
+   sudo docker exec studio_7andco-wordpress php -r 'include "/var/www/html/wp-config.php";
+     $c=new mysqli(DB_HOST,DB_USER,DB_PASSWORD,DB_NAME);
+     $r=$c->query("SELECT meta_value FROM wp_sitemeta WHERE meta_key=\"fileupload_maxk\"");
+     echo $r->fetch_row()[0]."\n";'
+   ```
+   Equivalent UI path: Network Admin → Settings → Max upload file size.
+
+3. **Cloudflare edge** — all three domains are CF-proxied, and the edge caps request bodies at **100 MB** on Free/Pro (200 MB Business). Nothing in this repo can lift that. Uploads over the local network bypass it; uploads through the public hostname do not.
+
+**Image pinning:** these use `wordpress:php8.3-apache`, not `:latest`. Watchtower runs unfiltered on david, so `:latest` would let it move a live site onto a new PHP major. WP core lives in the bind-mounted webroot and self-updates independently of the image — the three sites have run different core versions off the same tag.
 
 ## References
 

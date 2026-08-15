@@ -65,6 +65,20 @@
     mode = "0400";
   };
 
+  # =============================================================================
+  # DISPLAY POWER (PLOTIPHAR OUTPUT DEVICE)
+  # =============================================================================
+
+  # Makes this Pi a Plotiphar Output Device: the app can power the venue TV
+  # on/standby and switch it to this Pi's HDMI input, manually or on a
+  # schedule. See modules/services/kiosk/cec-bridge.nix.
+  #
+  # No secret to provision: the display shows a pairing code on screen, and
+  # approving it in the app (Settings → Screens → Pair a Display) issues this
+  # host its own credential, creates or binds its screen, and logs the kiosk
+  # browser in — all from that one code.
+  modules.services.kiosk.cecBridge.enable = true;
+
   networking.networkmanager.ensureProfiles = {
     environmentFiles = [ config.age.secrets.stage-plotiphar-wifi-psk.path ];
     profiles."TPCC_Production" = {
@@ -86,4 +100,19 @@
       ipv6.method = "auto";
     };
   };
+
+  # =============================================================================
+  # CEC REMOTE CONTROL
+  # =============================================================================
+
+  # Tools for CEC display power control (power on/off connected TVs via HDMI).
+  # v4l-utils provides cec-ctl; libcec provides cec-client.
+  environment.systemPackages = with pkgs; [
+    v4l-utils  # cec-ctl
+    libcec     # cec-client
+  ];
+
+  # Allow the main user to control CEC devices (/dev/cec*) without sudo
+  users.users.${config.modules.system.users.mainUser.name}.extraGroups = [ "video" ];
 }
+

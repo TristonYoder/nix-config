@@ -338,6 +338,22 @@
 
   home-manager.users.tristonyoder.modules.appShortcuts.enable = true;
 
+  # =============================================================================
+  # DESKTOP
+  # =============================================================================
+
+  # Shared Plasma look and panel layout.
+  #
+  # NOTE: this host and david share /home/tristonyoder — both set
+  # useDataDrive, so both symlink it to /data/tristonyoder/home on david's NFS
+  # export, and ~/.config with it. plasma-manager rebuilds
+  # plasma-org.kde.plasma.desktop-appletsrc at every login, so whichever host
+  # you log into last wins that file. Keep the plasma options here identical to
+  # david's — including externalMonitor — or the two will fight over the panel
+  # layout. (~/.local is a host-local btrfs subvolume here, so each host does
+  # keep its own plasma-manager last-run markers.)
+  home-manager.users.tristonyoder.modules.plasma.enable = true;
+
   modules.services.storage.ipodSync = {
     enable = true;
     user = "tristonyoder";
