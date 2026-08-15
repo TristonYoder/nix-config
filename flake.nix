@@ -494,6 +494,56 @@
         };
 
         # -----------------------------------------------------------------------------
+        # stage-plotiphar-dev - Raspberry Pi 5 Model B, second parallel kiosk host
+        # for testing alongside the real venue host (stage-plotiphar, a CM5 Lite).
+        # -----------------------------------------------------------------------------
+        stage-plotiphar-dev = nixpkgs.lib.nixosSystem {
+          system = "aarch64-linux";
+
+          modules = [
+            nixos-raspberrypi.lib.inject-overlays
+
+            {
+              imports = with nixos-raspberrypi.nixosModules; [
+                raspberry-pi-5.base
+                raspberry-pi-5.display-vc4
+              ];
+            }
+
+            # Common configuration
+            ./common/system.nix
+            ./common/linux.nix
+
+            # Kiosk profile
+            ./profiles/kiosk.nix
+
+            # Host-specific configuration
+            ./hosts/stage-plotiphar-dev/configuration.nix
+            ./hosts/stage-plotiphar-dev/hardware-configuration.nix
+
+            # Custom modules (hardware, system, services)
+            ./modules
+
+            # External modules
+            nixos-vscode-server.nixosModules.default
+            agenix.nixosModules.default
+
+            # Home Manager
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.backupFileExtension = "backup";
+              home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
+            }
+          ];
+
+          specialArgs = {
+            inherit self nixpkgs nixpkgs-unstable nixos-raspberrypi;
+          };
+        };
+
+        # -----------------------------------------------------------------------------
         # stage-plotiphar-vm - Parallels-bootable live ISO of the same kiosk config,
         # for testing before deploying to the real Pi 5. See hosts/stage-plotiphar-vm
         # for what this can/can't validate. Build with:
