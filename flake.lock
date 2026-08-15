@@ -37,6 +37,21 @@
         "type": "github"
       }
     },
+    "b1church": {
+      "locked": {
+        "lastModified": 1786373599,
+        "narHash": "sha256-qLCj47Zntp6VqIroVmNHEeFcfSM0YrDG9ScJ1yialAo=",
+        "owner": "TristonYoder",
+        "repo": "b1church-flake",
+        "rev": "14b34c0fd5d9803dfb1b44968b9acdd3ff2339b0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "TristonYoder",
+        "repo": "b1church-flake",
+        "type": "github"
+      }
+    },
     "blueprint": {
       "inputs": {
         "flake-utils": "flake-utils",
@@ -817,6 +832,7 @@
     "root": {
       "inputs": {
         "agenix": "agenix",
+        "b1church": "b1church",
         "blueprint": "blueprint",
         "flake-utils": "flake-utils_2",
         "hermes-agent": "hermes-agent",

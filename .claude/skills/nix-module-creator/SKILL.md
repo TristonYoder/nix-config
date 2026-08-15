@@ -42,6 +42,13 @@ the agenix secret pattern, and the compliance checklist.
 
 5. **Write the module** following the canonical template in `references/patterns.md`.
 
+   If the module defines any of its own `systemd.services.<name>` units
+   (init/setup scripts, sync jobs, a native runner wrapper, etc.), choose a
+   restart policy for each — see "Restart policy for custom systemd services"
+   in `references/patterns.md`. Do not leave a unit that can fail on a
+   transient condition at the default `Restart=no`/no-retry-limit-reset
+   behavior without a documented reason.
+
 6. **Add the import** to `modules/services/<category>/default.nix`.
 
 7. **Enable it** — see "Placement rules" below.

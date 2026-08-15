@@ -45,6 +45,55 @@ rsync -av ~/.claude/projects/-Users-tyoder-Projects-nix-config/memory/ \
 
 Run this when switching machines if there's active in-progress memory that hasn't been promoted yet.
 
+## MCP Tooling — mcp-nixos
+
+[mcp-nixos](https://mcp-nixos.io/usage) is registered as an MCP server for Claude Code. It queries live
+nixpkgs/option indexes, so it is the authority on what exists in a channel — model training data lags
+nixpkgs by months. **Use it instead of guessing an attribute path or option name, and instead of
+`nix search`, scraping search.nixos.org, or `gh api` against NixOS/nixpkgs.**
+
+Registered at user scope (`~/.claude.json`), not in this repo — each machine needs it added once:
+
+```bash
+claude mcp add --scope user nixos -- nix run github:utensils/mcp-nixos --
+```
+
+The flake ref is unpinned, so the first launch after upstream publishes a new commit can exceed Claude
+Code's 30s MCP startup timeout while it builds. Pre-warm with `nix build --no-link github:utensils/mcp-nixos`
+and reconnect.
+
+### Tools
+
+**`nix`** — one tool, dispatched by `action` + `source`:
+
+| action | What it does |
+|---|---|
+| `search` | Keyword lookup. `type`: `packages` (default), `options`, `programs`, `flakes` |
+| `info` | Exact-name details. `type`: `package` or `option` |
+| `browse` | Walk an option tree by prefix — **home-manager/darwin/nixvim/nvf/noogle only**, not nixos |
+| `channels` | List channels and the commit each index was built from |
+| `stats` | Package/option counts |
+| `cache` | Whether a package has binary cache coverage (`version`, `system` args) |
+| `flake-inputs` | List/ls/read inputs of a flake — defaults to the current project's flake |
+| `store` | `ls` or `read` an explicit `/nix/store/...` path |
+
+`source`: `nixos` (default), `home-manager`, `darwin`, `flakes`, `flakehub`, `nixvim`, `nvf`, `wiki`,
+`nix-dev`, `noogle`, `nixhub`. `channel`: `unstable` (default), `stable`, or a release like `25.05`.
+
+**`nix_versions`** — package version history from NixHub: which commit shipped a given version, and when.
+Use this for "when did pkg X hit version N", not the `nix` tool.
+
+### Repo-specific usage
+
+- **Always pass `channel` explicitly.** The tool defaults to `unstable`, but NixOS hosts here build against
+  **25.05 stable** while Darwin hosts use unstable (see Version Consistency). A package confirmed on
+  unstable may not exist on 25.05 — verify against the channel the target host actually uses.
+- `action: browse` with `source: home-manager` or `darwin` is the fastest way to check what an upstream
+  module exposes before writing a `home/modules/` or profile override.
+- `action: search, type: options` against `source: nixos` answers "does upstream already have an option
+  for this?" — worth checking before adding a custom option to a `modules/` module.
+- `flake-inputs` reads this repo's own `flake.nix` when run from the project root.
+
 ## Build & Rebuild Commands
 
 Use the `rebuild` shorthand — it auto-detects the host, fetches from GitHub, and runs the appropriate command:
@@ -834,6 +883,70 @@ ls /etc/systemd/system/local-fs.target.wants/
 
 # Check the route exists before manual mount
 ip route get 10.150.100.30
+```
+
+### Cloudflare Tunnel → Caddy Returns 502 (`tls: internal error`)
+**Host:** david — any public hostname whose tunnel origin points at Caddy
+
+Most public services on david's tunnel bypass Caddy entirely, with the origin set
+to `http://10.150.100.30:<app port>`. A service that *needs* Caddy in the path —
+path-mounted APIs, wildcard/multi-tenant vHosts — must use an `https://` origin,
+and that introduces an SNI problem.
+
+cloudflared sends the **origin address** as the TLS SNI, not the request's Host
+header. With an origin of `https://10.150.100.30` (or `https://david`), Caddy
+receives an SNI it holds no certificate for, aborts the handshake, and cloudflared
+reports:
+
+```
+error="Unable to reach the origin service...: remote error: tls: internal error"
+originService=https://10.150.100.30
+```
+
+Everything looks healthy on the host — Caddy answers 200 locally — while every
+public request 502s.
+
+**Fix:** on the public hostname in the Zero Trust dashboard, set
+**TLS → Origin Server Name** to a hostname the Caddy cert actually covers:
+- `b1.plotiphar.com` → origin server name `b1.plotiphar.com`
+- `*.b1.plotiphar.com` → any single-label subdomain, e.g. `app.b1.plotiphar.com`
+  (the wildcard cert covers it)
+
+Routing is unaffected: cloudflared still forwards the original Host header, which
+is what Caddy matches vHosts on. Only the SNI needs to be a name Caddy can serve.
+
+**Diagnostics** — this pinpoints it in one step, since SNI is the only variable:
+```bash
+curl -sk -o /dev/null -w '%{http_code}\n' https://10.150.100.30/            # fails
+curl -sk -o /dev/null -w '%{http_code}\n' \
+  --resolve b1.plotiphar.com:443:10.150.100.30 https://b1.plotiphar.com/    # 200
+
+sudo journalctl -u cloudflared_tunnel --no-pager | grep -i 'tls\|originService'
+```
+
+Note the unit is `cloudflared_tunnel.service`, not `cloudflared.service`.
+
+### Docker Network Missing After autoPrune (`network <x>_default not found`)
+**Host:** david — any oci-container service whose container has been down a while
+
+`virtualisation.docker.autoPrune` removes unused networks. If a service's
+container is absent, its network becomes unused and gets pruned — but the
+`docker-network-<name>_default.service` unit is `RemainAfterExit=true` and still
+shows `active (exited)`, so it never recreates it. Nothing fails until something
+restarts the container, at which point it dies with exit 125 and hits the systemd
+start limit. A `nixos-rebuild` is a common trigger, which makes this look like the
+rebuild broke the service when it was already broken.
+
+**Fix:**
+```bash
+sudo systemctl restart docker-network-<name>_default.service
+sudo systemctl reset-failed docker-<name>.service
+sudo systemctl restart docker-<name>.service
+```
+
+**Diagnostics** — the unit being `active` proves nothing; check the network itself:
+```bash
+sudo docker network ls --format '{{.Name}}' | grep -x <name>_default
 ```
 
 ### Port Conflicts

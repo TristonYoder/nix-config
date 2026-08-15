@@ -62,9 +62,16 @@
 
     # Hermes Agent (NousResearch) — official NixOS module
     hermes-agent.url = "github:NousResearch/hermes-agent";
+
+    # B1 Church — self-hosted ChurchApps stack. The flake owns both the image
+    # builds and the NixOS module, and its nightly build commits the published
+    # image tag, so this input's revision *is* the deployed version: upgrading
+    # is `nix flake update b1church`, which the weekly flake updater already
+    # dry-runs and PRs. Takes no inputs of its own, so it adds no lock churn.
+    b1church.url = "github:TristonYoder/b1church-flake";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, plasma-manager, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, nixos-raspberrypi, flake-utils, iopenpod-flake, iopodcli, blueprint, hermes-agent, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, plasma-manager, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, nixos-raspberrypi, flake-utils, iopenpod-flake, iopodcli, blueprint, hermes-agent, b1church, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -157,6 +164,10 @@
             # flake on hosts that can't reach github (pits) or don't use it.
             hermes-agent.nixosModules.default
             ./modules/services/ai/hermes-agent.nix
+            # B1 Church — external module + our wrapper (vHosts + agenix
+            # paths), david-only, kept out of ./modules for the same reason.
+            b1church.nixosModules.default
+            ./modules/services/productivity/b1church.nix
             # nix-bitcoin.nixosModules.default  # Only include when bitcoin.nix is enabled
 
             # Home Manager
