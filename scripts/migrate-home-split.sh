@@ -171,6 +171,9 @@ done
 for p in .zshrc .zshenv .p10k.zsh .nix-profile .nix-defexpr; do
   RSYNC_ARGS+=(--exclude="/${p}")
 done
+# A cache is by definition reconstructible, and keeping it host-local and fresh
+# is part of the point of the split.
+RSYNC_ARGS+=(--exclude="/.cache")
 if [[ -n "$SUBVOL" ]]; then
   # .local already lives in the reused subvolume; do not overwrite it with the
   # shared root's copy.
@@ -179,6 +182,16 @@ fi
 
 if [[ "$APPLY" -eq 1 ]]; then
   rsync "${RSYNC_ARGS[@]}" "${SHARED_HOME}/" "${STAGING}/"
+
+  # The shared home is littered with Home Manager symlinks into /nix/store,
+  # written by whichever host activated last. Any that don't resolve on THIS
+  # host are the exact breakage this migration exists to fix -- drop them and
+  # let the rebuild regenerate them. Ones that do resolve belong to this host
+  # and are left alone, which keeps its HM generation state intact.
+  broken="$(find "$STAGING" -xtype l | wc -l)"
+  echo "    pruning ${broken} symlink(s) that do not resolve on ${HOSTNAME_SHORT}"
+  find "$STAGING" -xtype l -delete
+
   chown -R "${USER_NAME}" "${STAGING}"
 else
   echo "  would run: rsync ${RSYNC_ARGS[*]} ${SHARED_HOME}/ ${STAGING}/"
