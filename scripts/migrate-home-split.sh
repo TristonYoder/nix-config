@@ -32,6 +32,7 @@ USER_NAME=""
 APPLY=0
 SUBVOL=""
 BTRFS_DEV=""
+EXTRA_EXCLUDES=()
 
 die() { echo "error: $*" >&2; exit 1; }
 
@@ -57,6 +58,7 @@ while [[ $# -gt 0 ]]; do
     --apply)        APPLY=1; shift ;;
     --btrfs-subvol) SUBVOL="$2"; shift 2 ;;
     --btrfs-device) BTRFS_DEV="$2"; shift 2 ;;
+    --extra-exclude) EXTRA_EXCLUDES+=("$2"); shift 2 ;;
     --flake)        FLAKE="$2"; shift 2 ;;
     *) die "unknown argument: $1" ;;
   esac
@@ -185,6 +187,15 @@ done
 # A cache is by definition reconstructible, and keeping it host-local and fresh
 # is part of the point of the split.
 RSYNC_ARGS+=(--exclude="/.cache")
+# Caller-supplied exclusions, for bulk directories whose destination is still an
+# open question. These are NOT symlinked anywhere -- the data simply stays under
+# the shared root, reachable at its old absolute path, and the new local home
+# does not have it. Use this to keep a migration moving rather than blocking it
+# on a decision about tens of gigabytes.
+for p in ${EXTRA_EXCLUDES+"${EXTRA_EXCLUDES[@]}"}; do
+  echo "    excluding (left in place under ${SHARED_HOME}): ${p}"
+  RSYNC_ARGS+=(--exclude="/${p}")
+done
 if [[ -n "$SUBVOL" ]]; then
   # .local already lives in the reused subvolume; do not overwrite it with the
   # shared root's copy.
