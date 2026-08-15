@@ -246,5 +246,39 @@ in
     ];
 
     systemd.tmpfiles.rules = concatLists (mapAttrsToList userRules cfg.users);
+
+    # Refuse to activate while /home/<user> is still the useDataDrive symlink.
+    #
+    # This guard is not optional politeness -- without it this configuration
+    # destroys data. If /home/tristonyoder is a symlink to
+    # /data/tristonyoder/home, then the rule
+    #
+    #   L+ /home/tristonyoder/Documents - - - - /data/tristonyoder/home/Documents
+    #
+    # resolves its path through that symlink onto the real shared directory.
+    # L+ means "remove whatever is here, then create the symlink", so it would
+    # delete the real Documents and leave a symlink pointing at itself.
+    #
+    # Activation scripts run before systemd-tmpfiles, so failing here aborts
+    # the switch while everything is still intact. Run
+    # scripts/migrate-home-split.sh first; it replaces the symlink with a
+    # populated local directory.
+    system.activationScripts.homeSplitPreflight = stringAfter [ "specialfs" ] ''
+      homeSplitFailed=0
+      for home in ${escapeShellArgs (map (name: "/home/${name}") (attrNames cfg.users))}; do
+        if [ -L "$home" ]; then
+          echo "homeSplit: $home is still a symlink to $(readlink "$home")" >&2
+          homeSplitFailed=1
+        fi
+      done
+      if [ "$homeSplitFailed" -ne 0 ]; then
+        echo "" >&2
+        echo "homeSplit: refusing to activate -- systemd-tmpfiles would follow" >&2
+        echo "these symlinks and replace the real shared directories with" >&2
+        echo "self-referential links. Run scripts/migrate-home-split.sh for each" >&2
+        echo "affected user first, then rebuild." >&2
+        exit 1
+      fi
+    '';
   };
 }
