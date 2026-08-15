@@ -463,13 +463,25 @@ in
   # Shared Plasma look and panel layout. david is a server that gets used as a
   # workstation, so it gets the same desktop as everything else.
   #
-  # NOTE: this host and tristons-workstation share /home/tristonyoder — the
-  # workstation NFS-mounts this host's /data and both symlink the home to
-  # /data/tristonyoder/home, so ~/.config is one directory. plasma-manager
-  # rebuilds plasma-org.kde.plasma.desktop-appletsrc at every login, so
-  # whichever host you log into last wins that file. Keep the plasma options
-  # here identical to the workstation's — including externalMonitor — or the
-  # two will fight over the panel layout.
+  # ~/.config is host-local under homeSplit, so this host owns its own
+  # plasma-org.kde.plasma.desktop-appletsrc and no longer contends with
+  # tristons-workstation over the panel layout.
   home-manager.users.tristonyoder.modules.plasma.enable = true;
+
+  # ===========================================================================
+  # HOME DIRECTORIES — host-local, with shared data symlinked in
+  # ===========================================================================
+
+  # /home/<user> is a real directory on david's root NVMe; only the paths listed
+  # in modules/system/home-split.nix are symlinked out to /data. This host owns
+  # the shared storage, so it is the one that creates directories under it --
+  # manageSharedRoot must stay false on the NFS clients.
+  #
+  # profiles/server.nix defaults useDataDrive on; homeSplit replaces it.
+  modules.system.users.useDataDrive = false;
+  modules.system.users.homeSplit = {
+    enable = true;
+    manageSharedRoot = true;
+  };
 
 }

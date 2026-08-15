@@ -104,71 +104,48 @@
       requires = [ "nfs-david-reachable.service" ];
       unitConfig.DefaultDependencies = false;
     }
-
-    # Host-local btrfs subvolumes mounted over ~/.local for each NFS-home user
-    # so KDE Wallet and other app data stay on the local NVMe rather than NFS.
-    {
-      description = "Host-local ~/.local btrfs subvolume for tristonyoder";
-      what = "/dev/disk/by-uuid/e2953d1f-2263-4331-9c3d-72dc1c7f000d";
-      where = "/data/tristonyoder/home/.local";
-      type = "btrfs";
-      options = "subvol=@tristonyoder-local,compress=zstd,noatime,ssd,discard=async";
-      after = [ "tristonyoder-dotlocal-mountpoint.service" ];
-      requires = [ "tristonyoder-dotlocal-mountpoint.service" ];
-      wantedBy = [ "graphical.target" ];
-      unitConfig.DefaultDependencies = false;
-    }
-
-    {
-      description = "Host-local ~/.local btrfs subvolume for carolineyoder";
-      what = "/dev/disk/by-uuid/e2953d1f-2263-4331-9c3d-72dc1c7f000d";
-      where = "/data/carolineyoder/home/.local";
-      type = "btrfs";
-      options = "subvol=@carolineyoder-local,compress=zstd,noatime,ssd,discard=async";
-      after = [ "carolineyoder-dotlocal-mountpoint.service" ];
-      requires = [ "carolineyoder-dotlocal-mountpoint.service" ];
-      wantedBy = [ "graphical.target" ];
-      unitConfig.DefaultDependencies = false;
-    }
   ];
 
-  # Ensure ~/.local mount points exist in NFS homes before mounting btrfs subvolumes
-  # over them. /data may not have these directories pre-created on first boot.
-  systemd.services.tristonyoder-dotlocal-mountpoint = {
-    description = "Ensure tristonyoder ~/.local mount point exists in NFS home";
-    after = [ "data.mount" ];
-    requires = [ "data.mount" ];
-    before = [ "data-tristonyoder-home-.local.mount" ];
-    wantedBy = [ "data-tristonyoder-home-.local.mount" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      User = "tristonyoder";
-      ExecStart = "${pkgs.coreutils}/bin/mkdir -p /data/tristonyoder/home/.local";
-    };
+  # =============================================================================
+  # HOME DIRECTORIES — host-local, with shared data symlinked in
+  # =============================================================================
+
+  # Home is a plain local btrfs subvolume; only the paths listed in
+  # modules/system/home-split.nix are symlinked out to david's /data. This
+  # replaces the previous arrangement, where all of /home/<user> was a symlink
+  # onto NFS and host-local btrfs subvolumes were shadow-mounted back over
+  # ~/.local as an exception. See home-split.nix for why that inverted.
+  #
+  # These are ordinary local filesystems -- no NFS dependency, no ordering
+  # constraints, and nothing here can trigger the /data automount.
+  #
+  # Dedicated subvolumes rather than directories on @: these hold Steam
+  # libraries and app caches, which would otherwise be swept into every
+  # snapshot of the root subvolume.
+  fileSystems."/home/tristonyoder" = {
+    device = "/dev/disk/by-uuid/e2953d1f-2263-4331-9c3d-72dc1c7f000d";
+    fsType = "btrfs";
+    options = [ "subvol=@tristonyoder-home" "compress=zstd" "noatime" "ssd" "discard=async" ];
   };
 
-  systemd.services.carolineyoder-dotlocal-mountpoint = {
-    description = "Ensure carolineyoder ~/.local mount point exists in NFS home";
-    after = [ "data.mount" ];
-    requires = [ "data.mount" ];
-    before = [ "data-carolineyoder-home-.local.mount" ];
-    wantedBy = [ "data-carolineyoder-home-.local.mount" ];
-    serviceConfig = {
-      Type = "oneshot";
-      RemainAfterExit = true;
-      User = "carolineyoder";
-      ExecStart = "${pkgs.coreutils}/bin/mkdir -p /data/carolineyoder/home/.local";
-    };
+  fileSystems."/home/carolineyoder" = {
+    device = "/dev/disk/by-uuid/e2953d1f-2263-4331-9c3d-72dc1c7f000d";
+    fsType = "btrfs";
+    options = [ "subvol=@carolineyoder-home" "compress=zstd" "noatime" "ssd" "discard=async" ];
   };
 
-  # Symlink /home/tristonyoder -> /data/tristonyoder/home
-  modules.system.users.useDataDrive = true;
+  modules.system.users.useDataDrive = false;
+  modules.system.users.homeSplit.enable = true;
 
   # Allow root to run nixos-rebuild from the NFS-backed repo.
   # Without this, libgit2 (used by nix) refuses to open a repo owned by
   # a different uid even when no_root_squash is set.
-  programs.git.config.safe.directory = [ "/data/tristonyoder/home/Projects/nix-config" ];
+  # Both spellings: ~/Projects is a symlink onto /data, and git resolves the
+  # repo to its real path, but the invocation path is the local one.
+  programs.git.config.safe.directory = [
+    "/data/tristonyoder/home/Projects/nix-config"
+    "/home/tristonyoder/Projects/nix-config"
+  ];
 
   # =============================================================================
   # NETWORKING — pin enp7s0 (10.150.100.x) as the default route
@@ -344,14 +321,9 @@
 
   # Shared Plasma look and panel layout.
   #
-  # NOTE: this host and david share /home/tristonyoder — both set
-  # useDataDrive, so both symlink it to /data/tristonyoder/home on david's NFS
-  # export, and ~/.config with it. plasma-manager rebuilds
-  # plasma-org.kde.plasma.desktop-appletsrc at every login, so whichever host
-  # you log into last wins that file. Keep the plasma options here identical to
-  # david's — including externalMonitor — or the two will fight over the panel
-  # layout. (~/.local is a host-local btrfs subvolume here, so each host does
-  # keep its own plasma-manager last-run markers.)
+  # ~/.config is host-local under homeSplit, so this host owns its own
+  # plasma-org.kde.plasma.desktop-appletsrc. The options here no longer have to
+  # match david's — externalMonitor in particular is free to differ.
   home-manager.users.tristonyoder.modules.plasma.enable = true;
 
   modules.services.storage.ipodSync = {
