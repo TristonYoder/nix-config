@@ -146,6 +146,14 @@ in
   # to start the admin server without it. See docker/productivity/stageplotiphar.nix.
   "stageplotiphar-admin-secrets.age".publicKeys = davidKeys;
 
+  # B1 Church self-hosted ChurchApps stack. The service module lives in the
+  # external TristonYoder/b1church flake; modules/services/productivity/
+  # b1church.nix is the local wrapper that passes these paths to it.
+  #   db  — MYSQL_ROOT_PASSWORD plus the seven *_CONNECTION_STRING values
+  #   api — JWT_SECRET, ENCRYPTION_KEY (exactly 32 chars), SMTP_USER, SMTP_PASS
+  "b1church-db-secrets.age".publicKeys = davidKeys;
+  "b1church-api-secrets.age".publicKeys = davidKeys;
+
   # Plex token for JellyPlex-Watched
   "plex-token.age".publicKeys = davidKeys;
 

@@ -183,6 +183,26 @@ in
     '';
   };
 
+  # B1 Church — self-hosted ChurchApps stack (admin UI + API + member portal).
+  #
+  # Public hostnames live on plotiphar.com, so — like plotiphar.com itself —
+  # the tunnel route is configured in the Cloudflare Zero Trust dashboard
+  # rather than here: b1.plotiphar.com and *.b1.plotiphar.com both point at
+  # david's Caddy. The wildcard also needs a wildcard CNAME in Cloudflare DNS
+  # and a Cloudflare API token with edit rights on the plotiphar.com zone, or
+  # Caddy's DNS-01 challenge for the portal cert will fail.
+  # The domain lives in the b1church flake's deployment.nix, not here: it is
+  # baked into the frontend images at build time, so it belongs with the build.
+  # The module asserts the two still agree.
+  services.b1church = {
+    enable = true;
+    supportEmail = "triston@7andco.studio";
+    # Mail deliberately unconfigured — registration works, password resets and
+    # invites no-op until an SMTP relay is chosen.
+    smtp.enable = false;
+  };
+
+  # Elizabeth Allen Photography - WordPress site
   # ---------------------------------------------------------------------------
   # WordPress sites (containers defined in docker/websites/)
   #
