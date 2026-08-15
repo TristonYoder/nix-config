@@ -37,7 +37,14 @@ let
   usersCfg = config.modules.system.users;
   cfg = usersCfg.homeSplit;
 
-  # systemd.tmpfiles paths containing spaces must be quoted (systemd.syntax).
+  # systemd.tmpfiles path fields containing spaces must be quoted. This applies
+  # to the path field only -- the trailing argument field (a symlink target
+  # here) takes the rest of the line, and quoting it makes systemd-tmpfiles
+  # embed the quote characters in the target it creates. Verified on david:
+  #   L+ "/tmp/x/Calibre Library" - - - - "/tmp/x/target dir"
+  #     -> Calibre Library -> "/tmp/x/target dir"   (literal quotes, broken)
+  #   L+ "/tmp/x/Calibre Library" - - - - /tmp/x/target dir
+  #     -> Calibre Library -> /tmp/x/target dir     (correct)
   q = path: if hasInfix " " path then "\"${path}\"" else path;
 
   # All proper directory prefixes of a relative path, so nested shared paths
@@ -68,7 +75,7 @@ let
     # L+ replaces whatever is at the path, so a stale real directory left over
     # from before the split is corrected on the next boot rather than silently
     # shadowing the shared copy.
-    ++ map (p: "L+ ${q "${localHome}/${p}"} - - - - ${q "${sharedHome}/${p}"}") linked
+    ++ map (p: "L+ ${q "${localHome}/${p}"} - - - - ${sharedHome}/${p}") linked
     # Only the host that owns the storage creates entries under it. On NFS
     # clients this must not happen: creating anything under /data would
     # trigger the automount during early boot.
