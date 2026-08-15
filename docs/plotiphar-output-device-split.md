@@ -262,14 +262,19 @@ run the new image.
 
 ---
 
+## Decided since writing
+
+- **Hardware: CM5 only, for now.** One board means one `hardware-configuration`
+  and no runtime branching. If a bare Pi 5 is added later the split is on
+  filesystems and boot, not on anything above — keep board-specific settings in
+  `image/hardware.nix` rather than letting them leak into the device profile,
+  so adding a second board stays a new file rather than a refactor.
+
 ## Open questions
 
 - **Image target.** The current Pi boots from onboard NVMe, which the installer
   image writes. Does the fleet flash NVMe directly at provisioning time, or ship
   from an SD/USB installer?
-- **Hardware variants.** Is CM5 the only supported device, or does the image
-  need to cover Pi 5 + CM5 (different `hardware-configuration`, same everything
-  else)?
 - **Channel assignment.** How does a device know it is on `beta` — baked into
   the image, or set from the app once paired? The latter is better (one image,
   reassignable) and fits the existing command channel.
