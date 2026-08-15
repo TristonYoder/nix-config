@@ -118,11 +118,11 @@
     RuntimeMaxUse=50M
   '';
   
-  # Daily GC for space-constrained VPS — overrides the monthly common default.
+  # Daily GC for space-constrained VPS — prune generations older than 7 days
   nix.gc = {
     automatic = true;
     dates = "daily";
-    options = "--max-old-count 3";
+    options = "--delete-older-than 7d";
   };
 
   # Prune unused Docker images daily (keeps disk free on space-constrained VPS)

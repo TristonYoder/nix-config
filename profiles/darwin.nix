@@ -58,6 +58,13 @@
   
   # Use automatic optimization instead of auto-optimise-store (which corrupts store on Darwin)
   nix.optimise.automatic = true;
+
+  # Automatic garbage collection for macOS (nix-darwin)
+  nix.gc = {
+    automatic = true;
+    interval = { Weekday = 0; Hour = 3; Minute = 0; };
+    options = "--delete-older-than 30d";
+  };
   
   # =============================================================================
   # SHELL CONFIGURATION

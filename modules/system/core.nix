@@ -47,12 +47,11 @@ in
         warn-dirty = false;
       };
       
-      # Automatic garbage collection — 1 month or 10 generations, whichever is less.
-      # david overrides to 3 months / 30 generations; edge overrides to daily / 3.
+      # Automatic garbage collection — delete generations older than 30 days.
       gc = {
         automatic = lib.mkDefault true;
         dates = lib.mkDefault "monthly";
-        options = lib.mkDefault "--delete-older-than 30d --max-old-count 10";
+        options = lib.mkDefault "--delete-older-than 30d";
       };
     };
 
