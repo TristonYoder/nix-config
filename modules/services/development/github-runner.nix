@@ -149,12 +149,23 @@ in
         extraPackages = with pkgs; [ nix git ]
           ++ optionals runner.dockerAccess [ config.virtualisation.docker.package pkgs.docker-compose ]
           ++ runner.extraPackages;
-        # Upstream default is Restart=no, so a crashed listener (e.g. lost
-        # connectivity to GitHub) stays down until someone notices. Retry with
-        # backoff and no burst limit so it comes back on its own once
-        # whatever broke it is fixed.
-        serviceOverrides = {
-          Restart = "on-failure";
+        # Upstream sets Restart itself, conditionally:
+        #     Restart = if cfg.ephemeral then "on-success" else "no";
+        #     RestartForceExitStatus = [ 2 ];
+        #
+        # The ephemeral case is already right — "on-success" is what makes a
+        # runner that finished a job re-register immediately — so leave it
+        # alone. Only the non-ephemeral "no" is a real gap: a crashed listener
+        # (e.g. lost connectivity to GitHub) stays down until someone notices.
+        #
+        # mkForce, not a plain value: upstream's definition is normal priority
+        # (100), so a second definition at the same priority is an eval
+        # conflict rather than an override. That conflict is what broke david's
+        # eval — "The option ... Restart has conflicting definition values:
+        # "no" / "on-failure"" — with both sides attributed to upstream's
+        # service.nix, since serviceOverrides is interpolated inside that file.
+        serviceOverrides = optionalAttrs (!runner.ephemeral) {
+          Restart = mkForce "on-failure";
           RestartSec = "30s";
           StartLimitIntervalSec = 0;
         } // optionalAttrs runner.dockerAccess {
