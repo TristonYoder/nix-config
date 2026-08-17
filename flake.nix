@@ -323,6 +323,37 @@
         };
 
         # -----------------------------------------------------------------------------
+        # netboot-installer - Generic PXE netboot installer, served from david
+        # -----------------------------------------------------------------------------
+        netboot-installer = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+
+          modules = [
+            ./hosts/netboot-installer/installer.nix
+          ];
+
+          specialArgs = {
+            inherit nixpkgs;
+          };
+        };
+
+        # -----------------------------------------------------------------------------
+        # netboot-installer-t2 - PXE netboot installer for T2 MacBook Pro, served from david
+        # -----------------------------------------------------------------------------
+        netboot-installer-t2 = nixpkgs-unstable.lib.nixosSystem {
+          system = "x86_64-linux";
+
+          modules = [
+            nixos-hardware.nixosModules.apple-t2
+            ./hosts/netboot-installer/t2-installer.nix
+          ];
+
+          specialArgs = {
+            inherit nixpkgs nixpkgs-unstable;
+          };
+        };
+
+        # -----------------------------------------------------------------------------
         # tristons-nixbook-pro-installer - Bootable minimal ISO for T2 MacBook Pro
         # -----------------------------------------------------------------------------
         tristons-nixbook-pro-installer = nixpkgs-unstable.lib.nixosSystem {
