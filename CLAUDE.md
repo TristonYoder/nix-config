@@ -1008,6 +1008,29 @@ It's idempotent — safe to run anytime, only creates stations for m3u files wit
 
 **If station creation fails with "no available ports for new radio stations":** AzuraCast reserves a full 10-port block per station (frontend/telnet/dj/headroom), not just the 3 ports actually bound. Widen `modules.services.media.azuracast.stationPortMax`, but check `sudo ss -tulpn` on david first for a clean gap rather than just incrementing — the original 9500-9599 range was extended once already and had to be relocated entirely to 23000-24999 to get clear of neighboring services.
 
+### Navidrome Library Wiped After Reboot (BindReadOnlyPaths mount race)
+**Host:** david — `modules.services.media.navidrome`
+
+The nixpkgs `services.navidrome` module hardens the unit with `BindReadOnlyPaths=<MusicFolder>` — systemd bind-mounts that path read-only into the service's *private mount namespace* as a one-time snapshot taken at service start. If navidrome starts before the real mount backing that path is up (e.g. `data-media.mount`, the ZFS-backed `/data/media`), the snapshot captures whatever empty/stub directory happens to exist there on the underlying root filesystem instead — and it stays wrong until the service is restarted *after* the real mount is ready. Nothing else on the host is affected; `ls`/`find` from a normal shell see the real, fully-populated directory the whole time, because they're not inside navidrome's mount namespace.
+
+Symptom: the web UI shows the library empty (or a subset), a full rescan "completes" in seconds without error, and every track in the DB ends up flagged `missing`. This happened on 2026-07-19 and again after an Aug 6 restart — nothing was ordering navidrome after the mount.
+
+**Fix applied:** [modules/services/media/navidrome.nix](modules/services/media/navidrome.nix) sets `systemd.services.navidrome.unitConfig.RequiresMountsFor = [ cfg.musicDir ]`, so systemd won't start the unit until that path is actually mounted. Prefer `RequiresMountsFor` (a path) over hardcoding a `.mount` unit name — systemd resolves the correct mount unit for whatever `musicDir` happens to be on that host.
+
+**Recovery if it happens again:** confirm the real mount is up (`findmnt <musicDir>`), then `sudo systemctl restart navidrome` — its startup scan will re-walk the real directory and clear `missing` flags. This is slow (a full scan of ~45k tracks over network storage took well over an hour); the counts recover incrementally, don't assume it's stuck.
+
+**Diagnostics** — compare navidrome's private view of the path against the host's:
+```bash
+PID=$(systemctl show navidrome -p MainPID --value)
+sudo cat /proc/$PID/mountinfo | grep -i music   # what navidrome actually sees
+findmnt <musicDir>                              # what's really mounted there
+
+# DB-level check (needs sqlite3, not in navidrome's own closure):
+sudo nix shell nixpkgs#sqlite -c sqlite3 /var/lib/navidrome/navidrome.db \
+  'select missing, count(*) from media_file group by missing;'
+```
+A mismatched filesystem type/device between the two `mountinfo` lines for the same path is the tell.
+
 ### WordPress Sites — Upload Limits and Canonical Domains
 
 **Hosts:** david — `docker/websites/*.nix`
