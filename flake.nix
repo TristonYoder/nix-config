@@ -404,6 +404,37 @@
           ];
         };
 
+        # PXE/iPXE netboot variant of the barebones installer — kernel +
+        # initrd pair instead of an ISO, for modules/services/infrastructure/pxe-boot.nix
+        # to serve. Pi 5 is intentionally not covered here — it network-boots
+        # via its own EEPROM/TFTP mechanism, not iPXE chainloading, and needs
+        # a materially different implementation.
+        installer-netboot = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+
+          modules = [
+            ./hosts/installer/netboot.nix
+          ];
+
+          specialArgs = {
+            inherit nixpkgs;
+          };
+        };
+
+        # Same netboot config, built for aarch64. See installer-aarch64 above
+        # for the emulated-builder caveat — same applies here.
+        installer-netboot-aarch64 = nixpkgs.lib.nixosSystem {
+          system = "aarch64-linux";
+
+          modules = [
+            ./hosts/installer/netboot.nix
+          ];
+
+          specialArgs = {
+            inherit nixpkgs;
+          };
+        };
+
         # -----------------------------------------------------------------------------
         # pits - Pi in the Sky - Edge Server (Cloud VPS)
         # -----------------------------------------------------------------------------
