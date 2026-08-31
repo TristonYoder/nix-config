@@ -32,24 +32,26 @@ The ExFAT partition will be replaced by a swap partition and a btrfs root partit
 
 ---
 
-## 2. Build and write the custom installer ISO
+## 2. Get the installer ISO
 
-The custom ISO has the T2 kernel and WiFi firmware baked in — WiFi works on first boot
-with no ethernet or USB adapter needed.
+### Option A — Download from CI (recommended)
 
-Run these commands from the `nix-config` repo root on **tyoder-mbp**:
+GitHub Actions builds the ISO automatically on every push that touches T2 files.
+Download the latest ISO from the [Releases page](https://github.com/TristonYoder/nix-config/releases/tag/t2-iso-latest)
+or from the Actions artifact on any recent run.
+
+### Option B — Build manually
 
 ```bash
 export PATH="/nix/var/nix/profiles/default/bin:$PATH"
 
-# Build the minimal ISO on david (x86_64-linux builder)
-# WiFi firmware is fetched automatically from macOS Sonoma at build time.
+# Minimal ISO (CI builds this automatically)
 nix build .#nixosConfigurations.tristons-nixbook-pro-installer.config.system.build.isoImage \
   --builders "ssh://tristonyoder@david x86_64-linux - 4 - - nixos-test,benchmark,big-parallel,kvm" \
   --option extra-substituters "https://cache.soopy.moe" \
   --option extra-trusted-public-keys "cache.soopy.moe:MzBsBVPllIlCwL2PVs3BQC3Bfbp9TIgakN1xFUDEm8E="
 
-# Or build the Plasma 6 ISO (larger, has GUI installer):
+# Plasma 6 ISO (manual dispatch only — too large for every-push CI)
 nix build .#nixosConfigurations.tristons-nixbook-pro-installer-plasma.config.system.build.isoImage \
   --builders "ssh://tristonyoder@david x86_64-linux - 4 - - nixos-test,benchmark,big-parallel,kvm" \
   --option extra-substituters "https://cache.soopy.moe" \
@@ -68,93 +70,73 @@ Boot from USB: hold **Option (⌥)** at startup → select the orange EFI boot e
 
 ---
 
-## 3. Partition setup in the live environment
+## 3. Install NixOS
 
-The typical T2 Mac layout (MacBookPro16,1) looks like:
+### Option A — Automated (recommended)
+
+The ISO includes a `t2-install` helper that handles partitioning, formatting,
+mounting, and `nixos-install` in one interactive session:
+
+```bash
+sudo t2-install
+```
+
+The script will:
+1. Show the current disk layout and ask which ExFAT partition to replace
+2. Detect RAM and suggest a swap size
+3. Repartition, format, and create btrfs subvolumes
+4. Mount everything at `/mnt`
+5. Generate `hardware-configuration.nix` and pause for you to commit it
+6. Run `nixos-install` with the soopy.moe T2 kernel cache
+7. Set the `tristonyoder` user password via `nixos-enter`
+
+> **Before running**, commit the generated `hardware-configuration.nix` to GitHub
+> so the installer can pull it. The script pauses and shows the git commands needed.
+
+### Option B — Manual
+
+The typical T2 Mac layout after step 1:
 ```
 nvme0n1p1  300MB   EFI (vfat)  ← shared with macOS, mount at /boot
 nvme0n1p2  ~466GB  APFS        ← macOS, do not touch
-nvme0n1p3  rest    ExFAT       ← the partition you created; repartition below
+nvme0n1p3  rest    ExFAT       ← replace this with swap + btrfs
 ```
 
-Repartition the Linux partition into swap + btrfs:
-
 ```bash
-# Delete the ExFAT partition and create swap + btrfs in its place
-# (adjust partition number if your layout differs)
 sudo parted -s /dev/nvme0n1 rm 3
-sudo parted -s /dev/nvme0n1 mkpart swap linux-swap 501GB 570GB   # ~64GiB swap
-sudo parted -s /dev/nvme0n1 mkpart nixos btrfs 570GB 100%        # rest for btrfs
-
-# Format
+sudo parted -s /dev/nvme0n1 mkpart swap linux-swap 501GB 570GB
+sudo parted -s /dev/nvme0n1 mkpart nixos btrfs 570GB 100%
 sudo mkswap -L swap /dev/nvme0n1p3
 sudo mkfs.btrfs -L nixos /dev/nvme0n1p4
-```
 
-Create btrfs subvolumes:
-
-```bash
 sudo mount /dev/nvme0n1p4 /mnt
 sudo btrfs subvolume create /mnt/@
 sudo btrfs subvolume create /mnt/@home
 sudo btrfs subvolume create /mnt/@nix
 sudo umount /mnt
-```
 
-Mount everything:
-
-```bash
 sudo mount -o subvol=@,compress=zstd,noatime /dev/nvme0n1p4 /mnt
 sudo mkdir -p /mnt/{home,nix,boot}
 sudo mount -o subvol=@home,compress=zstd,noatime /dev/nvme0n1p4 /mnt/home
-sudo mount -o subvol=@nix,compress=zstd,noatime /dev/nvme0n1p4 /mnt/nix
+sudo mount -o subvol=@nix,compress=zstd,noatime  /dev/nvme0n1p4 /mnt/nix
 sudo mount /dev/nvme0n1p1 /mnt/boot
 sudo swapon /dev/nvme0n1p3
 ```
 
-Verify the EFI partition already has macOS boot files:
-```bash
-ls /mnt/boot/EFI/    # Should show Apple/, boot/, or similar
-```
+Generate hardware config, update `hardware-configuration.nix` with the real UUIDs,
+commit and push, then:
 
----
-
-## 4. Install NixOS
-
-```bash
-# Clone the nix-config repo
-sudo mkdir -p /mnt/etc/nixos
-sudo git clone https://github.com/TristonYoder/nix-config /mnt/etc/nixos/nix-config
-
-# Generate hardware configuration to get real partition UUIDs
-nixos-generate-config --root /mnt --show-hardware-config
-```
-
-Copy the generated output and update
-`hosts/tristons-nixbook-pro/hardware-configuration.nix` with the real UUIDs.
-Commit and push that change, then pull it in the live environment:
-
-```bash
-sudo git -C /mnt/etc/nixos/nix-config pull
-```
-
-Install:
 ```bash
 sudo nixos-install \
-  --flake /mnt/etc/nixos/nix-config#tristons-nixbook-pro \
+  --flake github:TristonYoder/nix-config#tristons-nixbook-pro \
   --root /mnt \
   --option extra-substituters "https://cache.soopy.moe" \
   --option extra-trusted-public-keys "cache.soopy.moe:MzBsBVPllIlCwL2PVs3BQC3Bfbp9TIgakN1xFUDEm8E="
+
+sudo nixos-enter --root /mnt -c "passwd tristonyoder"
 ```
 
-Set a user password before rebooting (no password is set declaratively):
-```bash
-sudo nixos-enter --root /mnt
-passwd tristonyoder
-exit
-```
-
-Then reboot and hold **Option (⌥)** → select **Linux Boot Manager**.
+Reboot and hold **Option (⌥)** → select **Linux Boot Manager**.
 
 ---
 

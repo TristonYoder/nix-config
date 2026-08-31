@@ -1,0 +1,173 @@
+name: Build T2 MacBook Pro NixOS ISO
+
+on:
+  workflow_dispatch:
+    inputs:
+      variant:
+        description: 'ISO variant to build'
+        type: choice
+        default: minimal
+        options: [minimal, plasma, both]
+  push:
+    branches: [main, 'feat/t2-*']
+    paths:
+      - 'hosts/tristons-nixbook-pro/**'
+      - 'modules/hardware/t2-suspend.nix'
+      - 'flake.nix'
+      - 'flake.lock'
+
+env:
+  SOOPY_CACHE: 'https://cache.soopy.moe'
+  SOOPY_KEY: 'cache.soopy.moe:MzBsBVPllIlCwL2PVs3BQC3Bfbp9TIgakN1xFUDEm8E='
+
+jobs:
+  # Minimal CLI installer — always built on push, selectable on dispatch
+  build-minimal:
+    name: Build minimal ISO
+    runs-on: ubuntu-latest
+    if: github.event_name != 'workflow_dispatch' || inputs.variant == 'minimal' || inputs.variant == 'both'
+
+    steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: false
+
+      - uses: actions/checkout@v4
+
+      - uses: DeterminateSystems/nix-installer-action@v14
+        with:
+          extra-conf: |
+            extra-substituters = ${{ env.SOOPY_CACHE }}
+            extra-trusted-public-keys = ${{ env.SOOPY_KEY }}
+
+      # magic-nix-cache-action is intentionally omitted: it proxies all NAR
+      # downloads through the GH Actions Cache API, which hits rate limits
+      # (HTTP 418 / ResourceExhausted) during large ISO builds and aborts
+      # mid-download. soopy.moe + cache.nixos.org handle substitution directly.
+
+      - name: Build minimal ISO
+        run: |
+          nix build \
+            '.#nixosConfigurations.tristons-nixbook-pro-installer.config.system.build.isoImage' \
+            -j$(nproc)
+          df -h /
+
+      - name: Locate ISO
+        id: locate
+        run: |
+          ISO=$(find result/iso -name "*.iso" | head -1)
+          echo "path=$ISO" >> $GITHUB_OUTPUT
+          echo "name=$(basename "$ISO")" >> $GITHUB_OUTPUT
+          ls -lh result/iso/
+
+      - name: Upload minimal ISO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nixos-t2-minimal-${{ github.sha }}
+          path: ${{ steps.locate.outputs.path }}
+          retention-days: 30
+          compression-level: 0   # ISOs don't benefit from deflate
+
+  # Plasma 6 installer — manual dispatch only (larger ISO, longer build)
+  build-plasma:
+    name: Build Plasma ISO
+    runs-on: ubuntu-latest
+    if: inputs.variant == 'plasma' || inputs.variant == 'both'
+
+    steps:
+      - name: Free disk space
+        uses: jlumbroso/free-disk-space@main
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: false
+
+      - uses: actions/checkout@v4
+
+      - uses: DeterminateSystems/nix-installer-action@v14
+        with:
+          extra-conf: |
+            extra-substituters = ${{ env.SOOPY_CACHE }}
+            extra-trusted-public-keys = ${{ env.SOOPY_KEY }}
+
+      # magic-nix-cache-action omitted — see build-minimal comment.
+
+      - name: Build Plasma ISO
+        run: |
+          nix build \
+            '.#nixosConfigurations.tristons-nixbook-pro-installer-plasma.config.system.build.isoImage' \
+            -j$(nproc)
+          df -h /
+
+      - name: Compress ISO (xz -3 keeps it under 2 GB artifact limit)
+        id: locate
+        run: |
+          ISO=$(find result/iso -name "*.iso" | head -1)
+          echo "Compressing $(basename "$ISO") ($(du -sh "$ISO" | cut -f1))..."
+          xz -3 -T0 "$ISO"
+          echo "path=${ISO}.xz" >> $GITHUB_OUTPUT
+          ls -lh result/iso/
+
+      - name: Upload Plasma ISO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nixos-t2-plasma-${{ github.sha }}
+          path: ${{ steps.locate.outputs.path }}
+          retention-days: 30
+          compression-level: 0   # Already xz compressed
+
+  # Publish a GitHub Release on main branch push (minimal ISO only)
+  release:
+    name: Publish GitHub Release
+    needs: build-minimal
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: nixos-t2-minimal-${{ github.sha }}
+          path: ./release-assets/
+
+      - name: Publish release (overwrites t2-iso-latest tag)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: t2-iso-latest
+          name: 'T2 MacBook Pro NixOS ISO (Latest)'
+          prerelease: false
+          make_latest: true
+          body: |
+            Automated T2 MacBook Pro NixOS installer ISO.
+
+            Built from commit: `${{ github.sha }}`
+
+            **Download:** `nixos-t2-macbookpro16.iso` — Minimal CLI installer
+            WiFi and Touch Bar work on first boot. The `t2-install` script
+            automates partitioning, mounting, and `nixos-install`.
+
+            **Flash to USB (macOS):**
+            ```bash
+            diskutil list                                   # find diskN
+            sudo diskutil unmountDisk /dev/diskN
+            sudo dd if=nixos-t2-macbookpro16.iso of=/dev/rdiskN bs=4m status=progress
+            ```
+
+            **Boot:** hold **Option (⌥)** at startup → select the orange EFI entry.
+
+            See `hosts/tristons-nixbook-pro/INSTALL.md` for full instructions.
+          files: ./release-assets/*

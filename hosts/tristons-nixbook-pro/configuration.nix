@@ -39,6 +39,14 @@
   # systemd-boot on the shared EFI partition with macOS
   modules.hardware.boot.enable = true;
 
+  # soopy.moe caches pre-built T2 kernel packages. Without this, rebuilds
+  # attempt to compile the T2-patched kernel from source, which fails because
+  # the nixos-hardware patches don't apply cleanly to the kernel source tree.
+  nix.settings = {
+    substituters = [ "https://cache.soopy.moe" ];
+    trusted-public-keys = [ "cache.soopy.moe:MzBsBVPllIlCwL2PVs3BQC3Bfbp9TIgakN1xFUDEm8E=" ];
+  };
+
   # ===========================================================================
   # KEYBOARD — SWAP COMMAND AND CONTROL
   # ===========================================================================
