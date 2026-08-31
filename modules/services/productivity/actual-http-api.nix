@@ -71,8 +71,8 @@ in
 
     openFirewall = mkOption {
       type = types.bool;
-      default = true;
-      description = "Open firewall port";
+      default = false;
+      description = "Open firewall port directly. Leave false when Caddy proxies this service (the default) — Caddy handles external TLS and access control.";
     };
   };
 
