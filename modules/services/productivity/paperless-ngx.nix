@@ -41,6 +41,10 @@ in
       dataDir = cfg.dataDir;
       mediaDir = cfg.mediaDir;
       database.createLocally = true;
+      # Paperless-ngx uses this to populate CSRF_TRUSTED_ORIGINS and
+      # ALLOWED_HOSTS. Without it, requests via Caddy's public domain
+      # fail CSRF verification because Django doesn't trust the origin.
+      domain = cfg.domain;
     };
 
     modules.services.vHosts.hosts.${cfg.domain} = {
