@@ -17,7 +17,7 @@
       "TZ" = config.time.timeZone;
     };
     volumes = [
-      "/data/docker-appdata/tunarr/:/home/node/app/.tunarr:rw"
+      "/data/docker-appdata/tunarr/:/config/tunarr:rw"
       "/data/media:/data/media:ro"
     ];
     ports = [

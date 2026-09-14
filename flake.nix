@@ -5,6 +5,9 @@
     # Core NixOS
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
     nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+    # Tracked separately from nixpkgs-unstable (locked in 2024) so the runner can be
+    # bumped alone. Temporary: see the issue linked in hosts/david/configuration.nix.
+    nixpkgs-runner.url = "github:NixOS/nixpkgs/nixos-unstable";
     
     # Home Manager for user configurations
     home-manager = {
@@ -71,7 +74,7 @@
     b1church.url = "github:TristonYoder/b1church-flake";
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, home-manager, home-manager-unstable, plasma-manager, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, nixos-raspberrypi, flake-utils, iopenpod-flake, iopodcli, blueprint, hermes-agent, b1church, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-runner, home-manager, home-manager-unstable, plasma-manager, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, nixos-raspberrypi, flake-utils, iopenpod-flake, iopodcli, blueprint, hermes-agent, b1church, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -187,7 +190,7 @@
           ];
 
           specialArgs = {
-            inherit self nixpkgs nixpkgs-unstable nix-bitcoin iopenpod-flake iopodcli blueprint;
+            inherit self nixpkgs nixpkgs-unstable nixpkgs-runner nix-bitcoin iopenpod-flake iopodcli blueprint;
           };
         };
 

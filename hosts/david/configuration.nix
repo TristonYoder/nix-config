@@ -1,7 +1,7 @@
 # Configuration for david - Main Server
 # Hosts all services including infrastructure, media, productivity, and storage
 
-{ config, pkgs, lib, nixpkgs, nixpkgs-unstable, nix-bitcoin, ... }:
+{ config, pkgs, lib, nixpkgs, nixpkgs-unstable, nixpkgs-runner, nix-bitcoin, ... }:
 let
   # Tailscale IP for tristons-workstation. LiteLLM uses aiodns which bypasses
   # /etc/hosts, so we must use the raw IP rather than the hostname everywhere
@@ -468,6 +468,11 @@ in
     runners."stageplotiphar-david" = {
       url = "https://github.com/TristonYoder/stagePlotiphar";
       tokenFile = config.age.secrets.github-runner-token.path;
+      # Runner 2.335.1 (stable pin) is deprecated by GitHub; a full nixpkgs bump
+      # is blocked by insecure immich-2.7.5. Take just the runner from unstable.
+      # Drop this (and the nixpkgs-runner input) once nixpkgs can be bumped:
+      # https://github.com/TristonYoder/nix-config/issues/337
+      package = nixpkgs-runner.legacyPackages.${pkgs.system}.github-runner;
     };
     # Ephemeral, fresh-container-per-job runner — target with
     # `runs-on: [self-hosted, ephemeral-container]` when a job needs a
