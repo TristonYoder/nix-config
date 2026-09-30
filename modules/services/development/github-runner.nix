@@ -46,7 +46,7 @@ let
         type = types.package;
         default = pkgs.github-runner;
         defaultText = literalExpression "pkgs.github-runner";
-        description = '''Runner binary. GitHub deprecates old runner versions server-side, so a stale nixpkgs pin can leave a native runner crash-looping. Native backend only.''';
+        description = "Runner binary. GitHub deprecates old runner versions server-side, so a stale nixpkgs pin can leave a native runner crash-looping. Native backend only.";
       };
 
       extraLabels = mkOption {
