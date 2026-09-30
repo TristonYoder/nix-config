@@ -42,6 +42,13 @@ let
         '';
       };
 
+      package = mkOption {
+        type = types.package;
+        default = pkgs.github-runner;
+        defaultText = literalExpression "pkgs.github-runner";
+        description = "Runner binary. GitHub deprecates old runner versions server-side, so a stale nixpkgs pin can leave a native runner crash-looping. Native backend only.";
+      };
+
       extraLabels = mkOption {
         type = types.listOf types.str;
         default = [ ];
@@ -143,6 +150,7 @@ in
         enable = true;
         url = runner.url;
         tokenFile = runner.tokenFile;
+        package = runner.package;
         extraLabels = runner.extraLabels;
         replace = runner.replace;
         ephemeral = runner.ephemeral;
