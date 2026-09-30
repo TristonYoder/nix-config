@@ -41,6 +41,10 @@
     
     # Terminal
     kitty  # Modern terminal (iterm2 alternative)
+    # nixpkgs splits Ghostty by platform: `ghostty-bin` (upstream binary release)
+    # is Darwin-only, `ghostty` (Zig source build) is Linux-only. NixOS hosts get
+    # the source build; see profiles/darwin.nix for the macOS side. Both are 1.3.1.
+    ghostty
     
     # 3D Printing & Hardware
     orca-slicer

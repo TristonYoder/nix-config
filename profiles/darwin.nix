@@ -12,6 +12,9 @@
   environment.systemPackages = with pkgs; [
     feishin
     tidal
+    # Terminal
+    ghostty-bin  # Upstream Ghostty binary release (unfree)
+
     # Development tools
     git
     gh
