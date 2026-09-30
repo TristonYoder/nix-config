@@ -22,6 +22,25 @@ in
   networking.useDHCP = lib.mkForce false;
   networking.interfaces.enp4s0f1.useDHCP = false;
 
+  # enp4s0f1 is a live 802.1Q trunk to the UniFi switch. VLAN 10 (User
+  # Devices, 10.150.10.0/24) is tagged on it — used by
+  # modules/services/infrastructure/pxe-boot.nix, which needs L2 adjacency
+  # to that subnet to see client PXE broadcasts (proxyDHCP requires being on
+  # the same segment as the booting client). No default gateway here — this
+  # interface only needs local-subnet reachability, not a route out.
+  networking.vlans.vlan10 = {
+    id = 10;
+    interface = "enp4s0f1";
+  };
+
+  networking.interfaces.vlan10 = {
+    useDHCP = false;
+    ipv4.addresses = [{
+      address = "10.150.10.30";
+      prefixLength = 24;
+    }];
+  };
+
   # =============================================================================
   # SYSTEM IDENTIFICATION
   # =============================================================================
@@ -295,6 +314,17 @@ in
   modules.services.ai.invokeAi = {
     enable = true;
     proxyHost = "tristons-workstation.${config.networking.domain}";
+  };
+
+  # PXE/iPXE netboot for the barebones installer — see
+  # modules/services/infrastructure/pxe-boot.nix. Bound to vlan10 only
+  # (never Core Services). /data/nix-pxe is a ZFS dataset, created the same
+  # manual way as /data/nix-iso below (`zfs create data/nix-pxe`) — not
+  # declared here, since this repo doesn't manage ZFS dataset creation
+  # itself for these one-off, no-secrets install-media stores.
+  modules.services.infrastructure.pxeBoot = {
+    enable = true;
+    bootFilesDir = "/data/nix-pxe";
   };
 
   # Nix installer ISOs - static file server over /data/nix-iso (ZFS dataset).
