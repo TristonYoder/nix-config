@@ -8,6 +8,7 @@
     ./kasm.nix
     ./openvscode-server.nix
     ./code-server.nix
+    ./app-review-ssh.nix
   ];
 }
 
