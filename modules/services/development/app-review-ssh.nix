@@ -108,10 +108,13 @@ let
 
   motd = pkgs.writeText "motd" ''
 
-    Welcome to the Puddle Jumper App Review test server.
-    This is a disposable sandbox with no network access.
+    PuddleJump Test SSH Server
 
-    Try: uname -a | ls -la | top | htop | nano | colors
+    This is a real SSH server. It clears all data and resets every hour,
+    which disconnects any open session. Outbound Internet is disabled.
+
+    Some test commands you could try:
+      `uname -a`   `ls -la`   `top`   `htop`   `nano`   `colors`
 
   '';
 
