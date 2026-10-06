@@ -146,6 +146,12 @@ in
   # to start the admin server without it. See docker/productivity/stageplotiphar.nix.
   "stageplotiphar-admin-secrets.age".publicKeys = davidKeys;
 
+  # Stage Plotiphar erasure key — ERASURE_KEY_SECRET keys the HMAC that
+  # roster-erasure markers are matched with. NEVER ROTATE: a new value stops
+  # matching every existing marker. Don't copy it into the DB or any backed-up
+  # path. See docker/productivity/stageplotiphar.nix.
+  "stageplotiphar-erasure-secrets.age".publicKeys = davidKeys;
+
   # B1 Church self-hosted ChurchApps stack. The service module lives in the
   # external TristonYoder/b1church flake; modules/services/productivity/
   # b1church.nix is the local wrapper that passes these paths to it.
