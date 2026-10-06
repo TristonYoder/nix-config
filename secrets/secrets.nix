@@ -152,6 +152,11 @@ in
   # path. See docker/productivity/stageplotiphar.nix.
   "stageplotiphar-erasure-secrets.age".publicKeys = davidKeys;
 
+  # Private half of the SSH key david uses to push the Stage Plotiphar deletion
+  # log to pits (write-only, forced to rrsync). Public half is in
+  # hosts/pits/configuration.nix. See docker/productivity/stageplotiphar.nix.
+  "stageplotiphar-offsite-key.age".publicKeys = davidKeys;
+
   # B1 Church self-hosted ChurchApps stack. The service module lives in the
   # external TristonYoder/b1church flake; modules/services/productivity/
   # b1church.nix is the local wrapper that passes these paths to it.

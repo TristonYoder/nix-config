@@ -94,6 +94,9 @@ with lib;
       # stageplotiphar erasure key: KEY=VALUE file (ERASURE_KEY_SECRET) loaded via
       # environmentFiles. Never rotate — existing roster-erasure markers stop matching.
       "stageplotiphar-erasure-secrets" = { file = ../secrets/stageplotiphar-erasure-secrets.age; mode = "0400"; };
+      # stageplotiphar deletion-log offsite push: raw ed25519 private key used by
+      # stageplotiphar-deletion-log-offsite (root service) to rsync to pits.
+      "stageplotiphar-offsite-key" = { file = ../secrets/stageplotiphar-offsite-key.age; owner = "root"; group = "root"; mode = "0400"; };
       # hermes-agent: NixOS module loaded only on david (external flake dep), no universal enable option
       "hermes-env" = { file = ../secrets/hermes-env.age; mode = "0400"; };
       # Deploy key (write access) for the private TristonYoder/hermes-brain repo —

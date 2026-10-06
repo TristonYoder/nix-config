@@ -22,6 +22,14 @@ let
 
   appCfg = config.virtualisation.oci-containers.containers."stageplotiphar";
 
+  # Offsite copy target: pits, over the tailnet. david's key is write-only and
+  # forced to rrsync on pits (see hosts/pits/configuration.nix), so a
+  # compromised david can add versions but not read or delete them. pits' host
+  # key comes from secrets/keys so there is no trust-on-first-use.
+  offsiteHost = "pits.vpn.theyoder.family";
+  offsiteKnownHosts = pkgs.writeText "stageplotiphar-offsite-known-hosts"
+    "${offsiteHost} ${lib.removeSuffix "\n" (builtins.readFile ../../secrets/keys/pits.pub)}\n";
+
   # Post-restore deletion replay. Runs the app once, with the real unit
   # stopped, using the *same* image, env files and env as the live container
   # so it can't drift from it. It stays stopped if no replay summary appears,
@@ -414,6 +422,39 @@ in
     # uid/gid 1001 = `nextjs` inside the container.
     "d ${deletionLogHostDir} 0750 1001 1001 -"
   ];
+
+  # Hourly push of the deletion log to pits. Changed files are kept as
+  # timestamped versions on the far side (--backup), so a truncated or rolled-
+  # back local log can't silently replace the good copy. To restore, pull from
+  # pits as admin: the newest good version goes back to
+  # ${deletionLogHostDir}/deletion-log.jsonl before running the replay helper.
+  systemd.services."stageplotiphar-deletion-log-offsite" = {
+    description = "Copy Stage Plotiphar deletion log off-host";
+    path = [ pkgs.rsync pkgs.openssh pkgs.coreutils ];
+    serviceConfig = {
+      Type = "oneshot";
+      SyslogIdentifier = "stageplotiphar-deletion-log-offsite";
+    };
+    script = ''
+      set -euo pipefail
+      LOG=${deletionLogHostDir}/deletion-log.jsonl
+      # No deletions yet is not an error.
+      [ -s "$LOG" ] || { echo "no deletion log yet, nothing to copy"; exit 0; }
+      rsync -t --backup --suffix=".$(date -u +%Y%m%dT%H%M%SZ)" \
+        -e "ssh -i ${config.age.secrets.stageplotiphar-offsite-key.path} -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=${offsiteKnownHosts}" \
+        "$LOG" deletion-log@${offsiteHost}:
+    '';
+  };
+
+  systemd.timers."stageplotiphar-deletion-log-offsite" = {
+    description = "Hourly off-host copy of the Stage Plotiphar deletion log";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "hourly";
+      Persistent = true;
+      RandomizedDelaySec = "5min";
+    };
+  };
 
   # Restore helper — see replayDeletions above. After ANY restore of the DB or
   # data volume: restore the deletion log from its off-machine copy, then run
