@@ -1031,6 +1031,29 @@ sudo nix shell nixpkgs#sqlite -c sqlite3 /var/lib/navidrome/navidrome.db \
 ```
 A mismatched filesystem type/device between the two `mountinfo` lines for the same path is the tell.
 
+### Stage Plotiphar — Erasure Key, Deletion Log, Restoring a Backup
+**Host:** david — `docker/productivity/stageplotiphar.nix`
+
+- `ERASURE_KEY_SECRET` comes from the agenix secret `stageplotiphar-erasure-secrets` (env file). **Never rotate it** — existing roster-erasure markers stop matching. It must not be in the DB or any backed-up path.
+- `DELETION_LOG_PATH` is an append-only file in `/var/lib/stageplotiphar-deletion` (bind-mounted, owned by uid 1001). It is deliberately outside `/data/docker-appdata/stageplotiphar` (the snapshot/restore tree) and not a docker volume, so a restore can't roll it back. It holds only ids and keyed hashes. It must be copied off-machine on its own schedule, separate from the DB/image backups.
+- `TOMBSTONE_RETENTION_DAYS` stays `90`; `0`/`off`/`never` contradict the Privacy Policy.
+- Stripe: the restricted key behind `STRIPE_SECRET_KEY` needs permission to cancel subscriptions, write refunds, and delete customers, or org deletion fails safe and refuses.
+
+**After any restore** of the DB or data volume, restore the deletion log from its off-machine copy, then:
+
+```bash
+sudo stageplotiphar-replay-deletions
+```
+
+It stops the app, runs the same image/env once with `REPLAY_DELETIONS=1`, waits for the `[deletion-replay]` summary, then restarts the app without the variable. If no summary appears it leaves the app **stopped** (`docker logs stageplotiphar-replay`). Never put `REPLAY_DELETIONS` in the Nix config.
+
+**Verify after deploy:**
+```bash
+curl -s https://plotiphar.com/api/version
+sudo docker exec stageplotiphar sh -c 'touch /app/deletion-log/.w && rm /app/deletion-log/.w && echo writable'
+sudo docker exec stageplotiphar sh -c 'test -n "$ERASURE_KEY_SECRET" && echo key-set; ls -a /app/data | grep -c erasure-key'   # expect key-set, 0
+```
+
 ### WordPress Sites — Upload Limits and Canonical Domains
 
 **Hosts:** david — `docker/websites/*.nix`

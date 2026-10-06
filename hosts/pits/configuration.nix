@@ -53,6 +53,26 @@
   };
 
   # =============================================================================
+  # STAGE PLOTIPHAR DELETION-LOG OFFSITE COPY
+  # =============================================================================
+
+  # Receives david's hourly push (docker/productivity/stageplotiphar.nix). The
+  # key is forced to rrsync write-only into this directory: it can add and
+  # replace files but cannot read or list them, and cannot run anything else.
+  # Read back as an admin user when restoring.
+  users.groups.deletion-log = { };
+  users.users.deletion-log = {
+    isSystemUser = true;
+    group = "deletion-log";
+    home = "/var/lib/stageplotiphar-deletion-offsite";
+    createHome = true;
+    shell = pkgs.bashInteractive;
+    openssh.authorizedKeys.keys = [
+      ''restrict,command="${pkgs.rrsync}/bin/rrsync -wo /var/lib/stageplotiphar-deletion-offsite" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBdQpOr+VE3iCCiVvfNG6LaqNPbS8p55MOw0j90TNQyC stageplotiphar-deletion-log-offsite ''
+    ];
+  };
+
+  # =============================================================================
   # EDGE-SPECIFIC SERVICES
   # =============================================================================
   

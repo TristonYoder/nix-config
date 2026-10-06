@@ -43,6 +43,24 @@
     fileSystems = [ "/" ];
   };
 
+  # Nightly reboot. Unattended signage box with Chromium running for days at a
+  # time — a clean boot clears browser/GPU leaks and re-runs the kiosk
+  # launcher's output detection (e.g. a TV that was off at last boot). 04:00 is
+  # outside service hours. `Persistent` is intentionally unset: a missed
+  # reboot (box was off) should not fire immediately on next boot.
+  systemd.services.nightly-reboot = {
+    description = "Nightly reboot";
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = "${config.systemd.package}/bin/systemctl reboot";
+    };
+  };
+  systemd.timers.nightly-reboot = {
+    description = "Reboot nightly at 04:00";
+    wantedBy = [ "timers.target" ];
+    timerConfig.OnCalendar = "*-*-* 04:00:00";
+  };
+
   # =============================================================================
   # NETWORK
   # =============================================================================

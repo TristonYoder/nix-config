@@ -9,6 +9,72 @@
 # mapping there.
 { config, pkgs, lib, ... }:
 
+let
+  # Append-only deletion log (ids + keyed hashes only, no names/emails).
+  # Deliberately outside /data/docker-appdata/stageplotiphar, the tree the
+  # snapshot below writes to and that a restore reads from — a restore must
+  # not be able to roll this file back. It is also not a docker volume, so
+  # `docker volume rm` / prune can't take it. Copying it off the machine is
+  # a separate job from the DB/image backups.
+  deletionLogHostDir = "/var/lib/stageplotiphar-deletion";
+  deletionLogDir = "/app/deletion-log";
+  deletionLogPath = "${deletionLogDir}/deletion-log.jsonl";
+
+  appCfg = config.virtualisation.oci-containers.containers."stageplotiphar";
+
+  # Offsite copy target: pits, over the tailnet. david's key is write-only and
+  # forced to rrsync on pits (see hosts/pits/configuration.nix), so a
+  # compromised david can add versions but not read or delete them. pits' host
+  # key comes from secrets/keys so there is no trust-on-first-use.
+  offsiteHost = "pits.vpn.theyoder.family";
+  offsiteKnownHosts = pkgs.writeText "stageplotiphar-offsite-known-hosts"
+    "${offsiteHost} ${lib.removeSuffix "\n" (builtins.readFile ../../secrets/keys/pits.pub)}\n";
+
+  # Post-restore deletion replay. Runs the app once, with the real unit
+  # stopped, using the *same* image, env files and env as the live container
+  # so it can't drift from it. It stays stopped if no replay summary appears,
+  # so a half-restored dataset is never served.
+  replayDeletions = pkgs.writeShellApplication {
+    name = "stageplotiphar-replay-deletions";
+    runtimeInputs = [ pkgs.docker pkgs.systemd pkgs.coreutils pkgs.gnugrep ];
+    text = ''
+      if [ "$(id -u)" -ne 0 ]; then echo "run as root (sudo)" >&2; exit 1; fi
+
+      NAME=stageplotiphar-replay
+      LOG=${deletionLogHostDir}/deletion-log.jsonl
+      [ -s "$LOG" ] || { echo "no deletion log at $LOG — restore it from the off-machine copy first" >&2; exit 1; }
+
+      systemctl stop docker-stageplotiphar.service
+      systemctl start docker-stageplotiphar-db.service
+      docker rm -f "$NAME" >/dev/null 2>&1 || true
+
+      docker run -d --name "$NAME" \
+        --network=stageplotiphar_default \
+        ${lib.concatMapStringsSep " " (f: "--env-file ${f}") appCfg.environmentFiles} \
+        ${lib.concatStringsSep " " (lib.mapAttrsToList (k: v: "-e ${lib.escapeShellArg "${k}=${v}"}") appCfg.environment)} \
+        -e REPLAY_DELETIONS=1 \
+        -e DELETION_LOG_PATH=${deletionLogPath} \
+        -v stageplotiphar_data:/app/data:rw \
+        -v ${deletionLogHostDir}:${deletionLogDir}:rw \
+        ${appCfg.image} >/dev/null
+
+      echo "waiting for [deletion-replay] summary (up to 10 min)..."
+      for _ in $(seq 1 300); do
+        if docker logs "$NAME" 2>&1 | grep -q '\[deletion-replay\]'; then
+          docker logs "$NAME" 2>&1 | grep '\[deletion-replay\]'
+          docker rm -f "$NAME" >/dev/null
+          systemctl start docker-stageplotiphar.service
+          echo "done — app restarted without REPLAY_DELETIONS"
+          exit 0
+        fi
+        sleep 2
+      done
+
+      echo "no [deletion-replay] summary seen. App left STOPPED; replay container '$NAME' left for inspection (docker logs $NAME)." >&2
+      exit 1
+    '';
+  };
+in
 {
   # Runtime
   virtualisation.docker = {
@@ -46,6 +112,12 @@
       # a token of at least 24 chars, so a missing/short secret here just
       # keeps it disabled rather than exposing an unauthenticated port.
       config.age.secrets.stageplotiphar-admin-secrets.path
+      # ERASURE_KEY_SECRET — keys the HMAC for roster-erasure markers.
+      # NEVER ROTATE: a new value stops matching every existing marker.
+      # Must not live in the DB or any backed-up path, and no `.erasure-key`
+      # file should ever appear in the data dir (that is the app's fallback
+      # when this is unset).
+      config.age.secrets.stageplotiphar-erasure-secrets.path
     ];
     environment = {
       # Public URL the app stamps into PCO plan attachment links (stage plot
@@ -85,6 +157,15 @@
       # through the same per-org auth as every other route.
       SYNC_ENABLED = "1";
 
+      # Append-only deletion log; see deletionLogHostDir above.
+      DELETION_LOG_PATH = deletionLogPath;
+
+      # Tombstone purge window. 90 is the default; stated explicitly because
+      # the Privacy Policy promises it. Never set 0/off/never (those disable
+      # purging). Do NOT set REPLAY_DELETIONS here — it is a one-shot, run via
+      # `sudo stageplotiphar-replay-deletions` after a restore.
+      TOMBSTONE_RETENTION_DAYS = "90";
+
       # Stripe price IDs for the optional billing add-on — not secret (price
       # IDs, unlike the API key/webhook secret above). Stripe test-mode
       # ("demo") prices, rotated before real launch. Billing is inert unless
@@ -108,6 +189,7 @@
     };
     volumes = [
       "stageplotiphar_data:/app/data:rw"
+      "${deletionLogHostDir}:${deletionLogDir}:rw"
     ];
     ports = [
       "1395:1395/tcp"
@@ -134,6 +216,7 @@
       RestartSteps = lib.mkOverride 90 9;
     };
     after = [
+      "systemd-tmpfiles-setup.service"
       "docker-network-stageplotiphar_default.service"
       "docker-volume-stageplotiphar_data.service"
       "docker-volume-migrate-stageplotiphar-data.service"
@@ -336,7 +419,47 @@
   systemd.tmpfiles.rules = [
     "d /data/docker-appdata/stageplotiphar 0700 root root -"
     "d /data/docker-appdata/stageplotiphar/snapshots 0700 root root -"
+    # uid/gid 1001 = `nextjs` inside the container.
+    "d ${deletionLogHostDir} 0750 1001 1001 -"
   ];
+
+  # Hourly push of the deletion log to pits. Changed files are kept as
+  # timestamped versions on the far side (--backup), so a truncated or rolled-
+  # back local log can't silently replace the good copy. To restore, pull from
+  # pits as admin: the newest good version goes back to
+  # ${deletionLogHostDir}/deletion-log.jsonl before running the replay helper.
+  systemd.services."stageplotiphar-deletion-log-offsite" = {
+    description = "Copy Stage Plotiphar deletion log off-host";
+    path = [ pkgs.rsync pkgs.openssh pkgs.coreutils ];
+    serviceConfig = {
+      Type = "oneshot";
+      SyslogIdentifier = "stageplotiphar-deletion-log-offsite";
+    };
+    script = ''
+      set -euo pipefail
+      LOG=${deletionLogHostDir}/deletion-log.jsonl
+      # No deletions yet is not an error.
+      [ -s "$LOG" ] || { echo "no deletion log yet, nothing to copy"; exit 0; }
+      rsync -t --backup --suffix=".$(date -u +%Y%m%dT%H%M%SZ)" \
+        -e "ssh -i ${config.age.secrets.stageplotiphar-offsite-key.path} -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=${offsiteKnownHosts}" \
+        "$LOG" deletion-log@${offsiteHost}:
+    '';
+  };
+
+  systemd.timers."stageplotiphar-deletion-log-offsite" = {
+    description = "Hourly off-host copy of the Stage Plotiphar deletion log";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnCalendar = "hourly";
+      Persistent = true;
+      RandomizedDelaySec = "5min";
+    };
+  };
+
+  # Restore helper — see replayDeletions above. After ANY restore of the DB or
+  # data volume: restore the deletion log from its off-machine copy, then run
+  # `sudo stageplotiphar-replay-deletions`.
+  environment.systemPackages = [ replayDeletions ];
 
   systemd.services."stageplotiphar-snapshot" = {
     description = "Daily snapshot of Stage Plotiphar database and data volume";
