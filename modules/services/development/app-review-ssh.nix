@@ -297,6 +297,7 @@ in
         "--cap-add=SETGID"
         "--cap-add=SYS_CHROOT"
         "--cap-add=KILL"
+        "--cap-add=FOWNER"
         "--security-opt=no-new-privileges:true"
         "--memory=256m"
         "--memory-swap=256m"
