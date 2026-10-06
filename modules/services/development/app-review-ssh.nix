@@ -61,7 +61,7 @@ let
   '';
 
   # This nixpkgs OpenSSH has no libcrypt: with UsePAM no, every password is rejected even when
-  # the shadow hash is right. PAM does the check. Keep the stack minimal (no pam_loginuid,
+  # the hash is right. PAM does the check. Keep the stack minimal (no pam_loginuid,
   # pam_limits etc.; they need capabilities the container does not have).
   pamConfig = pkgs.writeText "pam-sshd" ''
     auth    required ${pkgs.linux-pam}/lib/security/pam_unix.so
@@ -69,11 +69,14 @@ let
     session required ${pkgs.linux-pam}/lib/security/pam_permit.so
   '';
 
-  passwdFile = pkgs.writeText "passwd" ''
-    root:x:0:0:root:/root:/bin/false
-    sshd:x:74:74:sshd privsep:/var/empty:/bin/false
-    ${user}:x:1000:1000:App Review:/home/${user}:/bin/bash
-    nobody:x:65534:65534:nobody:/var/empty:/bin/false
+  # The password hash goes straight into passwd (mounted from the host at run time, @HASH@
+  # filled in there). pam_unix cannot read /etc/shadow from sshd's PAM context here, and the
+  # hash is for a password that is public anyway.
+  passwdTemplate = pkgs.writeText "passwd" ''
+    root:*:0:0:root:/root:/bin/false
+    sshd:*:74:74:sshd privsep:/var/empty:/bin/false
+    ${user}:@HASH@:1000:1000:App Review:/home/${user}:/bin/bash
+    nobody:*:65534:65534:nobody:/var/empty:/bin/false
   '';
 
   groupFile = pkgs.writeText "group" ''
@@ -149,14 +152,13 @@ let
       mkdir -p etc/ssh etc/pam.d var/empty var/log run tmp home/${user} root
       chmod 1777 tmp
       chmod 0755 var/empty
-      cp ${passwdFile} etc/passwd
+      sed 's|@HASH@|!|' ${passwdTemplate} > etc/passwd
       cp ${groupFile} etc/group
       cp ${nsswitch} etc/nsswitch.conf
       cp ${profile} etc/profile
       cp ${motd} etc/motd
       cp ${pamConfig} etc/pam.d/sshd
       # Bind-mount targets; the real contents come from the host at run time.
-      : > etc/shadow
       : > etc/ssh/ssh_host_ed25519_key
       : > etc/ssh/ssh_host_ed25519_key.pub
     '';
@@ -187,15 +189,11 @@ let
     fi
     chmod 0600 "$state/password"
 
-    days=$(( $(date +%s) / 86400 ))
     hash=$(tr -d '\n' < "$state/password" | openssl passwd -6 -stdin)
     umask 077
-    {
-      echo "root:!:$days::::::"
-      echo "sshd:!:$days::::::"
-      echo "${user}:$hash:$days:0:99999:7:::"
-    } > "$state/shadow"
+    sed "s|@HASH@|$hash|" ${passwdTemplate} > "$state/passwd"
     umask 022
+    chmod 0644 "$state/passwd"
 
     # Dedicated bridge: no NAT out, no inter-container traffic.
     ${dockerBin} network inspect ${network} >/dev/null 2>&1 || \
@@ -286,7 +284,7 @@ in
       volumes = [
         "${stateDir}/hostkeys/ssh_host_ed25519_key:/etc/ssh/ssh_host_ed25519_key:ro"
         "${stateDir}/hostkeys/ssh_host_ed25519_key.pub:/etc/ssh/ssh_host_ed25519_key.pub:ro"
-        "${stateDir}/shadow:/etc/shadow:ro"
+        "${stateDir}/passwd:/etc/passwd:ro"
       ];
       extraOptions = [
         "--network=${network}"
