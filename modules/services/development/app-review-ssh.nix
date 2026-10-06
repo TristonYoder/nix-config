@@ -42,7 +42,7 @@ let
     PermitEmptyPasswords no
     PermitRootLogin no
     AllowUsers ${user}
-    UsePAM no
+    UsePAM yes
     MaxAuthTries 4
     LoginGraceTime 30
     MaxStartups 10:30:30
@@ -58,6 +58,15 @@ let
     ClientAliveCountMax 4
     LogLevel VERBOSE
     PidFile none
+  '';
+
+  # This nixpkgs OpenSSH has no libcrypt: with UsePAM no, every password is rejected even when
+  # the shadow hash is right. PAM does the check. Keep the stack minimal (no pam_loginuid,
+  # pam_limits etc.; they need capabilities the container does not have).
+  pamConfig = pkgs.writeText "pam-sshd" ''
+    auth    required ${pkgs.linux-pam}/lib/security/pam_unix.so
+    account required ${pkgs.linux-pam}/lib/security/pam_unix.so
+    session required ${pkgs.linux-pam}/lib/security/pam_permit.so
   '';
 
   passwdFile = pkgs.writeText "passwd" ''
@@ -137,7 +146,7 @@ let
       colors
     ];
     extraCommands = ''
-      mkdir -p etc/ssh var/empty var/log run tmp home/${user} root
+      mkdir -p etc/ssh etc/pam.d var/empty var/log run tmp home/${user} root
       chmod 1777 tmp
       chmod 0755 var/empty
       cp ${passwdFile} etc/passwd
@@ -145,6 +154,7 @@ let
       cp ${nsswitch} etc/nsswitch.conf
       cp ${profile} etc/profile
       cp ${motd} etc/motd
+      cp ${pamConfig} etc/pam.d/sshd
       # Bind-mount targets; the real contents come from the host at run time.
       : > etc/shadow
       : > etc/ssh/ssh_host_ed25519_key
