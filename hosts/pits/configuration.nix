@@ -73,6 +73,18 @@
   };
 
   # =============================================================================
+  # APP REVIEW DEMO SSH SERVER (temporary)
+  # =============================================================================
+
+  # Disposable, isolated sshd container for Apple App Review. Delete this block
+  # (and `rm -rf /var/lib/app-review-ssh`) once the app is approved.
+  # Credentials and fingerprint: `sudo app-review-ssh-info`.
+  modules.services.development.appReviewSsh = {
+    enable = true;
+    port = 22022;
+  };
+
+  # =============================================================================
   # EDGE-SPECIFIC SERVICES
   # =============================================================================
   
