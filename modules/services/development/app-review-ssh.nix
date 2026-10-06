@@ -75,7 +75,7 @@ let
   passwdTemplate = pkgs.writeText "passwd" ''
     root:*:0:0:root:/root:/bin/false
     sshd:*:74:74:sshd privsep:/var/empty:/bin/false
-    ${user}:@HASH@:1000:1000:App Review:/home/${user}:/bin/bash
+    ${user}:@HASH@:1000:1000:App Review:/home/${user}:/bin/zsh
     nobody:*:65534:65534:nobody:/var/empty:/bin/false
   '';
 
@@ -91,6 +91,48 @@ let
     group: files
     shadow: files
     hosts: files dns
+  '';
+
+  # Same look and feel as home/common.nix: zsh + powerlevel10k (the real home/p10k.zsh),
+  # autosuggestions, syntax highlighting. Dropped: oh-my-zsh plugins for tools that are not
+  # in the image, and the network/nix aliases. ZDOTDIR points at /etc/zsh so zsh never offers
+  # its first-run wizard in the empty tmpfs home.
+  zshenv = pkgs.writeText "zshenv" ''
+    export ZDOTDIR=/etc/zsh
+    export PATH=/bin
+    export LANG=C.UTF-8
+    export TERMINFO_DIRS=/share/terminfo
+    export PAGER=less
+    export EDITOR=nano
+  '';
+
+  zshrc = pkgs.writeText "zshrc" ''
+    HISTFILE=$HOME/.zsh_history
+    HISTSIZE=2000
+    SAVEHIST=2000
+    setopt HIST_IGNORE_DUPS INTERACTIVE_COMMENTS
+    bindkey -e
+    bindkey '^[[H' beginning-of-line '^[[F' end-of-line '^[[3~' delete-char
+
+    autoload -Uz compinit && compinit -u -d $HOME/.zcompdump
+
+    source ${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme
+    [[ ! -f /etc/p10k.zsh ]] || source /etc/p10k.zsh
+    source ${pkgs.zsh-autosuggestions}/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+
+    alias ls='ls --color=auto'
+    alias ll='ls -la'
+    alias la='ls -A'
+    alias l='ls -CF'
+    alias ..='cd ..'
+    alias ...='cd ../..'
+    alias grep='grep --color=auto'
+    alias h=history
+    alias j='jobs -l'
+    alias now=date
+
+    # Must be last.
+    source ${pkgs.zsh-syntax-highlighting}/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
   '';
 
   profile = pkgs.writeText "profile" ''
@@ -136,6 +178,10 @@ let
     contents = with pkgs; [
       dockerTools.binSh
       bashInteractive
+      zsh
+      zsh-powerlevel10k
+      zsh-autosuggestions
+      zsh-syntax-highlighting
       coreutils
       util-linux
       procps
@@ -152,13 +198,16 @@ let
       colors
     ];
     extraCommands = ''
-      mkdir -p etc/ssh etc/pam.d var/empty var/log run tmp home/${user} root
+      mkdir -p etc/ssh etc/pam.d etc/zsh var/empty var/log run tmp home/${user} root
       chmod 1777 tmp
       chmod 0755 var/empty
       sed 's|@HASH@|!|' ${passwdTemplate} > etc/passwd
       cp ${groupFile} etc/group
       cp ${nsswitch} etc/nsswitch.conf
       cp ${profile} etc/profile
+      cp ${zshenv} etc/zshenv
+      cp ${zshrc} etc/zsh/.zshrc
+      cp ${../../../home/p10k.zsh} etc/p10k.zsh
       cp ${motd} etc/motd
       cp ${pamConfig} etc/pam.d/sshd
       # Bind-mount targets; the real contents come from the host at run time.
