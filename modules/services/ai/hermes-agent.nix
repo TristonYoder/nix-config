@@ -208,6 +208,13 @@ in
 
       environment = optionalAttrs (cfg.homeRoom != null) {
         MATRIX_HOME_ROOM = cfg.homeRoom;
+      } // optionalAttrs cfg.dashboard.enable {
+        # Hermes's dashboard binds to 127.0.0.1 and validates the Host header
+        # against loopback values or this declared public URL (DNS-rebinding
+        # guard, GHSA-ppp5-vxwm-4cf7). Without it, every request proxied
+        # through Caddy at cfg.dashboard.domain is rejected with "Invalid Host
+        # header" since that hostname is neither loopback nor trusted.
+        HERMES_DASHBOARD_PUBLIC_URL = "https://${cfg.dashboard.domain}";
       };
 
       # Matrix platform dependencies — uses the upstream 'matrix' pyproject.toml
