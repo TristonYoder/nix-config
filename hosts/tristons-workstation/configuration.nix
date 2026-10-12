@@ -334,6 +334,16 @@
     allowedInterfaces = [ "enp7s0" ];
   };
 
+  # InvokeAI (RTX 4080 Stable Diffusion) — david's configuration.nix enables
+  # modules.services.ai.invokeAi with proxyHost set to this host and registers
+  # the vHost, so Caddy/DNS/monitoring routing comes from there. This host
+  # just needs to actually run the GPU container proxyHost points at.
+  modules.services.ai.invokeAi = {
+    enable = true;
+    # Expose only on the Core Services VLAN NIC — david is the only consumer.
+    allowedInterfaces = [ "enp7s0" ];
+  };
+
   # =============================================================================
   # RDP SERVER
   # =============================================================================
