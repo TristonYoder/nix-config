@@ -424,6 +424,17 @@ in
             --host 127.0.0.1 --port ${toString cfg.dashboard.port}
         '';
 
+      # Container mode: the ExecStart above is `docker exec`, so stopping this
+      # unit only kills that host-side client — docker doesn't propagate the
+      # signal into the container without a TTY, so the actual dashboard
+      # process inside orphans and keeps holding the port. The next start
+      # then crash-loops on EADDRINUSE forever. Kill it directly inside the
+      # container's PID namespace instead. Native mode doesn't need this —
+      # systemd owns that process directly.
+      preStop = optionalString cfg.containerMode ''
+        docker exec hermes-agent pkill -TERM -f "bin/hermes dashboard" || true
+      '';
+
       serviceConfig = {
         Type = "simple";
         Restart = "on-failure";
