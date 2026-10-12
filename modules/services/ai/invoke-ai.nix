@@ -45,13 +45,17 @@ in
         # rule below instead of via loopback-only binding.
         ports = [ "${toString cfg.port}:9090" ];
         volumes = [ "/var/lib/invoke-ai:/invokeai" ];
-        extraOptions = [ "--gpus=all" "--runtime=nvidia" ];
+        # hardware.nvidia-container-toolkit on this host generates a CDI spec
+        # (kind nvidia.com/gpu, device "all"), not the legacy nvidia-docker2
+        # runtime — `--gpus=all --runtime=nvidia` fails with "unknown or
+        # invalid runtime name: nvidia". Request the GPU via CDI instead.
+        extraOptions = [ "--device=nvidia.com/gpu=all" ];
       };
     };
 
     # This host's oci-containers.backend default may not be "docker" (e.g.
-    # desktop/workstation hosts default to podman) — the --gpus/--runtime
-    # flags above are docker-specific, so pin both explicitly, as every other
+    # desktop/workstation hosts default to podman) — the CDI device flag
+    # above requires docker's CDI support, so pin both explicitly, as every other
     # oci-container service module in this repo does.
     virtualisation.docker.enable = mkIf (cfg.proxyHost == null) true;
     virtualisation.oci-containers.backend = mkIf (cfg.proxyHost == null) "docker";
