@@ -9,6 +9,7 @@
     ./openvscode-server.nix
     ./code-server.nix
     ./app-review-ssh.nix
+    ./thirteen-years-demo.nix
   ];
 }
 

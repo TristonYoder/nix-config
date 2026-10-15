@@ -85,6 +85,21 @@
   };
 
   # =============================================================================
+  # 13 YEARS APP REVIEW DEMO PRODUCER (temporary)
+  # =============================================================================
+
+  # Simulated show for App Review: Pager -> demo.13years.7co.dev:13380 (raw TCP;
+  # DNS-only record, not Cloudflare-proxied). Control API stays on 127.0.0.1:13390.
+  # Teardown: set enable = false once the app is approved.
+  modules.services.development.thirteenYearsDemo = {
+    enable = true;
+    publicHost = "demo.13years.7co.dev";
+    tag = "1.5.0-demo";
+    digest = "sha256:c8940db5f1c15d7cceda1a17fb1be4a2922612b8641f3f89f66ea84be7b49df8";
+    imageHash = "sha256-7Vlw7N2G7b4CWFMy3tElv6NlxW8kazIwFswdMEx+34Y=";
+  };
+
+  # =============================================================================
   # EDGE-SPECIFIC SERVICES
   # =============================================================================
   
