@@ -212,7 +212,9 @@ in
       image = "${cfg.imageName}:${cfg.tag}";
       imageFile = image;
       ports = [
-        "${toString cfg.publicPagerPort}:${toString pagerPort}/tcp"
+        # IPv4 only: an address-less mapping also publishes on IPv6 via docker-proxy, which
+        # bypasses the DOCKER-USER caps and rate limit above.
+        "0.0.0.0:${toString cfg.publicPagerPort}:${toString pagerPort}/tcp"
         "${cfg.controlBind}:${toString cfg.controlPort}:${toString controlPort}/tcp"
       ];
       environment = {
