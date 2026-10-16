@@ -447,6 +447,14 @@ in
 
 
   # =============================================================================
+  # NEXTCLOUD
+  # =============================================================================
+
+  # Keep password login enabled until OIDC is verified working.
+  # Flip to true once Pocket ID login is confirmed.
+  modules.services.storage.nextcloud.oidc.disablePasswordLogin = false;
+
+  # =============================================================================
   # ADDITIONAL SERVICES
   # =============================================================================
   

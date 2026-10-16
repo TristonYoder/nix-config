@@ -133,6 +133,7 @@
   modules.services.storage.nextcloud = {
     enable = lib.mkDefault true;
     office.collabora.enable = lib.mkDefault true;
+    oidc.enable = lib.mkDefault true;
   };
 
   # =============================================================================
