@@ -1,8 +1,11 @@
-{ config, lib, ... }:
+{ config, lib, pkgs, nixpkgs-unstable, ... }:
 
 with lib;
 let
   cfg = config.modules.services.productivity.outline;
+  pkgs-unstable = import nixpkgs-unstable {
+    system = pkgs.system;
+  };
 in
 {
   options.modules.services.productivity.outline = {
@@ -49,6 +52,8 @@ in
     # SECRET_KEY and UTILS_SECRET are generated on first start in /var/lib/outline.
     services.outline = {
       enable = true;
+      # Track unstable while the deployment is new and still changing
+      package = pkgs-unstable.outline;
       publicUrl = "https://${cfg.domain}";
       port = cfg.port;
       # Caddy terminates TLS
