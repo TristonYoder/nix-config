@@ -99,6 +99,9 @@ in
   # this host and already owns that port.
   modules.services.productivity.stirlingPdf.port = 7879;
 
+  # Pocket ID client "Outline"; secret in outline-oidc-secret.age.
+  modules.services.productivity.outline.oidc.clientId = "51b6e304-ca97-4d53-9c75-0df45005f259";
+
   # Actual Budget: plain REST wrapper (jhonderson/actual-http-api) and MCP
   # server (agigante80/actual-mcp-server), both talking to the actual.nix
   # service directly via @actual-app/api. Credentials in
