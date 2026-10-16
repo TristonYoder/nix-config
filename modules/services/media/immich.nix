@@ -56,7 +56,7 @@ in
           };
 
           clientSecretFile = mkOption {
-            type = types.nullOr types.path;
+            type = types.nullOr types.str;
             default = null;
             description = "Path to file containing OAuth client secret (encrypted with agenix)";
           };
@@ -164,8 +164,10 @@ in
         enabled = cfg.oauth.enable;
         issuerUrl = cfg.oauth.issuerUrl;
         clientId = cfg.oauth.clientId;
-        clientSecret = optionalString (cfg.oauth.clientSecretFile != null) 
-          (builtins.readFile cfg.oauth.clientSecretFile);
+        # Substituted into /run/immich/config.json at start; keeps the
+        # secret out of the Nix store.
+        clientSecret = mkIf (cfg.oauth.clientSecretFile != null)
+          { _secret = cfg.oauth.clientSecretFile; };
         autoRegister = cfg.oauth.autoRegister;
         autoLaunch = cfg.oauth.autoLaunch;
         buttonText = cfg.oauth.buttonText;

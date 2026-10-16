@@ -135,6 +135,11 @@ with lib;
       "romm-igdb-client-secret" = { file = ../secrets/romm-igdb-client-secret.age; owner = "root"; group = "docker"; mode = "0440"; };
     })
 
+    // (optionalAttrs config.modules.services.media.immich.oauth.enable {
+      # Encrypted to davidKeys only. Read via systemd LoadCredential, so root-owned is fine.
+      "immich-oidc-secret" = { file = ../secrets/immich-oidc-secret.age; owner = "root"; group = "root"; mode = "0400"; };
+    })
+
     // (optionalAttrs config.modules.services.productivity.outline.enable {
       # Encrypted to davidKeys only
       "outline-oidc-secret" = { file = ../secrets/outline-oidc-secret.age; owner = "outline"; group = "outline"; mode = "0400"; };
