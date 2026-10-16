@@ -103,9 +103,9 @@ in
   modules.services.productivity.outline.oidc.clientId = "51b6e304-ca97-4d53-9c75-0df45005f259";
 
   # Publish the Obsidian vault to Outline (one-way). API key in
-  # outline-vault-sync-token.age; enable once that file exists.
+  # outline-vault-sync-token.age.
   modules.services.productivity.outlineVaultSync = {
-    enable = false;
+    enable = true;
     vaultPath = "/data/tristonyoder/home/Documents/Obsidian Vault";
   };
 
