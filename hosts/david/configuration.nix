@@ -108,7 +108,7 @@ in
     issuerUrl = "https://id.${config.networking.domain}";
     clientId = "f7bf6851-9020-44fb-bd43-e721d0364f87";
     clientSecretFile = config.age.secrets.immich-oidc-secret.path;
-    buttonText = "Login with Pocket ID";
+    buttonText = "Login with id.${config.networking.domain}";
   };
 
   # Actual Budget: plain REST wrapper (jhonderson/actual-http-api) and MCP
