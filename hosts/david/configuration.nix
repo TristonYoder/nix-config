@@ -109,6 +109,8 @@ in
     clientId = "f7bf6851-9020-44fb-bd43-e721d0364f87";
     clientSecretFile = config.age.secrets.immich-oidc-secret.path;
     buttonText = "Login with id.${config.networking.domain}";
+    # Skip the login form; /auth/login?autoLaunch=0 still reaches it.
+    autoLaunch = true;
   };
 
   # Actual Budget: plain REST wrapper (jhonderson/actual-http-api) and MCP
