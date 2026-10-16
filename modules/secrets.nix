@@ -145,6 +145,11 @@ with lib;
       "outline-oidc-secret" = { file = ../secrets/outline-oidc-secret.age; owner = "outline"; group = "outline"; mode = "0400"; };
     })
 
+    // (optionalAttrs config.modules.services.productivity.outlineVaultSync.enable {
+      # Encrypted to davidKeys only. Read via systemd LoadCredential, so root-owned is fine.
+      "outline-vault-sync-token" = { file = ../secrets/outline-vault-sync-token.age; owner = "root"; group = "root"; mode = "0400"; };
+    })
+
     // (optionalAttrs config.modules.services.infrastructure.nixCacheServer.enable {
       # Encrypted to davidKeys only
       "nix-cache-signing-key" = { file = ../secrets/nix-cache-signing-key.age; owner = "github-actions"; group = "github-actions"; mode = "0400"; };

@@ -9,6 +9,7 @@
     ./actual-http-api.nix
     ./actual-mcp.nix
     ./outline.nix
+    ./outline-vault-sync
     ./tandoor.nix
     ./babybuddy.nix
     ./companion.nix

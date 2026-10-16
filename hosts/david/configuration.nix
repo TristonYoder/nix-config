@@ -102,6 +102,13 @@ in
   # Pocket ID client "Outline"; secret in outline-oidc-secret.age.
   modules.services.productivity.outline.oidc.clientId = "51b6e304-ca97-4d53-9c75-0df45005f259";
 
+  # Publish the Obsidian vault to Outline (one-way). API key in
+  # outline-vault-sync-token.age; enable once that file exists.
+  modules.services.productivity.outlineVaultSync = {
+    enable = false;
+    vaultPath = "/data/tristonyoder/home/Documents/Obsidian Vault";
+  };
+
   # Pocket ID client "Immich"; secret in immich-oidc-secret.age.
   modules.services.media.immich.oauth = {
     enable = true;
