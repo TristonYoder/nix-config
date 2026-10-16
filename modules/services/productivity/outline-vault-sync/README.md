@@ -58,7 +58,7 @@ now hides on the next run, subject to the mass-archive guard.
 
 - Runs as the system user `outline-vault-sync`, never as a login user.
 - Read access is a POSIX ACL (`u:outline-vault-sync:rX`, plus a default ACL
-  on directories), applied by a root `ExecStartPre=+` before every run.
+  on directories), applied by the root oneshot `outline-vault-sync-acl.service`, which the watcher and both sync units pull in before every run.
   It is reapplied each time because Syncthing reapplies the sending device's
   mode bits, and a `chmod` on a file with an ACL rewrites its mask. It only
   ever adds read for this user.

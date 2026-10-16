@@ -36,13 +36,23 @@ let
   # Syncthing reapplies mode bits from the sending device, and chmod on a file
   # that has an ACL rewrites its mask, so the grant is reapplied before every
   # run instead of once. The watcher ignores attribute changes, so this cannot
-  # retrigger a sync.
+  # retrigger a sync. Entries that vanish mid-walk (Syncthing temp files) are
+  # not fatal; the vault root itself is.
   grantRead = pkgs.writeShellScript "outline-vault-sync-grant-read" ''
-    set -eu
-    ${pkgs.acl}/bin/setfacl -R -m u:${user}:rX ${escapeShellArg cfg.vaultPath}
-    ${pkgs.findutils}/bin/find ${escapeShellArg cfg.vaultPath} -type d \
-      -exec ${pkgs.acl}/bin/setfacl -d -m u:${user}:rX {} +
+    set -u
+    vault=${escapeShellArg cfg.vaultPath}
+    ${pkgs.acl}/bin/setfacl -m u:${user}:rX,d:u:${user}:rX "$vault" || exit 1
+    ${pkgs.acl}/bin/setfacl -R -m u:${user}:rX "$vault" \
+      || echo "some entries could not be updated" >&2
+    ${pkgs.findutils}/bin/find "$vault" -type d \
+      -exec ${pkgs.acl}/bin/setfacl -d -m u:${user}:rX {} + \
+      || echo "some default ACLs could not be updated" >&2
+    exit 0
   '';
+
+  # Quoted: systemd splits these lists on whitespace
+  quotedVault = "\"${cfg.vaultPath}\"";
+  aclUnit = "outline-vault-sync-acl.service";
 
   watch = pkgs.writeShellScript "outline-vault-sync-watch" ''
     set -uo pipefail
@@ -110,8 +120,7 @@ let
     ProtectSystem = "strict";
     ProtectHome = "tmpfs";
     TemporaryFileSystem = hideRoot;
-    # Quoted: systemd splits this list on whitespace
-    BindReadOnlyPaths = [ "\"${cfg.vaultPath}\"" ];
+    BindReadOnlyPaths = [ quotedVault ];
     PrivateTmp = true;
     PrivateDevices = true;
     ProtectKernelTunables = true;
@@ -135,12 +144,11 @@ let
 
   syncService = args: {
     description = "Publish Obsidian vault to Outline${optionalString (args != "") " (full reconcile)"}";
-    after = [ "network-online.target" "outline.service" ];
-    wants = [ "network-online.target" ];
-    unitConfig.RequiresMountsFor = [ cfg.vaultPath ];
+    after = [ "network-online.target" "outline.service" aclUnit ];
+    wants = [ "network-online.target" aclUnit ];
+    unitConfig.RequiresMountsFor = [ quotedVault ];
     serviceConfig = sandbox // {
       Type = "oneshot";
-      ExecStartPre = "+${grantRead}";
       ExecStart = "${sync} ${args}";
       # Read from $CREDENTIALS_DIRECTORY at runtime; never in the environment
       LoadCredential = "token:${cfg.tokenFile}";
@@ -260,6 +268,17 @@ in
     };
     users.groups.${user} = { };
 
+    # Root and unsandboxed, because it writes ACLs into the vault. Oneshot
+    # without RemainAfterExit, so every start of a unit that wants it reruns it.
+    systemd.services.outline-vault-sync-acl = {
+      description = "Grant outline-vault-sync read access to the Obsidian vault";
+      unitConfig.RequiresMountsFor = [ quotedVault ];
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = grantRead;
+      };
+    };
+
     systemd.services.outline-vault-sync = syncService "";
     systemd.services.outline-vault-sync-full = syncService "--full";
 
@@ -275,10 +294,11 @@ in
     systemd.services.outline-vault-sync-watch = {
       description = "Watch Obsidian vault and trigger Outline sync";
       wantedBy = [ "multi-user.target" ];
-      unitConfig.RequiresMountsFor = [ cfg.vaultPath ];
+      after = [ aclUnit ];
+      wants = [ aclUnit ];
+      unitConfig.RequiresMountsFor = [ quotedVault ];
       path = [ config.systemd.package pkgs.coreutils ];
       serviceConfig = sandbox // {
-        ExecStartPre = "+${grantRead}";
         ExecStart = watch;
         Restart = "always";
         RestartSec = 30;
