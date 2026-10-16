@@ -142,7 +142,9 @@ in
   modules.services.media.feishin.enable = true;
 
   # AzuraCast - Internet radio station management (azuracast.* admin, radio.* public player)
-  modules.services.media.azuracast.enable = true;
+  # Disabled: its liquidsoap processes grew to ~22 GiB and drove david out of
+  # memory. See TristonYoder/nix-config#346 before re-enabling.
+  modules.services.media.azuracast.enable = false;
 
   # Blueprint - personal dashboard (native, non-Docker, from TristonYoder/blueprint's own flake)
   modules.services.productivity.blueprint = {
@@ -154,7 +156,8 @@ in
   # dropped into the shared m3u/playlist folder, and mirror every station into
   # Navidrome as an Internet Radio Station
   modules.services.media.azuracastPlaylistStations = {
-    enable = true;
+    # Disabled along with AzuraCast itself
+    enable = false;
     apiKeyFile = config.age.secrets.azuracast-api-key.path;
 
     navidromeSync = {
