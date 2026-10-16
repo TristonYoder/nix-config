@@ -99,6 +99,20 @@ in
   # this host and already owns that port.
   modules.services.productivity.stirlingPdf.port = 7879;
 
+  # Pocket ID client "Outline"; secret in outline-oidc-secret.age.
+  modules.services.productivity.outline.oidc.clientId = "51b6e304-ca97-4d53-9c75-0df45005f259";
+
+  # Pocket ID client "Immich"; secret in immich-oidc-secret.age.
+  modules.services.media.immich.oauth = {
+    enable = true;
+    issuerUrl = "https://id.${config.networking.domain}";
+    clientId = "f7bf6851-9020-44fb-bd43-e721d0364f87";
+    clientSecretFile = config.age.secrets.immich-oidc-secret.path;
+    buttonText = "Login with id.${config.networking.domain}";
+    # Skip the login form; /auth/login?autoLaunch=0 still reaches it.
+    autoLaunch = true;
+  };
+
   # Actual Budget: plain REST wrapper (jhonderson/actual-http-api) and MCP
   # server (agigante80/actual-mcp-server), both talking to the actual.nix
   # service directly via @actual-app/api. Credentials in
