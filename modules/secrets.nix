@@ -145,7 +145,7 @@ with lib;
       "outline-oidc-secret" = { file = ../secrets/outline-oidc-secret.age; owner = "outline"; group = "outline"; mode = "0400"; };
     })
 
-    // (optionalAttrs config.modules.services.productivity.outlineVaultSync.enable {
+    // (optionalAttrs config.modules.services.productivity.outlineVaultSync.active {
       # Encrypted to davidKeys only. Read via systemd LoadCredential, so root-owned is fine.
       "outline-vault-sync-token" = { file = ../secrets/outline-vault-sync-token.age; owner = "root"; group = "root"; mode = "0400"; };
     })
@@ -191,12 +191,13 @@ with lib;
       "jellyfin-api-key" = { file = ../secrets/jellyfin-api-key.age; mode = "0400"; };
     })
 
-    // (optionalAttrs config.modules.services.media.azuracastPlaylistStations.enable {
+    // (optionalAttrs config.modules.services.media.azuracastPlaylistStations.active {
       # Encrypted to davidKeys only
       "azuracast-api-key" = { file = ../secrets/azuracast-api-key.age; mode = "0400"; };
     })
 
-    // (optionalAttrs config.modules.services.media.azuracastPlaylistStations.navidromeSync.enable {
+    // (optionalAttrs (config.modules.services.media.azuracastPlaylistStations.active
+        && config.modules.services.media.azuracastPlaylistStations.navidromeSync.enable) {
       # Encrypted to davidKeys only
       "navidrome-api-password" = { file = ../secrets/navidrome-api-password.age; mode = "0400"; };
     })

@@ -15,6 +15,8 @@ Outline are overwritten the next time the note changes.
 
 ## Units
 
+Nothing runs unless Outline is also enabled on the host (`modules.services.productivity.outline.enable`).
+
 | Unit | What it does |
 |---|---|
 | `outline-vault-sync-watch.service` | `inotifywait -m -r` on the vault. Starts the sync after `debounceSeconds` (60) with no further changes, or after `maxWaitSeconds` (600) of constant editing. Also syncs once at startup |

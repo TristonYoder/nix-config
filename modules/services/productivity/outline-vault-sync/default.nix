@@ -135,8 +135,7 @@ let
 
   syncService = args: {
     description = "Publish Obsidian vault to Outline${optionalString (args != "") " (full reconcile)"}";
-    after = [ "network-online.target" ]
-      ++ optional config.modules.services.productivity.outline.enable "outline.service";
+    after = [ "network-online.target" "outline.service" ];
     wants = [ "network-online.target" ];
     unitConfig.RequiresMountsFor = [ cfg.vaultPath ];
     serviceConfig = sandbox // {
@@ -155,6 +154,17 @@ in
   options.modules.services.productivity.outlineVaultSync = {
     enable = mkEnableOption "one-way Obsidian vault to Outline sync";
 
+    active = mkOption {
+      type = types.bool;
+      readOnly = true;
+      internal = true;
+      default = cfg.enable && config.modules.services.productivity.outline.enable;
+      description = ''
+        Whether the sync actually runs. It only does while Outline is enabled
+        on this host, so disabling Outline takes this (and its secret) with it.
+      '';
+    };
+
     vaultPath = mkOption {
       type = types.str;
       description = ''
@@ -165,10 +175,8 @@ in
 
     outlineUrl = mkOption {
       type = types.str;
-      default =
-        let o = config.modules.services.productivity.outline;
-        in if o.enable then "http://127.0.0.1:${toString o.port}" else "https://outline.${config.networking.domain}";
-      description = "Outline base URL. Defaults to the local instance when Outline runs on this host.";
+      default = "http://127.0.0.1:${toString config.modules.services.productivity.outline.port}";
+      description = "Outline base URL";
     };
 
     tokenFile = mkOption {
@@ -245,7 +253,7 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
+  config = mkIf cfg.active {
     users.users.${user} = {
       isSystemUser = true;
       group = user;

@@ -156,8 +156,8 @@ in
   # dropped into the shared m3u/playlist folder, and mirror every station into
   # Navidrome as an Internet Radio Station
   modules.services.media.azuracastPlaylistStations = {
-    # Disabled along with AzuraCast itself
-    enable = false;
+    # Only runs while AzuraCast itself is enabled
+    enable = true;
     apiKeyFile = config.age.secrets.azuracast-api-key.path;
 
     navidromeSync = {
