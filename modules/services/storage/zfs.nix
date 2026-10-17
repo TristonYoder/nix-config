@@ -49,6 +49,17 @@ in
     services.zfs.autoScrub.enable = cfg.enableAutoScrub;
 
     # ZFS Load Data (Loads unencrypted datasets on encrypted root)
+    #
+    # This pool isn't covered by NixOS's built-in zfs-import-<pool>.service machinery
+    # (it's not listed as a root/extra pool), so nothing orders native services or
+    # Docker against it by default. `RequiresMountsFor` on consumers like postgresql
+    # only binds to a mount that already exists in /proc/self/mountinfo — it doesn't
+    # make the mount happen, so a service starting before this unit races the import
+    # and fails outright instead of waiting. Gating `local-fs.target` (the same
+    # mechanism the stock zfs-mount.service uses for the root pool) makes every
+    # default-dependency unit — postgresql, mariadb, qdrant, docker.service, and
+    # therefore every docker-compose-*-root.target — transitively wait for this pool
+    # to be imported and mounted before they start.
     systemd.services."zfs_load_data" = mkIf (cfg.autoImportPool != null) {
       path = [ pkgs.zfs ];
       serviceConfig = {
@@ -56,9 +67,12 @@ in
         RemainAfterExit = true;
       };
       script = ''
-        zpool import ${cfg.autoImportPool} -f || true 
+        zpool import ${cfg.autoImportPool} -f || true
+        zfs mount -a || true
       '';
-      wantedBy = [ "docker-compose-media-aq-root.target" "docker.target" ];
+      after = [ "systemd-udev-settle.service" ];
+      before = [ "local-fs.target" ];
+      wantedBy = [ "local-fs.target" "docker-compose-media-aq-root.target" "docker.target" ];
     };
   };
 }
