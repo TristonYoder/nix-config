@@ -64,7 +64,10 @@
     blueprint.url = "github:TristonYoder/blueprint";
 
     # Hermes Agent (NousResearch) — official NixOS module
-    hermes-agent.url = "github:NousResearch/hermes-agent";
+    # Pinned to the Host-header DNS-rebinding fix (d3df14a7, 2026-08-23) that
+    # makes HERMES_DASHBOARD_PUBLIC_URL participate in Host validation — the
+    # previously-tracked rev (ac705b5, 2026-07-13) predates it entirely.
+    hermes-agent.url = "github:NousResearch/hermes-agent/v0.21.6";
 
     # B1 Church — self-hosted ChurchApps stack. The flake owns both the image
     # builds and the NixOS module, and its nightly build commits the published
