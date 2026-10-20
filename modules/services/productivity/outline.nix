@@ -26,6 +26,15 @@ in
       description = "Port for Outline to listen on";
     };
 
+    importMaxSize = mkOption {
+      type = types.int;
+      default = 2 * 1024 * 1024 * 1024;
+      description = ''
+        Maximum size in bytes of document and workspace imports. Attachment
+        uploads keep the upstream default.
+      '';
+    };
+
     oidc = {
       issuer = mkOption {
         type = types.str;
@@ -61,6 +70,8 @@ in
       # Caddy terminates TLS
       forceHttps = false;
       storage.storageType = "local";
+      # Also raises the API body-parser cap, which is max(upload, import)
+      maximumImportSize = cfg.importMaxSize;
       oidcAuthentication = {
         inherit (cfg.oidc) clientId clientSecretFile;
         authUrl = "${cfg.oidc.issuer}/authorize";
@@ -69,6 +80,11 @@ in
         displayName = "Pocket ID";
       };
     };
+
+    # Not exposed by the upstream module; unset, workspace imports fall back to
+    # the 25 MB attachment limit
+    systemd.services.outline.environment.FILE_STORAGE_WORKSPACE_IMPORT_MAX_SIZE =
+      toString cfg.importMaxSize;
 
     modules.services.vHosts.hosts.${cfg.domain} = {
       reverseProxyPort = cfg.port;
