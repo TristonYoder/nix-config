@@ -30,8 +30,16 @@ in
       type = types.int;
       default = 2 * 1024 * 1024 * 1024;
       description = ''
-        Maximum size in bytes of document and workspace imports. Attachment
-        uploads keep the upstream default.
+        Maximum size in bytes of document and workspace imports.
+      '';
+    };
+
+    attachmentMaxSize = mkOption {
+      type = types.int;
+      default = 1024 * 1024 * 1024;
+      description = ''
+        Maximum size in bytes of a single attachment. Also applies to each
+        attachment inside a workspace import, which is read into memory whole.
       '';
     };
 
@@ -69,7 +77,10 @@ in
       port = cfg.port;
       # Caddy terminates TLS
       forceHttps = false;
-      storage.storageType = "local";
+      storage = {
+        storageType = "local";
+        uploadMaxSize = cfg.attachmentMaxSize;
+      };
       # Also raises the API body-parser cap, which is max(upload, import)
       maximumImportSize = cfg.importMaxSize;
       oidcAuthentication = {
