@@ -208,6 +208,13 @@ in
 
       environment = optionalAttrs (cfg.homeRoom != null) {
         MATRIX_HOME_ROOM = cfg.homeRoom;
+      } // optionalAttrs cfg.dashboard.enable {
+        # Hermes's dashboard binds to 127.0.0.1 and validates the Host header
+        # against loopback values or this declared public URL (DNS-rebinding
+        # guard, GHSA-ppp5-vxwm-4cf7). Without it, every request proxied
+        # through Caddy at cfg.dashboard.domain is rejected with "Invalid Host
+        # header" since that hostname is neither loopback nor trusted.
+        HERMES_DASHBOARD_PUBLIC_URL = "https://${cfg.dashboard.domain}";
       };
 
       # Matrix platform dependencies — uses the upstream 'matrix' pyproject.toml
@@ -416,6 +423,17 @@ in
             --no-open --skip-build \
             --host 127.0.0.1 --port ${toString cfg.dashboard.port}
         '';
+
+      # Container mode: the ExecStart above is `docker exec`, so stopping this
+      # unit only kills that host-side client — docker doesn't propagate the
+      # signal into the container without a TTY, so the actual dashboard
+      # process inside orphans and keeps holding the port. The next start
+      # then crash-loops on EADDRINUSE forever. Kill it directly inside the
+      # container's PID namespace instead. Native mode doesn't need this —
+      # systemd owns that process directly.
+      preStop = optionalString cfg.containerMode ''
+        docker exec hermes-agent pkill -TERM -f "bin/hermes dashboard" || true
+      '';
 
       serviceConfig = {
         Type = "simple";
