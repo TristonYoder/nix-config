@@ -109,6 +109,15 @@ in
   
   # Outline Application Secrets
   "outline-secrets.age".publicKeys = davidKeys;
+
+  # Outline OIDC client secret (Pocket ID)
+  "outline-oidc-secret.age".publicKeys = davidKeys;
+
+  # Outline API key for the Obsidian vault sync
+  "outline-vault-sync-token.age".publicKeys = davidKeys;
+
+  # Immich OIDC client secret (Pocket ID)
+  "immich-oidc-secret.age".publicKeys = davidKeys;
   
   # NextDNS Dynamic DNS Link
   "nextdns-link.age".publicKeys = davidKeys;

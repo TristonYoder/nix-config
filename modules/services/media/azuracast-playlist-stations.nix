@@ -20,6 +20,17 @@ in
   options.modules.services.media.azuracastPlaylistStations = {
     enable = mkEnableOption "Auto-create AzuraCast stations from m3u files in a directory";
 
+    active = mkOption {
+      type = types.bool;
+      readOnly = true;
+      internal = true;
+      default = cfg.enable && config.modules.services.media.azuracast.enable;
+      description = ''
+        Whether the sync actually runs. It only does while AzuraCast itself is
+        enabled, so disabling AzuraCast takes this (and its secrets) with it.
+      '';
+    };
+
     azuracastUrl = mkOption {
       type = types.str;
       default = "http://localhost:${toString config.modules.services.media.azuracast.httpPort}";
@@ -70,7 +81,7 @@ in
     };
   };
 
-  config = mkIf cfg.enable {
+  config = mkIf cfg.active {
     systemd.services.azuracast-playlist-stations = {
       description = "Create AzuraCast stations for any new m3u file in ${cfg.m3uDir}";
       after = [ "network-online.target" "docker-azuracast.service" ]
