@@ -7,6 +7,10 @@ let
   # /etc/hosts, so we must use the raw IP rather than the hostname everywhere
   # LiteLLM resolves endpoints. Update this if the device re-registers on Tailscale.
   workstationIp = "100.110.37.61";
+  # Tailscale IP for pits. Used as the dns-sync dual-write target below —
+  # raw IP rather than a hostname so registering DNS records doesn't itself
+  # depend on DNS already working. Update if pits re-registers on Tailscale.
+  pitsIp = "100.85.170.40";
 in
 {
   imports = [
@@ -132,8 +136,18 @@ in
   # move Scrutiny instead — it's Caddy-proxied and localhost-only.
   modules.services.infrastructure.scrutiny.port = 8087;
 
-  # dns-sync: use local Technitium directly (avoids Caddy loopback for the API)
-  modules.services.providers.dns-technitium.url = "http://localhost:5380";
+  modules.services.providers.dns-technitium = {
+    # use local Technitium directly (avoids Caddy loopback for the API)
+    url = "http://localhost:5380";
+    # Dual-write every vHost record to pits's own, independent Technitium
+    # instance (dns02) too — not a real DNS zone transfer (every zone here
+    # is type Forwarder, which Technitium's AXFR secondary mechanism can't
+    # source from), but gives pits an actually-populated, independently
+    # resolvable copy of DNS for redundancy if david's dns01 goes down.
+    extraTargets = [
+      { url = "http://${pitsIp}:5380"; tokenFile = config.age.secrets.technitium-api-token-dns02.path; }
+    ];
+  };
 
   # Navidrome - Music streaming server (Subsonic-compatible)
   modules.services.media.navidrome.enable = true;
