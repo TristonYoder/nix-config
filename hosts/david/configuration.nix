@@ -367,11 +367,19 @@ in
       { name = "embed";            model = "ollama/nomic-embed-text";      apiBase = "http://${workstationIp}:11434"; }
 
       # ── Local inference (tristons-workstation RTX 4080) ──────────────────────
-      { name = "local";            model = "ollama/hermes3";               apiBase = "http://${workstationIp}:11434"; }
-      { name = "local-fast";       model = "ollama/llama3.2:3b";           apiBase = "http://${workstationIp}:11434"; }
-      { name = "local-tool";       model = "ollama/qwen2.5:14b";           apiBase = "http://${workstationIp}:11434"; }
-      { name = "local-code";       model = "ollama/qwen2.5-coder:14b";     apiBase = "http://${workstationIp}:11434"; }
-      { name = "local-general";    model = "ollama/phi4:14b";              apiBase = "http://${workstationIp}:11434"; }
+      # num_ctx: the OpenAI API spec has no field for context window size, so
+      # without it Ollama silently truncates every request to its own default
+      # (2048-4096 tokens) regardless of what the model is actually trained
+      # for. Values below are each model's real trained window, confirmed via
+      # `ollama show <model>` on tristons-workstation — local-fast is
+      # deliberately capped well under its 131072 native max since quality
+      # degrades long before that anyway, and there's no reason to pay for it
+      # on the highest-volume route.
+      { name = "local";            model = "ollama/hermes3";               apiBase = "http://${workstationIp}:11434"; litellmParams.num_ctx = 131072; }
+      { name = "local-fast";       model = "ollama/llama3.2:3b";           apiBase = "http://${workstationIp}:11434"; litellmParams.num_ctx = 8192; }
+      { name = "local-tool";       model = "ollama/qwen2.5:14b";           apiBase = "http://${workstationIp}:11434"; litellmParams.num_ctx = 32768; }
+      { name = "local-code";       model = "ollama/qwen2.5-coder:14b";     apiBase = "http://${workstationIp}:11434"; litellmParams.num_ctx = 32768; }
+      { name = "local-general";    model = "ollama/phi4:14b";              apiBase = "http://${workstationIp}:11434"; litellmParams.num_ctx = 16384; }
 
       # ── API models (all external/non-local routes go through OpenRouter now —
       # one provider, one key, one place to see spend/rate-limits across
@@ -385,15 +393,34 @@ in
 
       # -- OpenRouter free tier --
       # quick: fast/low-effort interactive turns. Free tier is rate-limited
-      # (20 req/min, 50-1000 req/day depending on account balance) — router_settings
-      # fallback below drops to local-fast the moment it's throttled. gpt-oss-20b
-      # is a reasoning model — its chain-of-thought sometimes leaks into visible
-      # output, especially on long multi-step tool-calling turns.
-      { name = "quick";            model = "openrouter/openai/gpt-oss-20b:free"; apiKeyEnv = "OPENROUTER_API_KEY"; }
-      # quick-large: same free tier, but a plain instruct model (no reasoning-
-      # leak risk) and from Hermes's own labs — good alternative when quick's
-      # output looks garbled on a given turn.
-      { name = "quick-large";      model = "openrouter/nousresearch/hermes-3-llama-3.1-405b:free"; apiKeyEnv = "OPENROUTER_API_KEY"; }
+      # (20 req/min, 50-1000 req/day depending on account balance) —
+      # router_settings fallback below escalates through local-tool to
+      # local-fast the moment it's throttled.
+      #
+      # Both previous picks here (openai/gpt-oss-20b:free, and
+      # nousresearch/hermes-3-llama-3.1-405b:free below) were pulled from
+      # OpenRouter's free tier entirely (2026-10-21: 404 "This model is
+      # unavailable for free. The paid version is available now") — the free
+      # catalog rotates; verify with `curl https://openrouter.ai/api/v1/models`
+      # before assuming a :free slug still exists.
+      #
+      # Virtually every current-gen OpenRouter model (including both of
+      # these) now advertises `reasoning`/`reasoning_effort` in
+      # supported_parameters, so pick-a-non-reasoning-model is no longer a
+      # viable way to dodge https://github.com/BerriAI/litellm/issues/34574
+      # (LiteLLM unconditionally maps any reasoning_effort to Ollama's
+      # `think=true`, which Ollama then rejects for non-thinking local
+      # models — i.e. every local fallback below would 400 the moment Hermes
+      # attaches a reasoning hint to a "quick" request). Fixed properly via
+      # agent.reasoning_overrides in the hermes-agent settings block below,
+      # which stops Hermes from ever sending the field for this model,
+      # independent of which model actually serves the request.
+      { name = "quick";            model = "openrouter/google/gemma-4-31b-it:free"; apiKeyEnv = "OPENROUTER_API_KEY"; }
+      # quick-large: same free tier, a larger/stronger model — escalation
+      # target when quick's output looks garbled on a given turn. Literally
+      # hermes's own suggested example of a solid free OpenRouter model
+      # (hermes_cli/config_defaults.py, auxiliary.openrouter_model comment).
+      { name = "quick-large";      model = "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"; apiKeyEnv = "OPENROUTER_API_KEY"; }
 
       # -- OpenRouter paid --
       # value: real (uncapped, no free-tier flakiness) but cheap — ~$0.23/$0.34
@@ -403,13 +430,65 @@ in
       { name = "value";            model = "openrouter/deepseek/deepseek-v3.2"; apiKeyEnv = "OPENROUTER_API_KEY"; }
     ];
     environmentFile = config.age.secrets.hermes-env.path;
-    extraSettings.router_settings.fallbacks = [ { quick = [ "local-fast" ]; } ];
+    # Escalate to local (hermes3, genuinely tool-use/agentic-tuned) before
+    # dropping all the way to local-fast (llama3.2:3b) — a 3B model is fine
+    # for short classification but struggles to drive multi-step tool calls,
+    # so it should be the last resort, not the first fallback. quick-large
+    # gets the same safety net — it has no fallback of its own otherwise.
+    #
+    # NOT local-tool (qwen2.5:14b): hermes enforces a hard 64K-token minimum
+    # context window for whatever drives the main agent loop
+    # (agent/agent_init.py::_enforce_minimum_context, MINIMUM_CONTEXT_LENGTH)
+    # — qwen2.5:14b's real 32768 native window is below that floor, so
+    # hermes refuses to even attempt a turn the moment a fallback lands
+    # there ("Model quick has a context window of 32,768 tokens, which is
+    # below the minimum 64,000 required"). That check is main-agent-only —
+    # auxiliaryModels below still routes fine to local-tool, since auxiliary
+    # tasks go through a separate lightweight client, not the main agent
+    # loop. hermes3 (131072) clears the floor comfortably.
+    extraSettings.router_settings.fallbacks = [
+      { quick = [ "local" "local-fast" ]; }
+      { quick-large = [ "local" "local-fast" ]; }
+    ];
   };
 
   modules.services.ai.hermes-agent = {
     enable = true;
-    model = "quick";  # LiteLLM route: OpenRouter free tier, falls back to local-fast when rate-limited
-    backgroundReviewModel = "local-general";  # keep background review off the free quota
+    model = "quick";  # LiteLLM route: OpenRouter free tier, falls back to local then local-fast when rate-limited
+    # Pin to the smallest real context window anywhere in quick's fallback
+    # chain (gemma-4-31b-it 262144, local/hermes3 131072, local-fast/
+    # llama3.2:3b 131072 — so 131072) since hermes can't introspect a custom
+    # litellm-proxy route's real window and otherwise assumes 256k, which
+    # would silently overflow whichever model actually ends up serving a
+    # fallback-routed request. Must also clear hermes's own 64K main-model
+    # floor — see the fallback-chain comment above.
+    contextLength = 131072;
+    auxiliaryModels = {
+      # Upstream's own guidance: "a fast/cheap model is recommended" (approval)
+      # and "high-volume, small model fine" (monitor) — exactly local-fast's
+      # niche. Short, low-stakes, high-volume tasks.
+      approval             = "local-fast";
+      monitor              = "local-fast";
+      title_generation     = "local-fast";
+      memory_query_rewrite = "local-fast";
+      profile_describer    = "local-fast";
+      # Needs more reliable structured output than a 3B model gives —
+      # local-tool is the same model the fallback chain above escalates to.
+      triage_specifier     = "local-tool";
+      skills_hub           = "local-tool";
+      mcp                  = "local-tool";
+      goal_judge           = "local-tool";
+      kanban_decomposer    = "local-tool";
+      # Keep background review and curation on the same local model (same
+      # self-improvement task family, keeps it warm in VRAM instead of
+      # swapping between more distinct local models than necessary).
+      background_review     = "local-general";
+      curator               = "local-general";
+      # Deliberately left on the main/cloud model: /review's output quality
+      # as a code reviewer matters more than its cost, and there's no voice
+      # platform or MoA preset configured to route voice_chat/tts_audio_tags/
+      # moa_reference/moa_aggregator anywhere.
+    };
     environmentFile = config.age.secrets.hermes-env.path;
     # HERMES_MANAGED=true (in environmentFile) blocks /sethome; homeRoom is the only path.
     homeRoom = "!evHgyPMGVZyKzGopQo:theyoder.family";
@@ -426,6 +505,23 @@ in
       deployKeyFile = config.age.secrets.hermes-brain-deploy-key.path;
     };
     dashboard.enable = true;
+  };
+
+  # LiteLLM unconditionally maps any reasoning_effort to Ollama's `think=true`
+  # regardless of whether the target model supports it
+  # (https://github.com/BerriAI/litellm/issues/34574) — so whenever hermes
+  # attaches a reasoning hint to a "quick"/"quick-large" request and the
+  # router_settings fallback above lands on a local Ollama model, Ollama
+  # rejects it outright ("<model> does not support thinking"). Virtually
+  # every current OpenRouter model now advertises reasoning support, so
+  # there's no model choice that avoids this — stop hermes from ever sending
+  # the field for these two models instead, independent of whichever model
+  # actually ends up serving the request. services.hermes-agent.settings
+  # deep-merges across every module that sets it (nix/moduleCommon.nix), so
+  # this just adds to what modules.services.ai.hermes-agent above generates.
+  services.hermes-agent.settings.agent.reasoning_overrides = {
+    quick = "none";
+    "quick-large" = "none";
   };
 
   modules.services.ai.open-webui = {
