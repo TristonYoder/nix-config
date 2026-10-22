@@ -25,15 +25,36 @@ in
       description = "Default LLM model for Hermes. Should be a LiteLLM-routed name or direct provider string.";
     };
 
-    backgroundReviewModel = mkOption {
-      type = types.nullOr types.str;
+    auxiliaryModels = mkOption {
+      type = types.attrsOf (types.nullOr types.str);
+      default = {};
+      description = ''
+        Maps a hermes auxiliary task name (e.g. "background_review",
+        "approval", "monitor", "title_generation" — see hermes's own
+        auxiliary.* config block) to a LiteLLM route name. Each non-null
+        entry becomes `auxiliary.<task> = { provider = "custom:litellm-proxy";
+        model = <route>; }` in config.yaml. Unset tasks keep hermes's own
+        "auto" behavior (same model as the main chat).
+
+        Worth setting for any task that's cheap/high-volume (classification,
+        short rewrites, scoring) when the main model is a rate-limited free
+        tier — otherwise background tasks silently compete with interactive
+        turns for the same quota.
+      '';
+    };
+
+    contextLength = mkOption {
+      type = types.nullOr types.int;
       default = null;
       description = ''
-        LiteLLM route for the background self-improvement review (memory/skill
-        curation that runs after each turn). Null keeps hermes's own "auto"
-        behavior (same model as the main chat). Set this when the main model
-        is a rate-limited free-tier route, so background review doesn't
-        compete with interactive turns for the same quota.
+        Pins model.context_length. Hermes can't introspect a custom
+        litellm-proxy route's real context window (it's not a provider it
+        knows how to probe), so without this it assumes a large default that
+        may not match what's actually serving the request — especially once
+        router_settings.fallbacks silently swaps the underlying model without
+        hermes ever seeing the change. Size for the smallest real window
+        among every model `model.default` might transparently fall back to,
+        not the largest.
       '';
     };
 
@@ -189,19 +210,20 @@ in
       # and sends it as the API key so LiteLLM auth succeeds.
       settings = {
         model = { default = cfg.model; provider = "custom:litellm-proxy"; }
-          // optionalAttrs (cfg.inferenceUrl != null) { base_url = cfg.inferenceUrl; };
+          // optionalAttrs (cfg.inferenceUrl != null) { base_url = cfg.inferenceUrl; }
+          // optionalAttrs (cfg.contextLength != null) { context_length = cfg.contextLength; };
       } // optionalAttrs (cfg.inferenceUrl != null) {
         providers.litellm-proxy = {
           api = cfg.inferenceUrl;
           key_env = "LITELLM_MASTER_KEY";
         };
-      } // optionalAttrs (cfg.backgroundReviewModel != null) {
-        # Same litellm-proxy provider as the main model — backgroundReviewModel
-        # is expected to be a LiteLLM route name, not a raw provider string.
-        auxiliary.background_review = {
-          model = cfg.backgroundReviewModel;
+      } // optionalAttrs (cfg.auxiliaryModels != {}) {
+        # Same litellm-proxy provider as the main model — each value is
+        # expected to be a LiteLLM route name, not a raw provider string.
+        auxiliary = mapAttrs (_task: model: {
+          inherit model;
           provider = "custom:litellm-proxy";
-        };
+        }) (filterAttrs (_: v: v != null) cfg.auxiliaryModels);
       };
 
       environmentFiles = optional (cfg.environmentFile != null) cfg.environmentFile;

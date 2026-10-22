@@ -367,11 +367,19 @@ in
       { name = "embed";            model = "ollama/nomic-embed-text";      apiBase = "http://${workstationIp}:11434"; }
 
       # ── Local inference (tristons-workstation RTX 4080) ──────────────────────
-      { name = "local";            model = "ollama/hermes3";               apiBase = "http://${workstationIp}:11434"; }
-      { name = "local-fast";       model = "ollama/llama3.2:3b";           apiBase = "http://${workstationIp}:11434"; }
-      { name = "local-tool";       model = "ollama/qwen2.5:14b";           apiBase = "http://${workstationIp}:11434"; }
-      { name = "local-code";       model = "ollama/qwen2.5-coder:14b";     apiBase = "http://${workstationIp}:11434"; }
-      { name = "local-general";    model = "ollama/phi4:14b";              apiBase = "http://${workstationIp}:11434"; }
+      # num_ctx: the OpenAI API spec has no field for context window size, so
+      # without it Ollama silently truncates every request to its own default
+      # (2048-4096 tokens) regardless of what the model is actually trained
+      # for. Values below are each model's real trained window, confirmed via
+      # `ollama show <model>` on tristons-workstation — local-fast is
+      # deliberately capped well under its 131072 native max since quality
+      # degrades long before that anyway, and there's no reason to pay for it
+      # on the highest-volume route.
+      { name = "local";            model = "ollama/hermes3";               apiBase = "http://${workstationIp}:11434"; litellmParams.num_ctx = 131072; }
+      { name = "local-fast";       model = "ollama/llama3.2:3b";           apiBase = "http://${workstationIp}:11434"; litellmParams.num_ctx = 8192; }
+      { name = "local-tool";       model = "ollama/qwen2.5:14b";           apiBase = "http://${workstationIp}:11434"; litellmParams.num_ctx = 32768; }
+      { name = "local-code";       model = "ollama/qwen2.5-coder:14b";     apiBase = "http://${workstationIp}:11434"; litellmParams.num_ctx = 32768; }
+      { name = "local-general";    model = "ollama/phi4:14b";              apiBase = "http://${workstationIp}:11434"; litellmParams.num_ctx = 16384; }
 
       # ── API models (all external/non-local routes go through OpenRouter now —
       # one provider, one key, one place to see spend/rate-limits across
@@ -403,13 +411,48 @@ in
       { name = "value";            model = "openrouter/deepseek/deepseek-v3.2"; apiKeyEnv = "OPENROUTER_API_KEY"; }
     ];
     environmentFile = config.age.secrets.hermes-env.path;
-    extraSettings.router_settings.fallbacks = [ { quick = [ "local-fast" ]; } ];
+    # Escalate to local-tool (qwen2.5:14b, genuinely tool-use-capable) before
+    # dropping all the way to local-fast (llama3.2:3b) — a 3B model is fine
+    # for short classification but struggles to drive multi-step tool calls,
+    # so it should be the last resort, not the first fallback.
+    extraSettings.router_settings.fallbacks = [ { quick = [ "local-tool" "local-fast" ]; } ];
   };
 
   modules.services.ai.hermes-agent = {
     enable = true;
-    model = "quick";  # LiteLLM route: OpenRouter free tier, falls back to local-fast when rate-limited
-    backgroundReviewModel = "local-general";  # keep background review off the free quota
+    model = "quick";  # LiteLLM route: OpenRouter free tier, falls back to local-tool then local-fast when rate-limited
+    # gpt-oss-20b (quick) and llama3.2:3b (local-fast, the bottom of the
+    # fallback chain) both have a real 131072-token native window — but
+    # hermes can't introspect that for a custom litellm-proxy route and
+    # defaults to assuming 256k, which is wrong for either. Pin to the real,
+    # shared value so a fallback-served request can't silently overflow it.
+    contextLength = 131072;
+    auxiliaryModels = {
+      # Upstream's own guidance: "a fast/cheap model is recommended" (approval)
+      # and "high-volume, small model fine" (monitor) — exactly local-fast's
+      # niche. Short, low-stakes, high-volume tasks.
+      approval             = "local-fast";
+      monitor              = "local-fast";
+      title_generation     = "local-fast";
+      memory_query_rewrite = "local-fast";
+      profile_describer    = "local-fast";
+      # Needs more reliable structured output than a 3B model gives —
+      # local-tool is the same model the fallback chain above escalates to.
+      triage_specifier     = "local-tool";
+      skills_hub           = "local-tool";
+      mcp                  = "local-tool";
+      goal_judge           = "local-tool";
+      kanban_decomposer    = "local-tool";
+      # Keep background review and curation on the same local model (same
+      # self-improvement task family, keeps it warm in VRAM instead of
+      # swapping between more distinct local models than necessary).
+      background_review     = "local-general";
+      curator               = "local-general";
+      # Deliberately left on the main/cloud model: /review's output quality
+      # as a code reviewer matters more than its cost, and there's no voice
+      # platform or MoA preset configured to route voice_chat/tts_audio_tags/
+      # moa_reference/moa_aggregator anywhere.
+    };
     environmentFile = config.age.secrets.hermes-env.path;
     # HERMES_MANAGED=true (in environmentFile) blocks /sethome; homeRoom is the only path.
     homeRoom = "!evHgyPMGVZyKzGopQo:theyoder.family";
