@@ -430,27 +430,39 @@ in
       { name = "value";            model = "openrouter/deepseek/deepseek-v3.2"; apiKeyEnv = "OPENROUTER_API_KEY"; }
     ];
     environmentFile = config.age.secrets.hermes-env.path;
-    # Escalate to local-tool (qwen2.5:14b, genuinely tool-use-capable) before
+    # Escalate to local (hermes3, genuinely tool-use/agentic-tuned) before
     # dropping all the way to local-fast (llama3.2:3b) — a 3B model is fine
     # for short classification but struggles to drive multi-step tool calls,
     # so it should be the last resort, not the first fallback. quick-large
     # gets the same safety net — it has no fallback of its own otherwise.
+    #
+    # NOT local-tool (qwen2.5:14b): hermes enforces a hard 64K-token minimum
+    # context window for whatever drives the main agent loop
+    # (agent/agent_init.py::_enforce_minimum_context, MINIMUM_CONTEXT_LENGTH)
+    # — qwen2.5:14b's real 32768 native window is below that floor, so
+    # hermes refuses to even attempt a turn the moment a fallback lands
+    # there ("Model quick has a context window of 32,768 tokens, which is
+    # below the minimum 64,000 required"). That check is main-agent-only —
+    # auxiliaryModels below still routes fine to local-tool, since auxiliary
+    # tasks go through a separate lightweight client, not the main agent
+    # loop. hermes3 (131072) clears the floor comfortably.
     extraSettings.router_settings.fallbacks = [
-      { quick = [ "local-tool" "local-fast" ]; }
-      { quick-large = [ "local-tool" "local-fast" ]; }
+      { quick = [ "local" "local-fast" ]; }
+      { quick-large = [ "local" "local-fast" ]; }
     ];
   };
 
   modules.services.ai.hermes-agent = {
     enable = true;
-    model = "quick";  # LiteLLM route: OpenRouter free tier, falls back to local-tool then local-fast when rate-limited
-    # Pin to the SMALLEST real context window anywhere in quick's fallback
-    # chain (gemma-4-31b-it 262144, local-tool/qwen2.5:14b 32768,
-    # local-fast/llama3.2:3b 131072 — so 32768) since hermes can't
-    # introspect a custom litellm-proxy route's real window and otherwise
-    # assumes 256k, which would silently overflow whichever model actually
-    # ends up serving a fallback-routed request.
-    contextLength = 32768;
+    model = "quick";  # LiteLLM route: OpenRouter free tier, falls back to local then local-fast when rate-limited
+    # Pin to the smallest real context window anywhere in quick's fallback
+    # chain (gemma-4-31b-it 262144, local/hermes3 131072, local-fast/
+    # llama3.2:3b 131072 — so 131072) since hermes can't introspect a custom
+    # litellm-proxy route's real window and otherwise assumes 256k, which
+    # would silently overflow whichever model actually ends up serving a
+    # fallback-routed request. Must also clear hermes's own 64K main-model
+    # floor — see the fallback-chain comment above.
+    contextLength = 131072;
     auxiliaryModels = {
       # Upstream's own guidance: "a fast/cheap model is recommended" (approval)
       # and "high-volume, small model fine" (monitor) — exactly local-fast's
