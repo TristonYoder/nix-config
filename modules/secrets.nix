@@ -102,6 +102,12 @@ with lib;
       # Deploy key (write access) for the private TristonYoder/hermes-brain repo —
       # the vault git-sync timer pushes Hermes's brain (SOUL.md/memory/skills) there.
       "hermes-brain-deploy-key" = { file = ../secrets/hermes-brain-deploy-key.age; mode = "0400"; };
+      # API token for pits's OWN separate Technitium instance (dns02) — a
+      # completely independent server from david's dns01, so the shared
+      # "technitium-api-token" above doesn't authenticate against it. Lets
+      # david's dns-sync job dual-write every vHost record to dns02 too, so
+      # pits keeps a working local copy of DNS for redundancy.
+      "technitium-api-token-dns02" = { file = ../secrets/technitium-api-token-dns02.age; owner = "root"; group = "root"; mode = "0400"; };
     })
 
     // (optionalAttrs (config.networking.hostName == "david") {
