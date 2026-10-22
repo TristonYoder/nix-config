@@ -393,15 +393,34 @@ in
 
       # -- OpenRouter free tier --
       # quick: fast/low-effort interactive turns. Free tier is rate-limited
-      # (20 req/min, 50-1000 req/day depending on account balance) — router_settings
-      # fallback below drops to local-fast the moment it's throttled. gpt-oss-20b
-      # is a reasoning model — its chain-of-thought sometimes leaks into visible
-      # output, especially on long multi-step tool-calling turns.
-      { name = "quick";            model = "openrouter/openai/gpt-oss-20b:free"; apiKeyEnv = "OPENROUTER_API_KEY"; }
-      # quick-large: same free tier, but a plain instruct model (no reasoning-
-      # leak risk) and from Hermes's own labs — good alternative when quick's
-      # output looks garbled on a given turn.
-      { name = "quick-large";      model = "openrouter/nousresearch/hermes-3-llama-3.1-405b:free"; apiKeyEnv = "OPENROUTER_API_KEY"; }
+      # (20 req/min, 50-1000 req/day depending on account balance) —
+      # router_settings fallback below escalates through local-tool to
+      # local-fast the moment it's throttled.
+      #
+      # Both previous picks here (openai/gpt-oss-20b:free, and
+      # nousresearch/hermes-3-llama-3.1-405b:free below) were pulled from
+      # OpenRouter's free tier entirely (2026-10-21: 404 "This model is
+      # unavailable for free. The paid version is available now") — the free
+      # catalog rotates; verify with `curl https://openrouter.ai/api/v1/models`
+      # before assuming a :free slug still exists.
+      #
+      # Virtually every current-gen OpenRouter model (including both of
+      # these) now advertises `reasoning`/`reasoning_effort` in
+      # supported_parameters, so pick-a-non-reasoning-model is no longer a
+      # viable way to dodge https://github.com/BerriAI/litellm/issues/34574
+      # (LiteLLM unconditionally maps any reasoning_effort to Ollama's
+      # `think=true`, which Ollama then rejects for non-thinking local
+      # models — i.e. every local fallback below would 400 the moment Hermes
+      # attaches a reasoning hint to a "quick" request). Fixed properly via
+      # agent.reasoning_overrides in the hermes-agent settings block below,
+      # which stops Hermes from ever sending the field for this model,
+      # independent of which model actually serves the request.
+      { name = "quick";            model = "openrouter/google/gemma-4-31b-it:free"; apiKeyEnv = "OPENROUTER_API_KEY"; }
+      # quick-large: same free tier, a larger/stronger model — escalation
+      # target when quick's output looks garbled on a given turn. Literally
+      # hermes's own suggested example of a solid free OpenRouter model
+      # (hermes_cli/config_defaults.py, auxiliary.openrouter_model comment).
+      { name = "quick-large";      model = "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free"; apiKeyEnv = "OPENROUTER_API_KEY"; }
 
       # -- OpenRouter paid --
       # value: real (uncapped, no free-tier flakiness) but cheap — ~$0.23/$0.34
@@ -414,19 +433,24 @@ in
     # Escalate to local-tool (qwen2.5:14b, genuinely tool-use-capable) before
     # dropping all the way to local-fast (llama3.2:3b) — a 3B model is fine
     # for short classification but struggles to drive multi-step tool calls,
-    # so it should be the last resort, not the first fallback.
-    extraSettings.router_settings.fallbacks = [ { quick = [ "local-tool" "local-fast" ]; } ];
+    # so it should be the last resort, not the first fallback. quick-large
+    # gets the same safety net — it has no fallback of its own otherwise.
+    extraSettings.router_settings.fallbacks = [
+      { quick = [ "local-tool" "local-fast" ]; }
+      { quick-large = [ "local-tool" "local-fast" ]; }
+    ];
   };
 
   modules.services.ai.hermes-agent = {
     enable = true;
     model = "quick";  # LiteLLM route: OpenRouter free tier, falls back to local-tool then local-fast when rate-limited
-    # gpt-oss-20b (quick) and llama3.2:3b (local-fast, the bottom of the
-    # fallback chain) both have a real 131072-token native window — but
-    # hermes can't introspect that for a custom litellm-proxy route and
-    # defaults to assuming 256k, which is wrong for either. Pin to the real,
-    # shared value so a fallback-served request can't silently overflow it.
-    contextLength = 131072;
+    # Pin to the SMALLEST real context window anywhere in quick's fallback
+    # chain (gemma-4-31b-it 262144, local-tool/qwen2.5:14b 32768,
+    # local-fast/llama3.2:3b 131072 — so 32768) since hermes can't
+    # introspect a custom litellm-proxy route's real window and otherwise
+    # assumes 256k, which would silently overflow whichever model actually
+    # ends up serving a fallback-routed request.
+    contextLength = 32768;
     auxiliaryModels = {
       # Upstream's own guidance: "a fast/cheap model is recommended" (approval)
       # and "high-volume, small model fine" (monitor) — exactly local-fast's
@@ -469,6 +493,23 @@ in
       deployKeyFile = config.age.secrets.hermes-brain-deploy-key.path;
     };
     dashboard.enable = true;
+  };
+
+  # LiteLLM unconditionally maps any reasoning_effort to Ollama's `think=true`
+  # regardless of whether the target model supports it
+  # (https://github.com/BerriAI/litellm/issues/34574) — so whenever hermes
+  # attaches a reasoning hint to a "quick"/"quick-large" request and the
+  # router_settings fallback above lands on a local Ollama model, Ollama
+  # rejects it outright ("<model> does not support thinking"). Virtually
+  # every current OpenRouter model now advertises reasoning support, so
+  # there's no model choice that avoids this — stop hermes from ever sending
+  # the field for these two models instead, independent of whichever model
+  # actually ends up serving the request. services.hermes-agent.settings
+  # deep-merges across every module that sets it (nix/moduleCommon.nix), so
+  # this just adds to what modules.services.ai.hermes-agent above generates.
+  services.hermes-agent.settings.agent.reasoning_overrides = {
+    quick = "none";
+    "quick-large" = "none";
   };
 
   modules.services.ai.open-webui = {
