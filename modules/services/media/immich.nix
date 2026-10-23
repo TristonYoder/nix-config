@@ -1,8 +1,14 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, nixpkgs-unstable, ... }:
 
 with lib;
 let
   cfg = config.modules.services.media.immich;
+  # Immich 2.x is insecure and EOL on 26.05 (CVE-2026-59258, CVE-2026-82272);
+  # 3.x only ships in unstable. Drop once NixOS 26.11 is the stable pin.
+  pkgs-unstable = import nixpkgs-unstable {
+    system = pkgs.system;
+    config.allowUnfree = true;
+  };
 in
 {
   options.modules.services.media.immich = {
@@ -155,6 +161,7 @@ in
     # Immich service
     services.immich = {
       enable = true;
+      package = pkgs-unstable.immich;
       port = cfg.port;
       openFirewall = true;
       host = "0.0.0.0";

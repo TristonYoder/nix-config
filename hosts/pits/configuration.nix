@@ -111,6 +111,15 @@
 
   # Ensure Technitium DNS is enabled on pits (edge DNS host)
   modules.services.infrastructure.technitium.enable = true;
+
+  # pits has a public IP: only DNS itself is world-reachable. The web UI/API
+  # (5380, 53443) and DoH (5353) are reached through Caddy (dns02 vHost) or over
+  # Tailscale — david's dns-sync dual-write uses http://<pits tailscale IP>:5380.
+  modules.services.infrastructure.technitium = {
+    sharedConfig = false;
+    firewallTCPPorts = [ 53 ];
+  };
+  networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 5353 5380 53443 ];
   
   # =============================================================================
   # CADDY CONFIGURATION FOR TECHNITIUM DNS
