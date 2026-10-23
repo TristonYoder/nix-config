@@ -254,13 +254,40 @@ jobs:
         SERVER_HOSTNAME="${{ matrix.host }}.vpn.theyoder.family"
         echo "Deploying ${{ matrix.host }} from github:TristonYoder/nix-config..."
 
+        SSH="ssh -o ConnectTimeout=15 -o ServerAliveInterval=15 ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME"
+
         # Closures are pre-built in the binary cache; --refresh ensures nix fetches
         # the latest HEAD rather than a locally cached flake resolution.
-        set +e
-        ssh ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME \
-          "sudo nixos-rebuild switch --flake 'github:TristonYoder/nix-config#${{ matrix.host }}' --refresh"
-        DEPLOY_EXIT=$?
-        set -e
+        # `boot` builds and sets the system profile without activating it.
+        $SSH "sudo nixos-rebuild boot --flake 'github:TristonYoder/nix-config#${{ matrix.host }}' --refresh"
+
+        # Activate in a detached unit that logs to the journal. Running
+        # `nixos-rebuild switch` over this SSH session ties activation to the
+        # session: when the switch restarts tailscaled the session drops,
+        # switch-to-configuration panics writing to the closed pipe (exit 101)
+        # after stopping units and before starting them, leaving the host with
+        # most services down. A detached unit finishes regardless; poll it.
+        UNIT="ci-switch-${{ github.run_id }}-${{ github.run_attempt }}"
+        $SSH "sudo systemd-run --unit=$UNIT -p Type=oneshot -p RemainAfterExit=yes \
+          -p StandardOutput=journal -p StandardError=journal --no-block \
+          /nix/var/nix/profiles/system/bin/switch-to-configuration switch"
+
+        DEPLOY_EXIT=""
+        for _ in $(seq 1 120); do
+          sleep 15
+          STATE=$($SSH "systemctl show $UNIT -p ActiveState --value" 2>/dev/null) || continue
+          case "$STATE" in
+            active|failed)
+              DEPLOY_EXIT=$($SSH "systemctl show $UNIT -p ExecMainStatus --value")
+              $SSH "sudo journalctl -u $UNIT --no-pager -o cat" || true
+              $SSH "sudo systemctl stop $UNIT; sudo systemctl reset-failed $UNIT" 2>/dev/null || true
+              break ;;
+          esac
+        done
+        if [ -z "$DEPLOY_EXIT" ]; then
+          echo "::error::Timed out waiting for $UNIT on ${{ matrix.host }}"
+          exit 1
+        fi
 
         # switch-to-configuration exits 4 specifically when the config activated
         # but one or more systemd units failed to reach "active" afterward — a
