@@ -16,7 +16,8 @@ in
       image = "goodieshq/headscale-admin:latest";
 
       ports = [
-        "${toString cfg.adminUI.port}:80/tcp"
+        # Caddy proxies /admin to this; docker-published ports bypass the NixOS firewall.
+        "127.0.0.1:${toString cfg.adminUI.port}:80/tcp"
       ];
 
       log-driver = "journald";
