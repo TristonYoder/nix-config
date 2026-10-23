@@ -949,6 +949,35 @@ sudo systemctl restart docker-<name>.service
 sudo docker network ls --format '{{.Name}}' | grep -x <name>_default
 ```
 
+### Deploy Leaves Most Services Stopped (switch-to-configuration exit 101)
+**Hosts:** any host deployed over Tailscale SSH (CI deploy, or manual `ssh … nixos-rebuild switch`)
+
+If the new generation restarts `tailscaled`, the SSH session carrying `nixos-rebuild switch` drops
+mid-activation. `switch-to-configuration` then panics writing to the closed pipe (exit 101) —
+after its stop phase, before its start phase — so nearly every service stays stopped while
+`/run/current-system` already points at the new generation. Happened on david 2026-10-23.
+
+**Recovery** — re-run activation detached from the session:
+```bash
+sudo systemd-run --unit=resume-switch --collect -p StandardOutput=journal -p StandardError=journal \
+  /nix/var/nix/profiles/system/bin/switch-to-configuration switch
+journalctl -u resume-switch -f
+```
+
+**Diagnostics:**
+```bash
+journalctl -u nixos-rebuild-switch-to-configuration   # "status=101" right after tailscaled restarts
+```
+
+The deploy workflow avoids this by running `nixos-rebuild boot` over SSH, then activating in a
+`systemd-run` unit and polling it. When doing the same by hand, pass
+`--setenv=PATH=/run/wrappers/bin:/run/current-system/sw/bin` if the unit runs `nixos-rebuild`
+itself — it shells out to `test` and fails with `No such file or directory: 'test'` otherwise.
+
+Technitium can take 5+ minutes to come back after a restart (it reopens the Query Logs SQLite
+DB — 600 MB on pits), so `vHost-dns-technitium` may fail during a switch with "timed out waiting
+for Technitium". Re-run it once the API answers: `sudo systemctl restart vHost-dns-technitium`.
+
 ### Port Conflicts
 
 ```bash
