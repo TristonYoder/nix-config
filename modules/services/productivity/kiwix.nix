@@ -36,8 +36,17 @@ let
 
         if [ ! -f "$latest" ]; then
           echo "kiwix-sync: downloading $latest"
-          curl -fL --retry 5 -C - -o "$latest.part" "$mirror/$dir/$latest"
-          expected=$(curl -fsSL "$mirror/$dir/$latest.sha256" | cut -d' ' -f1)
+          # A failed book is skipped, not fatal, so the library still gets rebuilt
+          # for the others. The .part file is kept and resumed on the next run.
+          if ! curl -fL --retry 5 -C - -o "$latest.part" "$mirror/$dir/$latest"; then
+            echo "kiwix-sync: download of $latest failed, will resume next run" >&2
+            continue
+          fi
+          expected=$(curl -fsSL "$mirror/$dir/$latest.sha256" | cut -d' ' -f1) || true
+          if [ -z "$expected" ]; then
+            echo "kiwix-sync: no checksum for $latest, leaving it unverified as .part" >&2
+            continue
+          fi
           actual=$(sha256sum "$latest.part" | cut -d' ' -f1)
           if [ "$expected" != "$actual" ]; then
             echo "kiwix-sync: checksum mismatch for $latest, discarding" >&2
