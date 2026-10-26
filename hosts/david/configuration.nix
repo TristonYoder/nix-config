@@ -181,6 +181,10 @@ in
     };
   };
 
+  # Kiwix - Offline Wikipedia (and other ZIMs) at kiwix.<domain>.
+  # First sync downloads ~120 GB; start it with: systemctl start kiwix-sync
+  modules.services.productivity.kiwix.enable = true;
+
   # Beets - Auto-organize music library from Downloads into Music
   modules.services.media.beets.enable = true;
 
