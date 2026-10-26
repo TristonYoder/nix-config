@@ -181,6 +181,13 @@ in
     };
   };
 
+  # Kiwix - Offline Wikipedia (and other ZIMs)
+  # First sync downloads ~120 GB; start it with: systemctl start kiwix-sync
+  modules.services.productivity.kiwix = {
+    enable = true;
+    domain = "wikipedia.theyoder.family";
+  };
+
   # Beets - Auto-organize music library from Downloads into Music
   modules.services.media.beets.enable = true;
 
