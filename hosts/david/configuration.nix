@@ -186,6 +186,9 @@ in
   modules.services.productivity.kiwix = {
     enable = true;
     domain = "wikipedia.theyoder.family";
+    # /data itself is the root disk here (only the pool's child datasets mount),
+    # so keep the ~127 GB ZIMs on the data/media dataset.
+    zimDir = "/data/media/kiwix";
   };
 
   # Beets - Auto-organize music library from Downloads into Music
