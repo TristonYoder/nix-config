@@ -139,7 +139,11 @@ in
 
     # Same BindReadOnlyPaths-style race as navidrome: don't start against an
     # unmounted /data and serve an empty library.
-    systemd.services.kiwix-serve.unitConfig.RequiresMountsFor = [ cfg.zimDir ];
+    systemd.services.kiwix-serve = {
+      unitConfig.RequiresMountsFor = [ cfg.zimDir ];
+      requires = [ "kiwix-init.service" ];
+      after = [ "kiwix-init.service" ];
+    };
 
     users.users.kiwix = {
       isSystemUser = true;
@@ -149,18 +153,41 @@ in
 
     # kiwix-serve runs as a DynamicUser, so ZIMs must be world-readable.
     # The empty library lets kiwix-serve start before the first sync finishes.
-    systemd.tmpfiles.rules = [
-      "d ${cfg.zimDir} 0755 kiwix kiwix -"
-      "f ${libraryFile} 0644 kiwix kiwix - <library version=\"20110515\"></library>"
-    ];
+    # Not tmpfiles: it refuses to create a kiwix-owned path under a parent owned
+    # by another non-root user ("unsafe path transition"), e.g. /data/media.
+    systemd.services.kiwix-init = {
+      description = "Prepare the Kiwix ZIM directory";
+      unitConfig.RequiresMountsFor = [ cfg.zimDir ];
+      script = ''
+        install -d -m 0755 -o kiwix -g kiwix ${escapeShellArg cfg.zimDir}
+        if [ ! -s ${escapeShellArg libraryFile} ]; then
+          echo '<library version="20110515"></library>' > ${escapeShellArg libraryFile}
+          chown kiwix:kiwix ${escapeShellArg libraryFile}
+          chmod 0644 ${escapeShellArg libraryFile}
+        fi
+      '';
+      # Gate for kiwix-serve: retries a failing script (e.g. the dataset not yet
+      # writable). A failed mount dependency never runs the unit, so Restart= can't
+      # cover that; like navidrome, restart kiwix-serve once the mount is back.
+      unitConfig.StartLimitIntervalSec = 0;
+      serviceConfig = {
+        Type = "oneshot";
+        RemainAfterExit = true;
+        Restart = "on-failure";
+        RestartSec = "10s";
+      };
+    };
 
     # Timer-driven, so no Restart=: the next run retries, and a restart mid-download
     # would race the timer. curl -C resumes a partial download either way.
     systemd.services.kiwix-sync = {
       description = "Download and update Kiwix ZIM files";
       wants = [ "network-online.target" ];
-      after = [ "network-online.target" ];
+      requires = [ "kiwix-init.service" ];
+      after = [ "network-online.target" "kiwix-init.service" ];
       unitConfig.RequiresMountsFor = [ cfg.zimDir ];
+      # A deploy must not kill a multi-hour download; changes apply on the next run.
+      restartIfChanged = false;
       serviceConfig = {
         Type = "oneshot";
         User = "kiwix";
