@@ -166,7 +166,9 @@ in
           chmod 0644 ${escapeShellArg libraryFile}
         fi
       '';
-      # Gate for kiwix-serve: retry until the mount it waits on is usable.
+      # Gate for kiwix-serve: retries a failing script (e.g. the dataset not yet
+      # writable). A failed mount dependency never runs the unit, so Restart= can't
+      # cover that; like navidrome, restart kiwix-serve once the mount is back.
       unitConfig.StartLimitIntervalSec = 0;
       serviceConfig = {
         Type = "oneshot";
