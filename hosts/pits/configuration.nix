@@ -53,6 +53,53 @@
   };
 
   # =============================================================================
+  # STAGE PLOTIPHAR DELETION-LOG OFFSITE COPY
+  # =============================================================================
+
+  # Receives david's hourly push (docker/productivity/stageplotiphar.nix). The
+  # key is forced to rrsync write-only into this directory: it can add and
+  # replace files but cannot read or list them, and cannot run anything else.
+  # Read back as an admin user when restoring.
+  users.groups.deletion-log = { };
+  users.users.deletion-log = {
+    isSystemUser = true;
+    group = "deletion-log";
+    home = "/var/lib/stageplotiphar-deletion-offsite";
+    createHome = true;
+    shell = pkgs.bashInteractive;
+    openssh.authorizedKeys.keys = [
+      ''restrict,command="${pkgs.rrsync}/bin/rrsync -wo /var/lib/stageplotiphar-deletion-offsite" ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBdQpOr+VE3iCCiVvfNG6LaqNPbS8p55MOw0j90TNQyC stageplotiphar-deletion-log-offsite ''
+    ];
+  };
+
+  # =============================================================================
+  # APP REVIEW DEMO SSH SERVER (temporary)
+  # =============================================================================
+
+  # Disposable, isolated sshd container for Apple App Review. Delete this block
+  # (and `rm -rf /var/lib/app-review-ssh`) once the app is approved.
+  # Credentials and fingerprint: `sudo app-review-ssh-info`.
+  modules.services.development.appReviewSsh = {
+    enable = true;
+    port = 22022;
+  };
+
+  # =============================================================================
+  # 13 YEARS APP REVIEW DEMO PRODUCER (temporary)
+  # =============================================================================
+
+  # Simulated show for App Review: Pager -> demo.13years.7co.dev:13380 (raw TCP;
+  # DNS-only record, not Cloudflare-proxied). Control API stays on 127.0.0.1:13390.
+  # Teardown: set enable = false once the app is approved.
+  modules.services.development.thirteenYearsDemo = {
+    enable = true;
+    publicHost = "demo.13years.7co.dev";
+    tag = "1.5.0-demo";
+    digest = "sha256:c8940db5f1c15d7cceda1a17fb1be4a2922612b8641f3f89f66ea84be7b49df8";
+    imageHash = "sha256-7Vlw7N2G7b4CWFMy3tElv6NlxW8kazIwFswdMEx+34Y=";
+  };
+
+  # =============================================================================
   # EDGE-SPECIFIC SERVICES
   # =============================================================================
   
@@ -64,6 +111,15 @@
 
   # Ensure Technitium DNS is enabled on pits (edge DNS host)
   modules.services.infrastructure.technitium.enable = true;
+
+  # pits has a public IP: only DNS itself is world-reachable. The web UI/API
+  # (5380, 53443) and DoH (5353) are reached through Caddy (dns02 vHost) or over
+  # Tailscale — david's dns-sync dual-write uses http://<pits tailscale IP>:5380.
+  modules.services.infrastructure.technitium = {
+    sharedConfig = false;
+    firewallTCPPorts = [ 53 ];
+  };
+  networking.firewall.interfaces.tailscale0.allowedTCPPorts = [ 5353 5380 53443 ];
   
   # =============================================================================
   # CADDY CONFIGURATION FOR TECHNITIUM DNS

@@ -34,8 +34,9 @@ in
     
     systemPackages = mkOption {
       type = types.listOf types.package;
-      default = with pkgs; [ wget gh git zsh ];
-      description = "System-wide packages";
+      # Shared CLI tools live in common/system.nix; zsh comes from programs.zsh.
+      default = [ ];
+      description = "Extra system-wide packages";
     };
   };
 
@@ -87,13 +88,8 @@ in
     # a headless server never benefits from having them installed.
     fonts = mkIf config.modules.system.desktop.enable {
       enableDefaultPackages = true;
-      packages = with pkgs; [
-        # Nerd Fonts with icons and glyphs for Powerlevel10k
-        nerd-fonts.meslo-lg
-        nerd-fonts.fira-code
-        nerd-fonts.jetbrains-mono
-        nerd-fonts.hack
-
+      # Nerd Fonts are shared with the macOS hosts.
+      packages = import ../../common/nerd-fonts.nix pkgs ++ (with pkgs; [
         # Additional fonts for better terminal experience
         noto-fonts
         noto-fonts-color-emoji
@@ -103,7 +99,7 @@ in
 
         # Terminus font for console (tty) - has some powerline support
         terminus_font
-      ];
+      ]);
 
       fontconfig = {
         defaultFonts = {

@@ -5,7 +5,7 @@
 
 let
   # Platform detection
-  isDarwin = pkgs.stdenv.isDarwin;
+  isDarwin = pkgs.stdenv.hostPlatform.isDarwin;
 in
 {
   # Note: nixpkgs.config options are set globally via home-manager.useGlobalPkgs
@@ -15,7 +15,6 @@ in
   home.packages = with pkgs; [
     # Development tools
     git
-    gh
     compose2nix
     rustup
 
@@ -23,7 +22,6 @@ in
     wget
     curl
     ffmpeg
-    zsh
 
     # Optional: 1Password CLI
     _1password-cli
@@ -126,7 +124,16 @@ in
       core.autocrlf = "input";
     };
   });
-  
+
+  # GitHub CLI. Its credential helper makes git authenticate to github.com with
+  # the `gh auth login` token, ahead of osxkeychain on macOS. git config is
+  # read-only under Home Manager, so `gh auth setup-git` cannot do this itself.
+  programs.gh = {
+    enable = true;
+    gitCredentialHelper.enable = true;
+    settings.git_protocol = "https";
+  };
+
   # =============================================================================
   # ZSH CONFIGURATION
   # =============================================================================
@@ -266,13 +273,13 @@ in
   programs.ssh = {
     enable = true;
   } // (if isDarwin then {
-    # Darwin uses home-manager-unstable which supports the new matchBlocks format
+    # Darwin uses home-manager-unstable, which takes upstream ssh_config directives
+    # under programs.ssh.settings. Values are not auto-quoted, so the socket path
+    # (it contains spaces) carries its own quotes.
     enableDefaultConfig = false;
-    matchBlocks."*" = {
-      extraOptions = {
-        # Use 1Password SSH agent
-        IdentityAgent = "\"${config.home.homeDirectory}/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock\"";
-      };
+    settings."*" = {
+      # Use 1Password SSH agent
+      IdentityAgent = "\"${config.home.homeDirectory}/Library/Group Containers/2BUA8C4S2C.com.1password/t/agent.sock\"";
     };
   } else {
     # NixOS uses home-manager release-25.05 which may not support matchBlocks yet

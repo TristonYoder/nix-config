@@ -109,6 +109,15 @@ in
   
   # Outline Application Secrets
   "outline-secrets.age".publicKeys = davidKeys;
+
+  # Outline OIDC client secret (Pocket ID)
+  "outline-oidc-secret.age".publicKeys = davidKeys;
+
+  # Outline API key for the Obsidian vault sync
+  "outline-vault-sync-token.age".publicKeys = davidKeys;
+
+  # Immich OIDC client secret (Pocket ID)
+  "immich-oidc-secret.age".publicKeys = davidKeys;
   
   # NextDNS Dynamic DNS Link
   "nextdns-link.age".publicKeys = davidKeys;
@@ -145,6 +154,17 @@ in
   # localhost-only admin port (billing add-on). Fail-closed: the app refuses
   # to start the admin server without it. See docker/productivity/stageplotiphar.nix.
   "stageplotiphar-admin-secrets.age".publicKeys = davidKeys;
+
+  # Stage Plotiphar erasure key — ERASURE_KEY_SECRET keys the HMAC that
+  # roster-erasure markers are matched with. NEVER ROTATE: a new value stops
+  # matching every existing marker. Don't copy it into the DB or any backed-up
+  # path. See docker/productivity/stageplotiphar.nix.
+  "stageplotiphar-erasure-secrets.age".publicKeys = davidKeys;
+
+  # Private half of the SSH key david uses to push the Stage Plotiphar deletion
+  # log to pits (write-only, forced to rrsync). Public half is in
+  # hosts/pits/configuration.nix. See docker/productivity/stageplotiphar.nix.
+  "stageplotiphar-offsite-key.age".publicKeys = davidKeys;
 
   # B1 Church self-hosted ChurchApps stack. The service module lives in the
   # external TristonYoder/b1church flake; modules/services/productivity/

@@ -15,25 +15,15 @@
     # Terminal
     ghostty-bin  # Upstream Ghostty binary release (unfree)
 
-    # Development tools
-    git
-    gh
-    vim
-    
-    # Utilities
-    wget
-    curl
-    htop
-    tree
-    nmap
-    
+    # CLI tools shared with every host (git, gh, nano, htop, nmap, ...) are in
+    # common/system.nix.
+
     # Storage & Sync
     syncthing
 
     # AI
     ollama
-  ] ++ lib.optionals (pkgs.stdenv.hostPlatform.system == "aarch64-darwin") [
-    cherry-studio  # broken on x86_64-darwin (1.9.3+ build fails)
+    cherry-studio
   ];
   
   # =============================================================================
@@ -53,7 +43,7 @@
   security.pam.services.sudo_local.touchIdAuth = true;
   
   # Note: system.primaryUser is set in individual host configurations
-  # (hosts/tyoder-mbp/configuration.nix or hosts/tristons-mbp/configuration.nix)
+  # (hosts/tristons-mbp/configuration.nix)
   
   # =============================================================================
   # NIX OPTIMIZATION (Darwin-safe method)
@@ -83,12 +73,7 @@
   # FONTS
   # =============================================================================
   
-  fonts.packages = with pkgs; [
-    # Nerd Fonts (individual packages in new structure)
-    nerd-fonts.fira-code
-    nerd-fonts.meslo-lg
-    nerd-fonts.roboto-mono
-  ];
+  fonts.packages = import ../common/nerd-fonts.nix pkgs;
   
   # =============================================================================
   # SYNCTHING AUTO-START SERVICE

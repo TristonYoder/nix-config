@@ -1,8 +1,14 @@
-{ config, lib, pkgs, ... }:
+{ config, lib, pkgs, nixpkgs-unstable, ... }:
 
 with lib;
 let
   cfg = config.modules.services.media.immich;
+  # Immich 2.x is insecure and EOL on 26.05 (CVE-2026-59258, CVE-2026-82272);
+  # 3.x only ships in unstable. Drop once NixOS 26.11 is the stable pin.
+  pkgs-unstable = import nixpkgs-unstable {
+    system = pkgs.stdenv.hostPlatform.system;
+    config.allowUnfree = true;
+  };
 in
 {
   options.modules.services.media.immich = {
@@ -56,7 +62,7 @@ in
           };
 
           clientSecretFile = mkOption {
-            type = types.nullOr types.path;
+            type = types.nullOr types.str;
             default = null;
             description = "Path to file containing OAuth client secret (encrypted with agenix)";
           };
@@ -155,6 +161,7 @@ in
     # Immich service
     services.immich = {
       enable = true;
+      package = pkgs-unstable.immich;
       port = cfg.port;
       openFirewall = true;
       host = "0.0.0.0";
@@ -164,8 +171,10 @@ in
         enabled = cfg.oauth.enable;
         issuerUrl = cfg.oauth.issuerUrl;
         clientId = cfg.oauth.clientId;
-        clientSecret = optionalString (cfg.oauth.clientSecretFile != null) 
-          (builtins.readFile cfg.oauth.clientSecretFile);
+        # Substituted into /run/immich/config.json at start; keeps the
+        # secret out of the Nix store.
+        clientSecret = mkIf (cfg.oauth.clientSecretFile != null)
+          { _secret = cfg.oauth.clientSecretFile; };
         autoRegister = cfg.oauth.autoRegister;
         autoLaunch = cfg.oauth.autoLaunch;
         buttonText = cfg.oauth.buttonText;

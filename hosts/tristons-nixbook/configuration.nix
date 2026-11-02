@@ -75,14 +75,8 @@
   # ADDITIONAL PACKAGES FOR LAPTOP
   # =============================================================================
 
+  # Desktop apps (firefox, vlc, vscode) come from profiles/workstation.nix.
   environment.systemPackages = with pkgs; [
-    # Desktop applications
-    firefox
-    vlc
-
-    # Development tools
-    vscode
-
     # NFS client support
     nfs-utils
   ];

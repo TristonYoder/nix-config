@@ -49,30 +49,25 @@ in
     services.zfs.autoScrub.enable = cfg.enableAutoScrub;
 
     # ZFS Load Data (Loads unencrypted datasets on encrypted root)
-    #
-    # This pool isn't covered by NixOS's built-in zfs-import-<pool>.service machinery
-    # (it's not listed as a root/extra pool), so nothing orders native services or
-    # Docker against it by default. `RequiresMountsFor` on consumers like postgresql
-    # only binds to a mount that already exists in /proc/self/mountinfo — it doesn't
-    # make the mount happen, so a service starting before this unit races the import
-    # and fails outright instead of waiting. Gating `local-fs.target` (the same
-    # mechanism the stock zfs-mount.service uses for the root pool) makes every
-    # default-dependency unit — postgresql, mariadb, qdrant, docker.service, and
-    # therefore every docker-compose-*-root.target — transitively wait for this pool
-    # to be imported and mounted before they start.
+    # Ordered like nixpkgs' zfs-import-<pool> units: before zfs-import.target,
+    # and so before zfs-mount and local-fs.target. Without this the import
+    # (~40s) raced every service with state under /data, and postgresql and
+    # syncthing failed at boot on paths that did not exist yet.
     systemd.services."zfs_load_data" = mkIf (cfg.autoImportPool != null) {
       path = [ pkgs.zfs ];
+      unitConfig.DefaultDependencies = false;
+      wants = [ "systemd-udev-settle.service" ];
+      after = [ "systemd-udev-settle.service" "systemd-modules-load.service" ];
+      before = [ "zfs-import.target" "shutdown.target" ];
+      conflicts = [ "shutdown.target" ];
+      requiredBy = [ "zfs-import.target" ];
       serviceConfig = {
         Type = "oneshot";
         RemainAfterExit = true;
       };
       script = ''
         zpool import ${cfg.autoImportPool} -f || true
-        zfs mount -a || true
       '';
-      after = [ "systemd-udev-settle.service" ];
-      before = [ "local-fs.target" ];
-      wantedBy = [ "local-fs.target" "docker-compose-media-aq-root.target" "docker.target" ];
     };
   };
 }

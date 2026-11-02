@@ -13,7 +13,7 @@
   nixpkgs.overlays = [
     # Use rpi-imager from unstable to fix build issue
     (final: prev: {
-      rpi-imager = nixpkgs-unstable.legacyPackages.${prev.system}.rpi-imager;
+      rpi-imager = nixpkgs-unstable.legacyPackages.${prev.stdenv.hostPlatform.system}.rpi-imager;
     })
     # iOpenPod — third-party flake, packaged separately at TristonYoder/iopenpod-flake
     iopenpod-flake.overlays.default

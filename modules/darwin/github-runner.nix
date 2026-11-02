@@ -158,7 +158,7 @@ in
         {
           stageplotiphar = {
             url = "https://github.com/TristonYoder/stagePlotiphar";
-            tokenFile = "/Users/tyoder/.config/github-runners/stageplotiphar.token";
+            tokenFile = "/Users/tristonyoder/.config/github-runners/stageplotiphar.token";
           };
         }
       '';

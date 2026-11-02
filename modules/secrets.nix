@@ -91,11 +91,23 @@ with lib;
       # billing submodule; the app disables the admin server entirely if
       # ADMIN_PORT is unset and refuses to start it without this token.
       "stageplotiphar-admin-secrets" = { file = ../secrets/stageplotiphar-admin-secrets.age; mode = "0400"; };
+      # stageplotiphar erasure key: KEY=VALUE file (ERASURE_KEY_SECRET) loaded via
+      # environmentFiles. Never rotate — existing roster-erasure markers stop matching.
+      "stageplotiphar-erasure-secrets" = { file = ../secrets/stageplotiphar-erasure-secrets.age; mode = "0400"; };
+      # stageplotiphar deletion-log offsite push: raw ed25519 private key used by
+      # stageplotiphar-deletion-log-offsite (root service) to rsync to pits.
+      "stageplotiphar-offsite-key" = { file = ../secrets/stageplotiphar-offsite-key.age; owner = "root"; group = "root"; mode = "0400"; };
       # hermes-agent: NixOS module loaded only on david (external flake dep), no universal enable option
       "hermes-env" = { file = ../secrets/hermes-env.age; mode = "0400"; };
       # Deploy key (write access) for the private TristonYoder/hermes-brain repo —
       # the vault git-sync timer pushes Hermes's brain (SOUL.md/memory/skills) there.
       "hermes-brain-deploy-key" = { file = ../secrets/hermes-brain-deploy-key.age; mode = "0400"; };
+      # API token for pits's OWN separate Technitium instance (dns02) — a
+      # completely independent server from david's dns01, so the shared
+      # "technitium-api-token" above doesn't authenticate against it. Lets
+      # david's dns-sync job dual-write every vHost record to dns02 too, so
+      # pits keeps a working local copy of DNS for redundancy.
+      "technitium-api-token-dns02" = { file = ../secrets/technitium-api-token-dns02.age; owner = "root"; group = "root"; mode = "0400"; };
     })
 
     // (optionalAttrs (config.networking.hostName == "david") {
@@ -127,6 +139,21 @@ with lib;
       "romm-steamgriddb-key" = { file = ../secrets/romm-steamgriddb-key.age; owner = "root"; group = "docker"; mode = "0440"; };
       "romm-igdb-client-id" = { file = ../secrets/romm-igdb-client-id.age; owner = "root"; group = "docker"; mode = "0440"; };
       "romm-igdb-client-secret" = { file = ../secrets/romm-igdb-client-secret.age; owner = "root"; group = "docker"; mode = "0440"; };
+    })
+
+    // (optionalAttrs config.modules.services.media.immich.oauth.enable {
+      # Encrypted to davidKeys only. Read via systemd LoadCredential, so root-owned is fine.
+      "immich-oidc-secret" = { file = ../secrets/immich-oidc-secret.age; owner = "root"; group = "root"; mode = "0400"; };
+    })
+
+    // (optionalAttrs config.modules.services.productivity.outline.enable {
+      # Encrypted to davidKeys only
+      "outline-oidc-secret" = { file = ../secrets/outline-oidc-secret.age; owner = "outline"; group = "outline"; mode = "0400"; };
+    })
+
+    // (optionalAttrs config.modules.services.productivity.outlineVaultSync.active {
+      # Encrypted to davidKeys only. Read via systemd LoadCredential, so root-owned is fine.
+      "outline-vault-sync-token" = { file = ../secrets/outline-vault-sync-token.age; owner = "root"; group = "root"; mode = "0400"; };
     })
 
     // (optionalAttrs config.modules.services.infrastructure.nixCacheServer.enable {
@@ -170,12 +197,13 @@ with lib;
       "jellyfin-api-key" = { file = ../secrets/jellyfin-api-key.age; mode = "0400"; };
     })
 
-    // (optionalAttrs config.modules.services.media.azuracastPlaylistStations.enable {
+    // (optionalAttrs config.modules.services.media.azuracastPlaylistStations.active {
       # Encrypted to davidKeys only
       "azuracast-api-key" = { file = ../secrets/azuracast-api-key.age; mode = "0400"; };
     })
 
-    // (optionalAttrs config.modules.services.media.azuracastPlaylistStations.navidromeSync.enable {
+    // (optionalAttrs (config.modules.services.media.azuracastPlaylistStations.active
+        && config.modules.services.media.azuracastPlaylistStations.navidromeSync.enable) {
       # Encrypted to davidKeys only
       "navidrome-api-password" = { file = ../secrets/navidrome-api-password.age; mode = "0400"; };
     })

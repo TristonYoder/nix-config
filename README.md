@@ -38,7 +38,7 @@
 | **tristons-workstation** | NixOS Desktop | Desktop | ✅ | Development workstation |
 | **tristons-nixbook** | NixOS Laptop | Desktop | ✅ | Family Laptop workstation |
 | **tristons-nixbook-pro** | NixOS Laptop  (Intel with apple T2) | Desktop | ✅ | Triston's NixBook |
-| **tyoder-mbp** | macOS (Apple Silicon) | Darwin | ➖ | Triston's Work MacBook Pro |
+| **Tristons-MacBook-Pro** | macOS (Apple Silicon) | Darwin | ➖ | Triston's MacBook Pro (personal + work) |
 
 ## Deploying from Scratch
 
@@ -79,33 +79,18 @@ sudo mv /etc/bashrc /etc/bashrc.before-nix-darwin
 sudo mv /etc/zshrc /etc/zshrc.before-nix-darwin
 ```
 
-**For tyoder-mbp:**
 ```bash
 # Enter the repository
 cd ~/Projects/nix-config
 
 # Install nix-darwin and apply configuration (first time or after updates)
-# This builds the configuration, then activates it with sudo
-nix build '.#darwinConfigurations.tyoder-mbp.config.system.build.toplevel' --out-link /tmp/result && \
-  sudo /tmp/result/sw/bin/darwin-rebuild switch --flake '.#tyoder-mbp'
-```
-
-**For Tristons-MacBook-Pro (Intel T2):**
-```bash
-# Enter the repository
-cd ~/Projects/nix-config
-
-# Install nix-darwin and apply configuration (first time or after updates)
-# This builds the configuration, then activates it with sudo
 nix build '.#darwinConfigurations."Tristons-MacBook-Pro".config.system.build.toplevel' --out-link /tmp/result && \
   sudo /tmp/result/sw/bin/darwin-rebuild switch --flake '.#Tristons-MacBook-Pro'
 ```
 
 This will:
 1. Install nix-darwin
-2. Install and configure Homebrew via nix-homebrew
-   - **Apple Silicon (tyoder-mbp):** Includes Rosetta 2 support for x86_64 emulation
-   - **Intel (Tristons-MacBook-Pro):** Native x86_64 installation
+2. Install and configure Homebrew via nix-homebrew (with Rosetta 2 support for x86_64 apps)
 3. Configure macOS system defaults (keyboard, trackpad, dock, finder, etc.)
 4. Install and configure Homebrew casks
 5. Install Mac App Store apps (if mas is authenticated)
@@ -174,22 +159,7 @@ darwin-rebuild switch --flake . --show-trace
 # Or restart the Mac to apply system-level changes
 ```
 
-#### Switching Between Hosts
-
-If you want to switch from one host configuration to another:
-
-```bash
-# For example, switch from Tristons-MacBook-Pro to tyoder-mbp
-darwin-rebuild switch --flake .#tyoder-mbp
-
-# Or vice versa
-darwin-rebuild switch --flake .#Tristons-MacBook-Pro
-```
-
-**Note:** The configurations share most settings via `hosts/darwin-common.nix` and `home/tristonyoder-common.nix`, but differ in:
-- Hostname (tyoder-mbp vs Tristons-MacBook-Pro)
-- Username (tyoder vs tristonyoder)
-- Home directory (/Users/tyoder vs /Users/tristonyoder)
+**Note:** Macs are built by `mkDarwinHost` in `flake.nix`. A new Mac needs only a host directory and a `mkDarwinHost` entry.
 
 ## Quick Start
 
@@ -280,7 +250,7 @@ Edit `home/<username>.nix`:
     ripgrep
   ];
   
-  # macOS apps (tyoder.nix only)
+  # macOS apps (home/tristonyoder-darwin.nix)
   homebrew.casks = [ "firefox" "visual-studio-code" ];
   
   mas.apps = [
@@ -398,8 +368,8 @@ See [hosts/README.md](hosts/README.md) for adding new hosts.
 User environment configurations in `home/`:
 
 - `common.nix` - Shared settings (git, zsh, ssh, packages)
-- `tyoder.nix` - macOS user (Homebrew, Mac App Store, system defaults)
-- `tristonyoder.nix` - NixOS user
+- `tristonyoder.nix` - User config for all hosts
+- `tristonyoder-darwin.nix` - macOS additions (Homebrew, Mac App Store, system defaults)
 
 **Integrated into system rebuilds** - no separate home-manager command needed.
 
@@ -512,13 +482,13 @@ git push origin main
 ```nix
 { config, pkgs, lib, ... }:
 {
-  networking.hostName = "tyoder-mbp";
+  networking.hostName = "Tristons-MacBook-Pro";
   system.stateVersion = 5;
   
   imports = [ ../../profiles/darwin.nix ];
   
   # Darwin profile configures system defaults
-  # Apps managed via Home Manager (home/tyoder.nix)
+  # Apps managed via Home Manager (home/tristonyoder-darwin.nix)
 }
 ```
 
@@ -631,7 +601,7 @@ sudo /nix/var/nix/profiles/system/bin/switch-to-configuration switch
 ## Status
 
 ✅ **Multi-host configuration active**
-✅ **5 hosts configured** (david, pits, tristons-workstation, tristons-nixbook, tyoder-mbp)
+✅ **5 hosts configured** (david, pits, tristons-workstation, tristons-nixbook, Tristons-MacBook-Pro)
 ✅ **Automated CI/CD** (GitHub Actions)
 ✅ **40+ custom modules**
 ✅ **Home Manager integrated**

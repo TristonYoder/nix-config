@@ -64,7 +64,10 @@
     blueprint.url = "github:TristonYoder/blueprint";
 
     # Hermes Agent (NousResearch) — official NixOS module
-    hermes-agent.url = "github:NousResearch/hermes-agent";
+    # Pinned to the Host-header DNS-rebinding fix (d3df14a7, 2026-08-23) that
+    # makes HERMES_DASHBOARD_PUBLIC_URL participate in Host validation — the
+    # previously-tracked rev (ac705b5, 2026-07-13) predates it entirely.
+    hermes-agent.url = "github:NousResearch/hermes-agent/v0.21.6";
 
     # B1 Church — self-hosted ChurchApps stack. The flake owns both the image
     # builds and the NixOS module, and its nightly build commits the published
@@ -567,100 +570,68 @@
       # DARWIN CONFIGURATIONS (macOS)
       # =============================================================================
       
-      darwinConfigurations = {
-        # -----------------------------------------------------------------------------
-        # tyoder-mbp - macOS MacBook Pro (Apple Silicon)
-        # Friendly name: Triston's TPCC MacBook Pro (work)
-        # -----------------------------------------------------------------------------
-        tyoder-mbp = nix-darwin.lib.darwinSystem {
-          system = "aarch64-darwin";  # Change to x86_64-darwin if Intel Mac
-          
-          modules = [
-            # Common configuration
-            ./common/system.nix
-            ./common/darwin.nix
-            
-            # Darwin profile
-            ./profiles/darwin.nix
-            
-            # Host-specific configuration
-            ./hosts/tyoder-mbp/configuration.nix
-            
-            # nix-homebrew - Homebrew installation management
-            nix-homebrew.darwinModules.nix-homebrew
-            {
-              nix-homebrew = {
-                enable = true;
-                enableRosetta = true;  # Apple Silicon: install Homebrew for Rosetta 2
-                user = "tyoder";
-                autoMigrate = true;  # Migrate existing Homebrew installation if present
+      darwinConfigurations =
+        let
+          # Shared builder for macOS hosts. Every Mac uses the tristonyoder user;
+          # per-host differences are the platform and any extra Home Manager modules.
+          mkDarwinHost = { system, hostDir, extraHomeModules ? [ ] }:
+            nix-darwin.lib.darwinSystem {
+              inherit system;
+
+              modules = [
+                ./common/system.nix
+                ./common/darwin.nix
+                ./profiles/darwin.nix
+                ./modules/darwin/github-runner.nix  # opt-in: modules.services.development.githubRunner
+                hostDir
+
+                # nix-homebrew - Homebrew installation management
+                nix-homebrew.darwinModules.nix-homebrew
+                {
+                  nix-homebrew = {
+                    enable = true;
+                    # Apple Silicon: also install the x86_64 Homebrew prefix under Rosetta 2
+                    enableRosetta = system == "aarch64-darwin";
+                    user = "tristonyoder";
+                    autoMigrate = true;  # Migrate existing Homebrew installation if present
+                  };
+                }
+
+                # Home Manager for macOS (using unstable to match nix-darwin)
+                home-manager-unstable.darwinModules.home-manager
+                {
+                  home-manager.useGlobalPkgs = true;
+                  home-manager.useUserPackages = true;
+                  home-manager.users.tristonyoder = {
+                    imports = [
+                      ./home/tristonyoder.nix
+                      ./home/modules/homebrew.nix
+                      ./home/modules/mas.nix
+                      ./home/tristonyoder-darwin.nix
+                    ] ++ extraHomeModules;
+                    home.homeDirectory = "/Users/tristonyoder";
+                  };
+                }
+              ];
+
+              specialArgs = {
+                inherit nixpkgs nixpkgs-unstable;
               };
-            }
-            
-            # Home Manager for macOS (using unstable to match nix-darwin)
-            home-manager-unstable.darwinModules.home-manager
-            {
-              home-manager.useGlobalPkgs = true;
-              home-manager.useUserPackages = true;
-              home-manager.users.tyoder = import ./home/tyoder.nix;
-            }
-          ];
-          
-          specialArgs = {
-            inherit nixpkgs nixpkgs-unstable;
+            };
+        in
+        {
+          # ---------------------------------------------------------------------------
+          # Tristons-MacBook-Pro - macOS MacBook Pro (Apple Silicon, M5 Pro)
+          # Personal + work machine
+          # ---------------------------------------------------------------------------
+          "Tristons-MacBook-Pro" = mkDarwinHost {
+            system = "aarch64-darwin";
+            hostDir = ./hosts/tristons-mbp/configuration.nix;
+            extraHomeModules = [
+              ./home/modules/apple-mail-mcp.nix
+              { modules.mcp.appleMail.enable = true; }
+            ];
           };
         };
-        
-        # -----------------------------------------------------------------------------
-        # Tristons-MacBook-Pro - macOS MacBook Pro (Intel T2)
-        # Friendly name: Triston's MacBook Pro
-        # -----------------------------------------------------------------------------
-        "Tristons-MacBook-Pro" = nix-darwin.lib.darwinSystem {
-          system = "x86_64-darwin";  # Intel Mac
-          
-          modules = [
-            # Common configuration
-            ./common/system.nix
-            ./common/darwin.nix
-            
-            # Darwin profile
-            ./profiles/darwin.nix
-            
-            # Host-specific configuration
-            ./hosts/tristons-mbp/configuration.nix
-            
-            # nix-homebrew - Homebrew installation management
-            nix-homebrew.darwinModules.nix-homebrew
-            {
-              nix-homebrew = {
-                enable = true;
-                enableRosetta = false;  # Intel Mac: no Rosetta needed
-                user = "tristonyoder";
-                autoMigrate = true;  # Migrate existing Homebrew installation if present
-              };
-            }
-            
-            # Home Manager for macOS (using unstable to match nix-darwin)
-            home-manager-unstable.darwinModules.home-manager
-            {
-              home-manager.useGlobalPkgs = true;
-              home-manager.useUserPackages = true;
-              home-manager.users.tristonyoder = {
-                imports = [
-                  ./home/tristonyoder.nix
-                  ./home/modules/homebrew.nix
-                  ./home/modules/mas.nix
-                  ./home/tristonyoder-darwin.nix
-                ];
-                home.homeDirectory = "/Users/tristonyoder";
-              };
-            }
-          ];
-          
-          specialArgs = {
-            inherit nixpkgs nixpkgs-unstable;
-          };
-        };
-      };
     };
 }

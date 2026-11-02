@@ -51,6 +51,19 @@ in
               the specific model directly, e.g. from Open WebUI's dropdown.
             '';
           };
+          litellmParams = mkOption {
+            type = types.attrs;
+            default = {};
+            description = ''
+              Extra litellm_params merged in verbatim, applied after the
+              typed fields above (so it can override them if ever needed).
+              Mainly for ollama/* routes' num_ctx — the OpenAI API spec has
+              no field for context window size, so without this Ollama
+              silently truncates to its own default (2048-4096 tokens)
+              regardless of what the model is actually trained for.
+              e.g. { num_ctx = 32768; }
+            '';
+          };
         };
       });
       default = [];
@@ -112,7 +125,7 @@ in
                 api_base = m.apiBase;
               } // optionalAttrs (m.apiKeyEnv != null) {
                 api_key = "os.environ/${m.apiKeyEnv}";
-              };
+              } // m.litellmParams;
             };
           in
           concatMap (m:

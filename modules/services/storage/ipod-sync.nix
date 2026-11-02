@@ -52,7 +52,7 @@ in
 
     systemd.tmpfiles.rules = [
       "d ${cfg.mountPoint} 0755 root root -"
-      "d ${cfg.cacheDir} 0755 ${cfg.user} ${cfg.user} -"
+      "d ${cfg.cacheDir} 0755 ${cfg.user} ${config.users.users.${cfg.user}.group} -"
     ];
 
     # ── prepare: runs on a timer, no iPod needed ─────────────────────────────

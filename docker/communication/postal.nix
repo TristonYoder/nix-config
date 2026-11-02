@@ -77,7 +77,8 @@
     ports = [
       "25:25/tcp"
       "587:587/tcp"
-      "5000:5000/tcp"
+      # Web UI is reached through Caddy only; docker-published ports bypass the NixOS firewall.
+      "127.0.0.1:5000:5000/tcp"
     ];
     cmd = [ "/docker-entrypoint.sh" "postal" "web-server" ];
     dependsOn = [

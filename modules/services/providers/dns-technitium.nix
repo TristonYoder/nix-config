@@ -38,6 +38,33 @@ in
       default = "/var/lib/dns-sync/registered-records";
       description = "State file tracking registered DNS records for declarative cleanup";
     };
+
+    extraTargets = mkOption {
+      type = types.listOf (types.submodule {
+        options = {
+          url = mkOption {
+            type = types.str;
+            description = "Technitium API base URL for this additional, independent instance.";
+          };
+          tokenFile = mkOption {
+            type = types.path;
+            description = "Path to file containing this instance's own API token.";
+          };
+        };
+      });
+      default = [];
+      description = ''
+        Additional, fully independent Technitium instances to mirror every
+        record to (dual-write, not a real DNS zone transfer — every zone
+        this module manages is type Forwarder, which Technitium's AXFR
+        secondary-zone mechanism can't source from; that'd need converting
+        to Primary zones and rebuilding the "forward anything undefined
+        upstream" fallback some other way). Each instance gets its own
+        registration + stale-record cleanup pass, same as the primary
+        url/tokenFile, so it ends up with an independently-usable copy of
+        every vHost record for redundancy.
+      '';
+    };
   };
 
   config = mkIf cfg.enable (
@@ -73,26 +100,37 @@ in
         then ""
         else concatStringsSep "\n" (map (d: "  \"${d}\"") domains);
 
+      # Primary target first, then each extraTargets entry with its own
+      # state file (suffixed by index) so stale-record cleanup never
+      # confuses one instance's registered set with another's.
+      targets =
+        [ { url = cfg.url; tokenFile = cfg.tokenFile; stateFile = cfg.stateFile; } ]
+        ++ imap0 (i: t: {
+             inherit (t) url tokenFile;
+             stateFile = "${cfg.stateFile}.extra${toString i}";
+           }) cfg.extraTargets;
+
+      toTargetBashArray = ts:
+        concatStringsSep "\n" (map (t: "  \"${t.url}|${t.tokenFile}|${t.stateFile}\"") ts);
+
       dnsSyncScript = pkgs.writeShellScript "dns-sync" ''
         set -eo pipefail
 
-        TECHNITIUM_URL="${cfg.url}"
-        TOKEN=$(cat "${cfg.tokenFile}")
         TARGET="${cfg.targetFqdn}"
-        STATE_FILE="${cfg.stateFile}"
         CURL="${pkgs.curl}/bin/curl"
         JQ="${pkgs.jq}/bin/jq"
 
         COMMENT="Managed by vHost on ${cfg.targetFqdn}"
 
-        # Fetch all known zones from Technitium, sorted longest-first for best-match lookup
+        # Fetch all known zones from Technitium, sorted longest-first for best-match
+        # lookup. Reads $TECHNITIUM_URL/$TOKEN, set per-target in the loop below —
+        # each target may have a different zone list.
         refresh_zones() {
           ZONE_LIST=$($CURL -sfG \
             --data-urlencode "token=$TOKEN" \
             "$TECHNITIUM_URL/api/zones/list" \
             | $JQ -r '[.response.zones[].name] | sort_by(length) | reverse | .[]')
         }
-        refresh_zones
 
         # Find the longest existing zone that is a suffix of domain
         find_zone() {
@@ -244,50 +282,67 @@ in
         for d in "''${INTERNAL_DOMAINS[@]-}"; do [ -n "$d" ] && ALL_DOMAINS+=("$d"); done
         for d in "''${PUBLIC_DOMAINS[@]-}" ; do [ -n "$d" ] && ALL_DOMAINS+=("$d"); done
 
-        # "domain|kind" entries actually registered this run, for stale-cleanup diffing
-        REGISTERED=()
+        # --- Targets: primary first, then each extraTargets dual-write instance.
+        # Each gets its own TECHNITIUM_URL/TOKEN/STATE_FILE, its own refresh_zones
+        # (different instances can have different zone lists), and its own
+        # independent registration + stale-cleanup pass — one instance being
+        # briefly unreachable (retried, then absorbed by `|| true` on every
+        # curl|jq pipe below) never blocks another's.
+        TARGETS=(
+        ${toTargetBashArray targets}
+        )
 
-        # --- Level 1: Register CNAME/ANAME records in Technitium ---
+        for ENTRY in "''${TARGETS[@]-}"; do
+          [ -z "$ENTRY" ] && continue
+          IFS='|' read -r TECHNITIUM_URL TOKEN_FILE STATE_FILE <<< "$ENTRY"
+          TOKEN=$(cat "$TOKEN_FILE")
+          refresh_zones
 
-        echo "=== dns-sync: registering records -> $TARGET ==="
-        for d in "''${ALL_DOMAINS[@]-}"; do
-          [ -z "$d" ] && continue
-          technitium_add "$d"
-          REGISTERED+=("$d|cname")
-        done
+          # "domain|kind" entries actually registered this run, for stale-cleanup diffing
+          REGISTERED=()
 
-        # --- Level 1b: Register direct A records ---
+          # --- Level 1: Register CNAME/ANAME records in Technitium ---
 
-        echo "=== dns-sync: registering direct A records ==="
-        for pair in "''${A_RECORD_PAIRS[@]-}"; do
-          [ -z "$pair" ] && continue
-          domain="''${pair%%|*}"
-          ip="''${pair#*|}"
-          technitium_add_a "$domain" "$ip"
-          REGISTERED+=("$domain|a")
-        done
+          echo "=== dns-sync: registering records -> $TARGET (via $TECHNITIUM_URL) ==="
+          for d in "''${ALL_DOMAINS[@]-}"; do
+            [ -z "$d" ] && continue
+            technitium_add "$d"
+            REGISTERED+=("$d|cname")
+          done
 
-        # --- Level 2: Declarative removal of stale records ---
+          # --- Level 1b: Register direct A records ---
 
-        mkdir -p "$(dirname "$STATE_FILE")"
-        if [ -f "$STATE_FILE" ]; then
-          echo "=== dns-sync: checking for stale records ==="
-          while IFS= read -r line; do
-            [ -z "$line" ] && continue
-            domain="''${line%%|*}"
-            kind="''${line#*|}"
-            # legacy state file entries have no "|kind" suffix — they're all cname
-            [ "$kind" = "$line" ] && kind="cname"
-            if ! printf '%s\n' "''${REGISTERED[@]-}" | grep -qxF "$domain|$kind"; then
-              if [ "$kind" = "a" ]; then
-                technitium_delete_a "$domain"
-              else
-                technitium_delete "$domain"
+          echo "=== dns-sync: registering direct A records ==="
+          for pair in "''${A_RECORD_PAIRS[@]-}"; do
+            [ -z "$pair" ] && continue
+            domain="''${pair%%|*}"
+            ip="''${pair#*|}"
+            technitium_add_a "$domain" "$ip"
+            REGISTERED+=("$domain|a")
+          done
+
+          # --- Level 2: Declarative removal of stale records ---
+
+          mkdir -p "$(dirname "$STATE_FILE")"
+          if [ -f "$STATE_FILE" ]; then
+            echo "=== dns-sync: checking for stale records ==="
+            while IFS= read -r line; do
+              [ -z "$line" ] && continue
+              domain="''${line%%|*}"
+              kind="''${line#*|}"
+              # legacy state file entries have no "|kind" suffix — they're all cname
+              [ "$kind" = "$line" ] && kind="cname"
+              if ! printf '%s\n' "''${REGISTERED[@]-}" | grep -qxF "$domain|$kind"; then
+                if [ "$kind" = "a" ]; then
+                  technitium_delete_a "$domain"
+                else
+                  technitium_delete "$domain"
+                fi
               fi
-            fi
-          done < "$STATE_FILE"
-        fi
-        printf '%s\n' "''${REGISTERED[@]-}" > "$STATE_FILE"
+            done < "$STATE_FILE"
+          fi
+          printf '%s\n' "''${REGISTERED[@]-}" > "$STATE_FILE"
+        done
 
         echo "=== dns-sync: complete ==="
       '';

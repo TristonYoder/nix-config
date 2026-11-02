@@ -65,7 +65,7 @@ Settings shared across all Darwin machines.
 - Darwin-specific system settings placeholder
 - macOS-specific packages (if any)
 
-**Used by:** tyoder-mbp (all Darwin hosts)
+**Used by:** Tristons-MacBook-Pro (all Darwin hosts)
 
 **Complements:** system.nix with macOS-specific settings
 
@@ -203,7 +203,7 @@ environment.systemPackages = with pkgs; [
 common/
 ├── system.nix     → Imported by ALL hosts (NixOS & Darwin)
 ├── linux.nix      → Imported by NixOS hosts only (david, tristons-workstation, pits)
-└── darwin.nix     → Imported by Darwin hosts only (tyoder-mbp)
+└── darwin.nix     → Imported by Darwin hosts only (Tristons-MacBook-Pro)
 ```
 
 **Import hierarchy:**
@@ -229,5 +229,5 @@ Host Configuration (flake.nix)
 ---
 
 **Configuration Files:** 3 (system, linux, darwin)  
-**Hosts Using These:** All (3 NixOS hosts: david, tristons-workstation, pits; 1 Darwin host: tyoder-mbp)
+**Hosts Using These:** All (3 NixOS hosts: david, tristons-workstation, pits; 1 Darwin host: Tristons-MacBook-Pro)
 

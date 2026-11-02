@@ -21,9 +21,6 @@
   modules.system.core.enable = lib.mkDefault true;
   modules.system.networking.enable = lib.mkDefault true;
   modules.system.users.enable = lib.mkDefault true;
-  # This is an appliance, not a desktop for the admin user — no GUI apps needed
-  # on the admin account. Kiosk display packages live under modules.services.kiosk.
-  modules.system.users.mainUser.packages = lib.mkDefault [ ];
   # KDE/desktop module not used — kiosk display is handled directly below.
   modules.system.desktop.enable = lib.mkDefault false;
 

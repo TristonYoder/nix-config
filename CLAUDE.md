@@ -8,13 +8,12 @@ This is a flake-based, multi-host Nix configuration managing NixOS servers, desk
 
 ### Managed Hosts
 
-- **david** (NixOS Server) - Full infrastructure stack with media, productivity, storage services. Primarily a server, but also used as a workstation at times — hence the multi-profile setup (server profile plus desktop-capable pieces). Don't assume it's headless; desktop-oriented packages (e.g. `mainUser.packages` defaults like `bitwarden-desktop`) are intentionally present, not stray bloat.
+- **david** (NixOS Server) - Full infrastructure stack with media, productivity, storage services. Primarily a server, but also used as a workstation at times — hence the multi-profile setup (server profile plus desktop-capable pieces). Don't assume it's headless; desktop-oriented packages (e.g. `bitwarden-desktop` from `profiles/workstation.nix`) are intentionally present, not stray bloat.
 - **pits** (NixOS Edge/Pi) - Lightweight public-facing reverse proxy
 - **tristons-workstation** (NixOS Desktop) - KDE Plasma workstation. RTX 4080 (open NVIDIA kernel modules), btrfs root (`@`, `@nix`, `@snapshots` subvolumes), plus `@tristonyoder-home`/`@carolineyoder-home` mounted at `/home/<user>`. Home is host-local; shared data is symlinked to NFS-mounted `/data` on david (`homeSplit`). **Always has a 10Gb fiber backhaul to david over the Core Services VLAN** — this is a permanent network characteristic of this host, not a one-off; treat NFS-backed home and any future high-bandwidth dependency on david as safe to assume for this host specifically. Dual-NIC: `enp7s0` carries `10.150.100.0/23` (Core Services, route to david), `eno1` carries `10.150.10.0/24` (User Devices). `network-online.target` may fire on `eno1` before `enp7s0` completes DHCP — see the NFS automount troubleshooting entry before touching boot-time network ordering on this host.
 - **tristons-nixbook** (NixOS Laptop) - Workstation profile on a MacBook. NFS-mounts `/data` from david. Key swap (Command↔Control) via keyd for MacBook keyboard layout.
 - **tristons-nixbook-pro** (NixOS on T2 MacBook Pro 16,1) - Dual-boot, uses `nixos-hardware.apple-t2`. Custom bootable installer ISOs built from the flake (`tristons-nixbook-pro-installer`, `tristons-nixbook-pro-installer-plasma`).
-- **tyoder-mbp** (macOS Apple Silicon) - Work MacBook Pro
-- **Tristons-MacBook-Pro** (macOS Intel) - Personal MacBook Pro
+- **Tristons-MacBook-Pro** (macOS Apple Silicon, M5 Pro) - Personal + work MacBook Pro. Config in `hosts/tristons-mbp/`. Runs the `nix.linux-builder` VM for local aarch64-linux builds. Replaced the old `tyoder-mbp` work Mac — there is no `tyoder` user anymore; Macs use `tristonyoder` via `mkDarwinHost` in `flake.nix`. The Intel T2 MacBook Pro's macOS config was retired (nixpkgs 26.11 dropped x86_64-darwin).
 
 ## Security — This Repo Is Public
 
@@ -39,7 +38,7 @@ tristons-workstation — `~/.claude` is on the shared list in `homeSplit`, so bo
 directory. Only the macOS hosts need syncing:
 
 ```bash
-rsync -av ~/.claude/projects/-Users-tyoder-Projects-nix-config/memory/ \
+rsync -av ~/.claude/projects/-Users-tristonyoder-Projects-nix-config/memory/ \
   tristonyoder@david:~/.claude/projects/-home-tristonyoder-Projects-nix-config/memory/
 ```
 
@@ -137,14 +136,11 @@ rebuild      # or: hms / hmswitch aliases
 
 # Explicit
 sudo darwin-rebuild switch --refresh --flake github:TristonYoder/nix-config
-sudo darwin-rebuild switch --refresh --flake github:TristonYoder/nix-config#tyoder-mbp
+sudo darwin-rebuild switch --refresh --flake github:TristonYoder/nix-config#Tristons-MacBook-Pro
 
 # First-time setup (nix-darwin not yet installed)
-nix build '.#darwinConfigurations.tyoder-mbp.config.system.build.toplevel' --out-link /tmp/result && \
-  sudo /tmp/result/sw/bin/darwin-rebuild switch --flake 'github:TristonYoder/nix-config#tyoder-mbp'
-
-# Intel Mac
-sudo darwin-rebuild switch --flake 'github:TristonYoder/nix-config#Tristons-MacBook-Pro'
+nix build '.#darwinConfigurations."Tristons-MacBook-Pro".config.system.build.toplevel' --out-link /tmp/result && \
+  sudo /tmp/result/sw/bin/darwin-rebuild switch --flake 'github:TristonYoder/nix-config#Tristons-MacBook-Pro'
 ```
 
 ### Validation & Testing
@@ -153,12 +149,12 @@ sudo darwin-rebuild switch --flake 'github:TristonYoder/nix-config#Tristons-MacB
 
 **Current host detection**:
 ```bash
-hostname  # Returns: tyoder-mbp, Tristons-MacBook-Pro, david, tristons-workstation, or pits
+hostname  # Returns: Tristons-MacBook-Pro, david, tristons-workstation, or pits
 ```
 
 **Testing policy by host**:
 
-- **On macOS hosts** (tyoder-mbp, Tristons-MacBook-Pro):
+- **On macOS hosts** (Tristons-MacBook-Pro):
   - Do NOT run `nix flake check` or NixOS builds locally - too resource-intensive
   - SSH to target NixOS host for testing instead
   - Can safely run: `nix flake update`, `nix flake show`, `darwin-rebuild build`
@@ -218,7 +214,7 @@ nix develop
 nix build '.#nixosConfigurations.david.config.system.build.toplevel'
 
 # Build Darwin host toplevel
-nix build '.#darwinConfigurations.tyoder-mbp.config.system.build.toplevel'
+nix build '.#darwinConfigurations."Tristons-MacBook-Pro".config.system.build.toplevel'
 ```
 
 ## Architecture
@@ -255,7 +251,7 @@ nix build '.#darwinConfigurations.tyoder-mbp.config.system.build.toplevel'
 ├── home/                    # Home Manager user configurations
 │   ├── common.nix          # Shared user settings
 │   ├── tristonyoder.nix    # NixOS user
-│   └── tyoder.nix          # macOS user (with Homebrew/mas)
+│   └── tristonyoder-darwin.nix  # macOS additions (Homebrew/mas, defaults)
 ├── docker/                  # Docker Compose service definitions
 └── secrets/                 # Encrypted secrets (agenix)
 ```
@@ -949,6 +945,35 @@ sudo systemctl restart docker-<name>.service
 sudo docker network ls --format '{{.Name}}' | grep -x <name>_default
 ```
 
+### Deploy Leaves Most Services Stopped (switch-to-configuration exit 101)
+**Hosts:** any host deployed over Tailscale SSH (CI deploy, or manual `ssh … nixos-rebuild switch`)
+
+If the new generation restarts `tailscaled`, the SSH session carrying `nixos-rebuild switch` drops
+mid-activation. `switch-to-configuration` then panics writing to the closed pipe (exit 101) —
+after its stop phase, before its start phase — so nearly every service stays stopped while
+`/run/current-system` already points at the new generation. Happened on david 2026-10-23.
+
+**Recovery** — re-run activation detached from the session:
+```bash
+sudo systemd-run --unit=resume-switch --collect -p StandardOutput=journal -p StandardError=journal \
+  /nix/var/nix/profiles/system/bin/switch-to-configuration switch
+journalctl -u resume-switch -f
+```
+
+**Diagnostics:**
+```bash
+journalctl -u nixos-rebuild-switch-to-configuration   # "status=101" right after tailscaled restarts
+```
+
+The deploy workflow avoids this by running `nixos-rebuild boot` over SSH, then activating in a
+`systemd-run` unit and polling it. When doing the same by hand, pass
+`--setenv=PATH=/run/wrappers/bin:/run/current-system/sw/bin` if the unit runs `nixos-rebuild`
+itself — it shells out to `test` and fails with `No such file or directory: 'test'` otherwise.
+
+Technitium can take 5+ minutes to come back after a restart (it reopens the Query Logs SQLite
+DB — 600 MB on pits), so `vHost-dns-technitium` may fail during a switch with "timed out waiting
+for Technitium". Re-run it once the API answers: `sudo systemctl restart vHost-dns-technitium`.
+
 ### Port Conflicts
 
 ```bash
@@ -1030,6 +1055,29 @@ sudo nix shell nixpkgs#sqlite -c sqlite3 /var/lib/navidrome/navidrome.db \
   'select missing, count(*) from media_file group by missing;'
 ```
 A mismatched filesystem type/device between the two `mountinfo` lines for the same path is the tell.
+
+### Stage Plotiphar — Erasure Key, Deletion Log, Restoring a Backup
+**Host:** david — `docker/productivity/stageplotiphar.nix`
+
+- `ERASURE_KEY_SECRET` comes from the agenix secret `stageplotiphar-erasure-secrets` (env file). **Never rotate it** — existing roster-erasure markers stop matching. It must not be in the DB or any backed-up path.
+- `DELETION_LOG_PATH` is an append-only file in `/var/lib/stageplotiphar-deletion` (bind-mounted, owned by uid 1001). It is deliberately outside `/data/docker-appdata/stageplotiphar` (the snapshot/restore tree) and not a docker volume, so a restore can't roll it back. It holds only ids and keyed hashes. It must be copied off-machine on its own schedule, separate from the DB/image backups.
+- `TOMBSTONE_RETENTION_DAYS` stays `90`; `0`/`off`/`never` contradict the Privacy Policy.
+- Stripe: the restricted key behind `STRIPE_SECRET_KEY` needs permission to cancel subscriptions, write refunds, and delete customers, or org deletion fails safe and refuses.
+
+**After any restore** of the DB or data volume, restore the deletion log from its off-machine copy, then:
+
+```bash
+sudo stageplotiphar-replay-deletions
+```
+
+It stops the app, runs the same image/env once with `REPLAY_DELETIONS=1`, waits for the `[deletion-replay]` summary, then restarts the app without the variable. If no summary appears it leaves the app **stopped** (`docker logs stageplotiphar-replay`). Never put `REPLAY_DELETIONS` in the Nix config.
+
+**Verify after deploy:**
+```bash
+curl -s https://plotiphar.com/api/version
+sudo docker exec stageplotiphar sh -c 'touch /app/deletion-log/.w && rm /app/deletion-log/.w && echo writable'
+sudo docker exec stageplotiphar sh -c 'test -n "$ERASURE_KEY_SECRET" && echo key-set; ls -a /app/data | grep -c erasure-key'   # expect key-set, 0
+```
 
 ### WordPress Sites — Upload Limits and Canonical Domains
 

@@ -119,10 +119,8 @@
   # PACKAGES
   # ===========================================================================
 
+  # Desktop apps (firefox, vlc, vscode) come from profiles/workstation.nix.
   environment.systemPackages = with pkgs; [
-    firefox
-    vlc
-    vscode
     nfs-utils
   ];
 

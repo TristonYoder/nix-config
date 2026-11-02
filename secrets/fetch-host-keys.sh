@@ -22,7 +22,7 @@ declare -A HOSTS=(
     [tristons-workstation]="tristonyoder@tristons-workstation"
     [tristons-nixbook]="tristonyoder@tristons-nixbook"
     [tristons-nixbook-pro]="tristonyoder@tristons-nixbook-pro"
-    [tyoder-mbp]="tristonyoder@tyoder-mbp"
+    [Tristons-MacBook-Pro]="tristonyoder@Tristons-MacBook-Pro"
 )
 
 usage() {
