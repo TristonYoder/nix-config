@@ -23,7 +23,6 @@ in
     wget
     curl
     ffmpeg
-    zsh
 
     # Optional: 1Password CLI
     _1password-cli

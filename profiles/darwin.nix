@@ -15,14 +15,10 @@
     # Terminal
     ghostty-bin  # Upstream Ghostty binary release (unfree)
 
-    # Development tools
-    git
-    gh
+    # Development tools (git, gh, wget, curl come from home/common.nix)
     vim
-    
+
     # Utilities
-    wget
-    curl
     htop
     tree
     nmap

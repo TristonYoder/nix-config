@@ -9,8 +9,7 @@
   # =============================================================================
 
   home.packages = with pkgs; [
-    # macOS-specific tools
-    syncthing
+    # macOS-specific tools (syncthing comes from profiles/darwin.nix)
     dockutil
   ];
   
@@ -206,10 +205,8 @@
     casks = [
       # Development & Productivity
       "1password"
-      "cursor"
       "bartender"
       "firefox"
-      "bitwarden"
       "visual-studio-code"
       "iterm2"
       "claude"
@@ -238,7 +235,6 @@
       # Cloud & Storage
       "google-drive"
       "gcloud-cli"
-      "google-cloud-sdk"
       
       # 3D Printing & Hardware
       "orcaslicer"
@@ -253,8 +249,6 @@
       # Other useful apps
       "notion"
       "keycastr"
-      "readdle-spark"
-      "termius"
       "home-assistant"
       "sonos"
       "moonlight"
@@ -264,7 +258,6 @@
       "goodsync"
       "4k-video-downloader"
       "adobe-creative-cloud"
-      "microsoft-auto-update"
       
       # Browsers & Web
       "google-chrome"
@@ -297,7 +290,8 @@
       cleanup = "uninstall";
     };
     apps = [
-      { id = "441258766"; name = "Magnet"; }
+      # Magnet: disabled to try macOS built-in window tiling instead
+      # { id = "441258766"; name = "Magnet"; }
       { id = "1663047912"; name = "Screens 5"; }
       { id = "1565946661"; name = "FloatingHead"; }
       { id = "1569813296"; name = "1Password for Safari"; }
