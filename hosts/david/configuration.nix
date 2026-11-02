@@ -616,7 +616,7 @@ in
       # is blocked by insecure immich-2.7.5. Take just the runner from unstable.
       # Drop this (and the nixpkgs-runner input) once nixpkgs can be bumped:
       # https://github.com/TristonYoder/nix-config/issues/337
-      package = nixpkgs-runner.legacyPackages.${pkgs.system}.github-runner;
+      package = nixpkgs-runner.legacyPackages.${pkgs.stdenv.hostPlatform.system}.github-runner;
     };
     # Ephemeral, fresh-container-per-job runner — target with
     # `runs-on: [self-hosted, ephemeral-container]` when a job needs a

@@ -5,7 +5,7 @@ with lib;
 let
   cfg = config.homebrew;
   # Homebrew is in /usr/local on Intel and /opt/homebrew on Apple Silicon
-  brew = if pkgs.stdenv.isAarch64 then "/opt/homebrew/bin/brew" else "/usr/local/bin/brew";
+  brew = if pkgs.stdenv.hostPlatform.isAarch64 then "/opt/homebrew/bin/brew" else "/usr/local/bin/brew";
 in
 {
   options.homebrew = {

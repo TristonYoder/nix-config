@@ -8,7 +8,7 @@ let
   # npmDepsHash, standalone installPhase) — this module just consumes the
   # package output and wires it into systemd/postgres/vHosts, same pattern
   # as iopodcli's overlay in modules/services/storage/ipod-sync.nix.
-  blueprintPkg = blueprint.packages.${pkgs.system}.default;
+  blueprintPkg = blueprint.packages.${pkgs.stdenv.hostPlatform.system}.default;
 in
 {
   options.modules.services.productivity.blueprint = {

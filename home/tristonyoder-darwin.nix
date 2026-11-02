@@ -232,7 +232,6 @@
       
       # Cloud & Storage
       "google-drive"
-      "gcloud-cli"
       
       # 3D Printing & Hardware
       "orcaslicer"

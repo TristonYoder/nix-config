@@ -4,7 +4,7 @@ with lib;
 let
   cfg = config.modules.services.productivity.outline;
   pkgs-unstable = import nixpkgs-unstable {
-    system = pkgs.system;
+    system = pkgs.stdenv.hostPlatform.system;
     # Outline is BSL 1.1, which nixpkgs marks unfree
     config.allowUnfreePredicate = p: getName p == "outline";
   };

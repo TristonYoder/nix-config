@@ -6,7 +6,7 @@ let
   # Immich 2.x is insecure and EOL on 26.05 (CVE-2026-59258, CVE-2026-82272);
   # 3.x only ships in unstable. Drop once NixOS 26.11 is the stable pin.
   pkgs-unstable = import nixpkgs-unstable {
-    system = pkgs.system;
+    system = pkgs.stdenv.hostPlatform.system;
     config.allowUnfree = true;
   };
 in
