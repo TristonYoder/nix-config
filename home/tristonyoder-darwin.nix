@@ -1,5 +1,5 @@
 # macOS-specific Home Manager Configuration
-# Shared between tyoder and tristonyoder on macOS (Darwin)
+# Imported for tristonyoder on all macOS (Darwin) hosts via mkDarwinHost in flake.nix
 
 { config, pkgs, lib, ... }:
 

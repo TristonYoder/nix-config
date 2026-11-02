@@ -4,7 +4,7 @@
 # using the Asahi Linux extraction scripts (via nixos-hardware). No manual
 # firmware extraction or --impure flag required.
 #
-# Build command (from nix-config root on tyoder-mbp):
+# Build command (from nix-config root on Tristons-MacBook-Pro):
 #
 #   export PATH="/nix/var/nix/profiles/default/bin:$PATH"
 #   nix build .#nixosConfigurations.tristons-nixbook-pro-installer.config.system.build.isoImage \

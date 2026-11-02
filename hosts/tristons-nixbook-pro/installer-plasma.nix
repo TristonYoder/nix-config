@@ -4,7 +4,7 @@
 # build time via Asahi extraction scripts. No --impure flag required.
 # Connect to WiFi via NetworkManager tray applet, then install from Konsole.
 #
-# Build command (from nix-config root on tyoder-mbp):
+# Build command (from nix-config root on Tristons-MacBook-Pro):
 #
 #   export PATH="/nix/var/nix/profiles/default/bin:$PATH"
 #   nix build .#nixosConfigurations.tristons-nixbook-pro-installer-plasma.config.system.build.isoImage \

@@ -98,11 +98,11 @@ Two options:
   normal cross-build via QEMU emulation —
   `nix build '.#nixosConfigurations.installer-aarch64.config.system.build.isoImage' --refresh`.
   Slower than native (emulated), but needs nothing extra set up.
-- **On `tyoder-mbp`** (Apple Silicon): nix-darwin's built-in `linux-builder`
+- **On `Tristons-MacBook-Pro`** (Apple Silicon): nix-darwin's built-in `linux-builder`
   VM builds `aarch64-linux` **natively**, no emulation:
 
   ```nix
-  # hosts/tyoder-mbp/configuration.nix
+  # hosts/tristons-mbp/configuration.nix
   nix.linux-builder.enable = true;
   ```
 
@@ -125,7 +125,7 @@ nix build '.#nixosConfigurations.installer-rpi5.config.system.build.sdImage' --r
 ```
 
 Works the same way from david (emulation + `nixos-raspberrypi.cachix.org` for
-the kernel — see CI section above) or from `tyoder-mbp`'s native
+the kernel — see CI section above) or from `Tristons-MacBook-Pro`'s native
 `linux-builder` (no cache dependency, but slower to iterate since nothing's
 pre-built). The result is a directory; the actual `.img.zst` file is under
 `<out-link>/sd-image/`.

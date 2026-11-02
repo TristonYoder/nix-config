@@ -64,17 +64,19 @@ Per-host NixOS and macOS configurations managed through this flake.
 
 ### macOS Hosts
 
-#### tyoder-mbp (Triston's TPCC MacBook Pro - Work)
+#### Tristons-MacBook-Pro (Triston's MacBook Pro - personal + work)
 - **Profile:** [darwin](../profiles/darwin.nix)
-- **Architecture:** aarch64-darwin (Apple Silicon)
-- **User:** tyoder
+- **Architecture:** aarch64-darwin (Apple Silicon, M5 Pro)
+- **User:** tristonyoder
+- **Directory:** `hosts/tristons-mbp/`
 - **Auto-Deploy:** ➖ Manual only
 - **Features:** Declarative macOS system preferences, Homebrew, Mac App Store
 
-#### Tristons-MacBook-Pro (Triston's MacBook Pro)
+#### Tristons-MacBook-Pro-Intel (Triston's Intel MacBook Pro)
 - **Profile:** [darwin](../profiles/darwin.nix)
 - **Architecture:** x86_64-darwin (Intel T2)
 - **User:** tristonyoder
+- **Directory:** `hosts/tristons-mbp-intel/`
 - **Auto-Deploy:** ➖ Manual only
 - **Features:** Declarative macOS system preferences, Homebrew, Mac App Store
 
@@ -102,8 +104,8 @@ sudo nixos-rebuild switch --flake .#tristons-workstation
 sudo nixos-rebuild switch --flake .#tristons-nixbook
 
 # macOS
-darwin-rebuild switch --flake .#tyoder-mbp
 darwin-rebuild switch --flake .#Tristons-MacBook-Pro
+darwin-rebuild switch --flake .#Tristons-MacBook-Pro-Intel
 ```
 
 ### Testing
@@ -277,7 +279,7 @@ See [../.github/workflows/](../.github/workflows/) for CI/CD details.
   networking.hostName = "laptop";
   
   # Darwin profile provides system defaults
-  # Apps managed via Home Manager (see home/tyoder.nix)
+  # Apps managed via Home Manager (see home/tristonyoder-darwin.nix)
 }
 ```
 
@@ -403,6 +405,6 @@ killall Dock && killall Finder
 
 ---
 
-**Managed Hosts:** 6 (david, pits, tristons-workstation, tristons-nixbook, tyoder-mbp, Tristons-MacBook-Pro)
+**Managed Hosts:** 6 (david, pits, tristons-workstation, tristons-nixbook, Tristons-MacBook-Pro, Tristons-MacBook-Pro-Intel)
 **Auto-Deploy:** 4 NixOS hosts via GitHub Actions
 **Platforms:** NixOS (x86_64, aarch64) + macOS (aarch64, x86_64)

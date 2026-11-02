@@ -4,13 +4,13 @@ This repo is a flake-based, multi-host Nix configuration (NixOS + nix-darwin) us
 Provide concise, actionable edits: reference the flake entrypoints, host names, module locations, and secret handling. Keep changes minimal and preserve existing style.
 
 - Big picture (what matters):
-  - `flake.nix` is the canonical entrypoint. It exposes `nixosConfigurations` and `darwinConfigurations` for named hosts (e.g. `david`, `pits`, `tristons-workstation`, `tyoder-mbp`, `Tristons-MacBook-Pro`). Use these attributes when building or referencing outputs.
+  - `flake.nix` is the canonical entrypoint. It exposes `nixosConfigurations` and `darwinConfigurations` for named hosts (e.g. `david`, `pits`, `tristons-workstation`, `Tristons-MacBook-Pro`, `Tristons-MacBook-Pro-Intel`). Use these attributes when building or referencing outputs.
   - Declarative structure: `common/` (shared system defaults), `profiles/` (role-based sets: `server.nix`, `desktop.nix`, `edge.nix`, `darwin.nix`), `modules/` (services split by category), `hosts/` (per-host configs + hardware files), `home/` (Home Manager user configs), `secrets/` (encrypted `.age` files and helper scripts).
 
 - Typical developer workflows and safe commands to mention in PRs or patches:
   - Inspect: `nix flake show` to list outputs.
   - Test a build (NixOS): `nix build '.#nixosConfigurations.david.config.system.build.toplevel'` or use `sudo nixos-rebuild switch --flake .#david` to apply.
-  - Test macOS (darwin): `nix build '.#darwinConfigurations.tyoder-mbp.config.system.build.toplevel'` then `sudo /tmp/result/sw/bin/darwin-rebuild switch --flake '.#tyoder-mbp'` or `darwin-rebuild switch --flake .#tyoder-mbp`.
+  - Test macOS (darwin): `nix build '.#darwinConfigurations."Tristons-MacBook-Pro".config.system.build.toplevel'` then `sudo /tmp/result/sw/bin/darwin-rebuild switch --flake '.#Tristons-MacBook-Pro'` or `darwin-rebuild switch --flake .#Tristons-MacBook-Pro`.
   - Update inputs: `nix flake update` and validate with `nix flake check`.
   - Dev shell: `nix develop` (repo provides `devShells.default`).
 
@@ -32,6 +32,6 @@ Provide concise, actionable edits: reference the flake entrypoints, host names, 
 
 - Examples to copy when editing files:
   - Add/enable service in host: `modules.services.media.jellyfin.enable = true;` (put overrides in `hosts/<host>/configuration.nix`).
-  - Build darwin toplevel: `nix build '.#darwinConfigurations.tyoder-mbp.config.system.build.toplevel'`.
+  - Build darwin toplevel: `nix build '.#darwinConfigurations."Tristons-MacBook-Pro".config.system.build.toplevel'`.
 
 Keep instructions focused on discoverable, current repository patterns. If anything in this file looks incomplete or you need more examples (e.g. exact GitHub Action host matrix edits), tell me which area to expand and I will iterate.

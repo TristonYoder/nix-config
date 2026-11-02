@@ -71,7 +71,7 @@ Optimized for low-resource devices with public internet access.
 
 Native macOS system configuration.
 
-**Used by:** `tyoder-mbp` (MacBook Pro)
+**Used by:** `Tristons-MacBook-Pro` (MacBook Pro)
 
 **Includes:**
 - ✅ macOS system defaults (Dock, Finder, keyboard, etc.)
@@ -271,4 +271,4 @@ Add to this README with:
 ---
 
 **Available Profiles:** 4 (server, desktop, edge, darwin)  
-**Hosts Using Profiles:** 4 (david, pits, tristons-workstation, tyoder-mbp)
+**Hosts Using Profiles:** 4 (david, pits, tristons-workstation, Tristons-MacBook-Pro)

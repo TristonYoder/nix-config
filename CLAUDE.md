@@ -13,8 +13,8 @@ This is a flake-based, multi-host Nix configuration managing NixOS servers, desk
 - **tristons-workstation** (NixOS Desktop) - KDE Plasma workstation. RTX 4080 (open NVIDIA kernel modules), btrfs root (`@`, `@nix`, `@snapshots` subvolumes), plus `@tristonyoder-home`/`@carolineyoder-home` mounted at `/home/<user>`. Home is host-local; shared data is symlinked to NFS-mounted `/data` on david (`homeSplit`). **Always has a 10Gb fiber backhaul to david over the Core Services VLAN** — this is a permanent network characteristic of this host, not a one-off; treat NFS-backed home and any future high-bandwidth dependency on david as safe to assume for this host specifically. Dual-NIC: `enp7s0` carries `10.150.100.0/23` (Core Services, route to david), `eno1` carries `10.150.10.0/24` (User Devices). `network-online.target` may fire on `eno1` before `enp7s0` completes DHCP — see the NFS automount troubleshooting entry before touching boot-time network ordering on this host.
 - **tristons-nixbook** (NixOS Laptop) - Workstation profile on a MacBook. NFS-mounts `/data` from david. Key swap (Command↔Control) via keyd for MacBook keyboard layout.
 - **tristons-nixbook-pro** (NixOS on T2 MacBook Pro 16,1) - Dual-boot, uses `nixos-hardware.apple-t2`. Custom bootable installer ISOs built from the flake (`tristons-nixbook-pro-installer`, `tristons-nixbook-pro-installer-plasma`).
-- **tyoder-mbp** (macOS Apple Silicon) - Work MacBook Pro
-- **Tristons-MacBook-Pro** (macOS Intel) - Personal MacBook Pro
+- **Tristons-MacBook-Pro** (macOS Apple Silicon, M5 Pro) - Personal + work MacBook Pro. Config in `hosts/tristons-mbp/`. Runs the `nix.linux-builder` VM for local aarch64-linux builds. Replaced the old `tyoder-mbp` work Mac — there is no `tyoder` user anymore; every Mac uses `tristonyoder` via `mkDarwinHost` in `flake.nix`.
+- **Tristons-MacBook-Pro-Intel** (macOS Intel T2) - Older personal MacBook Pro. Config in `hosts/tristons-mbp-intel/`.
 
 ## Security — This Repo Is Public
 
@@ -39,7 +39,7 @@ tristons-workstation — `~/.claude` is on the shared list in `homeSplit`, so bo
 directory. Only the macOS hosts need syncing:
 
 ```bash
-rsync -av ~/.claude/projects/-Users-tyoder-Projects-nix-config/memory/ \
+rsync -av ~/.claude/projects/-Users-tristonyoder-Projects-nix-config/memory/ \
   tristonyoder@david:~/.claude/projects/-home-tristonyoder-Projects-nix-config/memory/
 ```
 
@@ -137,14 +137,14 @@ rebuild      # or: hms / hmswitch aliases
 
 # Explicit
 sudo darwin-rebuild switch --refresh --flake github:TristonYoder/nix-config
-sudo darwin-rebuild switch --refresh --flake github:TristonYoder/nix-config#tyoder-mbp
+sudo darwin-rebuild switch --refresh --flake github:TristonYoder/nix-config#Tristons-MacBook-Pro
 
 # First-time setup (nix-darwin not yet installed)
-nix build '.#darwinConfigurations.tyoder-mbp.config.system.build.toplevel' --out-link /tmp/result && \
-  sudo /tmp/result/sw/bin/darwin-rebuild switch --flake 'github:TristonYoder/nix-config#tyoder-mbp'
+nix build '.#darwinConfigurations."Tristons-MacBook-Pro".config.system.build.toplevel' --out-link /tmp/result && \
+  sudo /tmp/result/sw/bin/darwin-rebuild switch --flake 'github:TristonYoder/nix-config#Tristons-MacBook-Pro'
 
 # Intel Mac
-sudo darwin-rebuild switch --flake 'github:TristonYoder/nix-config#Tristons-MacBook-Pro'
+sudo darwin-rebuild switch --flake 'github:TristonYoder/nix-config#Tristons-MacBook-Pro-Intel'
 ```
 
 ### Validation & Testing
@@ -153,12 +153,12 @@ sudo darwin-rebuild switch --flake 'github:TristonYoder/nix-config#Tristons-MacB
 
 **Current host detection**:
 ```bash
-hostname  # Returns: tyoder-mbp, Tristons-MacBook-Pro, david, tristons-workstation, or pits
+hostname  # Returns: Tristons-MacBook-Pro, Tristons-MacBook-Pro-Intel, david, tristons-workstation, or pits
 ```
 
 **Testing policy by host**:
 
-- **On macOS hosts** (tyoder-mbp, Tristons-MacBook-Pro):
+- **On macOS hosts** (Tristons-MacBook-Pro, Tristons-MacBook-Pro-Intel):
   - Do NOT run `nix flake check` or NixOS builds locally - too resource-intensive
   - SSH to target NixOS host for testing instead
   - Can safely run: `nix flake update`, `nix flake show`, `darwin-rebuild build`
@@ -218,7 +218,7 @@ nix develop
 nix build '.#nixosConfigurations.david.config.system.build.toplevel'
 
 # Build Darwin host toplevel
-nix build '.#darwinConfigurations.tyoder-mbp.config.system.build.toplevel'
+nix build '.#darwinConfigurations."Tristons-MacBook-Pro".config.system.build.toplevel'
 ```
 
 ## Architecture
@@ -255,7 +255,7 @@ nix build '.#darwinConfigurations.tyoder-mbp.config.system.build.toplevel'
 ├── home/                    # Home Manager user configurations
 │   ├── common.nix          # Shared user settings
 │   ├── tristonyoder.nix    # NixOS user
-│   └── tyoder.nix          # macOS user (with Homebrew/mas)
+│   └── tristonyoder-darwin.nix  # macOS additions (Homebrew/mas, defaults)
 ├── docker/                  # Docker Compose service definitions
 └── secrets/                 # Encrypted secrets (agenix)
 ```

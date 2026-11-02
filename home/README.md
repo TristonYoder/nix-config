@@ -44,9 +44,9 @@ Shared configuration for all users across platforms.
 - Shell aliases and functions
 - Development tools
 
-### tyoder.nix (macOS User)
+### tristonyoder-darwin.nix (macOS additions)
 
-macOS-specific configuration extending common.nix.
+macOS-specific configuration layered onto tristonyoder.nix on every Mac (see `mkDarwinHost` in flake.nix).
 
 **Includes:**
 - macOS system defaults (Dock, Finder, keyboard)
@@ -74,7 +74,7 @@ Cross-platform configuration extending common.nix.
 
 ### Add Packages
 
-Edit the appropriate user file (`home/tyoder.nix` or `home/tristonyoder.nix`):
+Edit the appropriate user file (`home/common.nix`, `home/tristonyoder.nix`, or `home/tristonyoder-darwin.nix`):
 
 ```nix
 {
@@ -117,7 +117,7 @@ Edit the appropriate user file (`home/tyoder.nix` or `home/tristonyoder.nix`):
 
 ### macOS Homebrew Casks
 
-In `home/tyoder.nix`:
+In `home/tristonyoder-darwin.nix`:
 
 ```nix
 {
@@ -133,7 +133,7 @@ In `home/tyoder.nix`:
 
 ### Mac App Store Apps
 
-In `home/tyoder.nix`:
+In `home/tristonyoder-darwin.nix`:
 
 ```nix
 {
@@ -170,7 +170,7 @@ In `home/common.nix` (shared) or user-specific files:
 
 ### System Defaults (macOS)
 
-In `home/tyoder.nix`:
+In `home/tristonyoder-darwin.nix`:
 
 ```nix
 {
@@ -397,7 +397,7 @@ Custom Home Manager module for Mac App Store app management.
 ## Best Practices
 
 1. **Use home/common.nix for shared settings** - Put settings used across all platforms in home/common.nix
-2. **Platform-specific in user files** - macOS-specific in tyoder.nix, Linux-specific in tristonyoder.nix
+2. **Platform-specific in user files** - macOS-specific in tristonyoder-darwin.nix, cross-platform in tristonyoder.nix
 3. **Test changes first** - Use `--dry-run` or build before switching
 4. **Document custom configuration** - Add comments for non-obvious settings
 5. **Version control themes** - Commit p10k.zsh for consistency across machines
@@ -414,6 +414,6 @@ Custom Home Manager module for Mac App Store app management.
 
 ---
 
-**Users:** 2 (tyoder on macOS, tristonyoder on NixOS + macOS)  
+**Users:** tristonyoder (NixOS + macOS), carolineyoder (NixOS)  
 **Platforms:** NixOS + macOS  
 **Integration:** Flake-based, auto-applied with system rebuilds

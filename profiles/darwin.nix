@@ -53,7 +53,7 @@
   security.pam.services.sudo_local.touchIdAuth = true;
   
   # Note: system.primaryUser is set in individual host configurations
-  # (hosts/tyoder-mbp/configuration.nix or hosts/tristons-mbp/configuration.nix)
+  # (hosts/tristons-mbp/ and hosts/tristons-mbp-intel/)
   
   # =============================================================================
   # NIX OPTIMIZATION (Darwin-safe method)
