@@ -63,7 +63,7 @@
 
     run $DOCKUTIL --no-restart --remove all --allhomes 2>/dev/null || true
 
-    run $DOCKUTIL --no-restart --add /System/Library/CoreServices/Finder.app
+    # Finder is permanently pinned by macOS; adding it here creates a duplicate.
     run $DOCKUTIL --no-restart --add /System/Applications/Apps.app
     run $DOCKUTIL --no-restart --add /Applications/Firefox.app
     run $DOCKUTIL --no-restart --add /System/Applications/Messages.app
