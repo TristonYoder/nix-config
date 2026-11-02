@@ -1,5 +1,5 @@
 # macOS-specific Home Manager Configuration
-# Shared between tyoder and tristonyoder on macOS (Darwin)
+# Imported for tristonyoder on all macOS (Darwin) hosts via mkDarwinHost in flake.nix
 
 { config, pkgs, lib, ... }:
 
@@ -9,8 +9,7 @@
   # =============================================================================
 
   home.packages = with pkgs; [
-    # macOS-specific tools
-    syncthing
+    # macOS-specific tools (syncthing comes from profiles/darwin.nix)
     dockutil
   ];
   
@@ -64,7 +63,7 @@
 
     run $DOCKUTIL --no-restart --remove all --allhomes 2>/dev/null || true
 
-    run $DOCKUTIL --no-restart --add /System/Library/CoreServices/Finder.app
+    # Finder is permanently pinned by macOS; adding it here creates a duplicate.
     run $DOCKUTIL --no-restart --add /System/Applications/Apps.app
     run $DOCKUTIL --no-restart --add /Applications/Firefox.app
     run $DOCKUTIL --no-restart --add /System/Applications/Messages.app
@@ -206,10 +205,8 @@
     casks = [
       # Development & Productivity
       "1password"
-      "cursor"
       "bartender"
       "firefox"
-      "bitwarden"
       "visual-studio-code"
       "iterm2"
       "claude"
@@ -224,9 +221,7 @@
 
       # Communication & Media
       "fantastical"
-      "microsoft-teams"
       "vlc"
-      "asana"
       
       # Notes & Knowledge Management
       "obsidian"
@@ -237,8 +232,6 @@
       
       # Cloud & Storage
       "google-drive"
-      "gcloud-cli"
-      "google-cloud-sdk"
       
       # 3D Printing & Hardware
       "orcaslicer"
@@ -253,8 +246,6 @@
       # Other useful apps
       "notion"
       "keycastr"
-      "readdle-spark"
-      "termius"
       "home-assistant"
       "sonos"
       "moonlight"
@@ -264,17 +255,14 @@
       "goodsync"
       "4k-video-downloader"
       "adobe-creative-cloud"
-      "microsoft-auto-update"
       
       # Browsers & Web
       "google-chrome"
       
       # Microsoft Office Suite
-      "microsoft-office"
       
       # Communication & Productivity
       "spotify"
-      "mattermost"
       "element"
 
       # System & Utilities
@@ -297,7 +285,8 @@
       cleanup = "uninstall";
     };
     apps = [
-      { id = "441258766"; name = "Magnet"; }
+      # Magnet: disabled to try macOS built-in window tiling instead
+      # { id = "441258766"; name = "Magnet"; }
       { id = "1663047912"; name = "Screens 5"; }
       { id = "1565946661"; name = "FloatingHead"; }
       { id = "1569813296"; name = "1Password for Safari"; }
@@ -311,6 +300,7 @@
       { id = "6470928235"; name = "Manet Music"; }
       { id = "6593660679"; name = "Streamyfin"; }
       { id = "1115567069"; name = "Health Auto Export - JSON+CSV"; }
+      { id = "899247664"; name = "TestFlight"; }
     ];
   };
 }

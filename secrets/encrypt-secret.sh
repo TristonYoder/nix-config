@@ -67,7 +67,7 @@ ${BLUE}Recipients:${NC}
   david:                SSH host key for david server
   pits:                 SSH host key for pits server
   tristons-workstation: SSH host key for tristons-workstation
-  tyoder-mbp:           SSH host key for tyoder-mbp
+  Tristons-MacBook-Pro: SSH host key for Tristons-MacBook-Pro
   admin:                keys/admin.pub (committed to repo)
   all:                  david + pits + tristons-workstation + admin (default)
 

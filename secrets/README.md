@@ -62,7 +62,7 @@ secrets/keys/
   pits.pub
   tristons-workstation.pub
   tristons-nixbook.pub
-  tyoder-mbp.pub
+  Tristons-MacBook-Pro.pub
   admin.pub
 ```
 

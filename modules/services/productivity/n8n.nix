@@ -5,7 +5,7 @@ let
   cfg = config.modules.services.productivity.n8n;
   # Get unstable packages with unfree allowed
   unstable = import nixpkgs-unstable {
-    system = pkgs.system;
+    system = pkgs.stdenv.hostPlatform.system;
     config = {
       allowUnfree = true;
     };

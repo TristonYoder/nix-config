@@ -37,7 +37,7 @@ The ExFAT partition will be replaced by a swap partition and a btrfs root partit
 The custom ISO has the T2 kernel and WiFi firmware baked in — WiFi works on first boot
 with no ethernet or USB adapter needed.
 
-Run these commands from the `nix-config` repo root on **tyoder-mbp**:
+Run these commands from the `nix-config` repo root on **Tristons-MacBook-Pro**:
 
 ```bash
 export PATH="/nix/var/nix/profiles/default/bin:$PATH"

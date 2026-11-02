@@ -68,15 +68,10 @@ in
 
       packages = mkOption {
         type = types.listOf types.package;
-        default = with pkgs; [
-          firefox
-          bitwarden-desktop
-          vscode
-          _1password-gui
-          _1password-cli
-          compose2nix
-        ];
-        description = "Packages for main user";
+        # Desktop apps come from profiles/workstation.nix and CLI tools from
+        # common/system.nix or home/common.nix, so nothing is needed here by default.
+        default = [ ];
+        description = "Extra packages for main user";
       };
 
       sshKeys = mkOption {
@@ -129,11 +124,7 @@ in
       uid = 1002;
       description = "Caroline Yoder";
       extraGroups = [ "nextcloud" ];
-      packages = with pkgs; [
-        firefox
-        bitwarden-desktop
-        _1password-gui
-      ];
+      # GUI apps (firefox, 1password, bitwarden) come from profiles/workstation.nix.
       openssh.authorizedKeys.keys = [
         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIK5JWm3A5tXTCPq8YTua30QH2+Pa/Mz96QC5KJZKdEsz"  # Same key as tristonyoder for now
       ];
