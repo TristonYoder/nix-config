@@ -23,8 +23,7 @@
 
     # AI
     ollama
-  ] ++ lib.optionals (pkgs.stdenv.hostPlatform.system == "aarch64-darwin") [
-    cherry-studio  # broken on x86_64-darwin (1.9.3+ build fails)
+    cherry-studio
   ];
   
   # =============================================================================
@@ -44,7 +43,7 @@
   security.pam.services.sudo_local.touchIdAuth = true;
   
   # Note: system.primaryUser is set in individual host configurations
-  # (hosts/tristons-mbp/ and hosts/tristons-mbp-intel/)
+  # (hosts/tristons-mbp/configuration.nix)
   
   # =============================================================================
   # NIX OPTIMIZATION (Darwin-safe method)

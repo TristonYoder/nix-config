@@ -13,8 +13,7 @@ This is a flake-based, multi-host Nix configuration managing NixOS servers, desk
 - **tristons-workstation** (NixOS Desktop) - KDE Plasma workstation. RTX 4080 (open NVIDIA kernel modules), btrfs root (`@`, `@nix`, `@snapshots` subvolumes), plus `@tristonyoder-home`/`@carolineyoder-home` mounted at `/home/<user>`. Home is host-local; shared data is symlinked to NFS-mounted `/data` on david (`homeSplit`). **Always has a 10Gb fiber backhaul to david over the Core Services VLAN** — this is a permanent network characteristic of this host, not a one-off; treat NFS-backed home and any future high-bandwidth dependency on david as safe to assume for this host specifically. Dual-NIC: `enp7s0` carries `10.150.100.0/23` (Core Services, route to david), `eno1` carries `10.150.10.0/24` (User Devices). `network-online.target` may fire on `eno1` before `enp7s0` completes DHCP — see the NFS automount troubleshooting entry before touching boot-time network ordering on this host.
 - **tristons-nixbook** (NixOS Laptop) - Workstation profile on a MacBook. NFS-mounts `/data` from david. Key swap (Command↔Control) via keyd for MacBook keyboard layout.
 - **tristons-nixbook-pro** (NixOS on T2 MacBook Pro 16,1) - Dual-boot, uses `nixos-hardware.apple-t2`. Custom bootable installer ISOs built from the flake (`tristons-nixbook-pro-installer`, `tristons-nixbook-pro-installer-plasma`).
-- **Tristons-MacBook-Pro** (macOS Apple Silicon, M5 Pro) - Personal + work MacBook Pro. Config in `hosts/tristons-mbp/`. Runs the `nix.linux-builder` VM for local aarch64-linux builds. Replaced the old `tyoder-mbp` work Mac — there is no `tyoder` user anymore; every Mac uses `tristonyoder` via `mkDarwinHost` in `flake.nix`.
-- **Tristons-MacBook-Pro-Intel** (macOS Intel T2) - Older personal MacBook Pro. Config in `hosts/tristons-mbp-intel/`.
+- **Tristons-MacBook-Pro** (macOS Apple Silicon, M5 Pro) - Personal + work MacBook Pro. Config in `hosts/tristons-mbp/`. Runs the `nix.linux-builder` VM for local aarch64-linux builds. Replaced the old `tyoder-mbp` work Mac — there is no `tyoder` user anymore; Macs use `tristonyoder` via `mkDarwinHost` in `flake.nix`. The Intel T2 MacBook Pro's macOS config was retired (nixpkgs 26.11 dropped x86_64-darwin).
 
 ## Security — This Repo Is Public
 
@@ -142,9 +141,6 @@ sudo darwin-rebuild switch --refresh --flake github:TristonYoder/nix-config#Tris
 # First-time setup (nix-darwin not yet installed)
 nix build '.#darwinConfigurations."Tristons-MacBook-Pro".config.system.build.toplevel' --out-link /tmp/result && \
   sudo /tmp/result/sw/bin/darwin-rebuild switch --flake 'github:TristonYoder/nix-config#Tristons-MacBook-Pro'
-
-# Intel Mac
-sudo darwin-rebuild switch --flake 'github:TristonYoder/nix-config#Tristons-MacBook-Pro-Intel'
 ```
 
 ### Validation & Testing
@@ -153,12 +149,12 @@ sudo darwin-rebuild switch --flake 'github:TristonYoder/nix-config#Tristons-MacB
 
 **Current host detection**:
 ```bash
-hostname  # Returns: Tristons-MacBook-Pro, Tristons-MacBook-Pro-Intel, david, tristons-workstation, or pits
+hostname  # Returns: Tristons-MacBook-Pro, david, tristons-workstation, or pits
 ```
 
 **Testing policy by host**:
 
-- **On macOS hosts** (Tristons-MacBook-Pro, Tristons-MacBook-Pro-Intel):
+- **On macOS hosts** (Tristons-MacBook-Pro):
   - Do NOT run `nix flake check` or NixOS builds locally - too resource-intensive
   - SSH to target NixOS host for testing instead
   - Can safely run: `nix flake update`, `nix flake show`, `darwin-rebuild build`

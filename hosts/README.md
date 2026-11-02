@@ -72,14 +72,6 @@ Per-host NixOS and macOS configurations managed through this flake.
 - **Auto-Deploy:** ➖ Manual only
 - **Features:** Declarative macOS system preferences, Homebrew, Mac App Store
 
-#### Tristons-MacBook-Pro-Intel (Triston's Intel MacBook Pro)
-- **Profile:** [darwin](../profiles/darwin.nix)
-- **Architecture:** x86_64-darwin (Intel T2)
-- **User:** tristonyoder
-- **Directory:** `hosts/tristons-mbp-intel/`
-- **Auto-Deploy:** ➖ Manual only
-- **Features:** Declarative macOS system preferences, Homebrew, Mac App Store
-
 ## Quick Commands
 
 ### Auto-Detection
@@ -105,7 +97,6 @@ sudo nixos-rebuild switch --flake .#tristons-nixbook
 
 # macOS
 darwin-rebuild switch --flake .#Tristons-MacBook-Pro
-darwin-rebuild switch --flake .#Tristons-MacBook-Pro-Intel
 ```
 
 ### Testing
@@ -405,6 +396,6 @@ killall Dock && killall Finder
 
 ---
 
-**Managed Hosts:** 6 (david, pits, tristons-workstation, tristons-nixbook, Tristons-MacBook-Pro, Tristons-MacBook-Pro-Intel)
+**Managed Hosts:** 5 (david, pits, tristons-workstation, tristons-nixbook, Tristons-MacBook-Pro)
 **Auto-Deploy:** 4 NixOS hosts via GitHub Actions
 **Platforms:** NixOS (x86_64, aarch64) + macOS (aarch64, x86_64)

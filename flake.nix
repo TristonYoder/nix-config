@@ -572,9 +572,8 @@
       
       darwinConfigurations =
         let
-          # Shared builder for all macOS hosts. Every Mac uses the tristonyoder
-          # user; per-host differences are the platform and any extra
-          # Home Manager modules.
+          # Shared builder for macOS hosts. Every Mac uses the tristonyoder user;
+          # per-host differences are the platform and any extra Home Manager modules.
           mkDarwinHost = { system, hostDir, extraHomeModules ? [ ] }:
             nix-darwin.lib.darwinSystem {
               inherit system;
@@ -583,6 +582,7 @@
                 ./common/system.nix
                 ./common/darwin.nix
                 ./profiles/darwin.nix
+                ./modules/darwin/github-runner.nix  # opt-in: modules.services.development.githubRunner
                 hostDir
 
                 # nix-homebrew - Homebrew installation management
@@ -631,14 +631,6 @@
               ./home/modules/apple-mail-mcp.nix
               { modules.mcp.appleMail.enable = true; }
             ];
-          };
-
-          # ---------------------------------------------------------------------------
-          # Tristons-MacBook-Pro-Intel - macOS MacBook Pro (Intel T2)
-          # ---------------------------------------------------------------------------
-          "Tristons-MacBook-Pro-Intel" = mkDarwinHost {
-            system = "x86_64-darwin";
-            hostDir = ./hosts/tristons-mbp-intel/configuration.nix;
           };
         };
     };

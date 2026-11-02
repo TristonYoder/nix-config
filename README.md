@@ -39,7 +39,6 @@
 | **tristons-nixbook** | NixOS Laptop | Desktop | ✅ | Family Laptop workstation |
 | **tristons-nixbook-pro** | NixOS Laptop  (Intel with apple T2) | Desktop | ✅ | Triston's NixBook |
 | **Tristons-MacBook-Pro** | macOS (Apple Silicon) | Darwin | ➖ | Triston's MacBook Pro (personal + work) |
-| **Tristons-MacBook-Pro-Intel** | macOS (Intel T2) | Darwin | ➖ | Triston's Intel MacBook Pro |
 
 ## Deploying from Scratch
 
@@ -84,18 +83,14 @@ sudo mv /etc/zshrc /etc/zshrc.before-nix-darwin
 # Enter the repository
 cd ~/Projects/nix-config
 
-# Install nix-darwin and apply configuration (first time or after updates).
-# Substitute the host: Tristons-MacBook-Pro (Apple Silicon) or
-# Tristons-MacBook-Pro-Intel (Intel T2).
+# Install nix-darwin and apply configuration (first time or after updates)
 nix build '.#darwinConfigurations."Tristons-MacBook-Pro".config.system.build.toplevel' --out-link /tmp/result && \
   sudo /tmp/result/sw/bin/darwin-rebuild switch --flake '.#Tristons-MacBook-Pro'
 ```
 
 This will:
 1. Install nix-darwin
-2. Install and configure Homebrew via nix-homebrew
-   - **Apple Silicon (Tristons-MacBook-Pro):** Includes Rosetta 2 support for x86_64 emulation
-   - **Intel (Tristons-MacBook-Pro-Intel):** Native x86_64 installation
+2. Install and configure Homebrew via nix-homebrew (with Rosetta 2 support for x86_64 apps)
 3. Configure macOS system defaults (keyboard, trackpad, dock, finder, etc.)
 4. Install and configure Homebrew casks
 5. Install Mac App Store apps (if mas is authenticated)
@@ -164,15 +159,7 @@ darwin-rebuild switch --flake . --show-trace
 # Or restart the Mac to apply system-level changes
 ```
 
-#### Switching Between Hosts
-
-If you want to switch from one host configuration to another:
-
-```bash
-darwin-rebuild switch --flake .#Tristons-MacBook-Pro-Intel
-```
-
-**Note:** Both Macs are built by `mkDarwinHost` in `flake.nix` with the same user (`tristonyoder`) and Home Manager config. They differ only in hostname, architecture, and any `extraHomeModules`.
+**Note:** Macs are built by `mkDarwinHost` in `flake.nix`. A new Mac needs only a host directory and a `mkDarwinHost` entry.
 
 ## Quick Start
 
