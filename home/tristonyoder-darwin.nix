@@ -301,6 +301,7 @@
       { id = "6593660679"; name = "Streamyfin"; }
       { id = "1115567069"; name = "Health Auto Export - JSON+CSV"; }
       { id = "899247664"; name = "TestFlight"; }
+      { id = "497799835"; name = "Xcode"; }
     ];
   };
 }
