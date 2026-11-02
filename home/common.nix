@@ -15,7 +15,6 @@ in
   home.packages = with pkgs; [
     # Development tools
     git
-    gh
     compose2nix
     rustup
 

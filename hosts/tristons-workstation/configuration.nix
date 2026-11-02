@@ -362,7 +362,6 @@
   environment.systemPackages = with pkgs; [
     nfs-utils
     openrgb
-    vlc
   ];
 
   home-manager.users.tristonyoder.modules.appShortcuts.enable = true;

@@ -15,14 +15,9 @@
     # Terminal
     ghostty-bin  # Upstream Ghostty binary release (unfree)
 
-    # Development tools (git, gh, wget, curl come from home/common.nix)
-    vim
+    # CLI tools shared with every host (git, gh, nano, htop, nmap, ...) are in
+    # common/system.nix.
 
-    # Utilities
-    htop
-    tree
-    nmap
-    
     # Storage & Sync
     syncthing
 
@@ -79,12 +74,7 @@
   # FONTS
   # =============================================================================
   
-  fonts.packages = with pkgs; [
-    # Nerd Fonts (individual packages in new structure)
-    nerd-fonts.fira-code
-    nerd-fonts.meslo-lg
-    nerd-fonts.roboto-mono
-  ];
+  fonts.packages = import ../common/nerd-fonts.nix pkgs;
   
   # =============================================================================
   # SYNCTHING AUTO-START SERVICE
