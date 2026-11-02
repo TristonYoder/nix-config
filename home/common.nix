@@ -124,7 +124,16 @@ in
       core.autocrlf = "input";
     };
   });
-  
+
+  # GitHub CLI. Its credential helper makes git authenticate to github.com with
+  # the `gh auth login` token, ahead of osxkeychain on macOS. git config is
+  # read-only under Home Manager, so `gh auth setup-git` cannot do this itself.
+  programs.gh = {
+    enable = true;
+    gitCredentialHelper.enable = true;
+    settings.git_protocol = "https";
+  };
+
   # =============================================================================
   # ZSH CONFIGURATION
   # =============================================================================
