@@ -221,9 +221,7 @@
 
       # Communication & Media
       "fantastical"
-      "microsoft-teams"
       "vlc"
-      "asana"
       
       # Notes & Knowledge Management
       "obsidian"
@@ -263,11 +261,9 @@
       "google-chrome"
       
       # Microsoft Office Suite
-      "microsoft-office"
       
       # Communication & Productivity
       "spotify"
-      "mattermost"
       "element"
 
       # System & Utilities
