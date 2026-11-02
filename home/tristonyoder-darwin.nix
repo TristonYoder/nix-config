@@ -264,6 +264,7 @@
       # Communication & Productivity
       "spotify"
       "element"
+      "basecamp"
 
       # System & Utilities
       "trezor-suite"
