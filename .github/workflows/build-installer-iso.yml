@@ -1,6 +1,6 @@
-name: Build Installer ISOs
+name: Build Installer Images
 
-# Only runs when something that actually changes the installer ISO's
+# Only runs when something that actually changes the installer images'
 # contents changes — the installer config itself, the SSH key baked into
 # it (modules/system/users.nix), or the flake outputs that define it.
 # Everything else on main is a no-op for this workflow.
@@ -37,7 +37,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          🔵 Building installer images (x86_64 + aarch64 + rpi5) on david
+          🔵 Building installer images (ISO x86_64/aarch64/rpi5 + netboot x86_64/aarch64) on david
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
@@ -99,6 +99,35 @@ jobs:
           build_and_publish installer isoImage
           build_and_publish installer-aarch64 isoImage
           build_and_publish installer-rpi5 sdImage
+
+          # Netboot bundles (kernel/initrd/netboot.ipxe) for
+          # modules/services/infrastructure/pxe-boot.nix — published one
+          # subdirectory per architecture under /data/nix-pxe, since
+          # nixpkgs' generated netboot.ipxe references its kernel/initrd by
+          # relative filename within the same directory.
+          build_and_publish_netboot() {
+            local attr="$1"
+            local archdir="$2"
+            echo "--- Building nixosConfigurations.$attr.config.system.build.netbootBundle ---"
+            local out_link="/tmp/installer-netboot-$attr"
+            sudo nix build \
+              "github:TristonYoder/nix-config#nixosConfigurations.$attr.config.system.build.netbootBundle" \
+              --refresh --out-link "$out_link"
+
+            local dest="/data/nix-pxe/$archdir"
+            local tmp_dest="/data/nix-pxe/.${archdir}.new"
+            sudo rm -rf "$tmp_dest"
+            sudo mkdir -p "$tmp_dest"
+            sudo cp -L "$out_link"/* "$tmp_dest/"
+            sudo chown -R caddy:caddy "$tmp_dest"
+            sudo rm -rf "$dest"
+            sudo mv "$tmp_dest" "$dest"
+            sudo rm -f "$out_link"
+            echo "✅ Published netboot bundle to $dest"
+          }
+
+          build_and_publish_netboot installer-netboot x86_64
+          build_and_publish_netboot installer-netboot-aarch64 aarch64
         EOF
 
     - name: Notify success
@@ -107,7 +136,7 @@ jobs:
       uses: ./.github/actions/matrix-notification
       with:
         message: |
-          ✅ Installer images published to https://nix-iso.theyoder.family/
+          ✅ Installer images published (ISOs to https://nix-iso.theyoder.family/, netboot to /data/nix-pxe)
         room_id: ${{ secrets.MATRIX_ROOM_ID }}
         homeserver_url: ${{ secrets.MATRIX_HOMESERVER_URL }}
         access_token: ${{ secrets.MATRIX_ACCESS_TOKEN }}
