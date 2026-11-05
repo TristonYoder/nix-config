@@ -19,13 +19,21 @@ let
     # Run `tailscale up` in the background and tee its output so we can
     # grab the headscale login URL as soon as it's printed, without
     # blocking on the auth wait before we've shown the QR code.
-    # --ephemeral: the installer environment itself is throwaway (RAM-only,
-    # gone on reboot) — the tailnet node should be too, so headscale doesn't
-    # accumulate a stale "nixos-installer" entry every time this boots.
+    # NOTE: `--ephemeral` is not a valid flag for `tailscale up` on the
+    # currently-deployed tailscale version (1.98.5) — it errors with "flag
+    # provided but not defined", which prints tailscale's help text to
+    # stdout instead of logging in. The script below then greps that help
+    # text for a URL and picks up the default `https://controlplane.tailscale.com`
+    # mentioned there instead of the real headscale registration URL,
+    # producing a QR code that goes nowhere. The installer environment is
+    # still throwaway (RAM-only, gone on reboot), but since this installer
+    # never embeds an authkey, ephemeral-node behavior isn't achievable via
+    # `up` flags on this version — it would need an ephemeral-tagged authkey
+    # instead. Headscale will accumulate a stale "nixos-installer" entry
+    # per boot until that's added.
     ${lib.getExe' pkgs.tailscale "tailscale"} up \
       --login-server=https://ts.theyoder.family \
       --ssh \
-      --ephemeral \
       --hostname=nixos-installer \
       2>&1 | tee "$urlFile" &
     tsPid=$!
