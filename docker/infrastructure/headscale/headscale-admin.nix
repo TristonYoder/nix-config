@@ -13,7 +13,9 @@ in
     # headscale-admin container
     # Note: This is a static web UI - config happens in browser via localStorage
     virtualisation.oci-containers.containers."headscale-admin" = {
-      image = "goodieshq/headscale-admin:latest";
+      # :dev until upstream ships the fix for headscale 0.28+ masked API key prefixes
+      # (GoodiesHQ/headscale-admin#102) -- :latest reports every key as Not Authorized.
+      image = "goodieshq/headscale-admin:dev";
 
       ports = [
         # Caddy proxies /admin to this; docker-published ports bypass the NixOS firewall.
