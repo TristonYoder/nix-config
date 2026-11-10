@@ -92,6 +92,9 @@ in
             # Skip if this app is in our managed list
             if [[ " $MANAGED_APPS " =~ " $app_id " ]]; then
               $DRY_RUN_CMD echo "Keeping managed app: $app_name ($app_id)"
+            # ID 0 = receipt with no store listing (TestFlight/sideloaded); not ours to remove
+            elif [[ "$app_id" == "0" ]]; then
+              $DRY_RUN_CMD echo "Skipping app without App Store ID: $app_name"
             else
               $DRY_RUN_CMD echo "Removing unmanaged app: $app_name ($app_id)"
               $DRY_RUN_CMD ${mas} uninstall "$app_id" || {

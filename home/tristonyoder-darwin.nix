@@ -265,6 +265,7 @@
       "spotify"
       "element"
       "basecamp"
+      "basecamp/tap/basecamp-cli"
 
       # System & Utilities
       "trezor-suite"
@@ -295,11 +296,13 @@
       { id = "424390742"; name = "Compressor"; }
       { id = "1453365242"; name = "Brother P-touch Editor"; }
       { id = "1462114288"; name = "Grammarly for Safari"; }
-      { id = "1559269364"; name = "Notion Web Clipper"; }
+      # Notion Web Clipper: delisted from the App Store, no replacement listing
+      # { id = "1559269364"; name = "Notion Web Clipper"; }
       { id = "1246969117"; name = "Steam Link"; }
       { id = "1295203466"; name = "Windows App"; }
       { id = "6470928235"; name = "Manet Music"; }
-      { id = "6593660679"; name = "Streamyfin"; }
+      # Streamyfin: listing is iPhone/iPad only now, not installable on macOS
+      # { id = "6593660679"; name = "Streamyfin"; }
       { id = "1115567069"; name = "Health Auto Export - JSON+CSV"; }
       { id = "899247664"; name = "TestFlight"; }
       { id = "497799835"; name = "Xcode"; }
