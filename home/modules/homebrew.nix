@@ -6,6 +6,8 @@ let
   cfg = config.homebrew;
   # Homebrew is in /usr/local on Intel and /opt/homebrew on Apple Silicon
   brew = if pkgs.stdenv.hostPlatform.isAarch64 then "/opt/homebrew/bin/brew" else "/usr/local/bin/brew";
+  # brew list prints bare names, so strip any tap prefix (e.g. basecamp/tap/basecamp-cli)
+  caskNames = map (c: last (splitString "/" c)) cfg.casks;
 in
 {
   options.homebrew = {
@@ -96,7 +98,7 @@ in
           # Get lists of managed packages
           MANAGED_TAPS="${concatStringsSep " " cfg.taps}"
           MANAGED_BREWS="${concatStringsSep " " cfg.brews}"
-          MANAGED_CASKS="${concatStringsSep " " cfg.casks}"
+          MANAGED_CASKS="${concatStringsSep " " caskNames}"
           
           # Remove unmanaged taps (skip core taps)
           for tap in $("$BREW" tap list | cut -d: -f1 | grep -v "^homebrew/core$" | grep -v "^homebrew/cask$"); do
@@ -133,7 +135,7 @@ in
           # Get lists of managed packages
           MANAGED_TAPS="${concatStringsSep " " cfg.taps}"
           MANAGED_BREWS="${concatStringsSep " " cfg.brews}"
-          MANAGED_CASKS="${concatStringsSep " " cfg.casks}"
+          MANAGED_CASKS="${concatStringsSep " " caskNames}"
           
           # Remove unmanaged taps (skip core taps)
           for tap in $("$BREW" tap list | cut -d: -f1 | grep -v "^homebrew/core$" | grep -v "^homebrew/cask$"); do
@@ -170,7 +172,7 @@ in
           # Get lists of managed packages
           MANAGED_TAPS="${concatStringsSep " " cfg.taps}"
           MANAGED_BREWS="${concatStringsSep " " cfg.brews}"
-          MANAGED_CASKS="${concatStringsSep " " cfg.casks}"
+          MANAGED_CASKS="${concatStringsSep " " caskNames}"
           
           # Remove unmanaged taps (skip core taps)
           for tap in $("$BREW" tap list | cut -d: -f1 | grep -v "^homebrew/core$" | grep -v "^homebrew/cask$"); do
