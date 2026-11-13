@@ -15,9 +15,11 @@
 # `secrets/decrypt-secret.sh cortendesk-env.age`. The console stays
 # internal-only (LAN + Tailscale) until `public = true`.
 #
-# The server key pair lives in <dataDir>/rustdesk. Its public half
-# (id_ed25519.pub, also on Settings in the console) is not secret; it goes in
-# home/modules/rustdesk.nix's `key`.
+# The server private key comes from the agenix secret cortendesk-private-key
+# and is installed over <dataDir>/rustdesk/id_ed25519 on every start, so the
+# identity survives losing the data dir. Its public half (id_ed25519.pub, also
+# on Settings in the console) is not secret and is home/modules/rustdesk.nix's
+# `key` default. Rotating means re-encrypting the secret and updating that key.
 
 with lib;
 let
@@ -78,6 +80,13 @@ in
         (read on first boot only).
       '';
     };
+
+    privateKeyFile = mkOption {
+      type = types.nullOr types.str;
+      default = config.age.secrets.cortendesk-private-key.path;
+      defaultText = literalExpression "config.age.secrets.cortendesk-private-key.path";
+      description = "Server private key (id_ed25519 contents). Null lets the container generate one.";
+    };
   };
 
   config = mkIf cfg.enable {
@@ -90,9 +99,12 @@ in
         # URLs) is derived from this.
         APP_URL = "https://${cfg.domain}";
         TZ = config.time.timeZone;
+      } // optionalAttrs (cfg.privateKeyFile != null) {
+        CORTENDESK_PRIVATE_KEY_FILE = "/run/secrets/rustdesk_key";
       };
       environmentFiles = optional (cfg.environmentFile != null) cfg.environmentFile;
-      volumes = [ "${cfg.dataDir}:/data" ];
+      volumes = [ "${cfg.dataDir}:/data" ]
+        ++ optional (cfg.privateKeyFile != null) "${cfg.privateKeyFile}:/run/secrets/rustdesk_key:ro";
       ports = [
         "127.0.0.1:${toString cfg.consolePort}:8080"
         "21115:21115"     # NAT test

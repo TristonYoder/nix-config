@@ -60,8 +60,9 @@ in
 
     key = mkOption {
       type = types.nullOr types.str;
-      # Public key from pits:/var/lib/cortendesk/rustdesk/id_ed25519.pub — not a secret.
-      default = null;
+      # CortenDesk server public key (pits:/var/lib/cortendesk/rustdesk/id_ed25519.pub).
+      # Not a secret; the private half is the agenix secret cortendesk-private-key.
+      default = "BTZxuh2rmspuGFZUrPIw3cG5u95FXr6xrcoScaekXWc=";
       description = "Server public key. Without it clients still connect, but can't verify the server.";
     };
   };
