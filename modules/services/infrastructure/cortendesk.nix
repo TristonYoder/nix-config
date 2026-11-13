@@ -207,7 +207,9 @@ in
         after = [ "docker-cortendesk.service" ];
         requires = [ "docker-cortendesk.service" ];
         partOf = [ "docker-cortendesk.service" ];
-        wantedBy = [ "docker-cortendesk.service" ];
+        # multi-user.target so switch starts it; the container unit re-runs it
+        # after every container start.
+        wantedBy = [ "multi-user.target" "docker-cortendesk.service" ];
         restartTriggers = [ phpHead phpTail ];
         path = [ config.virtualisation.docker.package pkgs.coreutils ];
         serviceConfig = {
