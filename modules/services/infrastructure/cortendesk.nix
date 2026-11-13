@@ -87,6 +87,57 @@ in
       defaultText = literalExpression "config.age.secrets.cortendesk-private-key.path";
       description = "Server private key (id_ed25519 contents). Null lets the container generate one.";
     };
+
+    # SSO for the console and RustDesk clients. When enabled, these settings
+    # are written into CortenDesk's settings table after every container start
+    # and on every switch, overriding edits made on Settings -> SSO. Settings
+    # not listed here (default group, allowed domains, ...) stay UI-managed.
+    # Disabling this stops managing them; it does not turn SSO off.
+    oidc = {
+      enable = mkEnableOption "declarative OIDC (SSO) settings";
+
+      issuer = mkOption {
+        type = types.str;
+        default = "https://id.${config.networking.domain}";
+        description = "OIDC issuer; /.well-known/openid-configuration is appended by CortenDesk.";
+      };
+
+      clientId = mkOption {
+        type = types.str;
+        description = "Client ID of the CortenDesk client at the provider. Not a secret.";
+      };
+
+      clientSecretFile = mkOption {
+        type = types.str;
+        default = config.age.secrets.cortendesk-oidc-secret.path;
+        defaultText = literalExpression "config.age.secrets.cortendesk-oidc-secret.path";
+        description = "File holding the client secret.";
+      };
+
+      buttonLabel = mkOption {
+        type = types.str;
+        default = "Pocket ID";
+        description = "Label for the SSO button (login page and RustDesk client).";
+      };
+
+      newUserPolicy = mkOption {
+        type = types.enum [ "deny" "pending" "active" ];
+        default = "active";
+        description = "What happens to a provider user with no console account. New accounts are never admins.";
+      };
+
+      logout = mkOption {
+        type = types.bool;
+        default = true;
+        description = "Also end the provider session on console logout.";
+      };
+
+      disableLocalLogin = mkOption {
+        type = types.bool;
+        default = false;
+        description = "Hide password sign-in. Leave off to keep the admin password as a break-glass login.";
+      };
+    };
   };
 
   config = mkIf cfg.enable {
@@ -115,6 +166,69 @@ in
         # bridges /ws/id and /ws/relay over loopback, reached via Caddy.
       ];
     };
+
+    systemd.services.cortendesk-oidc = mkIf cfg.oidc.enable (
+      let
+        settings = builtins.toJSON {
+          oidc_enabled = "1";
+          oidc_discovery_url = removeSuffix "/" cfg.oidc.issuer;
+          oidc_client_id = cfg.oidc.clientId;
+          oidc_scopes = "openid email profile";
+          oidc_button_label = cfg.oidc.buttonLabel;
+          oidc_new_user_policy = cfg.oidc.newUserPolicy;
+          oidc_logout_enabled = if cfg.oidc.logout then "1" else "0";
+          oidc_disable_local_login = if cfg.oidc.disableLocalLogin then "1" else "0";
+        };
+        # Same writes as Settings -> SSO (app/Livewire/SettingsPage.php):
+        # plain rows, the secret through Crypt::encryptString.
+        phpHead = pkgs.writeText "cortendesk-oidc-head.php" ''
+          <?php
+          require '/app/vendor/autoload.php';
+          $app = require '/app/bootstrap/app.php';
+          $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+          $settings = json_decode(<<<'JSON'
+          ${settings}
+          JSON, true);
+          foreach ($settings as $k => $v) { \App\Models\Setting::put($k, $v); }
+        '';
+        phpTail = pkgs.writeText "cortendesk-oidc-tail.php" ''
+          $cur = \App\Models\Setting::get('oidc_client_secret');
+          $old = null;
+          if ($cur) { try { $old = \Illuminate\Support\Facades\Crypt::decryptString($cur); } catch (\Throwable $e) {} }
+          if ($old !== $secret) {
+            \App\Models\Setting::put('oidc_client_secret', \Illuminate\Support\Facades\Crypt::encryptString($secret));
+            echo "client secret updated\n";
+          }
+          echo "OIDC settings applied\n";
+        '';
+      in
+      {
+        description = "Apply CortenDesk OIDC settings";
+        after = [ "docker-cortendesk.service" ];
+        requires = [ "docker-cortendesk.service" ];
+        partOf = [ "docker-cortendesk.service" ];
+        wantedBy = [ "docker-cortendesk.service" ];
+        restartTriggers = [ phpHead phpTail ];
+        path = [ config.virtualisation.docker.package pkgs.coreutils ];
+        serviceConfig = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+        };
+        script = ''
+          # First start can include an image pull; wait for the app to be up.
+          for _ in $(seq 1 120); do
+            [ "$(docker inspect -f '{{.State.Health.Status}}' cortendesk 2>/dev/null)" = healthy ] && break
+            sleep 5
+          done
+          # PHP and secret go in over stdin (printf is a builtin): never in argv.
+          {
+            cat ${phpHead}
+            printf "\$secret = trim(base64_decode('%s'));\n" "$(base64 -w0 < ${escapeShellArg cfg.oidc.clientSecretFile})"
+            cat ${phpTail}
+          } | docker exec -i -u www-data -w /app cortendesk php
+        '';
+      }
+    );
 
     networking.firewall.allowedTCPPorts = [ 21115 21116 21117 ];
     networking.firewall.allowedUDPPorts = [ 21116 ];

@@ -202,7 +202,14 @@
   # CortenDesk - RustDesk ID/relay server + admin console at remote.<domain>.
   # On pits so clients reach it from anywhere without port forwarding.
   # Console is LAN/Tailscale-only until `public = true` (see the module).
-  modules.services.infrastructure.cortendesk.enable = true;
+  modules.services.infrastructure.cortendesk = {
+    enable = true;
+    # Pocket ID client "cortendesk" (id.theyoder.family). Secret in agenix.
+    oidc = {
+      enable = true;
+      clientId = "cortendesk";
+    };
+  };
 
   # Postal Mail Server - runs on pits (needs public IP for port 25 SMTP)
   modules.services.communication.postal.enable = true;
