@@ -656,4 +656,6 @@ in
     manageSharedRoot = true;
   };
 
+  # Unattended RustDesk, enrolled in CortenDesk (secrets encrypted to this host).
+  modules.services.infrastructure.rustdeskAgent.enable = true;
 }

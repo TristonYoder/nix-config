@@ -323,4 +323,6 @@
   # Consider adding monitoring for a public-facing server
   # Example: Prometheus node exporter, Grafana agent, etc.
 
+  # Unattended RustDesk, enrolled in CortenDesk (secrets encrypted to this host).
+  modules.services.infrastructure.rustdeskAgent.enable = true;
 }
