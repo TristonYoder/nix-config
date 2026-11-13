@@ -208,6 +208,16 @@ with lib;
       "navidrome-api-password" = { file = ../secrets/navidrome-api-password.age; mode = "0400"; };
     })
 
+    // (optionalAttrs config.modules.services.infrastructure.cortendesk.enable {
+      # Encrypted to pits only. CORTENDESK_ADMIN_PASSWORD=..., read by the
+      # container on first boot only; changing it later means changing it in
+      # the console too.
+      "cortendesk-env" = { file = ../secrets/cortendesk-env.age; owner = "root"; group = "root"; mode = "0400"; };
+      # RustDesk server private key (id_ed25519). Pins the server identity so a
+      # lost /var/lib/cortendesk doesn't invalidate the key every client holds.
+      "cortendesk-private-key" = { file = ../secrets/cortendesk-private-key.age; owner = "root"; group = "root"; mode = "0400"; };
+    })
+
     // (optionalAttrs config.modules.services.development.githubRunner.enable {
       # Fine-grained PAT with read/write "Administration" access, all repos.
       # Shared across every runner instance on this host — read only by the

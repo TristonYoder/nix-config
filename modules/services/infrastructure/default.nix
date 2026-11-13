@@ -4,6 +4,7 @@
   imports = [
     ./caddy.nix
     ./cloudflared.nix
+    ./cortendesk.nix
     ./headscale.nix
     ./nix-cache-server.nix
     ./postgresql.nix
