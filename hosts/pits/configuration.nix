@@ -324,5 +324,5 @@
   # Example: Prometheus node exporter, Grafana agent, etc.
 
   # Unattended RustDesk, enrolled in CortenDesk (secrets encrypted to this host).
-  modules.services.infrastructure.rustdeskAgent.enable = true;
+  modules.services.infrastructure.rustdeskAgent = { enable = true; headless = true; };  # no GUI
 }
