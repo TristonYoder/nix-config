@@ -208,6 +208,13 @@ with lib;
       "navidrome-api-password" = { file = ../secrets/navidrome-api-password.age; mode = "0400"; };
     })
 
+    // (optionalAttrs config.modules.services.infrastructure.cortendesk.enable {
+      # Encrypted to pits only. CORTENDESK_ADMIN_PASSWORD=..., read by the
+      # container on first boot only; changing it later means changing it in
+      # the console too.
+      "cortendesk-env" = { file = ../secrets/cortendesk-env.age; owner = "root"; group = "root"; mode = "0400"; };
+    })
+
     // (optionalAttrs config.modules.services.development.githubRunner.enable {
       # Fine-grained PAT with read/write "Administration" access, all repos.
       # Shared across every runner instance on this host — read only by the

@@ -10,9 +10,10 @@
 # The public A records (DNS only, not proxied) live in Cloudflare, because
 # Cloudflare's proxy can't carry the RustDesk ports.
 #
-# First boot creates admin / changeme unless CORTENDESK_ADMIN_PASSWORD is in
-# `environmentFile`. The console stays internal-only (LAN + Tailscale) until
-# `public = true`, so change that password before flipping it.
+# The admin password comes from the agenix secret cortendesk-env
+# (CORTENDESK_ADMIN_PASSWORD=..., read on first boot only). Read it with
+# `secrets/decrypt-secret.sh cortendesk-env.age`. The console stays
+# internal-only (LAN + Tailscale) until `public = true`.
 #
 # The server key pair lives in <dataDir>/rustdesk. Its public half
 # (id_ed25519.pub, also on Settings in the console) is not secret; it goes in
@@ -69,7 +70,8 @@ in
 
     environmentFile = mkOption {
       type = types.nullOr types.str;
-      default = null;
+      default = config.age.secrets.cortendesk-env.path;
+      defaultText = literalExpression "config.age.secrets.cortendesk-env.path";
       example = "/run/agenix/cortendesk-env";
       description = ''
         Optional KEY=VALUE file for secrets, e.g. CORTENDESK_ADMIN_PASSWORD
