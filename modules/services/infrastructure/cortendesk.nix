@@ -176,6 +176,8 @@ in
           oidc_scopes = "openid email profile";
           oidc_button_label = cfg.oidc.buttonLabel;
           oidc_new_user_policy = cfg.oidc.newUserPolicy;
+          # Separate setting; pinned off so newUserPolicy's "never admins" holds.
+          oidc_default_admin = "0";
           oidc_logout_enabled = if cfg.oidc.logout then "1" else "0";
           oidc_disable_local_login = if cfg.oidc.disableLocalLogin then "1" else "0";
         };
