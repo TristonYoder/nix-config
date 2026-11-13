@@ -1,6 +1,10 @@
 { config, lib, pkgs, ... }:
 
 # Self-hosted RustDesk ID/rendezvous (hbbs) and relay (hbbr) server.
+# Runs on pits (public IP), so clients outside the LAN reach it without port
+# forwarding. Internal DNS gets a CNAME to pits (Tailscale address); the public
+# A record (DNS only, not proxied) lives in Cloudflare -- Cloudflare's proxy
+# can't carry these ports.
 #
 # Clients are pointed at it by home/modules/rustdesk.nix. The server's public
 # key is generated on first start at /var/lib/private/rustdesk/id_ed25519.pub
@@ -29,11 +33,11 @@ in
     };
 
     ipAddress = mkOption {
-      type = types.str;
-      default = "10.150.100.30";
+      type = types.nullOr types.str;
+      default = null;
       description = ''
-        Address the DNS name resolves to. RustDesk is not HTTP, so the vHost is
-        DNS-only (A record) rather than proxied through Caddy.
+        Address the internal DNS name resolves to. Null registers a CNAME to
+        this host. RustDesk is not HTTP, so the vHost is DNS-only either way.
       '';
     };
 
@@ -65,6 +69,7 @@ in
     modules.services.vHosts.hosts.${cfg.domain} = {
       ipAddress = cfg.ipAddress;
       serverAliases = cfg.aliases;
+      proxy = false;
       displayName = "RustDesk";
       category = "infrastructure";
       icon = "rustdesk";

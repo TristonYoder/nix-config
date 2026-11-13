@@ -100,8 +100,8 @@ in
             else
               "${if hostCfg.reverseProxySSL then "https" else "http"}://${hostCfg.reverseProxyHost}:${toString hostCfg.reverseProxyPort}";
         in
-        # ipAddress vHosts are DNS-only (device handles its own TLS/serving); skip Caddy entirely
-        mkIf (hostCfg.enable && hostCfg.ipAddress == null) {
+        # DNS-only vHosts (ipAddress set, or proxy = false) skip Caddy entirely
+        mkIf (hostCfg.enable && hostCfg.proxy) {
           "${hostCfg.virtualHost}" = {
             serverAliases = hostCfg.serverAliases;
             extraConfig =

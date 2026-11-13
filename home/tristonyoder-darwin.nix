@@ -6,7 +6,7 @@
 {
   imports = [ ./modules/rustdesk.nix ];
 
-  # RustDesk (cask below) pointed at the self-hosted server on david
+  # RustDesk (cask below) pointed at the self-hosted server on pits
   modules.rustdesk.enable = true;
 
   # =============================================================================

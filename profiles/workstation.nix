@@ -19,7 +19,7 @@
     iopenpod-flake.overlays.default
   ];
 
-  # Point every user's RustDesk client at david (home/modules/rustdesk.nix)
+  # Point every user's RustDesk client at pits (home/modules/rustdesk.nix)
   home-manager.sharedModules = [
     ../home/modules/rustdesk.nix
     { modules.rustdesk.enable = lib.mkDefault true; }
@@ -45,7 +45,7 @@
     _1password-gui
     bitwarden-desktop
 
-    # Remote desktop -- uses the self-hosted server on david
+    # Remote desktop -- uses the self-hosted server on pits
     rustdesk-flutter
     
     # Terminal

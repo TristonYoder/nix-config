@@ -1,6 +1,6 @@
 { config, lib, pkgs, ... }:
 
-# Points the RustDesk client at the self-hosted server on david
+# Points the RustDesk client at the self-hosted server on pits
 # (modules/services/infrastructure/rustdesk-server.nix).
 #
 # RustDesk rewrites RustDesk2.toml itself, so it can't be a read-only store
@@ -52,7 +52,7 @@ in
 
     key = mkOption {
       type = types.nullOr types.str;
-      # Public key from david:/var/lib/private/rustdesk/id_ed25519.pub — not a secret.
+      # Public key from pits:/var/lib/private/rustdesk/id_ed25519.pub — not a secret.
       default = null;
       description = "Server public key. Required once the server runs with enforceKey.";
     };

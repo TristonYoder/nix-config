@@ -49,6 +49,16 @@ in
             '';
           };
 
+          proxy = mkOption {
+            type = types.bool;
+            default = config.ipAddress == null;
+            description = ''
+              Whether the reverse proxy serves this host. Set false for a
+              non-HTTP service on this host that only needs the DNS record
+              (CNAME to this host, or an A record when ipAddress is set).
+            '';
+          };
+
           virtualHost = mkOption {
             type = types.str;
             default = expandDomain name;
@@ -163,7 +173,7 @@ in
 
           localHostsEntry = mkOption {
             type = types.bool;
-            default = config.ipAddress == null;
+            default = config.proxy;
             description = "Whether to add a 127.0.0.1 /etc/hosts entry for this virtual host so on-host services can resolve it without Technitium.";
           };
         };
