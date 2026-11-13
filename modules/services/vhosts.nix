@@ -49,16 +49,6 @@ in
             '';
           };
 
-          proxy = mkOption {
-            type = types.bool;
-            default = config.ipAddress == null;
-            description = ''
-              Whether the reverse proxy serves this host. Set false for a
-              non-HTTP service on this host that only needs the DNS record
-              (CNAME to this host, or an A record when ipAddress is set).
-            '';
-          };
-
           virtualHost = mkOption {
             type = types.str;
             default = expandDomain name;
@@ -159,12 +149,6 @@ in
             description = "Whether the monitoring provider should track uptime for this host.";
           };
 
-          dashboard = mkOption {
-            type = types.bool;
-            default = true;
-            description = "Whether dashboard providers should show a tile for this host. Disable for non-HTTP services.";
-          };
-
           shortcut = mkOption {
             type = types.bool;
             default = true;
@@ -173,7 +157,7 @@ in
 
           localHostsEntry = mkOption {
             type = types.bool;
-            default = config.proxy;
+            default = config.ipAddress == null;
             description = "Whether to add a 127.0.0.1 /etc/hosts entry for this virtual host so on-host services can resolve it without Technitium.";
           };
         };

@@ -1,7 +1,8 @@
 { config, lib, pkgs, ... }:
 
-# Points the RustDesk client at the self-hosted server on pits
-# (modules/services/infrastructure/rustdesk-server.nix).
+# Points the RustDesk client at the self-hosted CortenDesk server on pits
+# (modules/services/infrastructure/cortendesk.nix): ID/relay server plus the
+# API server, which signs clients in and registers them in the console.
 #
 # RustDesk rewrites RustDesk2.toml itself, so it can't be a read-only store
 # symlink. Activation merges only the server keys into [options] and leaves
@@ -23,6 +24,7 @@ let
   options' = {
     custom-rendezvous-server = cfg.server;
     relay-server = cfg.server;
+    api-server = cfg.apiServer;
   } // optionalAttrs (cfg.key != null) { key = cfg.key; };
 
   merge = pkgs.writeText "rustdesk-merge.py" ''
@@ -50,11 +52,17 @@ in
       description = "ID/rendezvous and relay server host.";
     };
 
+    apiServer = mkOption {
+      type = types.str;
+      default = "https://${cfg.server}";
+      description = "CortenDesk console / client API URL.";
+    };
+
     key = mkOption {
       type = types.nullOr types.str;
-      # Public key from pits:/var/lib/private/rustdesk/id_ed25519.pub — not a secret.
+      # Public key from pits:/var/lib/cortendesk/rustdesk/id_ed25519.pub — not a secret.
       default = null;
-      description = "Server public key. Required once the server runs with enforceKey.";
+      description = "Server public key. Without it clients still connect, but can't verify the server.";
     };
   };
 

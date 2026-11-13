@@ -199,9 +199,10 @@
     reverseProxyPort = 8081;
   };
   
-  # RustDesk ID/relay server - runs on pits so clients reach it from anywhere
-  # without port forwarding. Opens TCP 21115-21119 and UDP 21116.
-  modules.services.infrastructure.rustdesk-server.enable = true;
+  # CortenDesk - RustDesk ID/relay server + admin console at remote.<domain>.
+  # On pits so clients reach it from anywhere without port forwarding.
+  # Console is LAN/Tailscale-only until `public = true` (see the module).
+  modules.services.infrastructure.cortendesk.enable = true;
 
   # Postal Mail Server - runs on pits (needs public IP for port 25 SMTP)
   modules.services.communication.postal.enable = true;
