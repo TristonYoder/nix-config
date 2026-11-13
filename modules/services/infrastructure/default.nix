@@ -7,6 +7,7 @@
     ./headscale.nix
     ./nix-cache-server.nix
     ./postgresql.nix
+    ./rustdesk-server.nix
     ./scrutiny.nix
     ./tailscale.nix
     ./technitium.nix

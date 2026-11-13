@@ -26,7 +26,7 @@ with lib;
 let
   cfg = config.modules.services.providers.dashboard-homarr;
 
-  syncHosts = filter (h: h.enable)
+  syncHosts = filter (h: h.enable && h.dashboard)
     (attrValues config.modules.services.vHosts.hosts);
 
   # Build the JSON payload for one vHost entry

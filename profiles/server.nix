@@ -90,6 +90,7 @@
   modules.services.media.plex.enable = lib.mkDefault true;
   modules.services.media.jellyseerr.enable = lib.mkDefault true;
   modules.services.media.sunshine.enable = lib.mkDefault true;
+  modules.services.infrastructure.rustdesk-server.enable = lib.mkDefault true;
 
   # =============================================================================
   # PRODUCTIVITY SERVICES

@@ -5,7 +5,7 @@ with lib;
 let
   cfg = config.modules.services.providers.dashboard-homepage;
 
-  dashboardHosts = filter (h: h.enable)
+  dashboardHosts = filter (h: h.enable && h.dashboard)
     (attrValues config.modules.services.vHosts.hosts);
 
   # Group vHosts by category, falling back to "Services" for uncategorized

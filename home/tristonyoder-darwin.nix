@@ -4,6 +4,11 @@
 { config, pkgs, lib, ... }:
 
 {
+  imports = [ ./modules/rustdesk.nix ];
+
+  # RustDesk (cask below) pointed at the self-hosted server on david
+  modules.rustdesk.enable = true;
+
   # =============================================================================
   # MACOS-SPECIFIC PACKAGES
   # =============================================================================
@@ -215,6 +220,7 @@
       "hazel"
       "lunar"
       "tailscale"
+      "rustdesk"
 
       # Virtualization
       "parallels"

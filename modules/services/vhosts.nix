@@ -149,6 +149,12 @@ in
             description = "Whether the monitoring provider should track uptime for this host.";
           };
 
+          dashboard = mkOption {
+            type = types.bool;
+            default = true;
+            description = "Whether dashboard providers should show a tile for this host. Disable for non-HTTP services.";
+          };
+
           shortcut = mkOption {
             type = types.bool;
             default = true;
