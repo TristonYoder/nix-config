@@ -18,8 +18,14 @@ in
 
     domain = mkOption {
       type = types.str;
-      default = "rustdesk.${config.networking.domain}";
+      default = "remote.${config.networking.domain}";
       description = "DNS name clients use to reach the ID and relay servers.";
+    };
+
+    aliases = mkOption {
+      type = types.listOf types.str;
+      default = [ "rustdesk.${config.networking.domain}" ];
+      description = "Extra DNS names that resolve to the same server.";
     };
 
     ipAddress = mkOption {
@@ -58,6 +64,7 @@ in
 
     modules.services.vHosts.hosts.${cfg.domain} = {
       ipAddress = cfg.ipAddress;
+      serverAliases = cfg.aliases;
       displayName = "RustDesk";
       category = "infrastructure";
       icon = "rustdesk";

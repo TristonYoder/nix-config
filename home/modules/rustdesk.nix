@@ -46,7 +46,7 @@ in
 
     server = mkOption {
       type = types.str;
-      default = "rustdesk.theyoder.family";
+      default = "remote.theyoder.family";
       description = "ID/rendezvous and relay server host.";
     };
 
