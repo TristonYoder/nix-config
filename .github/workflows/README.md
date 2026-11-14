@@ -44,6 +44,7 @@ No rsync. No temp directories. Every rebuild — in CI and locally via `rebuild`
 | **tristons-workstation** | Desktop | ✅ | ✅ | ✅ best-effort |
 | **tristons-nixbook** | Laptop | ✅ | ❌ (offline) | ✅ best-effort |
 | **tristons-nixbook-pro** | Laptop | ✅ | ❌ (offline) | ✅ best-effort |
+| **Julia-NixBook-Air** | Laptop | ✅ | ❌ (auto-update prompt) | ✅ best-effort |
 
 ## Workflows
 
@@ -78,7 +79,7 @@ All tests are parallel. One failing host doesn't stop others.
 
 **Closure build order within `build-all-closures`:**
 - `david`, `pits` — must succeed (blocks deployment if either fails)
-- `tristons-workstation`, `tristons-nixbook`, `tristons-nixbook-pro` — best-effort (logged but non-blocking)
+- `tristons-workstation`, `tristons-nixbook`, `tristons-nixbook-pro`, `Julia-NixBook-Air` — best-effort (logged but non-blocking)
 
 ### build-installer-iso.yml
 
@@ -188,7 +189,7 @@ Without it, nix may resolve the flake ref from a local cache and build a stale c
 
 ### Closure build fails for an offline host
 
-`tristons-nixbook` and `tristons-nixbook-pro` failures are logged but don't block deployment.
+`tristons-nixbook`, `tristons-nixbook-pro` and `Julia-NixBook-Air` failures are logged but don't block deployment.
 Their closures can be rebuilt on the next push.
 
 ### See recent CI runs

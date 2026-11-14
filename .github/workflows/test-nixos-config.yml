@@ -142,6 +142,7 @@ jobs:
           - tristons-nixbook-pro
           - tristons-nixbook
           - tristons-workstation
+          - Julia-NixBook-Air
       fail-fast: false
 
     steps:

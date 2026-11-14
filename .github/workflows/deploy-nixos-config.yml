@@ -176,6 +176,11 @@ jobs:
             --option extra-substituters 'https://cache.soopy.moe' \
             --option extra-trusted-public-keys 'cache.soopy.moe:MzBsBVPllIlCwL2PVs3BQC3Bfbp9TIgakN1xFUDEm8E=' \
             || echo "⚠️ tristons-nixbook-pro build failed, continuing"
+          # Too small to build its own closure; auto-update-check on the Air
+          # pulls this from the cache. Not in notify-workstations: it has no
+          # github-actions user, and its hourly timer picks the build up.
+          build_and_cache Julia-NixBook-Air \
+            || echo "⚠️ Julia-NixBook-Air build failed, continuing"
         EOF
 
     - name: Notify closures built
