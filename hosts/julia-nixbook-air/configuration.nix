@@ -86,6 +86,13 @@ in
 
   environment.systemPackages = with pkgs; [ firefox google-chrome ];
 
+  # Module rather than the bare package: wires up the polkit policy and the
+  # setgid helper the browser extensions use to talk to the desktop app.
+  programs._1password-gui = {
+    enable = true;
+    polkitPolicyOwners = [ user ];
+  };
+
   # Flathub via Discover, so Julia can install her own apps without Nix.
   modules.system.flatpak.enable = true;
 
