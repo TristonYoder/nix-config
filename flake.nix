@@ -416,7 +416,13 @@
 
           modules = [
             ./hosts/julia-nixbook-air/installer.nix
-          ];
+          ]
+          # Pre-authed WiFi (NetworkManager profile) from outside the repo, never
+          # committed -- same pattern as stage-plotiphar-installer below. Build with
+          # --impure on the machine that holds the file.
+          ++ nixpkgs.lib.optional
+            (builtins.pathExists "${builtins.getEnv "HOME"}/.config/nix-config-local-only/julia-installer-wifi.nix")
+            (import "${builtins.getEnv "HOME"}/.config/nix-config-local-only/julia-installer-wifi.nix");
 
           specialArgs = {
             inherit nixpkgs;
