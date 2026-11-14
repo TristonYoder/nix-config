@@ -29,20 +29,32 @@
   # "latest" channel points at linux 7.0, which nixpkgs has removed. Pin 6.18
   # to the point release this laptop last built and ran. Remove once
   # nixos-hardware refreshes stable.json or moves to the t2bce/7.x stack.
-  boot.kernelPackages = lib.mkForce (pkgs.linuxPackagesFor (
-    pkgs.callPackage "${nixos-hardware}/apple/t2/pkgs/linux-t2" {
-      linux_6_18 = pkgs.linux_6_18.override {
-        argsOverride = rec {
-          version = "6.18.38";
-          modDirVersion = version;
-          src = pkgs.fetchurl {
-            url = "mirror://kernel/linux/kernel/v6.x/linux-${version}.tar.xz";
-            hash = "sha256-rCblCKvVbp+LiYcrbhDEn8gjvMcNgGil2FBMGnxP8EU=";
-          };
+  #
+  # generic.nix passes its own argsOverride (extraMeta) to kernel.override,
+  # which would replace a pin set on linux_6_18 beforehand, so the pin is
+  # merged into whatever argsOverride that call carries.
+  boot.kernelPackages =
+    let
+      pin = rec {
+        version = "6.18.38";
+        modDirVersion = version;
+        src = pkgs.fetchurl {
+          url = "mirror://kernel/linux/kernel/v6.x/linux-${version}.tar.xz";
+          hash = "sha256-rCblCKvVbp+LiYcrbhDEn8gjvMcNgGil2FBMGnxP8EU=";
         };
       };
-    }
-  ));
+      pinnedLinux = pkgs.linux_6_18 // {
+        override = args: pkgs.linux_6_18.override (args // {
+          argsOverride = (args.argsOverride or { }) // pin;
+        });
+      };
+    in
+    lib.mkForce (pkgs.linuxPackagesFor (
+      pkgs.callPackage "${nixos-hardware}/apple/t2/pkgs/linux-t2/generic.nix" { } {
+        kernel = pinnedLinux;
+        patchesFile = "${nixos-hardware}/apple/t2/pkgs/linux-t2/stable.json";
+      }
+    ));
 
   # Intel UHD 630 VA-API support.
   hardware.graphics = {
