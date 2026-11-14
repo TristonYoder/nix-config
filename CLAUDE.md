@@ -780,11 +780,10 @@ SDDM defaults to `DisplayServer=wayland`. The NVIDIA DRM driver rejects the `vid
 
 **Quick fix:** `sudo systemctl restart display-manager`
 
-**Permanent fix options:**
-- Disable SDDM Wayland: `services.displayManager.sddm.wayland.enable = false;` — now applied on
-  every host running the RustDesk agent (`rustdeskAgent.x11LoginScreen`) **except david**, which
-  stays Wayland-only on purpose (login screen via KVM; Xorg also can't drive its GTX 1060 with the
-  595 driver)
+**Permanent fix options (not yet applied):**
+- Disable SDDM Wayland: `services.displayManager.sddm.wayland.enable = false;` — but Xorg can't
+  start on david at all: the NVIDIA 595 driver ignores its GTX 1060 (580 legacy branch), so an X11
+  greeter fails with "no screens found". Tried 2026-11-13 and reverted.
 - Remove the `video=` kernel param from `display-resolution.nix` — NVIDIA DRM doesn't support user-defined modes (only useful for simpledrm/efifb)
 
 **Diagnostics:**
@@ -1074,12 +1073,11 @@ A mismatched filesystem type/device between the two `mountinfo` lines for the sa
   already exist in the console, or it 404s. Re-enroll by deleting `/var/lib/rustdesk-agent/enrolled`. Rotating `rustdesk-fleet-password` re-runs provisioning on deploy (host password and address-book entries); the Fleet book's default password is set in the console and must be changed there too.
 - The console is `public = true` on purpose: internally `remote` CNAMEs to pits' public IP, so an
   internal-only vHost 403s every client's API calls (heartbeat, address book, SSO) except pits.
-- Remote desktop needs X11. RustDesk rejects a Wayland login screen, and the client reports it as
-  "The password from the address book did not work" alongside "Wayland login screen is not
-  supported" -- the password is fine (terminal sessions log in). The agent sets SDDM's greeter to
-  X11 (`x11LoginScreen`) everywhere but david (Wayland-only, KVM for the login screen); log in to
-  Plasma (X11) remotely, since a Wayland session needs a
-  screen-share consent clicked on the local display. Headless hosts only offer terminal sessions.
+- All hosts stay on Wayland, deliberately. RustDesk rejects a Wayland login screen, and the client
+  reports it as "The password from the address book did not work" alongside "Wayland login screen
+  is not supported" -- the password is fine (terminal sessions log in). Log in locally (david: via
+  the KVM) first; the first desktop session wants a screen-share consent on the local display,
+  remembered after that. Headless hosts only offer terminal sessions.
 
 ### Stage Plotiphar — Erasure Key, Deletion Log, Restoring a Backup
 **Host:** david — `docker/productivity/stageplotiphar.nix`
