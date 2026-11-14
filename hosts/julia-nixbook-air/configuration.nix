@@ -127,6 +127,9 @@ in
     polkitPolicyOwners = [ user ];
   };
 
+  # Unattended RustDesk, enrolled in CortenDesk (secrets encrypted to this host).
+  modules.services.infrastructure.rustdeskAgent.enable = true;
+
   # Flathub via Discover, so Julia can install her own apps without Nix.
   modules.system.flatpak.enable = true;
 
