@@ -218,6 +218,11 @@ with lib;
       "cortendesk-private-key" = { file = ../secrets/cortendesk-private-key.age; owner = "root"; group = "root"; mode = "0400"; };
     })
 
+    // (optionalAttrs config.modules.services.infrastructure.cortendesk.oidc.enable {
+      # Encrypted to pits only. Pocket ID client secret for CortenDesk SSO.
+      "cortendesk-oidc-secret" = { file = ../secrets/cortendesk-oidc-secret.age; owner = "root"; group = "root"; mode = "0400"; };
+    })
+
     // (optionalAttrs config.modules.services.development.githubRunner.enable {
       # Fine-grained PAT with read/write "Administration" access, all repos.
       # Shared across every runner instance on this host — read only by the
