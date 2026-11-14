@@ -324,7 +324,7 @@
           ];
 
           specialArgs = {
-            inherit self nixpkgs nixpkgs-unstable iopenpod-flake;
+            inherit self nixpkgs nixpkgs-unstable iopenpod-flake nixos-hardware;
           };
         };
 

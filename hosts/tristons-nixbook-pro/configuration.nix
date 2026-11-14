@@ -1,7 +1,7 @@
 # Configuration for tristons-nixbook-pro
 # NixOS on 2019 T2 MacBook Pro 16,1 (dual boot alongside macOS)
 
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, nixos-hardware, ... }:
 {
   # ===========================================================================
   # SYSTEM IDENTIFICATION
@@ -22,6 +22,39 @@
   };
 
   hardware.apple.touchBar.settings.MediaLayerDefault = true;
+
+  # nixos-hardware's stable T2 kernel pairs nixpkgs' linux_6_18 with a t2linux
+  # patch set pinned in early 2026; t2linux itself has moved on to 7.x. By
+  # 6.18.57 several patches (i915 quirk, applesmc) no longer apply, and the
+  # "latest" channel points at linux 7.0, which nixpkgs has removed. Pin 6.18
+  # to the point release this laptop last built and ran. Remove once
+  # nixos-hardware refreshes stable.json or moves to the t2bce/7.x stack.
+  #
+  # generic.nix passes its own argsOverride (extraMeta) to kernel.override,
+  # which would replace a pin set on linux_6_18 beforehand, so the pin is
+  # merged into whatever argsOverride that call carries.
+  boot.kernelPackages =
+    let
+      pin = rec {
+        version = "6.18.38";
+        modDirVersion = version;
+        src = pkgs.fetchurl {
+          url = "mirror://kernel/linux/kernel/v6.x/linux-${version}.tar.xz";
+          hash = "sha256-rCblCKvVbp+LiYcrbhDEn8gjvMcNgGil2FBMGnxP8EU=";
+        };
+      };
+      pinnedLinux = pkgs.linux_6_18 // {
+        override = args: pkgs.linux_6_18.override (args // {
+          argsOverride = (args.argsOverride or { }) // pin;
+        });
+      };
+    in
+    lib.mkForce (pkgs.linuxPackagesFor (
+      pkgs.callPackage "${nixos-hardware}/apple/t2/pkgs/linux-t2/generic.nix" { } {
+        kernel = pinnedLinux;
+        patchesFile = "${nixos-hardware}/apple/t2/pkgs/linux-t2/stable.json";
+      }
+    ));
 
   # Intel UHD 630 VA-API support.
   hardware.graphics = {
