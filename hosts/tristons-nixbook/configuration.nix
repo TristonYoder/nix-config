@@ -58,18 +58,8 @@
   # MacBook keyboard has Command (Super) next to spacebar where Ctrl
   # would be on a PC keyboard. Use keyd to swap at the kernel level
   # so it works in Wayland, X11, and TTY.
-  services.keyd = {
-    enable = true;
-    keyboards.default = {
-      ids = [ "*" ];
-      settings.main = {
-        leftmeta = "leftcontrol";
-        leftcontrol = "leftmeta";
-        rightmeta = "rightcontrol";
-        rightcontrol = "rightmeta";
-      };
-    };
-  };
+  # Command/Control swap and lid-sleep defaults (modules/hardware/apple-laptop.nix)
+  modules.hardware.appleLaptop.enable = true;
 
   # =============================================================================
   # ADDITIONAL PACKAGES FOR LAPTOP

@@ -45,18 +45,8 @@
 
   # Mac keyboard has Command next to spacebar. Swap at kernel level so it
   # works across Wayland, X11, and TTY.
-  services.keyd = {
-    enable = true;
-    keyboards.default = {
-      ids = [ "*" ];
-      settings.main = {
-        leftmeta = "leftcontrol";
-        leftcontrol = "leftmeta";
-        rightmeta = "rightcontrol";
-        rightcontrol = "rightmeta";
-      };
-    };
-  };
+  # Command/Control swap and lid-sleep defaults (modules/hardware/apple-laptop.nix)
+  modules.hardware.appleLaptop.enable = true;
 
   # ===========================================================================
   # STORAGE & SYNC

@@ -77,8 +77,16 @@ in
   # HARDWARE
   # =============================================================================
 
-  # Apple SMC fan control -- the default firmware curve runs the Air hot.
-  services.mbpfan.enable = true;
+  # Command/Control swap, lid sleep, and mbpfan (the firmware fan curve runs
+  # the Air hot under Linux).
+  modules.hardware.appleLaptop = {
+    enable = true;
+    fanControl = true;
+  };
+
+  # Panel is 1440x900; the desktop profile's auto-detect would pass
+  # video=1920x1080 and run the boot console/splash at the wrong mode.
+  modules.hardware.displayResolution.resolution = "1440x900";
 
   # =============================================================================
   # PACKAGES

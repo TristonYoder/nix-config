@@ -6,6 +6,7 @@
     ./boot.nix
     ./display-resolution.nix
     ./t2-suspend.nix
+    ./apple-laptop.nix
   ];
 }
 
