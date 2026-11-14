@@ -23,27 +23,26 @@
 
   hardware.apple.touchBar.settings.MediaLayerDefault = true;
 
-  # nixos-hardware's stable T2 kernel pairs nixpkgs' linux_6_18 with a pinned
-  # t2linux patch set that upstream stopped refreshing for 6.18. From 6.18.57,
-  # the i915 quirk for MacBookPro15,1 no longer applies. This is a 16,1, so
-  # rebuild the same kernel without that one patch. Remove once nixos-hardware
-  # updates stable.json or moves stable off 6.18.
-  boot.kernelPackages =
-    let
-      t2 = "${nixos-hardware}/apple/t2/pkgs/linux-t2";
-      patchset = lib.importJSON "${t2}/stable.json";
-      patchesFile = builtins.toFile "t2-stable.json" (builtins.toJSON (patchset // {
-        patches = builtins.filter
-          (p: p.name != "2008-i915-4-lane-quirk-for-mbp15-1.patch")
-          patchset.patches;
-      }));
-    in
-    lib.mkForce (pkgs.linuxPackagesFor (
-      pkgs.callPackage "${t2}/generic.nix" { } {
-        kernel = pkgs.linux_6_18;
-        inherit patchesFile;
-      }
-    ));
+  # nixos-hardware's stable T2 kernel pairs nixpkgs' linux_6_18 with a t2linux
+  # patch set pinned in early 2026; t2linux itself has moved on to 7.x. By
+  # 6.18.57 several patches (i915 quirk, applesmc) no longer apply, and the
+  # "latest" channel points at linux 7.0, which nixpkgs has removed. Pin 6.18
+  # to the point release this laptop last built and ran. Remove once
+  # nixos-hardware refreshes stable.json or moves to the t2bce/7.x stack.
+  boot.kernelPackages = lib.mkForce (pkgs.linuxPackagesFor (
+    pkgs.callPackage "${nixos-hardware}/apple/t2/pkgs/linux-t2" {
+      linux_6_18 = pkgs.linux_6_18.override {
+        argsOverride = rec {
+          version = "6.18.38";
+          modDirVersion = version;
+          src = pkgs.fetchurl {
+            url = "mirror://kernel/linux/kernel/v6.x/linux-${version}.tar.xz";
+            hash = "sha256-rCblCKvVbp+LiYcrbhDEn8gjvMcNgGil2FBMGnxP8EU=";
+          };
+        };
+      };
+    }
+  ));
 
   # Intel UHD 630 VA-API support.
   hardware.graphics = {
