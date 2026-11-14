@@ -180,7 +180,8 @@ in
         "terraform"
         "vscode"
       ];
-      theme = "powerlevel10k/powerlevel10k";
+      # No oh-my-zsh theme: powerlevel10k is sourced from the store in initContent,
+      # so activation never needs the network.
       custom = "${config.home.homeDirectory}/.oh-my-zsh/custom";
     };
     
@@ -192,6 +193,7 @@ in
         fi
       '')
       ''
+        source ${pkgs.zsh-powerlevel10k}/share/zsh-powerlevel10k/powerlevel10k.zsh-theme
         # To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
         [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
@@ -289,25 +291,4 @@ in
         IdentityAgent ${config.home.homeDirectory}/.1password/agent.sock
     '';
   });
-  
-  # =============================================================================
-  # ACTIVATION SCRIPTS
-  # =============================================================================
-  
-  # Install Powerlevel10k theme
-  home.activation.installPowerlevel10k = lib.hm.dag.entryAfter ["installPackages"] ''
-    verboseEcho "Installing Powerlevel10k theme..."
-    
-    # Create Oh My Zsh custom directory if it doesn't exist
-    run mkdir -p ${config.home.homeDirectory}/.oh-my-zsh/custom/themes
-    
-    # Clone Powerlevel10k if not already present
-    if [[ ! -d "${config.home.homeDirectory}/.oh-my-zsh/custom/themes/powerlevel10k" ]]; then
-      verboseEcho "Cloning Powerlevel10k theme..."
-      run ${pkgs.git}/bin/git clone --depth=1 https://github.com/romkatv/powerlevel10k.git "${config.home.homeDirectory}/.oh-my-zsh/custom/themes/powerlevel10k"
-    else
-      verboseEcho "Powerlevel10k theme already installed, updating..."
-      run cd "${config.home.homeDirectory}/.oh-my-zsh/custom/themes/powerlevel10k" && run ${pkgs.git}/bin/git pull
-    fi
-  '';
 }
