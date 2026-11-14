@@ -1056,6 +1056,24 @@ sudo nix shell nixpkgs#sqlite -c sqlite3 /var/lib/navidrome/navidrome.db \
 ```
 A mismatched filesystem type/device between the two `mountinfo` lines for the same path is the tell.
 
+### RustDesk Agent — Headless Hosts, IPC, Enrollment
+**Hosts:** all NixOS hosts — `modules.services.infrastructure.rustdeskAgent`, server is CortenDesk on pits
+
+- `rustdesk --service` only runs `rustdesk --server` (the process that registers with the ID server
+  and serves the `/tmp/RustDesk/ipc` socket) when seat0 has a graphical session. A host with no GUI
+  login never comes online, so headless hosts set `headless = true`, which runs `--server` as the
+  unit instead (pits). Terminal sessions work there; there is no desktop to view.
+- `rustdesk --password` and `--option` go over that IPC socket. `rustdesk-provision` therefore stops
+  the agent, applies settings through a short-lived root `--server`, and restarts it — only when the
+  settings or the password secret change (stamp in `/var/lib/rustdesk-agent/applied`).
+- Enrollment POSTs to `https://remote.theyoder.family/api/devices/cli` (what `rustdesk --assign`
+  does) with the `rustdesk-enroll-token` secret. The device group and address book ("Fleet") must
+  already exist in the console, or it 404s. Re-enroll by deleting `/var/lib/rustdesk-agent/enrolled`.
+- The console is `public = true` on purpose: internally `remote` CNAMEs to pits' public IP, so an
+  internal-only vHost 403s every client's API calls (heartbeat, address book, SSO) except pits.
+- Plasma (Wayland) hosts need a one-time screen-share consent on the local display before the
+  first remote view. X11 hosts (stage-plotiphar) need nothing.
+
 ### Stage Plotiphar — Erasure Key, Deletion Log, Restoring a Backup
 **Host:** david — `docker/productivity/stageplotiphar.nix`
 
