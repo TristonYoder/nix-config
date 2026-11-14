@@ -1,7 +1,7 @@
 # Configuration for tristons-nixbook-pro
 # NixOS on 2019 T2 MacBook Pro 16,1 (dual boot alongside macOS)
 
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, nixos-hardware, ... }:
 {
   # ===========================================================================
   # SYSTEM IDENTIFICATION
@@ -22,6 +22,19 @@
   };
 
   hardware.apple.touchBar.settings.MediaLayerDefault = true;
+
+  # nixos-hardware's stable T2 kernel pairs nixpkgs' linux_6_18 with a pinned
+  # t2linux patch set that upstream stopped refreshing for 6.18. From 6.18.57,
+  # the i915 quirk for MacBookPro15,1 no longer applies. This is a 16,1, so
+  # rebuild the same kernel without that one patch. Remove once nixos-hardware
+  # updates stable.json or moves stable off 6.18.
+  boot.kernelPackages = lib.mkForce (pkgs.linuxPackagesFor (
+    (pkgs.callPackage "${nixos-hardware}/apple/t2/pkgs/linux-t2" { }).override (old: {
+      kernelPatches = builtins.filter
+        (p: p.name != "2008-i915-4-lane-quirk-for-mbp15-1.patch")
+        old.kernelPatches;
+    })
+  ));
 
   # Intel UHD 630 VA-API support.
   hardware.graphics = {
