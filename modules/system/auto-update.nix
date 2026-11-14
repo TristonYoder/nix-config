@@ -83,8 +83,9 @@ let
 
     # NixOS version of the new build, in nixos-version's format
     # (<release>.<nixpkgs date>.<nixpkgs rev>), from the nixpkgs input
-    # locked at that commit. Falls back to the commit if GitHub is slow.
-    VERSION="$SHORT_SHA"
+    # locked at that commit. Falls back to the commit alone if GitHub is slow.
+    RELEASE=""
+    BUILD="$SHORT_SHA"
     LOCK=$(${pkgs.curl}/bin/curl -sf --max-time 10 \
       "https://raw.githubusercontent.com/${cfg.repoOwner}/${cfg.repoName}/$LATEST_SHA/flake.lock" || true)
     if [ -n "$LOCK" ]; then
@@ -94,16 +95,19 @@ let
       RELEASE=$(${pkgs.curl}/bin/curl -sf --max-time 10 \
         "https://raw.githubusercontent.com/NixOS/nixpkgs/$REV/lib/.version" || true)
       if [ -n "$REV" ] && [ -n "$MODIFIED" ] && [ -n "$RELEASE" ]; then
-        VERSION="$RELEASE.$(date -u -d "@$MODIFIED" +%Y%m%d).$(echo "$REV" | cut -c1-7) ($SHORT_SHA)"
+        BUILD="$RELEASE.$(date -u -d "@$MODIFIED" +%Y%m%d).$(echo "$REV" | cut -c1-7) ($SHORT_SHA)"
+      else
+        RELEASE=""
       fi
     fi
 
     BUILT_DATE=$(date -d "$BUILT_AT" '+%B %-d, %Y' 2>/dev/null || echo "unknown")
+    DETAILS="''${RELEASE:+NixOS $RELEASE\n}Build: $BUILD\nUpdate: $BUILT_DATE"
 
     ${run-dialog} "$DISPLAY_USER" \
       --title "System Update Available" \
       --yes-label "Update" --no-label "Later" \
-      --yesno "A new system build is ready.\n\nNixOS $VERSION\nUpdate: $BUILT_DATE\n\nThis will download the latest system build from ${cfg.cacheHost}.\n\nThe current OS version will still be available from the boot menu." \
+      --yesno "A new system build is ready.\n\n$DETAILS\n\nThis will download the latest system build from ${cfg.cacheHost}.\n\nThe current OS version will still be available from the boot menu." \
       && RC=0 || RC=$?
 
     # kdialog --yesno: 0 = Yes, 1 = No. Anything else means the dialog never
