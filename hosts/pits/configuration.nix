@@ -204,6 +204,9 @@
   # Console is LAN/Tailscale-only until `public = true` (see the module).
   modules.services.infrastructure.cortendesk = {
     enable = true;
+    # Clients (heartbeat, address book, SSO, enrollment) reach the API from
+    # anywhere, and internally the name resolves to pits' public IP anyway.
+    public = true;
     # Pocket ID client "cortendesk" (id.theyoder.family). Secret in agenix.
     oidc = {
       enable = true;
