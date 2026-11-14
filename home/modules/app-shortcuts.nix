@@ -17,11 +17,10 @@ in
 
     menuCategory = mkOption {
       type    = types.nullOr types.str;
-      default = null;
-      example = "theyoder.family";
+      default = "theyoder.family";
       description = ''
-        Put every generated shortcut in one launcher submenu with this name,
-        instead of spreading them across the standard XDG categories.
+        Put every generated shortcut in one launcher submenu with this name.
+        Set to null to spread them across the standard XDG categories instead.
       '';
     };
   };
