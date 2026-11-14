@@ -44,8 +44,9 @@ let
       exit 0  # GitHub unreachable or no successful runs yet
     fi
 
-    # SHA baked into the running system by system.configurationRevision
-    CURRENT_SHA=$(cat /run/current-system/configuration-revision 2>/dev/null || echo "unknown")
+    # SHA baked into the running system by system.configurationRevision.
+    # Exposed only via nixos-version; there is no file under /run/current-system.
+    CURRENT_SHA=$(/run/current-system/sw/bin/nixos-version --configuration-revision 2>/dev/null || echo "unknown")
 
     if [ "$LATEST_SHA" = "$CURRENT_SHA" ]; then
       exit 0  # Already up to date
