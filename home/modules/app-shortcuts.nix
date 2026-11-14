@@ -108,9 +108,11 @@ EOF
       home.packages = [ pkgs.jq pkgs.curl ];
 
       # Submenu for menuCategory: a merge file plus the .directory that names it.
-      # Plasma sets XDG_MENU_PREFIX=plasma-, and plasma-applications.menu only
-      # reads <DefaultMergeDirs/>, i.e. menus/plasma-applications-merged/.
-      xdg.configFile."menus/plasma-applications-merged/app-shortcuts.menu" = mkIf (cfg.menuCategory != null) {
+      # Although Plasma loads plasma-applications.menu, KDE's parser resolves its
+      # <DefaultMergeDirs/> to menus/applications-merged/ (prefix dropped);
+      # plasma-applications-merged/ is ignored -- confirmed with
+      # `kbuildsycoca6 --menutest` on Julia-NixBook-Air.
+      xdg.configFile."menus/applications-merged/app-shortcuts.menu" = mkIf (cfg.menuCategory != null) {
         text = ''
           <!DOCTYPE Menu PUBLIC "-//freedesktop//DTD Menu 1.0//EN"
             "http://www.freedesktop.org/standards/menu-spec/1.0/menu.dtd">
