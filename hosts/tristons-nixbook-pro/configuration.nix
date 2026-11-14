@@ -28,13 +28,22 @@
   # the i915 quirk for MacBookPro15,1 no longer applies. This is a 16,1, so
   # rebuild the same kernel without that one patch. Remove once nixos-hardware
   # updates stable.json or moves stable off 6.18.
-  boot.kernelPackages = lib.mkForce (pkgs.linuxPackagesFor (
-    (pkgs.callPackage "${nixos-hardware}/apple/t2/pkgs/linux-t2" { }).override (old: {
-      kernelPatches = builtins.filter
-        (p: p.name != "2008-i915-4-lane-quirk-for-mbp15-1.patch")
-        old.kernelPatches;
-    })
-  ));
+  boot.kernelPackages =
+    let
+      t2 = "${nixos-hardware}/apple/t2/pkgs/linux-t2";
+      patchset = lib.importJSON "${t2}/stable.json";
+      patchesFile = builtins.toFile "t2-stable.json" (builtins.toJSON (patchset // {
+        patches = builtins.filter
+          (p: p.name != "2008-i915-4-lane-quirk-for-mbp15-1.patch")
+          patchset.patches;
+      }));
+    in
+    lib.mkForce (pkgs.linuxPackagesFor (
+      pkgs.callPackage "${t2}/generic.nix" { } {
+        kernel = pkgs.linux_6_18;
+        inherit patchesFile;
+      }
+    ));
 
   # Intel UHD 630 VA-API support.
   hardware.graphics = {
