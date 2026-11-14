@@ -11,16 +11,16 @@ let
     USER_ID=$(id -u "$USER" 2>/dev/null) || exit 1
     RUNTIME_DIR="/run/user/$USER_ID"
 
-    # Qt needs a display to connect to; without one kdialog aborts, which
-    # used to read as "No". Prefer the user's Wayland socket, fall back to X.
-    WAYLAND=$(cd "$RUNTIME_DIR" 2>/dev/null && ls wayland-[0-9]* 2>/dev/null | grep -v '\.lock$' | head -1)
-
+    # Run inside the user's systemd manager: Plasma exports its whole
+    # session environment there (WAYLAND_DISPLAY, XDG_DATA_DIRS, theme), so
+    # the dialog gets a display and finds the icon theme. Started from this
+    # root service with a hand-built env, kdialog aborted with no Qt
+    # platform (read as "No") and zenity rendered without icons.
     ${pkgs.util-linux}/bin/runuser -u "$USER" -- \
       env DBUS_SESSION_BUS_ADDRESS="unix:path=$RUNTIME_DIR/bus" \
           XDG_RUNTIME_DIR="$RUNTIME_DIR" \
-          ''${WAYLAND:+WAYLAND_DISPLAY="$WAYLAND"} \
-          DISPLAY=:0 \
-      "$@" 2>/dev/null
+      ${pkgs.systemd}/bin/systemd-run --user --wait --pipe --quiet --collect \
+        "$@" </dev/null 2>/dev/null
   '';
 
   # Notifications and errors (kdialog); the update prompt itself uses zenity.
@@ -204,6 +204,19 @@ in
   };
 
   config = mkIf cfg.enable {
+    # Wayland windows take their dock/task-switcher icon from the .desktop
+    # file matching their app ID; zenity's is org.gnome.Zenity. Hidden from
+    # the launcher; only the update prompt uses zenity.
+    environment.systemPackages = [
+      (pkgs.makeDesktopItem {
+        name = "org.gnome.Zenity";
+        desktopName = "System Update";
+        exec = "zenity";
+        icon = "system-software-update";
+        noDisplay = true;
+      })
+    ];
+
     # State dir for the skip/later markers
     systemd.tmpfiles.rules = [
       "d /var/cache 755 root root -"
