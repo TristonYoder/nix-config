@@ -84,5 +84,20 @@ in
   # PACKAGES
   # =============================================================================
 
-  environment.systemPackages = with pkgs; [ firefox ];
+  environment.systemPackages = with pkgs; [ firefox google-chrome ];
+
+  # Flathub via Discover, so Julia can install her own apps without Nix.
+  modules.system.flatpak.enable = true;
+
+  # System-wide Flatpak installs ask polkit for admin auth, which an
+  # empty-password account can't pass. Allow Flatpak actions (install,
+  # update, uninstall, remotes) for juliayoder only -- nothing else.
+  security.polkit.extraConfig = ''
+    polkit.addRule(function(action, subject) {
+      if (action.id.indexOf("org.freedesktop.Flatpak.") == 0 &&
+          subject.user == "${user}") {
+        return polkit.Result.YES;
+      }
+    });
+  '';
 }

@@ -14,10 +14,23 @@ in
       default = "https://apps-manifest.theyoder.family/apps.json";
       description = "URL to the app manifest JSON served by the app-manifest provider.";
     };
+
+    menuCategory = mkOption {
+      type    = types.nullOr types.str;
+      default = null;
+      example = "theyoder.family";
+      description = ''
+        Put every generated shortcut in one launcher submenu with this name,
+        instead of spreading them across the standard XDG categories.
+      '';
+    };
   };
 
   config = mkIf cfg.enable (
     let
+      # Private XDG category the custom submenu matches on.
+      menuXdgCategory = "X-AppShortcuts";
+
       updateScript = pkgs.writeShellScript "update-app-shortcuts" ''
         set -euo pipefail
 
@@ -69,6 +82,10 @@ in
             gaming)         xdg_cat="Game;Network;" ;;
             *)              xdg_cat="Network;" ;;
           esac
+          ${optionalString (cfg.menuCategory != null) ''
+            # Only the custom category, so they appear in that submenu alone
+            xdg_cat="${menuXdgCategory};"
+          ''}
 
           cat > "$APPS_DIR/$PREFIX$slug.desktop" <<EOF
 [Desktop Entry]
@@ -89,6 +106,35 @@ EOF
     in
     {
       home.packages = [ pkgs.jq pkgs.curl ];
+
+      # Submenu for menuCategory: a merge file plus the .directory that names it.
+      # Plasma sets XDG_MENU_PREFIX=plasma-, and plasma-applications.menu only
+      # reads <DefaultMergeDirs/>, i.e. menus/plasma-applications-merged/.
+      xdg.configFile."menus/plasma-applications-merged/app-shortcuts.menu" = mkIf (cfg.menuCategory != null) {
+        text = ''
+          <!DOCTYPE Menu PUBLIC "-//freedesktop//DTD Menu 1.0//EN"
+            "http://www.freedesktop.org/standards/menu-spec/1.0/menu.dtd">
+          <Menu>
+            <Name>Applications</Name>
+            <Menu>
+              <Name>app-shortcuts</Name>
+              <Directory>app-shortcuts.directory</Directory>
+              <Include>
+                <Category>${menuXdgCategory}</Category>
+              </Include>
+            </Menu>
+          </Menu>
+        '';
+      };
+
+      xdg.dataFile."desktop-directories/app-shortcuts.directory" = mkIf (cfg.menuCategory != null) {
+        text = ''
+          [Desktop Entry]
+          Type=Directory
+          Name=${cfg.menuCategory}
+          Icon=applications-internet
+        '';
+      };
 
       systemd.user.services.app-shortcuts = {
         Unit = {

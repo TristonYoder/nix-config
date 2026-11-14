@@ -10,5 +10,8 @@
 
   programs.home-manager.enable = true;
 
-  modules.appShortcuts.enable = true;
+  modules.appShortcuts = {
+    enable = true;
+    menuCategory = "theyoder.family";
+  };
 }

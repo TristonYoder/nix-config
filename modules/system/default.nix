@@ -11,5 +11,6 @@
     ./desktop.nix
     ./guest-kiosk.nix
     ./nix-cache.nix
+    ./flatpak.nix
   ];
 }
