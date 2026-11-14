@@ -387,4 +387,7 @@
 
   # Passwordless guest account -> locked-down kiosk browser at apps.theyoder.family
   modules.system.guestKiosk.enable = true;
+
+  # Unattended RustDesk, enrolled in CortenDesk (secrets encrypted to this host).
+  modules.services.infrastructure.rustdeskAgent.enable = true;
 }

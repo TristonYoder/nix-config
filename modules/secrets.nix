@@ -223,6 +223,14 @@ with lib;
       "cortendesk-oidc-secret" = { file = ../secrets/cortendesk-oidc-secret.age; owner = "root"; group = "root"; mode = "0400"; };
     })
 
+    // (optionalAttrs config.modules.services.infrastructure.rustdeskAgent.enable {
+      # Encrypted to david, pits, tristons-workstation, tristons-nixbook,
+      # tristons-nixbook-pro, stage-plotiphar. Fleet permanent password, and a
+      # CortenDesk API token (device + address_book rw) for enrollment.
+      "rustdesk-fleet-password" = { file = ../secrets/rustdesk-fleet-password.age; owner = "root"; group = "root"; mode = "0400"; };
+      "rustdesk-enroll-token" = { file = ../secrets/rustdesk-enroll-token.age; owner = "root"; group = "root"; mode = "0400"; };
+    })
+
     // (optionalAttrs config.modules.services.development.githubRunner.enable {
       # Fine-grained PAT with read/write "Administration" access, all repos.
       # Shared across every runner instance on this host — read only by the

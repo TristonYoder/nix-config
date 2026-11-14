@@ -5,6 +5,7 @@
     ./caddy.nix
     ./cloudflared.nix
     ./cortendesk.nix
+    ./rustdesk-agent.nix
     ./headscale.nix
     ./nix-cache-server.nix
     ./postgresql.nix

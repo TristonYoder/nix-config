@@ -132,5 +132,7 @@
 
   # Allow the main user to control CEC devices (/dev/cec*) without sudo
   users.users.${config.modules.system.users.mainUser.name}.extraGroups = [ "video" ];
-}
 
+  # Unattended RustDesk, enrolled in CortenDesk (secrets encrypted to this host).
+  modules.services.infrastructure.rustdeskAgent.enable = true;
+}

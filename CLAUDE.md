@@ -784,7 +784,9 @@ SDDM defaults to `DisplayServer=wayland`. The NVIDIA DRM driver rejects the `vid
 **Quick fix:** `sudo systemctl restart display-manager`
 
 **Permanent fix options (not yet applied):**
-- Disable SDDM Wayland: `services.displayManager.sddm.wayland.enable = false;`
+- Disable SDDM Wayland: `services.displayManager.sddm.wayland.enable = false;` — but Xorg can't
+  start on david at all: the NVIDIA 595 driver ignores its GTX 1060 (580 legacy branch), so an X11
+  greeter fails with "no screens found". Tried 2026-11-13 and reverted.
 - Remove the `video=` kernel param from `display-resolution.nix` — NVIDIA DRM doesn't support user-defined modes (only useful for simpledrm/efifb)
 
 **Diagnostics:**
@@ -1058,6 +1060,27 @@ sudo nix shell nixpkgs#sqlite -c sqlite3 /var/lib/navidrome/navidrome.db \
   'select missing, count(*) from media_file group by missing;'
 ```
 A mismatched filesystem type/device between the two `mountinfo` lines for the same path is the tell.
+
+### RustDesk Agent — Headless Hosts, IPC, Enrollment
+**Hosts:** all NixOS hosts — `modules.services.infrastructure.rustdeskAgent`, server is CortenDesk on pits
+
+- `rustdesk --service` only runs `rustdesk --server` (the process that registers with the ID server
+  and serves the `/tmp/RustDesk/ipc` socket) when seat0 has a graphical session. A host with no GUI
+  login never comes online, so headless hosts set `headless = true`, which runs `--server` as the
+  unit instead (pits). Terminal sessions work there; there is no desktop to view.
+- `rustdesk --password` and `--option` go over that IPC socket. `rustdesk-provision` therefore stops
+  the agent, applies settings through a short-lived root `--server`, and restarts it — only when the
+  settings or the password secret change (stamp in `/var/lib/rustdesk-agent/applied`).
+- Enrollment POSTs to `https://remote.theyoder.family/api/devices/cli` (what `rustdesk --assign`
+  does) with the `rustdesk-enroll-token` secret. The device group and address book ("Fleet") must
+  already exist in the console, or it 404s. Re-enroll by deleting `/var/lib/rustdesk-agent/enrolled`. Rotating `rustdesk-fleet-password` re-runs provisioning on deploy (host password and address-book entries); the Fleet book's default password is set in the console and must be changed there too.
+- The console is `public = true` on purpose: internally `remote` CNAMEs to pits' public IP, so an
+  internal-only vHost 403s every client's API calls (heartbeat, address book, SSO) except pits.
+- All hosts stay on Wayland, deliberately. RustDesk rejects a Wayland login screen, and the client
+  reports it as "The password from the address book did not work" alongside "Wayland login screen
+  is not supported" -- the password is fine (terminal sessions log in). Log in locally (david: via
+  the KVM) first; the first desktop session wants a screen-share consent on the local display,
+  remembered after that. Headless hosts only offer terminal sessions.
 
 ### Stage Plotiphar — Erasure Key, Deletion Log, Restoring a Backup
 **Host:** david — `docker/productivity/stageplotiphar.nix`
