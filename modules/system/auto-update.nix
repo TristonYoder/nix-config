@@ -4,8 +4,8 @@ with lib;
 let
   cfg = config.modules.system.auto-update;
 
-  # Run kdialog in the context of the logged-in graphical user.
-  run-dialog = pkgs.writeShellScript "run-dialog" ''
+  # Run a GUI command in the context of the logged-in graphical user.
+  run-as-user = pkgs.writeShellScript "run-as-user" ''
     USER="$1"
     shift
     USER_ID=$(id -u "$USER" 2>/dev/null) || exit 1
@@ -20,7 +20,14 @@ let
           XDG_RUNTIME_DIR="$RUNTIME_DIR" \
           ''${WAYLAND:+WAYLAND_DISPLAY="$WAYLAND"} \
           DISPLAY=:0 \
-      ${pkgs.kdePackages.kdialog}/bin/kdialog "$@" 2>/dev/null
+      "$@" 2>/dev/null
+  '';
+
+  # Notifications and errors (kdialog); the update prompt itself uses zenity.
+  run-dialog = pkgs.writeShellScript "run-dialog" ''
+    USER="$1"
+    shift
+    exec ${run-as-user} "$USER" ${pkgs.kdePackages.kdialog}/bin/kdialog "$@"
   '';
 
   # Apply the update by switching to the latest GitHub flake build.
@@ -59,9 +66,18 @@ let
       exit 0  # Already up to date
     fi
 
-    # Don't re-prompt for a version the user already deferred
-    DEFERRED_FILE="/var/cache/auto-update-deferred"
-    if [ -f "$DEFERRED_FILE" ] && [ "$(cat "$DEFERRED_FILE")" = "$LATEST_SHA" ]; then
+    # "Skip this Build": never prompt for this SHA again; a newer build will.
+    # (New file name on purpose: the old auto-update-deferred marker was also
+    # written whenever kdialog crashed, so its contents can't be trusted.)
+    SKIPPED_FILE="/var/cache/auto-update-skipped"
+    if [ -f "$SKIPPED_FILE" ] && [ "$(cat "$SKIPPED_FILE")" = "$LATEST_SHA" ]; then
+      exit 0
+    fi
+
+    # "Later": no prompts at all until the snooze expires.
+    LATER_FILE="/var/cache/auto-update-later"
+    NOW=$(date +%s)
+    if [ -f "$LATER_FILE" ] && [ "$NOW" -lt "$(cat "$LATER_FILE" 2>/dev/null || echo 0)" ]; then
       exit 0
     fi
 
@@ -104,27 +120,40 @@ let
     BUILT_DATE=$(date -d "$BUILT_AT" '+%B %-d, %Y' 2>/dev/null || echo "unknown")
     DETAILS="''${RELEASE:+NixOS $RELEASE\n}Build: $BUILD\nUpdate: $BUILT_DATE"
 
-    ${run-dialog} "$DISPLAY_USER" \
+    # --switch: only our buttons, in this order. zenity prints the label of
+    # the button pressed; closing the window prints nothing.
+    SHOWN_AT=$(date +%s)
+    CHOICE=$(${run-as-user} "$DISPLAY_USER" ${pkgs.zenity}/bin/zenity \
+      --question --switch --width=560 \
       --title "System Update Available" \
-      --yes-label "Update" --no-label "Later" \
-      --yesno "A new system build is ready.\n\n$DETAILS\n\nThis will download the latest system build from ${cfg.cacheHost}.\n\nThe current OS version will still be available from the boot menu." \
-      && RC=0 || RC=$?
+      --text "A new system build is ready.\n\n$DETAILS\n\nThis will download the latest system build from ${cfg.cacheHost}.\n\nThe current OS version will still be available from the boot menu." \
+      --extra-button "Skip this Build" \
+      --extra-button "Later" \
+      --extra-button "Update Now" || true)
 
-    # kdialog --yesno: 0 = Yes, 1 = No. Anything else means the dialog never
-    # showed (no display, crash); retry next run rather than deferring.
-    case "$RC" in
-      0) APPLY=1 ;;
-      1) APPLY=0 ;;
-      *) echo "kdialog failed (exit $RC); not deferring $SHORT_SHA" >&2; exit 0 ;;
+    case "$CHOICE" in
+      "Update Now") ;;
+      "Skip this Build") echo "$LATEST_SHA" > "$SKIPPED_FILE"; exit 0 ;;
+      *)
+        # Nothing chosen within 2s means the dialog never showed (no
+        # display, crash): try again next run instead of snoozing.
+        if [ -z "$CHOICE" ] && [ $(( $(date +%s) - SHOWN_AT )) -lt 2 ]; then
+          echo "update prompt failed to show; will retry $SHORT_SHA" >&2
+          exit 0
+        fi
+        # Later, or the window was closed
+        echo $((NOW + ${toString cfg.laterSeconds})) > "$LATER_FILE"
+        exit 0
+        ;;
     esac
 
-    if [ "$APPLY" = "1" ]; then
+    rm -f "$LATER_FILE"
+    {
       ${run-dialog} "$DISPLAY_USER" \
         --title "System Update" \
         --passivepopup "Applying update $SHORT_SHA — this may take a few minutes..." 10 &
 
       if ${apply-update}; then
-        rm -f "$DEFERRED_FILE"
         ${run-dialog} "$DISPLAY_USER" \
           --title "System Update" \
           --passivepopup "Update applied. Now running $SHORT_SHA." 10
@@ -133,10 +162,7 @@ let
           --title "System Update" \
           --error "Update failed.\nSee: journalctl -u auto-update-check"
       fi
-    else
-      # Remember this SHA so we don't re-prompt until a newer build lands
-      echo "$LATEST_SHA" > "$DEFERRED_FILE"
-    fi
+    }
   '';
 in
 {
@@ -164,6 +190,12 @@ in
       default = "main";
     };
 
+    laterSeconds = mkOption {
+      type = types.int;
+      default = 86400;
+      description = "How long \"Later\" silences the update prompt";
+    };
+
     cacheHost = mkOption {
       type = types.str;
       default = "nix-cache.theyoder.family";
@@ -172,7 +204,7 @@ in
   };
 
   config = mkIf cfg.enable {
-    # State dir for the deferred-version marker
+    # State dir for the skip/later markers
     systemd.tmpfiles.rules = [
       "d /var/cache 755 root root -"
     ];
