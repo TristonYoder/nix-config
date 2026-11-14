@@ -41,10 +41,11 @@ let
     set -euo pipefail
 
     # Latest SHA from the last successful deploy run on GitHub
-    LATEST_SHA=$(${pkgs.curl}/bin/curl -sf --max-time 10 \
+    RUN=$(${pkgs.curl}/bin/curl -sf --max-time 10 \
       "https://api.github.com/repos/${cfg.repoOwner}/${cfg.repoName}/actions/workflows/${cfg.workflowFile}/runs?status=success&branch=${cfg.branch}&per_page=1" \
-      | ${pkgs.jq}/bin/jq -r '.workflow_runs[0].head_sha // empty' \
       || true)
+    LATEST_SHA=$(echo "$RUN" | ${pkgs.jq}/bin/jq -r '.workflow_runs[0].head_sha // empty' 2>/dev/null || true)
+    BUILT_AT=$(echo "$RUN" | ${pkgs.jq}/bin/jq -r '.workflow_runs[0].updated_at // empty' 2>/dev/null || true)
 
     if [ -z "$LATEST_SHA" ]; then
       exit 0  # GitHub unreachable or no successful runs yet
@@ -80,9 +81,29 @@ let
 
     SHORT_SHA=$(echo "$LATEST_SHA" | cut -c1-7)
 
+    # NixOS version of the new build, in nixos-version's format
+    # (<release>.<nixpkgs date>.<nixpkgs rev>), from the nixpkgs input
+    # locked at that commit. Falls back to the commit if GitHub is slow.
+    VERSION="$SHORT_SHA"
+    LOCK=$(${pkgs.curl}/bin/curl -sf --max-time 10 \
+      "https://raw.githubusercontent.com/${cfg.repoOwner}/${cfg.repoName}/$LATEST_SHA/flake.lock" || true)
+    if [ -n "$LOCK" ]; then
+      NODE=$(echo "$LOCK" | ${pkgs.jq}/bin/jq -r '.nodes.root.inputs.nixpkgs' || true)
+      REV=$(echo "$LOCK" | ${pkgs.jq}/bin/jq -r --arg n "$NODE" '.nodes[$n].locked.rev // empty' || true)
+      MODIFIED=$(echo "$LOCK" | ${pkgs.jq}/bin/jq -r --arg n "$NODE" '.nodes[$n].locked.lastModified // empty' || true)
+      RELEASE=$(${pkgs.curl}/bin/curl -sf --max-time 10 \
+        "https://raw.githubusercontent.com/NixOS/nixpkgs/$REV/lib/.version" || true)
+      if [ -n "$REV" ] && [ -n "$MODIFIED" ] && [ -n "$RELEASE" ]; then
+        VERSION="$RELEASE.$(date -u -d "@$MODIFIED" +%Y%m%d).$(echo "$REV" | cut -c1-7) ($SHORT_SHA)"
+      fi
+    fi
+
+    BUILT_DATE=$(date -d "$BUILT_AT" '+%B %-d, %Y' 2>/dev/null || echo "unknown")
+
     ${run-dialog} "$DISPLAY_USER" \
       --title "System Update Available" \
-      --yesno "A new system build is ready ($SHORT_SHA).\n\nApply now? This runs 'nixos-rebuild switch'." \
+      --yes-label "Update" --no-label "Later" \
+      --yesno "A new system build is ready.\n\nNixOS $VERSION\nUpdate: $BUILT_DATE\n\nThis will download the latest system build from ${cfg.cacheHost}.\n\nThe current OS version will still be available from the boot menu." \
       && RC=0 || RC=$?
 
     # kdialog --yesno: 0 = Yes, 1 = No. Anything else means the dialog never
@@ -137,6 +158,12 @@ in
     branch = mkOption {
       type = types.str;
       default = "main";
+    };
+
+    cacheHost = mkOption {
+      type = types.str;
+      default = "nix-cache.theyoder.family";
+      description = "Binary cache named in the update prompt";
     };
   };
 
