@@ -20,15 +20,10 @@ let
       env DBUS_SESSION_BUS_ADDRESS="unix:path=$RUNTIME_DIR/bus" \
           XDG_RUNTIME_DIR="$RUNTIME_DIR" \
       ${pkgs.systemd}/bin/systemd-run --user --wait --pipe --quiet --collect \
-        "$@" </dev/null 2>/dev/null
+        "$@" 2>/dev/null
   '';
 
-  # Notifications and errors (kdialog); the update prompt itself uses zenity.
-  run-dialog = pkgs.writeShellScript "run-dialog" ''
-    USER="$1"
-    shift
-    exec ${run-as-user} "$USER" ${pkgs.kdePackages.kdialog}/bin/kdialog "$@"
-  '';
+  zenity = "${pkgs.zenity}/bin/zenity";
 
   # Apply the update by switching to the latest GitHub flake build.
   # Runs as root (system service), so no sudo needed.
@@ -43,7 +38,7 @@ let
 
   # Check GitHub Actions for the latest successful deploy run.
   # Compares its SHA to the running system's configurationRevision and
-  # prompts the user (via kdialog) if an update is available.
+  # prompts the user (via zenity) if an update is available.
   check-update = pkgs.writeShellScript "check-update" ''
     set -euo pipefail
 
@@ -148,21 +143,48 @@ let
     esac
 
     rm -f "$LATER_FILE"
-    {
-      ${run-dialog} "$DISPLAY_USER" \
-        --title "System Update" \
-        --passivepopup "Applying update $SHORT_SHA — this may take a few minutes..." 10 &
 
-      if ${apply-update}; then
-        ${run-dialog} "$DISPLAY_USER" \
-          --title "System Update" \
-          --passivepopup "Update applied. Now running $SHORT_SHA." 10
-      else
-        ${run-dialog} "$DISPLAY_USER" \
-          --title "System Update" \
-          --error "Update failed.\nSee: journalctl -u auto-update-check"
-      fi
-    }
+    # The rebuild writes to a log; the progress window only tails it, so
+    # closing the window can't kill the rebuild mid-switch.
+    LOG=/var/log/auto-update.log
+    : > "$LOG"
+    ${apply-update} > "$LOG" 2>&1 &
+    APPLY_PID=$!
+
+    {
+      tail -n +1 -F --pid="$APPLY_PID" "$LOG" 2>/dev/null \
+        | while IFS= read -r line; do
+            # zenity reads "# text" as the status line; keep it short and
+            # free of Pango markup characters.
+            printf '# %s\n' "$(printf '%s' "$line" | cut -c1-100 | sed 's/&/+/g; s/[<>]//g')"
+          done
+      echo 100
+    } | ${run-as-user} "$DISPLAY_USER" ${zenity} \
+          --progress --pulsate --auto-close --no-cancel --width=560 \
+          --icon=system-software-update \
+          --title "Updating System" \
+          --text "Starting update to $SHORT_SHA..." || true &
+    VIEW_PID=$!
+
+    wait "$APPLY_PID" && RC=0 || RC=$?
+    wait "$VIEW_PID" || true
+
+    if [ "$RC" = 0 ]; then
+      ${run-as-user} "$DISPLAY_USER" ${zenity} --info --width=560 \
+        --icon=system-software-update \
+        --title "Update Complete" \
+        --text "Your system is up to date.\n\n$DETAILS" || true
+    else
+      TAIL=$(tail -n 8 "$LOG" | cut -c1-120)
+      ${run-as-user} "$DISPLAY_USER" ${zenity} --error --width=560 --no-markup \
+        --title "Update Failed" \
+        --text "The update to $SHORT_SHA did not complete. The previous version is still available from the boot menu.
+
+$TAIL
+
+Full log: $LOG" || true
+      exit 1
+    fi
   '';
 in
 {
@@ -224,6 +246,10 @@ in
 
     systemd.services.auto-update-check = {
       description = "Check for NixOS updates via GitHub Actions API";
+      # This unit runs the switch itself. If a new build changed it,
+      # switch-to-configuration would restart it and kill the rebuild
+      # partway through (nixos-upgrade.service does the same).
+      restartIfChanged = false;
       serviceConfig = {
         Type = "oneshot";
         ExecStart = check-update;
