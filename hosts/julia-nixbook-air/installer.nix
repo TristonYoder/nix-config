@@ -12,9 +12,10 @@
     ./broadcom-wl.nix
   ];
 
-  # installation-cd-minimal enables wpa_supplicant; nmtui is easier for
-  # joining WiFi by hand on first boot.
-  networking.wireless.enable = lib.mkForce false;
+  # nmtui is easier than wpa_cli for joining WiFi by hand on first boot.
+  # Don't force networking.wireless off: NetworkManager's wpa_supplicant
+  # backend runs through it, and forcing it off left the ISO with no WiFi
+  # backend at all.
   networking.networkmanager.enable = true;
 
   # mkOverride 40 beats the mkForce (50) in ../installer/configuration.nix.
