@@ -172,7 +172,10 @@ in
       after = [ "rustdesk.service" "network-online.target" "tailscaled.service" ];
       # Wants, not Requires: the script stops and starts rustdesk itself.
       wants = [ "network-online.target" "rustdesk.service" ];
-      restartTriggers = [ settingsJSON (builtins.toJSON cfg.enroll) ];
+      # The agenix path is stable across rotations; the encrypted file is not.
+      restartTriggers = [ settingsJSON (builtins.toJSON cfg.enroll) ]
+        ++ optional (config.age.secrets ? rustdesk-fleet-password)
+             config.age.secrets.rustdesk-fleet-password.file;
       path = agentPath ++ (with pkgs; [ curl jq hostname ]);
       serviceConfig = {
         Type = "oneshot";
@@ -225,8 +228,12 @@ in
         echo "RustDesk ID $id"
 
         ${optionalString cfg.enroll.enable ''
+          # Keyed on the password too, so a rotation re-sends it to the
+          # address-book entry. The book's default password is set in the
+          # console and has to be rotated there.
           stamp=/var/lib/rustdesk-agent/enrolled
-          if [ "$(cat "$stamp" 2>/dev/null || true)" = "$id" ]; then
+          want="$id $(sha256sum < ${escapeShellArg cfg.passwordFile} | cut -d' ' -f1)"
+          if [ "$(cat "$stamp" 2>/dev/null || true)" = "$want" ]; then
             echo "already enrolled"
             exit 0
           fi
@@ -254,7 +261,7 @@ in
           code=''${resp##*$'\n'}
           msg=''${resp%$'\n'*}
           if [ "$code" = 200 ] && [ -z "$msg" ]; then
-            printf %s "$id" > "$stamp"
+            printf %s "$want" > "$stamp"
             echo "enrolled in CortenDesk"
           else
             echo "enrollment failed ($code): $msg" >&2

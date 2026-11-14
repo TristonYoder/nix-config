@@ -1069,7 +1069,7 @@ A mismatched filesystem type/device between the two `mountinfo` lines for the sa
   settings or the password secret change (stamp in `/var/lib/rustdesk-agent/applied`).
 - Enrollment POSTs to `https://remote.theyoder.family/api/devices/cli` (what `rustdesk --assign`
   does) with the `rustdesk-enroll-token` secret. The device group and address book ("Fleet") must
-  already exist in the console, or it 404s. Re-enroll by deleting `/var/lib/rustdesk-agent/enrolled`.
+  already exist in the console, or it 404s. Re-enroll by deleting `/var/lib/rustdesk-agent/enrolled`. Rotating `rustdesk-fleet-password` re-runs provisioning on deploy (host password and address-book entries); the Fleet book's default password is set in the console and must be changed there too.
 - The console is `public = true` on purpose: internally `remote` CNAMEs to pits' public IP, so an
   internal-only vHost 403s every client's API calls (heartbeat, address book, SSO) except pits.
 - Remote desktop needs X11. RustDesk rejects a Wayland login screen, and the client reports it as
