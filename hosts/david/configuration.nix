@@ -657,5 +657,10 @@ in
   };
 
   # Unattended RustDesk, enrolled in CortenDesk (secrets encrypted to this host).
-  modules.services.infrastructure.rustdeskAgent.enable = true;
+  modules.services.infrastructure.rustdeskAgent = {
+    enable = true;
+    # Xorg finds no screens: the installed NVIDIA 595 driver ignores the GTX
+    # 1060 (580 legacy branch), so SDDM can't start an X11 greeter here.
+    x11LoginScreen = false;
+  };
 }
