@@ -375,6 +375,21 @@
           };
         };
 
+        # -----------------------------------------------------------------------------
+        # julia-nixbook-air-installer - Installer ISO for 2013 MacBook Air (Broadcom wl)
+        # -----------------------------------------------------------------------------
+        julia-nixbook-air-installer = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+
+          modules = [
+            ./hosts/julia-nixbook-air/installer.nix
+          ];
+
+          specialArgs = {
+            inherit nixpkgs;
+          };
+        };
+
         # Same installer config, built for aarch64 (Raspberry Pi / ARM boards).
         # Building this requires an aarch64-linux builder — either a native ARM
         # machine or `boot.binfmt.emulatedSystems = [ "aarch64-linux" ];` on an
