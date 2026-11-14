@@ -19,20 +19,22 @@ let
     # Run `tailscale up` in the background and tee its output so we can
     # grab the headscale login URL as soon as it's printed, without
     # blocking on the auth wait before we've shown the QR code.
-    # --ephemeral: the installer environment itself is throwaway (RAM-only,
-    # gone on reboot) — the tailnet node should be too, so headscale doesn't
-    # accumulate a stale "nixos-installer" entry every time this boots.
+    # No --ephemeral: tailscale 1.98 removed the flag from `tailscale up`
+    # (ephemeral now comes only from an ephemeral auth key), and passing it
+    # makes `up` print its usage and exit. Delete the stale "nixos-installer"
+    # node in headscale after each install.
     ${lib.getExe' pkgs.tailscale "tailscale"} up \
       --login-server=https://ts.theyoder.family \
       --ssh \
-      --ephemeral \
       --hostname=nixos-installer \
       2>&1 | tee "$urlFile" &
     tsPid=$!
 
     url=""
     for _ in $(seq 1 30); do
-      url=$(grep -oE 'https://[^ ]+' "$urlFile" | head -n1 || true)
+      # Only the headscale URL -- a generic match QR-encoded a link from
+      # tailscale's usage text when `up` failed.
+      url=$(grep -oE 'https://ts\.theyoder\.family/[^ ]+' "$urlFile" | head -n1 || true)
       [ -n "$url" ] && break
       sleep 1
     done
