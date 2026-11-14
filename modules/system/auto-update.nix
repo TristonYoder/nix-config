@@ -11,9 +11,15 @@ let
     USER_ID=$(id -u "$USER" 2>/dev/null) || exit 1
     RUNTIME_DIR="/run/user/$USER_ID"
 
+    # Qt needs a display to connect to; without one kdialog aborts, which
+    # used to read as "No". Prefer the user's Wayland socket, fall back to X.
+    WAYLAND=$(cd "$RUNTIME_DIR" 2>/dev/null && ls wayland-[0-9]* 2>/dev/null | grep -v '\.lock$' | head -1)
+
     ${pkgs.util-linux}/bin/runuser -u "$USER" -- \
       env DBUS_SESSION_BUS_ADDRESS="unix:path=$RUNTIME_DIR/bus" \
           XDG_RUNTIME_DIR="$RUNTIME_DIR" \
+          ''${WAYLAND:+WAYLAND_DISPLAY="$WAYLAND"} \
+          DISPLAY=:0 \
       ${pkgs.kdePackages.kdialog}/bin/kdialog "$@" 2>/dev/null
   '';
 
@@ -77,7 +83,15 @@ let
     ${run-dialog} "$DISPLAY_USER" \
       --title "System Update Available" \
       --yesno "A new system build is ready ($SHORT_SHA).\n\nApply now? This runs 'nixos-rebuild switch'." \
-      && APPLY=1 || APPLY=0
+      && RC=0 || RC=$?
+
+    # kdialog --yesno: 0 = Yes, 1 = No. Anything else means the dialog never
+    # showed (no display, crash); retry next run rather than deferring.
+    case "$RC" in
+      0) APPLY=1 ;;
+      1) APPLY=0 ;;
+      *) echo "kdialog failed (exit $RC); not deferring $SHORT_SHA" >&2; exit 0 ;;
+    esac
 
     if [ "$APPLY" = "1" ]; then
       ${run-dialog} "$DISPLAY_USER" \
