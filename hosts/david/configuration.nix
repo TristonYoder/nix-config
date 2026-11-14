@@ -656,6 +656,15 @@ in
     manageSharedRoot = true;
   };
 
+  # GTX 1060 (Pascal): the 595 driver ignores it and the card falls back to
+  # simpledrm -- a fixed firmware framebuffer with one mode, so KDE can't change
+  # the resolution and RustDesk's capture size doesn't match the display.
+  modules.hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.legacy_580;
+
+  # video= only affects simpledrm/efifb; NVIDIA DRM rejects it and kwin_wayland
+  # exits, leaving SDDM on a blinking cursor (see CLAUDE.md).
+  modules.hardware.displayResolution.enable = false;
+
   # Unattended RustDesk, enrolled in CortenDesk (secrets encrypted to this host).
   modules.services.infrastructure.rustdeskAgent.enable = true;
 }

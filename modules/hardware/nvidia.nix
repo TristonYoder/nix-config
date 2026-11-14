@@ -26,6 +26,17 @@ in
       description = "Use open-source NVIDIA driver";
     };
     
+    package = mkOption {
+      type = types.package;
+      default = config.boot.kernelPackages.nvidiaPackages.stable;
+      defaultText = literalExpression "config.boot.kernelPackages.nvidiaPackages.stable";
+      description = ''
+        Driver package. Current branches drop older GPUs (595+ ignores Pascal
+        and Maxwell), so those need a legacy branch such as
+        `nvidiaPackages.legacy_580`.
+      '';
+    };
+
     enable32Bit = mkOption {
       type = types.bool;
       default = true;
@@ -47,7 +58,7 @@ in
       modesetting.enable = cfg.enableModesetting;
       nvidiaSettings = cfg.enableSettings;
       open = cfg.useOpenSource;
-      package = config.boot.kernelPackages.nvidiaPackages.stable;
+      package = cfg.package;
     };
   };
 }

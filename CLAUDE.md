@@ -783,11 +783,7 @@ SDDM defaults to `DisplayServer=wayland`. The NVIDIA DRM driver rejects the `vid
 
 **Quick fix:** `sudo systemctl restart display-manager`
 
-**Permanent fix options (not yet applied):**
-- Disable SDDM Wayland: `services.displayManager.sddm.wayland.enable = false;` — but Xorg can't
-  start on david at all: the NVIDIA 595 driver ignores its GTX 1060 (580 legacy branch), so an X11
-  greeter fails with "no screens found". Tried 2026-11-13 and reverted.
-- Remove the `video=` kernel param from `display-resolution.nix` — NVIDIA DRM doesn't support user-defined modes (only useful for simpledrm/efifb)
+**Fix applied:** david disables `modules.hardware.displayResolution`, so there is no `video=` param.
 
 **Diagnostics:**
 ```bash
@@ -795,6 +791,25 @@ systemctl status display-manager
 journalctl --grep="sddm|kwin"
 journalctl --grep="nvidia.*drm"
 ls /tmp/.X11-unix/   # empty = no display running
+```
+
+### GTX 1060 Needs the 580 Legacy Driver (Resolution Locked, RustDesk Mis-sized)
+**Host:** david — GTX 1060 6GB (Pascal)
+
+NVIDIA 595+ drops Pascal. With `nvidiaPackages.stable` the kernel logs "supported through the
+NVIDIA 580.xx Legacy drivers ... will ignore this GPU" and the card falls back to simpledrm: a
+single fixed firmware mode (800x600) on connector `card0-Unknown-1`. KDE's display settings grey
+out resolution and refresh rate, Xorg reports "no screens found", and RustDesk's capture size
+doesn't match its display info.
+
+**Fix applied:** `modules.hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.legacy_580;`
+in david's host config. Re-check this whenever nixpkgs drops or renames `legacy_580`.
+
+**Diagnostics:**
+```bash
+journalctl -b -k | grep NVRM              # "will ignore this GPU" = wrong branch
+ls /sys/class/drm/                       # card*-Unknown-1 = simpledrm, no real driver
+cat /proc/driver/nvidia/version          # missing = nvidia not bound
 ```
 
 ### Qt Apps Crash on Plasma 6 Wayland (SIGABRT / exit 134)

@@ -261,6 +261,15 @@ jobs:
 
         SSH="ssh -o ConnectTimeout=15 -o ServerAliveInterval=15 ${{ secrets.NIXOS_SERVER_USER }}@$SERVER_HOSTNAME"
 
+        # tristons-workstation is best-effort: when it's offline, skip it rather
+        # than failing the run. A failed run is invisible to auto-update-check
+        # (it only reads successful runs), so one powered-off desktop used to
+        # freeze update prompts on every laptop for weeks.
+        if [ "${{ matrix.host }}" = "tristons-workstation" ] && ! $SSH true 2>/dev/null; then
+          echo "::warning::tristons-workstation unreachable, skipping deploy"
+          exit 0
+        fi
+
         # Closures are pre-built in the binary cache; --refresh ensures nix fetches
         # the latest HEAD rather than a locally cached flake resolution.
         # `boot` builds and sets the system profile without activating it.
