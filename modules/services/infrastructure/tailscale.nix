@@ -40,7 +40,12 @@ in
 
     showLoginQr = mkOption {
       type = types.bool;
-      default = true;
+      # Off where a display manager runs: starting the QR unit switches
+      # tty1 (the graphical VT) to the text console, which ends the running
+      # desktop session -- seen on Julia-NixBook-Air, where the autologin
+      # Plasma session died the moment the node first needed a login.
+      default = !config.services.displayManager.enable;
+      defaultText = literalExpression "!config.services.displayManager.enable";
       description = ''
         Render a scannable QR code of the tailscale login URL on the
         physical/virtual console (tty1) whenever the node needs

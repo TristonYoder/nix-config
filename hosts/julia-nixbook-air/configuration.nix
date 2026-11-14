@@ -60,6 +60,20 @@ in
   home-manager.users.${user}.modules.plasma.enable = true;
 
   # =============================================================================
+  # TAILSCALE
+  # =============================================================================
+
+  # Logged in as the juliayoder headscale user. Not a router or exit node.
+  # No Tailscale SSH: the headscale SSH policy only lets Triston into his own
+  # and tagged nodes, so --ssh would block admin access; plain OpenSSH over
+  # the tailnet works with the keys on juliayoder.
+  modules.services.infrastructure.tailscale = {
+    advertiseExitNode = false;
+    advertiseRoutes = "";
+    enableSSH = false;
+  };
+
+  # =============================================================================
   # HARDWARE
   # =============================================================================
 
