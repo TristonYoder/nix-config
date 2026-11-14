@@ -782,7 +782,9 @@ SDDM defaults to `DisplayServer=wayland`. The NVIDIA DRM driver rejects the `vid
 
 **Permanent fix options:**
 - Disable SDDM Wayland: `services.displayManager.sddm.wayland.enable = false;` — now applied on
-  every host running the RustDesk agent (`rustdeskAgent.x11LoginScreen`)
+  every host running the RustDesk agent (`rustdeskAgent.x11LoginScreen`) **except david**, which
+  stays Wayland-only on purpose (login screen via KVM; Xorg also can't drive its GTX 1060 with the
+  595 driver)
 - Remove the `video=` kernel param from `display-resolution.nix` — NVIDIA DRM doesn't support user-defined modes (only useful for simpledrm/efifb)
 
 **Diagnostics:**
@@ -1075,7 +1077,8 @@ A mismatched filesystem type/device between the two `mountinfo` lines for the sa
 - Remote desktop needs X11. RustDesk rejects a Wayland login screen, and the client reports it as
   "The password from the address book did not work" alongside "Wayland login screen is not
   supported" -- the password is fine (terminal sessions log in). The agent sets SDDM's greeter to
-  X11 (`x11LoginScreen`); log in to Plasma (X11) remotely, since a Wayland session needs a
+  X11 (`x11LoginScreen`) everywhere but david (Wayland-only, KVM for the login screen); log in to
+  Plasma (X11) remotely, since a Wayland session needs a
   screen-share consent clicked on the local display. Headless hosts only offer terminal sessions.
 
 ### Stage Plotiphar — Erasure Key, Deletion Log, Restoring a Backup

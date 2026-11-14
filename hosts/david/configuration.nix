@@ -659,8 +659,9 @@ in
   # Unattended RustDesk, enrolled in CortenDesk (secrets encrypted to this host).
   modules.services.infrastructure.rustdeskAgent = {
     enable = true;
-    # Xorg finds no screens: the installed NVIDIA 595 driver ignores the GTX
-    # 1060 (580 legacy branch), so SDDM can't start an X11 greeter here.
+    # Wayland only, deliberately: the login screen is reached over the KVM,
+    # RustDesk is for logged-in sessions. (An X11 greeter also can't start
+    # here -- the NVIDIA 595 driver ignores the GTX 1060.)
     x11LoginScreen = false;
   };
 }
