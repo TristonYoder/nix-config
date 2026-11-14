@@ -124,7 +124,7 @@ let
     # the button pressed; closing the window prints nothing.
     SHOWN_AT=$(date +%s)
     CHOICE=$(${run-as-user} "$DISPLAY_USER" ${pkgs.zenity}/bin/zenity \
-      --question --switch --width=560 \
+      --question --switch --width=560 --icon=system-software-update \
       --title "System Update Available" \
       --text "A new system build is ready.\n\n$DETAILS\n\nThis will download the latest system build from ${cfg.cacheHost}.\n\nThe current OS version will still be available from the boot menu." \
       --extra-button "Skip this Build" \
