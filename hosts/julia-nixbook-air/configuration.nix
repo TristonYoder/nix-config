@@ -84,7 +84,33 @@ in
   # PACKAGES
   # =============================================================================
 
-  environment.systemPackages = with pkgs; [ firefox google-chrome ];
+  # Workstation-profile apps minus the heavy/dev-only ones. 1Password comes
+  # from programs._1password-gui below; Discover from modules.system.flatpak.
+  environment.systemPackages = with pkgs; [
+    # Web browsers
+    firefox
+    google-chrome
+    kdePackages.plasma-browser-integration
+
+    # Media players
+    vlc
+
+    # Development tools
+    vscode
+
+    # Security & Password Management
+    bitwarden-desktop
+
+    # Remote desktop -- client pointed at pits by home/modules/rustdesk.nix
+    rustdesk-flutter
+
+    # Terminal
+    kitty
+    ghostty
+
+    # Notes & Knowledge Management
+    obsidian
+  ];
 
   # Module rather than the bare package: wires up the polkit policy and the
   # setgid helper the browser extensions use to talk to the desktop app.

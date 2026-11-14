@@ -398,6 +398,9 @@
               home-manager.sharedModules = [
                 plasma-manager.homeModules.plasma-manager
                 ./home/modules/plasma
+                # RustDesk client -> self-hosted server on pits
+                ./home/modules/rustdesk.nix
+                { modules.rustdesk.enable = true; }
               ];
               home-manager.users.juliayoder = import ./home/juliayoder.nix;
             }
