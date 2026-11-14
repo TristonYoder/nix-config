@@ -27,6 +27,13 @@ in
       '';
     };
 
+    carolineyoder.enable = mkOption {
+      type = types.bool;
+      default = config.modules.system.desktop.enable;
+      defaultText = literalExpression "config.modules.system.desktop.enable";
+      description = "Create the carolineyoder account (on by default on desktop hosts).";
+    };
+
     mainUser = {
       name = mkOption {
         type = types.str;
@@ -119,7 +126,7 @@ in
 
     # Caroline Yoder user account (on all desktop/laptop/workstation hosts)
     # uid pinned to match david (1002) for the same NFS reason as mainUser.uid above.
-    users.users.carolineyoder = mkIf config.modules.system.desktop.enable {
+    users.users.carolineyoder = mkIf cfg.carolineyoder.enable {
       isNormalUser = true;
       uid = 1002;
       description = "Caroline Yoder";

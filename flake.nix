@@ -376,6 +376,39 @@
         };
 
         # -----------------------------------------------------------------------------
+        # Julia-NixBook-Air - MacBook Air 2013 (x86_64-linux), juliayoder only
+        # -----------------------------------------------------------------------------
+        Julia-NixBook-Air = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+
+          modules = [
+            ./common/system.nix
+            ./common/linux.nix
+            ./profiles/desktop.nix
+            ./hosts/julia-nixbook-air/configuration.nix
+            ./hosts/julia-nixbook-air/hardware-configuration.nix
+            ./modules
+            nixos-vscode-server.nixosModules.default
+            agenix.nixosModules.default
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.backupFileExtension = "backup";
+              home-manager.sharedModules = [
+                plasma-manager.homeModules.plasma-manager
+                ./home/modules/plasma
+              ];
+              home-manager.users.juliayoder = import ./home/juliayoder.nix;
+            }
+          ];
+
+          specialArgs = {
+            inherit self nixpkgs nixpkgs-unstable;
+          };
+        };
+
+        # -----------------------------------------------------------------------------
         # julia-nixbook-air-installer - Installer ISO for 2013 MacBook Air (Broadcom wl)
         # -----------------------------------------------------------------------------
         julia-nixbook-air-installer = nixpkgs.lib.nixosSystem {
