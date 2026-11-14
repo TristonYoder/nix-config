@@ -144,6 +144,8 @@ jobs:
           NIX_CLOSURE_DIR="/var/lib/nix-ci-closures"
           sudo mkdir -p "$NIX_CLOSURE_DIR"
 
+          # Explicit returns: set -e is suspended inside a function called
+          # on the left of ||, which the best-effort hosts below do.
           build_and_cache() {
             local host="$1"
             shift
@@ -153,12 +155,12 @@ jobs:
               "github:TristonYoder/nix-config#nixosConfigurations.$host.config.system.build.toplevel" \
               --refresh \
               --out-link "$out_link" \
-              "$@"
+              "$@" || return 1
             STORE_PATH=$(readlink -f "$out_link")
             echo "Signing and caching: $STORE_PATH"
             sudo nix copy \
               --to "file:///data/nix-builds/cache?secret-key=/run/agenix/nix-cache-signing-key" \
-              "$STORE_PATH"
+              "$STORE_PATH" || return 1
             sudo rm -f "$out_link"
             echo "✅ $host cached"
           }
