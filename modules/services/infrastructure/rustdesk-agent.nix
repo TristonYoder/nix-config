@@ -14,9 +14,10 @@
 #   rustdesk-enroll-token, device + address_book rw). A device-rw token
 #   registers the device pre-approved, in device group `deviceGroup`, and adds
 #   it to address book `addressBook`. Both must exist in the console.
-# - Wayland (Plasma) hosts need a one-time screen-share consent on the local
-#   display before the first remote view; X11 hosts and terminal sessions need
-#   nothing.
+# - Desktop sessions need X11. The SDDM greeter is switched to X11
+#   (x11LoginScreen) so the login screen is reachable; log in to Plasma (X11)
+#   remotely, since a Wayland session wants a screen-share consent clicked on
+#   the local display. Terminal sessions work everywhere, headless included.
 
 with lib;
 let
@@ -68,6 +69,17 @@ in
       # Same as home/modules/rustdesk.nix: the server's public key, not a secret.
       default = "BTZxuh2rmspuGFZUrPIw3cG5u95FXr6xrcoScaekXWc=";
       description = "Server public key.";
+    };
+
+    x11LoginScreen = mkOption {
+      type = types.bool;
+      default = true;
+      description = ''
+        Run SDDM's greeter on X11. RustDesk can't capture a Wayland login
+        screen and rejects desktop sessions there ("Wayland login screen is
+        not supported"). Only the greeter changes; sessions are still picked
+        at login, and Plasma (X11) needs no screen-share consent.
+      '';
     };
 
     headless = mkOption {
@@ -130,6 +142,9 @@ in
 
   config = mkIf cfg.enable {
     environment.systemPackages = [ cfg.package ];
+
+    services.displayManager.sddm.wayland.enable =
+      mkIf (cfg.x11LoginScreen && config.services.displayManager.sddm.enable) false;  # beats plasma6's mkDefault true
 
     # nixpkgs ships no unit; this mirrors upstream's res/rustdesk.service.
     # `--service` watches seat0 and runs `rustdesk --server` (what registers

@@ -780,8 +780,9 @@ SDDM defaults to `DisplayServer=wayland`. The NVIDIA DRM driver rejects the `vid
 
 **Quick fix:** `sudo systemctl restart display-manager`
 
-**Permanent fix options (not yet applied):**
-- Disable SDDM Wayland: `services.displayManager.sddm.wayland.enable = false;`
+**Permanent fix options:**
+- Disable SDDM Wayland: `services.displayManager.sddm.wayland.enable = false;` — now applied on
+  every host running the RustDesk agent (`rustdeskAgent.x11LoginScreen`)
 - Remove the `video=` kernel param from `display-resolution.nix` — NVIDIA DRM doesn't support user-defined modes (only useful for simpledrm/efifb)
 
 **Diagnostics:**
@@ -1071,8 +1072,11 @@ A mismatched filesystem type/device between the two `mountinfo` lines for the sa
   already exist in the console, or it 404s. Re-enroll by deleting `/var/lib/rustdesk-agent/enrolled`.
 - The console is `public = true` on purpose: internally `remote` CNAMEs to pits' public IP, so an
   internal-only vHost 403s every client's API calls (heartbeat, address book, SSO) except pits.
-- Plasma (Wayland) hosts need a one-time screen-share consent on the local display before the
-  first remote view. X11 hosts (stage-plotiphar) need nothing.
+- Remote desktop needs X11. RustDesk rejects a Wayland login screen, and the client reports it as
+  "The password from the address book did not work" alongside "Wayland login screen is not
+  supported" -- the password is fine (terminal sessions log in). The agent sets SDDM's greeter to
+  X11 (`x11LoginScreen`); log in to Plasma (X11) remotely, since a Wayland session needs a
+  screen-share consent clicked on the local display. Headless hosts only offer terminal sessions.
 
 ### Stage Plotiphar — Erasure Key, Deletion Log, Restoring a Backup
 **Host:** david — `docker/productivity/stageplotiphar.nix`
