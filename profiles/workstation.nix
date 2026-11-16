@@ -64,6 +64,7 @@
     
     # Communication
     element-desktop
+    slack
     bluebubbles
 
     # Video Editing

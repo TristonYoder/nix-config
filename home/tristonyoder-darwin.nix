@@ -270,6 +270,7 @@
       # Communication & Productivity
       "spotify"
       "element"
+      "slack"
       "basecamp"
       "basecamp/tap/basecamp-cli"
 
