@@ -103,6 +103,14 @@ Use the `rebuild` shorthand — it auto-detects the host, fetches from GitHub, a
 rebuild
 ```
 
+`rollback` is its counterpart, on both NixOS and Darwin:
+```bash
+rollback            # previous system generation
+rollback --list     # list generations
+rollback 42         # switch to generation 42
+rollback boot       # NixOS only; also `test`
+```
+
 **Always commit AND push before rebuilding.** All hosts now build from `github:TristonYoder/nix-config` — the build fetches the latest pushed commit on `main`. Uncommitted or unpushed changes are invisible to the builder.
 
 **`--refresh` is required** when building from `github:` URLs. Without it, nix may use a locally cached resolution of the flake ref and silently build from a stale commit rather than HEAD. The `rebuild` function adds this automatically; always include it in manual invocations.

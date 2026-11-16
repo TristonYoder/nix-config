@@ -39,6 +39,9 @@
   
   # nix-daemon is now managed unconditionally by nix-darwin when nix.enable is on
 
+  # Prompt when a new CI-approved build is available (modules/darwin/auto-update.nix)
+  modules.system.auto-update.enable = lib.mkDefault true;
+
   # Enable Touch ID for sudo
   security.pam.services.sudo_local.touchIdAuth = true;
   
