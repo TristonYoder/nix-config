@@ -21,7 +21,7 @@ Read `references/checklist.md` for the full step-by-step checklists.
 
 ## Quick decision tree
 
-1. **Is there an existing machine to SSH into for the install?** → Use remote install technique (see checklist.md)
+1. **Default path:** boot a tailnet-joining installer USB and follow "Installer-USB install" in checklist.md (pre-generated host key, carried-over Tailscale state, detached `nixos-install`)
 2. **Is it a T2 MacBook?** → Needs `nixos-hardware.apple-t2` input + special bootloader
 3. **Does it have an NVIDIA GPU?** → Needs `modules/hardware/nvidia.nix` (open kernel modules)
 4. **Will it mount /home or /data from NFS?** → Set `useDataDrive = true` in user options; add NFS mount config (see tristons-workstation pattern)
@@ -71,10 +71,9 @@ Every host that needs to decrypt agenix secrets must:
 2. Have all needed secrets re-encrypted including the new host as recipient
 3. Declare secrets in `modules/secrets.nix` with correct `owner` and `group`
 
-To get an SSH host public key before the host is installed:
+Don't encrypt to the live USB's host key; it's throwaway. Pre-generate the real one into
+`/mnt/etc/ssh` before `nixos-install` (checklist.md, "Installer-USB install" step 4) so the
+host decrypts its secrets on first boot. For an already-installed host:
 ```bash
-# From a running live USB on the target
-cat /etc/ssh/ssh_host_ed25519_key.pub
-# or after install
 ssh-keyscan -t ed25519 <hostname-or-ip>
 ```

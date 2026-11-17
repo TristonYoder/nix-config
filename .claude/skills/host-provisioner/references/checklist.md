@@ -102,6 +102,69 @@ rebuild   # or: darwin-rebuild switch --refresh --flake github:TristonYoder/nix-
 
 ---
 
+## Installer-USB install (the standard path)
+
+How plotiphar-imac was installed (2026-11). Boot the target from a tailnet-joining
+installer (`installer` ISO, or a host-specific one like `julia-nixbook-air-installer`
+when the stock kernel lacks a driver), then drive the whole install over Tailscale SSH.
+The three staging steps (host key, Tailscale state, host-local blobs) are what make the
+first boot come up already on WiFi, on the tailnet, and decrypting its secrets, with
+nobody at the console.
+
+1. **Boot the installer and join the tailnet.** It shows a QR code / login URL; approve
+   the node in headscale. Register it under the *target's* hostname
+   (`tailscale up --login-server=https://ts.theyoder.family --hostname=<hostname>`),
+   because this identity is carried into the installed system (step 5).
+   Then `ssh root@<tailnet-ip>`.
+2. **Partition, format, mount.** Mount by partition path (`/dev/nvme0n1p2`), not
+   `/dev/disk/by-label/...`: right after `mkfs` the label symlink may not exist yet.
+3. **Hardware config:** `nixos-generate-config --root /mnt --show-hardware-config`,
+   copy into `hosts/<hostname>/hardware-configuration.nix`.
+4. **Pre-generate the host key so secrets work on first boot.** The live USB's own host
+   key is throwaway; don't encrypt to it.
+   ```bash
+   mkdir -p /mnt/etc/ssh
+   ssh-keygen -t ed25519 -N "" -C root@<hostname> -f /mnt/etc/ssh/ssh_host_ed25519_key
+   cat /mnt/etc/ssh/ssh_host_ed25519_key.pub
+   ```
+   Add the pubkey to `secrets/secrets.nix` (the `ssh-ed25519 ...` string works as a
+   recipient directly) and `secrets/keys/<hostname>.pub`, then encrypt the host's secrets
+   with `encrypt-secret.sh` (`-h <hostname> -f <file>`, verify with `-v`). NixOS keeps an
+   existing host key, so agenix decrypts during `nixos-install` itself.
+5. **Carry the Tailscale identity.** `tailscaled.state` *is* the node (machine key, node
+   key, login). Copying it makes the installed system the same headscale node, already
+   logged in, same IP:
+   ```bash
+   mkdir -p /mnt/var/lib && cp -a /var/lib/tailscale /mnt/var/lib/
+   ```
+   Afterwards never boot that USB stick while the installed host is online: both would
+   hold one identity and fight over the node. Reusing the stick on another machine is fine
+   once it registers as a new node there (fresh boot = fresh state).
+6. **Stage host-local blobs that can't go in the public repo** (e.g. proprietary
+   firmware pulled from macOS) under `/mnt/var/lib/<something>` and point the config at
+   that path. Keep a copy off the machine too (david: `~github-actions/<hostname>/`).
+7. **Push the branch, dry-run on david** (see Step 5 above), add the host to the
+   `test-nixos-config.yml` matrix.
+8. **Install, detached from the SSH session**, so a dropped connection can't kill it:
+   ```bash
+   systemd-run --unit=nixos-install-<hostname> -p StandardOutput=journal -p StandardError=journal \
+     nixos-install --no-root-passwd --option tarball-ttl 0 \
+     --flake 'github:TristonYoder/nix-config/<branch>#<hostname>'
+   journalctl -u nixos-install-<hostname> -f
+   ```
+   `nixos-install` rejects `--refresh`; `--option tarball-ttl 0` does the same job (forces
+   a fresh fetch of the branch). On the minimal installer, a plain `nix build` needs
+   `--extra-experimental-features "nix-command flakes"`.
+9. **Reboot and verify:** back on the tailnet at the same IP, `ls /run/agenix/`, network
+   up on its own, profile's session running.
+
+**Dual NIC on one subnet:** when testing WiFi with ethernet also plugged into the same
+subnet, WiFi looks dead: replies route out ethernet and rp_filter drops them. Test WiFi
+with ethernet down (do it in a `systemd-run` unit that brings it back, or you lose the
+session).
+
+---
+
 ## Remote NixOS install (over SSH, no physical access)
 
 Used when the target machine can be booted into a NixOS live ISO via IPMI/iDRAC/VNC.
@@ -114,7 +177,7 @@ Used when the target machine can be booted into a NixOS live ISO via IPMI/iDRAC/
 6. Generate hardware config: `nixos-generate-config --root /mnt`
 7. Copy generated hardware-configuration.nix into repo
 8. Add swap if heavy profile: `sudo btrfs filesystem mkswapfile --size 16G /mnt/swapfile && sudo swapon /mnt/swapfile`
-9. Run install: `nixos-install --flake 'github:TristonYoder/nix-config#<hostname>' --refresh`
+9. Run install: `nixos-install --option tarball-ttl 0 --flake 'github:TristonYoder/nix-config#<hostname>'` (`--refresh` is rejected by nixos-install)
 10. Reboot: `reboot`
 
 **OOM warning:** heavy profiles (gaming module, DaVinci Resolve) can exhaust RAM in a swapless live environment. Always run `free -h` before starting; create a swapfile if Swap shows 0B.
