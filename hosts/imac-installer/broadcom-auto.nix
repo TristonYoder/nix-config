@@ -39,7 +39,11 @@
     '';
   };
 
-  # Match by name so the allowance survives version bumps.
+  # Match by name so the allowance survives version bumps. A predicate
+  # replaces nixpkgs' default check of permittedInsecurePackages, so that
+  # list (common/system.nix) is honoured here too.
   nixpkgs.config.allowInsecurePredicate = pkg:
-    lib.hasPrefix "broadcom-sta" (lib.getName pkg);
+    lib.hasPrefix "broadcom-sta" (lib.getName pkg)
+    || builtins.elem (pkg.name or "${pkg.pname}-${pkg.version}")
+      (config.nixpkgs.config.permittedInsecurePackages or [ ]);
 }
