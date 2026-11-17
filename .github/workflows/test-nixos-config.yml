@@ -144,6 +144,7 @@ jobs:
           - tristons-workstation
           - Julia-NixBook-Air
           - plotiphar-imac
+          - tristons-iNix
       fail-fast: false
 
     steps:

@@ -224,7 +224,7 @@ with lib;
     })
 
     // (optionalAttrs config.modules.services.infrastructure.rustdeskAgent.enable {
-      # Encrypted to david, pits, tristons-workstation, tristons-nixbook,
+      # Encrypted to david, pits, tristons-workstation, tristons-nixbook, tristons-iNix,
       # tristons-nixbook-pro, stage-plotiphar. Fleet permanent password, and a
       # CortenDesk API token (device + address_book rw) for enrollment.
       "rustdesk-fleet-password" = { file = ../secrets/rustdesk-fleet-password.age; owner = "root"; group = "root"; mode = "0400"; };

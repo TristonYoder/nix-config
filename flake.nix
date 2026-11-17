@@ -329,6 +329,40 @@
         };
 
         # -----------------------------------------------------------------------------
+        # tristons-iNix - 2017 iMac (pre-T2), workstation like tristons-nixbook-pro
+        # -----------------------------------------------------------------------------
+        tristons-iNix = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+
+          modules = [
+            ./common/system.nix
+            ./common/linux.nix
+            ./profiles/workstation.nix
+            ./hosts/tristons-inix/configuration.nix
+            ./hosts/tristons-inix/hardware-configuration.nix
+            ./modules
+            nixos-vscode-server.nixosModules.default
+            agenix.nixosModules.default
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.backupFileExtension = "backup";
+              home-manager.sharedModules = [
+                plasma-manager.homeModules.plasma-manager
+                ./home/modules/plasma
+              ];
+              home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
+              home-manager.users.carolineyoder = import ./home/carolineyoder.nix;
+            }
+          ];
+
+          specialArgs = {
+            inherit self nixpkgs nixpkgs-unstable iopenpod-flake nixos-hardware;
+          };
+        };
+
+        # -----------------------------------------------------------------------------
         # tristons-nixbook-pro-installer - Bootable minimal ISO for T2 MacBook Pro
         # -----------------------------------------------------------------------------
         tristons-nixbook-pro-installer = nixpkgs-unstable.lib.nixosSystem {
