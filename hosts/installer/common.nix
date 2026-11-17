@@ -3,12 +3,15 @@
 # with a boot-time QR code. See configuration.nix for the x86_64/aarch64 ISO
 # entry point and rpi5.nix for the Pi 5 sdImage entry point — both import
 # this file rather than duplicating it.
-{ lib, pkgs, ... }:
+{ config, lib, pkgs, ... }:
 let
   # Cached here so it survives past the scrolling boot log — printed again
   # by environment.interactiveShellInit below every time a shell/terminal
   # starts, not just once during the systemd unit's boot-time output.
   qrCacheFile = "/run/tailscale-qr.txt";
+
+  # Optional; see tailscaleUp.
+  authKeyFile = "/etc/tailscale-installer-authkey";
 
   tailscaleUp = pkgs.writeShellScript "tailscale-autoconnect" ''
     set -eu
@@ -23,10 +26,19 @@ let
     # (ephemeral now comes only from an ephemeral auth key), and passing it
     # makes `up` print its usage and exit. Delete the stale "nixos-installer"
     # node in headscale after each install.
+    # A pre-auth key, if a local-only module put one at authKeyFile, joins
+    # without anyone scanning the QR code. Never committed (public repo).
+    authArgs=""
+    if [ -s ${authKeyFile} ]; then
+      authArgs="--auth-key=file:${authKeyFile}"
+    fi
+
+    # shellcheck disable=SC2086
     ${lib.getExe' pkgs.tailscale "tailscale"} up \
       --login-server=https://ts.theyoder.family \
       --ssh \
-      --hostname=nixos-installer \
+      --hostname=${config.networking.hostName} \
+      $authArgs \
       2>&1 | tee "$urlFile" &
     tsPid=$!
 

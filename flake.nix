@@ -432,6 +432,26 @@
           };
         };
 
+        # -----------------------------------------------------------------------------
+        # imac-installer - Installer ISO for pre-T2 Intel iMacs (Broadcom WiFi)
+        # -----------------------------------------------------------------------------
+        imac-installer = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+
+          modules = [
+            ./hosts/imac-installer/configuration.nix
+          ]
+          # WiFi profile, headscale pre-auth key and hostname, from outside the
+          # repo (never committed). Build with --impure on the machine holding it.
+          ++ nixpkgs.lib.optional
+            (builtins.pathExists "${builtins.getEnv "HOME"}/.config/nix-config-local-only/imac-installer.nix")
+            (import "${builtins.getEnv "HOME"}/.config/nix-config-local-only/imac-installer.nix");
+
+          specialArgs = {
+            inherit nixpkgs;
+          };
+        };
+
         # Same installer config, built for aarch64 (Raspberry Pi / ARM boards).
         # Building this requires an aarch64-linux builder — either a native ARM
         # machine or `boot.binfmt.emulatedSystems = [ "aarch64-linux" ];` on an
