@@ -61,7 +61,25 @@
   #   ln -sf $G.apple,nihau-HRPN-m.txt $G.txt
   #   ln -sf $G.apple,nihau.clm_blob $G.clm_blob
   #   ln -sf $G.apple,nihau.txcap_blob $G.txcap_blob
-  boot.kernelParams = [ "firmware_class.path=/var/lib/apple-wifi-firmware" ];
+  #
+  # Not `firmware_class.path=` on the kernel command line: NixOS overwrites
+  # that sysfs parameter at boot with its own hardware.firmware store path.
+  # The kernel always falls back to /lib/firmware, which NixOS leaves unused,
+  # so link that to the staged directory. udev would load brcmfmac before
+  # tmpfiles creates the link, so it's blacklisted and loaded by hand after.
+  systemd.tmpfiles.rules = [ "L+ /lib/firmware - - - - /var/lib/apple-wifi-firmware" ];
+  boot.blacklistedKernelModules = [ "brcmfmac" ];
+  systemd.services.apple-wifi-load = {
+    description = "Load brcmfmac once Apple WiFi firmware is reachable";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "systemd-tmpfiles-setup.service" ];
+    before = [ "NetworkManager.service" ];
+    serviceConfig = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.kmod}/bin/modprobe brcmfmac";
+    };
+  };
 
   age.secrets.plotiphar-imac-wifi-psk = {
     file = ../../secrets/plotiphar-imac-wifi-psk.age;
