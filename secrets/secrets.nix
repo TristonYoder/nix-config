@@ -14,6 +14,9 @@ let
 
   stage-plotiphar = "age179pg3ncsgc50zmcsw67wrgatu0vzdulj475ftphcmkrdpx6cl4xszw0dfa";
 
+  # SSH host key generated on the installer before install (keys/plotiphar-imac.pub).
+  plotiphar-imac = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIgI8bmykXjvJNspNIgcOe1pJAf+/jLCjVgEbS3PT4P2";
+
   # =============================================================================
   # ADMIN KEYS - Keys for managing secrets from local machines
   # =============================================================================
@@ -43,6 +46,9 @@ let
 
   # Secrets for stage-plotiphar only
   stagePlotipharKeys = [ stage-plotiphar ] ++ adminKeys;
+
+  # Secrets for plotiphar-imac only
+  plotipharImacKeys = [ plotiphar-imac ] ++ adminKeys;
 in
 {
   # =============================================================================
@@ -215,5 +221,12 @@ in
   # host's own SSH host key, substituted into the declarative NetworkManager
   # profile at boot (never in the Nix store). See modules/system/wifi.nix.
   "stage-plotiphar-wifi-psk.age".publicKeys = stagePlotipharKeys;
+
+  # =============================================================================
+  # PLOTIPHAR-IMAC-SPECIFIC SECRETS
+  # =============================================================================
+
+  # WiFi PSK for Mission-Church-AV (WIFI_PSK=...), same pattern as above.
+  "plotiphar-imac-wifi-psk.age".publicKeys = plotipharImacKeys;
 
 }

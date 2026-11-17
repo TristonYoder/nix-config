@@ -557,6 +557,41 @@
         };
 
         # -----------------------------------------------------------------------------
+        # plotiphar-imac - 2019 iMac Plotiphar signage kiosk (x86_64-linux)
+        # -----------------------------------------------------------------------------
+        plotiphar-imac = nixpkgs.lib.nixosSystem {
+          system = "x86_64-linux";
+
+          modules = [
+            ./common/system.nix
+            ./common/linux.nix
+
+            # Same kiosk profile as stage-plotiphar
+            ./profiles/kiosk.nix
+
+            ./hosts/plotiphar-imac/configuration.nix
+            ./hosts/plotiphar-imac/hardware-configuration.nix
+
+            ./modules
+
+            nixos-vscode-server.nixosModules.default
+            agenix.nixosModules.default
+
+            home-manager.nixosModules.home-manager
+            {
+              home-manager.useGlobalPkgs = true;
+              home-manager.useUserPackages = true;
+              home-manager.backupFileExtension = "backup";
+              home-manager.users.tristonyoder = import ./home/tristonyoder.nix;
+            }
+          ];
+
+          specialArgs = {
+            inherit self nixpkgs nixpkgs-unstable;
+          };
+        };
+
+        # -----------------------------------------------------------------------------
         # stage-plotiphar-vm - Parallels-bootable live ISO of the same kiosk config,
         # for testing before deploying to the real Pi 5. See hosts/stage-plotiphar-vm
         # for what this can/can't validate. Build with:
