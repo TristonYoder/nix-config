@@ -71,6 +71,8 @@ let
   wakeStepsPy = toPyList cfg.wakeSteps;
   standbyStepsPy = toPyList cfg.standbySteps;
   inputStepsPy = toPyList cfg.inputSteps;
+  panelOutputsPy = toPyList cfg.panelOutputs;
+  usesPanels = cfg.panelOutputs != [ ];
 
   # Drives the CEC bus via v4l-utils' cec-ctl. libcec/cec-client is the more
   # commonly cited tool but needs a persistent daemon-ish session; cec-ctl is
@@ -97,6 +99,16 @@ let
     SCHEDULE_GRACE = ${toString cfg.scheduleGraceSeconds}
     CEC_CTL = "${pkgs.v4l-utils}/bin/cec-ctl"
     HOSTNAME = "${config.networking.hostName}"
+
+    # Outputs driven as a built-in panel (X DPMS) rather than over CEC. See
+    # the panelOutputs option.
+    PANEL_OUTPUTS = ${panelOutputsPy}
+    XSET = "${pkgs.xset}/bin/xset"
+    X_ENV = {
+        "DISPLAY": ":0",
+        "XAUTHORITY": "${config.users.users.${cfg.user}.home}/.Xauthority",
+        "PATH": os.environ.get("PATH", ""),
+    }
     REQUEST_TIMEOUT = 20
 
     # How long to let a browser session handoff complete before concluding the
@@ -231,10 +243,122 @@ let
             if not output:
                 continue
             adapters[output] = {
+                "kind": "cec",
                 "device": device,
                 "phys_addr": phys.group(1) if phys else INVALID_PHYS_ADDR,
             }
+
+        # Built-in panels. Configured explicitly, and they win over any CEC
+        # adapter on the same output: a panel has no CEC bus to talk to.
+        for path in glob.glob("/sys/class/drm/card*-*"):
+            output = normalize_connector(os.path.basename(path))
+            if output not in PANEL_OUTPUTS:
+                continue
+            adapters[output] = {
+                "kind": "panel",
+                "device": os.path.join(path, "dpms"),
+                "phys_addr": None,
+            }
         return adapters
+
+
+    # ── Built-in panels ──────────────────────────────────────────────────────
+    #
+    # A display with no CEC (an iMac's own screen) is switched with X's DPMS
+    # instead. Its backlight is the obvious knob, but on the iMac it only dims:
+    # the ACPI backlight bottoms out at a visible level. DPMS takes the panel
+    # fully off while the browser keeps running, so "on" is instant and needs
+    # no page reload.
+    #
+    # DPMS applies to the whole X screen, not one output -- the reason this is
+    # opt-in per output, for hosts whose only display is the panel.
+    #
+    # Unlike a TV, nothing here keeps state across a reboot or a stray key
+    # press (X wakes DPMS on any input). So the last requested state is kept
+    # on disk and re-applied every poll: a panel scheduled off at 22:00 stays
+    # off through the 04:00 nightly reboot.
+
+    def panel_power_state(adapter):
+        """The connector's own DPMS state, from sysfs: no X round-trip, and it
+        reflects what the hardware is actually doing."""
+        try:
+            with open(adapter["device"], "r") as handle:
+                state = handle.read().strip()
+        except OSError:
+            return "unknown"
+        if state == "On":
+            return "on"
+        if state in ("Off", "Standby", "Suspend"):
+            return "standby"
+        return "unknown"
+
+
+    def run_xset(args):
+        """Runs xset against the kiosk's X session. Returns an error or None."""
+        try:
+            result = subprocess.run(
+                [XSET] + args,
+                env=X_ENV,
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False,
+            )
+        except (subprocess.TimeoutExpired, OSError) as err:
+            return str(err)
+        if result.returncode != 0:
+            return (result.stderr or result.stdout or "xset failed").strip()
+        return None
+
+
+    def apply_panel(adapter, want):
+        if want == "standby":
+            # Enables DPMS as a side effect, which is what holds it off.
+            return run_xset(["dpms", "force", "off"])
+        error = run_xset(["dpms", "force", "on"])
+        # Back to disabled, as the kiosk session leaves it: with DPMS enabled
+        # the X server could blank the panel on its own.
+        return error or run_xset(["-dpms"])
+
+
+    def await_panel(adapter, want, timeout=10):
+        deadline = time.time() + timeout
+        while panel_power_state(adapter) != want:
+            if time.time() >= deadline:
+                return False
+            time.sleep(1)
+        return True
+
+
+    def panel_action(output, adapter, action):
+        """Executes one action on a built-in panel. Returns None or an error."""
+        if action == "active-source":
+            # The panel only ever shows this machine; nothing to switch.
+            return None
+        if action not in ("on", "standby"):
+            return "unknown action: " + str(action)
+        write_json(state_path(output, "panel.json"), {"want": action})
+        error = apply_panel(adapter, action)
+        if error:
+            return "xset: " + error
+        if not await_panel(adapter, action):
+            return "the panel never reported %s" % action
+        return None
+
+
+    def enforce_panel(output, adapter):
+        """Re-applies the last requested state if the panel drifted from it."""
+        desired = read_json(state_path(output, "panel.json"))
+        want = desired.get("want") if desired else None
+        if want not in ("on", "standby"):
+            return
+        current = panel_power_state(adapter)
+        if current in (want, "unknown"):
+            return
+        log("%s: panel is %s, restoring %s" % (output, current, want))
+        error = apply_panel(adapter, want)
+        if error:
+            log("%s: xset: %s" % (output, error))
 
 
     # ── Pairing ──────────────────────────────────────────────────────────────
@@ -780,21 +904,31 @@ let
         return due
 
 
-    def handle_screen(output, screen_id, adapter, token):
-        device = adapter["device"]
+    def read_status(adapter):
+        """(phys_addr, power_state, error) for this cycle."""
+        if adapter["kind"] == "panel":
+            return None, panel_power_state(adapter), None
         # Re-read the physical address each cycle: it changes when the display
         # is powered on or off underneath us.
-        info = run_cec(["-d", device])
+        info = run_cec(["-d", adapter["device"]])
         phys_match = re.search(r"Physical Address\s*:\s*([0-9a-fA-F.]+)", info)
         phys_addr = phys_match.group(1) if phys_match else INVALID_PHYS_ADDR
-        adapter_label = "%s -> %s" % (output, device)
+        if phys_addr == INVALID_PHYS_ADDR:
+            return phys_addr, "unknown", (
+                "HDMI link is down -- the display is unreachable over CEC "
+                "(powered off at the set, or cable disconnected)")
+        return phys_addr, query_power_state(adapter["device"]), None
 
-        link_down = phys_addr == INVALID_PHYS_ADDR
-        power_state = "unknown" if link_down else query_power_state(device)
-        error = None
-        if link_down:
-            error = ("HDMI link is down -- the display is unreachable over CEC "
-                     "(powered off at the set, or cable disconnected)")
+
+    def handle_screen(output, screen_id, adapter, token):
+        device = adapter["device"]
+        if adapter["kind"] == "panel":
+            enforce_panel(output, adapter)
+            adapter_label = "%s -> built-in panel (DPMS)" % output
+        else:
+            adapter_label = "%s -> %s" % (output, device)
+
+        phys_addr, power_state, error = read_status(adapter)
 
         state = report(screen_id, token, power_state, adapter_label, error)
         if not state.get("enabled"):
@@ -816,7 +950,10 @@ let
 
         for action, command_id, schedule_mark in actions:
             log("%s: running %s" % (screen_id, action))
-            action_error = send_action(device, phys_addr, action)
+            if adapter["kind"] == "panel":
+                action_error = panel_action(output, adapter, action)
+            else:
+                action_error = send_action(device, phys_addr, action)
             if action_error:
                 log("%s: %s failed: %s" % (screen_id, action, action_error))
 
@@ -833,10 +970,7 @@ let
                 # Re-read power state so the dashboard reflects the result of
                 # the command immediately rather than one poll interval later.
                 time.sleep(2)
-                refreshed_info = run_cec(["-d", device])
-                refreshed_match = re.search(r"Physical Address\s*:\s*([0-9a-fA-F.]+)", refreshed_info)
-                refreshed_phys = refreshed_match.group(1) if refreshed_match else INVALID_PHYS_ADDR
-                new_state = "unknown" if refreshed_phys == INVALID_PHYS_ADDR else query_power_state(device)
+                _, new_state, _ = read_status(adapter)
                 report(screen_id, token, new_state, adapter_label,
                        action_error, ack_command_id=command_id)
 
@@ -942,6 +1076,21 @@ in
         Messages sent to make the TV show this host's HDMI input. Unlike the
         other two, this is not a verified ladder — CEC has no reliable way to
         ask a TV which input it is showing — so every listed message is sent.
+      '';
+    };
+
+    panelOutputs = mkOption {
+      type = types.listOf types.str;
+      default = [ ];
+      example = [ "eDP-1" ];
+      description = ''
+        Outputs that are a built-in panel with no CEC (an iMac's own screen),
+        named as xrandr names them. These are switched with X DPMS instead:
+        standby turns the panel off with the browser still running, on brings
+        it straight back, and active-source does nothing.
+
+        DPMS covers the whole X screen, so only list a panel on a host where it
+        is the only display -- standby would blank every other output too.
       '';
     };
 
@@ -1072,7 +1221,8 @@ in
         # Nothing here needs write access outside its own state directory.
         StateDirectory = baseNameOf cfg.stateDir;
         ProtectSystem = "strict";
-        ProtectHome = true;
+        # Panels need the kiosk user's .Xauthority to reach its X session.
+        ProtectHome = if usesPanels then "read-only" else true;
         PrivateTmp = true;
         NoNewPrivileges = true;
         # Writes its own state, plus each output's current-url — that file is

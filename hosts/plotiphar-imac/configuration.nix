@@ -42,6 +42,18 @@
   };
 
   # =============================================================================
+  # DISPLAY POWER (PLOTIPHAR OUTPUT DEVICE)
+  # =============================================================================
+
+  # Pairs with Plotiphar like stage-plotiphar, but the iMac's own screen has
+  # no CEC: the app's on/standby switch the panel with X DPMS instead (its
+  # ACPI backlight only dims, verified on this machine).
+  modules.services.kiosk.cecBridge = {
+    enable = true;
+    panelOutputs = [ "eDP-1" ];
+  };
+
+  # =============================================================================
   # WIFI
   # =============================================================================
 
