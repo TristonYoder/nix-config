@@ -143,6 +143,10 @@ nobody at the console.
 6. **Stage host-local blobs that can't go in the public repo** (e.g. proprietary
    firmware pulled from macOS) under `/mnt/var/lib/<something>` and point the config at
    that path. Keep a copy off the machine too (david: `~github-actions/<hostname>/`).
+   For firmware, don't use `firmware_class.path=`: NixOS overwrites it at boot with its
+   store path (it only *appears* to work on the installer). Link `/lib/firmware` to the
+   staged dir with tmpfiles and load the driver after tmpfiles runs; see
+   `hosts/plotiphar-imac/configuration.nix`.
 7. **Push the branch, dry-run on david** (see Step 5 above), add the host to the
    `test-nixos-config.yml` matrix.
 8. **Install, detached from the SSH session**, so a dropped connection can't kill it:
