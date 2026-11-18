@@ -17,6 +17,9 @@ let
   # SSH host key generated on the installer before install (keys/plotiphar-imac.pub).
   plotiphar-imac = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIgI8bmykXjvJNspNIgcOe1pJAf+/jLCjVgEbS3PT4P2";
 
+  # Pre-generated on the installer, same as above (keys/tristons-iNix.pub).
+  tristons-iNix = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHN11aaioaFobeO4UhwqHQTpUpq+yNcgi7HGbIx2kRo5";
+
   # =============================================================================
   # ADMIN KEYS - Keys for managing secrets from local machines
   # =============================================================================
@@ -49,6 +52,9 @@ let
 
   # Secrets for plotiphar-imac only
   plotipharImacKeys = [ plotiphar-imac ] ++ adminKeys;
+
+  # Secrets for tristons-iNix only
+  tristonsInixKeys = [ tristons-iNix ] ++ adminKeys;
 in
 {
   # =============================================================================
@@ -228,5 +234,12 @@ in
 
   # WiFi PSK for Mission-Church-AV (WIFI_PSK=...), same pattern as above.
   "plotiphar-imac-wifi-psk.age".publicKeys = plotipharImacKeys;
+
+  # =============================================================================
+  # TRISTONS-INIX-SPECIFIC SECRETS
+  # =============================================================================
+
+  # Same Mission-Church-AV PSK, encrypted to this host (keys/tristons-iNix.pub).
+  "tristons-iNix-wifi-psk.age".publicKeys = tristonsInixKeys;
 
 }

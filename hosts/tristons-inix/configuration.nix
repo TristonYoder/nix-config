@@ -41,6 +41,39 @@
   modules.hardware.appleLaptop.enable = true;
 
   # ===========================================================================
+  # WIFI
+  # ===========================================================================
+
+  # Lives at the church with no ethernet run, so WiFi has to work from first
+  # boot with no one at the keyboard. PSK is agenix-encrypted to this host's
+  # key and substituted into the NetworkManager profile at activation (never
+  # in the Nix store), as on plotiphar-imac.
+  age.secrets.tristons-iNix-wifi-psk = {
+    file = ../../secrets/tristons-iNix-wifi-psk.age;
+    mode = "0400";
+  };
+
+  networking.networkmanager.ensureProfiles = {
+    environmentFiles = [ config.age.secrets.tristons-iNix-wifi-psk.path ];
+    profiles."Mission-Church-AV" = {
+      connection = {
+        id = "Mission-Church-AV";
+        type = "wifi";
+      };
+      wifi = {
+        mode = "infrastructure";
+        ssid = "Mission-Church-AV";
+      };
+      wifi-security = {
+        key-mgmt = "wpa-psk";
+        psk = "$WIFI_PSK";
+      };
+      ipv4.method = "auto";
+      ipv6.method = "auto";
+    };
+  };
+
+  # ===========================================================================
   # STORAGE & SYNC
   # ===========================================================================
 

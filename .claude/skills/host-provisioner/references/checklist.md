@@ -140,26 +140,48 @@ nobody at the console.
    Afterwards never boot that USB stick while the installed host is online: both would
    hold one identity and fight over the node. Reusing the stick on another machine is fine
    once it registers as a new node there (fresh boot = fresh state).
-6. **Stage host-local blobs that can't go in the public repo** (e.g. proprietary
+6. **Make sure the installed system has its own network.** The installer's WiFi
+   profile (from its local-only module) lives in `/run`, so it doesn't carry over.
+   Without ethernet, a host that only had WiFi on the installer reboots offline and
+   needs someone at the console (this happened to tristons-iNix). Declare the
+   network in the host config with the PSK agenix-encrypted to the pre-generated
+   host key (`networking.networkmanager.ensureProfiles`, as in
+   `hosts/plotiphar-imac` and `hosts/tristons-inix`) before running the install.
+7. **Stage host-local blobs that can't go in the public repo** (e.g. proprietary
    firmware pulled from macOS) under `/mnt/var/lib/<something>` and point the config at
    that path. Keep a copy off the machine too (david: `~github-actions/<hostname>/`).
    For firmware, don't use `firmware_class.path=`: NixOS overwrites it at boot with its
    store path (it only *appears* to work on the installer). Link `/lib/firmware` to the
    staged dir with tmpfiles and load the driver after tmpfiles runs; see
    `hosts/plotiphar-imac/configuration.nix`.
-7. **Push the branch, dry-run on david** (see Step 5 above), add the host to the
+8. **Push the branch, dry-run on david** (see Step 5 above), add the host to the
    `test-nixos-config.yml` matrix.
-8. **Install, detached from the SSH session**, so a dropped connection can't kill it:
+9. **Install, detached from the SSH session**, so a dropped connection can't kill it:
    ```bash
    systemd-run --unit=nixos-install-<hostname> -p StandardOutput=journal -p StandardError=journal \
+     --setenv=PATH=/run/wrappers/bin:/run/current-system/sw/bin \
      nixos-install --no-root-passwd --option tarball-ttl 0 \
      --flake 'github:TristonYoder/nix-config/<branch>#<hostname>'
    journalctl -u nixos-install-<hostname> -f
    ```
    `nixos-install` rejects `--refresh`; `--option tarball-ttl 0` does the same job (forces
    a fresh fetch of the branch). On the minimal installer, a plain `nix build` needs
-   `--extra-experimental-features "nix-command flakes"`.
-9. **Reboot and verify:** back on the tailnet at the same IP, `ls /run/agenix/`, network
+   `--extra-experimental-features "nix-command flakes"`. Without the `--setenv=PATH`,
+   nixos-install dies at once (`realpath: command not found`).
+
+   **Heavy closures (workstation):** build on david and push to the cache instead of
+   building on the target, then install that exact system path:
+   ```bash
+   # on david
+   P=$(sudo nix build --refresh --no-link --print-out-paths \
+     'github:TristonYoder/nix-config/<branch>#nixosConfigurations.<hostname>.config.system.build.toplevel')
+   sudo nix copy --to 'file:///data/nix-builds/cache?secret-key=/run/agenix/nix-cache-signing-key&compression=zstd' "$P"
+   # on the target: same systemd-run as above, with
+   nixos-install --no-root-passwd --system "$P" \
+     --option extra-substituters https://nix-cache.theyoder.family \
+     --option extra-trusted-public-keys <key from modules/system/nix-cache.nix>
+   ```
+10. **Reboot and verify:** back on the tailnet at the same IP, `ls /run/agenix/`, network
    up on its own, profile's session running.
 
 **Dual NIC on one subnet:** when testing WiFi with ethernet also plugged into the same
