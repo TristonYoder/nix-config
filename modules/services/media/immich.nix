@@ -207,7 +207,9 @@ in
       category = "media";
       icon = "immich";
       extraConfig = ''
-        handle_path /share* {
+        # handle, not handle_path: immich-public-proxy serves under /share/, so
+        # stripping the prefix 404s every share link.
+        handle /share* {
           reverse_proxy http://localhost:${toString cfg.publicProxyPort}
         }
         handle {
