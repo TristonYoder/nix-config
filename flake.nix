@@ -75,9 +75,19 @@
     # is `nix flake update b1church`, which the weekly flake updater already
     # dry-runs and PRs. Takes no inputs of its own, so it adds no lock churn.
     b1church.url = "github:TristonYoder/b1church-flake";
+
+    # Simple Screen — Apple TV signage server. Flake owns the Rust server and
+    # NixOS module; modules/services/productivity/simplescreen.nix is the
+    # local wrapper (vHost + agenix token). Upgrade with
+    # `nix flake update simplescreen` — migrations can't be rolled back, so
+    # back up /var/lib/private/simplescreen first.
+    simplescreen = {
+      url = "github:TristonYoder/simplescreen";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-runner, home-manager, home-manager-unstable, plasma-manager, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, nixos-raspberrypi, flake-utils, iopenpod-flake, iopodcli, blueprint, hermes-agent, b1church, ... }:
+  outputs = { self, nixpkgs, nixpkgs-unstable, nixpkgs-runner, home-manager, home-manager-unstable, plasma-manager, nix-darwin, nix-homebrew, nix-bitcoin, nixos-vscode-server, agenix, nixos-hardware, nixos-raspberrypi, flake-utils, iopenpod-flake, iopodcli, blueprint, hermes-agent, b1church, simplescreen, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
@@ -174,6 +184,9 @@
             # paths), david-only, kept out of ./modules for the same reason.
             b1church.nixosModules.default
             ./modules/services/productivity/b1church.nix
+            # Simple Screen — external module + wrapper, david-only.
+            simplescreen.nixosModules.default
+            ./modules/services/productivity/simplescreen.nix
             # nix-bitcoin.nixosModules.default  # Only include when bitcoin.nix is enabled
 
             # Home Manager

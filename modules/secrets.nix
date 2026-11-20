@@ -128,6 +128,9 @@ with lib;
       # boot makes existing encrypted columns unreadable, so treat it as
       # permanent once the stack holds data.
       "b1church-api-secrets" = { file = ../secrets/b1church-api-secrets.age; owner = "root"; group = "docker"; mode = "0440"; };
+      # simplescreen: external-flake module, david-only (same gating as b1church).
+      # Read by systemd as root for LoadCredential, so root-only is enough.
+      "simplescreen-bootstrap-token" = { file = ../secrets/simplescreen-bootstrap-token.age; owner = "root"; group = "root"; mode = "0400"; };
     })
 
     // (optionalAttrs config.modules.services.gaming.romm.enable {

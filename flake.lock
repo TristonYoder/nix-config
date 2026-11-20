@@ -842,7 +842,28 @@
         "nixpkgs": "nixpkgs_9",
         "nixpkgs-runner": "nixpkgs-runner",
         "nixpkgs-unstable": "nixpkgs-unstable_2",
-        "plasma-manager": "plasma-manager"
+        "plasma-manager": "plasma-manager",
+        "simplescreen": "simplescreen"
+      }
+    },
+    "simplescreen": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1795200980,
+        "narHash": "sha256-fgT827ghSCEmfN5d470eUTdXYHoacp2tZqCtu7C+V2A=",
+        "owner": "TristonYoder",
+        "repo": "simplescreen",
+        "rev": "50a8ad4ddba5d0c657536371b51db657a1d93252",
+        "type": "github"
+      },
+      "original": {
+        "owner": "TristonYoder",
+        "repo": "simplescreen",
+        "type": "github"
       }
     },
     "systems": {
