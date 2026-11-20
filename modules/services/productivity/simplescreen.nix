@@ -24,7 +24,21 @@ in
       bind = mkDefault "127.0.0.1";
       openFirewall = mkDefault false;
       bonjour = mkDefault false;
+      # Break-glass admin; day-to-day sign-in is OIDC below.
       bootstrapTokenFile = config.age.secrets.simplescreen-bootstrap-token.path;
+
+      # Pocket ID public client "simplescreen" (PKCE, redirect
+      # simplescreen://oauth/callback), restricted to the simplescreen_admin
+      # and simplescreen_editor groups. Bind simplescreen_editor (or any
+      # other group) to a Simple Screen group in Studio to grant access.
+      # id_token, not access_token: the ID token is where Pocket ID carries the
+      # groups claim. Issuer has no trailing slash and must match iss exactly.
+      oidc = {
+        issuer = mkDefault "https://id.${config.networking.domain}";
+        clientId = mkDefault "simplescreen";
+        adminGroups = mkDefault [ "simplescreen_admin" ];
+        tokenType = mkDefault "id_token";
+      };
     };
 
     # Caddy proxies WebSockets (/v1/ws) and streams request bodies without a
