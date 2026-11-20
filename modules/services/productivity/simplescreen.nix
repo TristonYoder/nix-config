@@ -7,9 +7,12 @@
 # write, which the upstream module doesn't handle. Back up db.sqlite and
 # blobs/ together; the DB is WAL, so stop the service or use sqlite3 .backup.
 #
-# Exposure: Caddy only, bound to loopback. Apple ATS needs HTTPS for a
-# non-.local name. Bonjour is off because it would advertise the loopback
-# port; clients enter https://simplescreen.7co.dev by hand.
+# Exposure: https://simplescreen.7co.dev through Caddy, plus the plain port on
+# the LAN for Bonjour. The server's own mDNS responder advertises
+# simplescreen-<id>.local:8420 (plain http is fine for .local under Apple ATS).
+# HOSTNAME stays unset so it doesn't claim david.local, which avahi owns.
+# The plain port only accepts Caddy's internal ranges, so it can't bypass the
+# vHost's source-IP check if david is ever reachable from outside.
 { config, lib, ... }:
 
 with lib;
@@ -17,13 +20,19 @@ with lib;
 let
   cfg = config.services.simplescreen;
   domain = "simplescreen.7co.dev";
+  lanRanges = config.modules.services.infrastructure.caddy.internalIpRanges;
+  isV6 = r: hasInfix ":" r;
+  rule = op: r:
+    "${if isV6 r then "ip6tables" else "iptables"} -w ${op} nixos-fw -p tcp --dport ${toString cfg.port} -s ${r} -j nixos-fw-accept";
 in
 {
   config = mkIf cfg.enable {
     services.simplescreen = {
-      bind = mkDefault "127.0.0.1";
+      bind = mkDefault "0.0.0.0";
+      # The module would open 8420 to everyone; the rules below scope it.
+      # UDP 5353 is already open for avahi.
       openFirewall = mkDefault false;
-      bonjour = mkDefault false;
+      bonjour = mkDefault true;
       # Break-glass admin; day-to-day sign-in is OIDC below.
       bootstrapTokenFile = config.age.secrets.simplescreen-bootstrap-token.path;
 
@@ -39,6 +48,11 @@ in
         adminGroups = mkDefault [ "simplescreen_admin" ];
         tokenType = mkDefault "id_token";
       };
+    };
+
+    networking.firewall = mkIf (cfg.bind != "127.0.0.1" && !cfg.openFirewall) {
+      extraCommands = concatMapStringsSep "\n" (rule "-A") lanRanges;
+      extraStopCommands = concatMapStringsSep "\n" (r: "${rule "-D" r} 2>/dev/null || true") lanRanges;
     };
 
     # Caddy proxies WebSockets (/v1/ws) and streams request bodies without a
