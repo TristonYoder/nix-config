@@ -1,7 +1,7 @@
 # Common configuration for all macOS/Darwin hosts
 # This file contains settings shared across all Darwin machines
 
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, self, ... }:
 
 {
   # =============================================================================
@@ -11,6 +11,10 @@
   # Used for backwards compatibility, please read the changelog before changing.
   # $ darwin-rebuild changelog
   system.stateVersion = 5;
+
+  # Bake the git commit SHA into the system so the update notifier
+  # (modules/darwin/auto-update.nix) can compare it with the latest CI build.
+  system.configurationRevision = self.rev or "dirty";
 
   # Back up pre-existing files (e.g. brew's ~/.zprofile) instead of failing
   # activation when Home Manager wants to manage a path that already exists.

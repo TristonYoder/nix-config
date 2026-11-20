@@ -261,6 +261,57 @@ in
           sudo nixos-rebuild "$action" --refresh "''${passthrough[@]}" --flake "$repo"
         fi
       }
+
+        # rollback              previous system generation
+        # rollback <N>          generation N (see: rollback --list)
+        # rollback -l|--list    list system generations
+        # rollback boot|test    NixOS only: apply at next boot / without making it the boot default
+        rollback() {
+        local action="switch"
+        local gen=""
+        local list=0
+
+        while [[ $# -gt 0 ]]; do
+          case "$1" in
+            -l|--list) list=1 ;;
+            switch|boot|test) action="$1" ;;
+            <->) gen="$1" ;;
+            *)
+              echo "usage: rollback [-l|--list] [switch|boot|test] [generation]" >&2
+              return 1
+              ;;
+          esac
+          shift
+        done
+
+        if [[ "$(uname -s)" == "Darwin" ]]; then
+          if [[ "$action" != "switch" ]]; then
+            echo "darwin hosts only support switching generations." >&2
+            return 1
+          fi
+          if [[ "$list" -eq 1 ]]; then
+            darwin-rebuild --list-generations
+          elif [[ -n "$gen" ]]; then
+            sudo darwin-rebuild --switch-generation "$gen" && exec zsh
+          else
+            sudo darwin-rebuild --rollback && exec zsh
+          fi
+          return
+        fi
+
+        local profile=/nix/var/nix/profiles/system
+        if [[ "$list" -eq 1 ]]; then
+          nix-env -p "$profile" --list-generations
+        elif [[ -n "$gen" && "$action" == "test" ]]; then
+          # test must leave the boot default alone, so don't move the profile
+          sudo "$profile-$gen-link/bin/switch-to-configuration" test
+        elif [[ -n "$gen" ]]; then
+          sudo nix-env -p "$profile" --switch-generation "$gen" \
+            && sudo "$profile/bin/switch-to-configuration" "$action"
+        else
+          sudo nixos-rebuild "$action" --rollback
+        fi
+      }
     ''];
 
   };

@@ -653,6 +653,7 @@
                 ./common/darwin.nix
                 ./profiles/darwin.nix
                 ./modules/darwin/github-runner.nix  # opt-in: modules.services.development.githubRunner
+                ./modules/darwin/auto-update.nix    # update notifier, enabled in profiles/darwin.nix
                 hostDir
 
                 # nix-homebrew - Homebrew installation management
@@ -685,7 +686,7 @@
               ];
 
               specialArgs = {
-                inherit nixpkgs nixpkgs-unstable;
+                inherit self nixpkgs nixpkgs-unstable;
               };
             };
         in
