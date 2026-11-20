@@ -251,7 +251,7 @@ in
   # The domain lives in the b1church flake's deployment.nix, not here: it is
   # baked into the frontend images at build time, so it belongs with the build.
   # The module asserts the two still agree.
-  # Simple Screen signage server — https://simplescreen.7co.dev (Caddy, LAN).
+  # Simple Screen signage server — https://simplescreen.7co.dev (Caddy, LAN) and Bonjour.
   # Wrapper: modules/services/productivity/simplescreen.nix.
   services.simplescreen.enable = true;
 
