@@ -853,11 +853,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1795200980,
-        "narHash": "sha256-fgT827ghSCEmfN5d470eUTdXYHoacp2tZqCtu7C+V2A=",
+        "lastModified": 1795209149,
+        "narHash": "sha256-XdJ7cGooFqOIM3lhM999eGL9rbcUUUOxKsgEYobgZe0=",
         "owner": "TristonYoder",
         "repo": "simplescreen",
-        "rev": "50a8ad4ddba5d0c657536371b51db657a1d93252",
+        "rev": "382b05fbea5c6084a06ba8824f7e121996b5f8e3",
         "type": "github"
       },
       "original": {

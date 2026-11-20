@@ -7,9 +7,10 @@
 # write, which the upstream module doesn't handle. Back up db.sqlite and
 # blobs/ together; the DB is WAL, so stop the service or use sqlite3 .backup.
 #
-# Exposure: Caddy only, bound to loopback. Apple ATS needs HTTPS for a
-# non-.local name. Bonjour is off because it would advertise the loopback
-# port; clients enter https://simplescreen.7co.dev by hand.
+# Exposure: https://simplescreen.7co.dev through Caddy, plus the plain port on
+# the LAN for Bonjour. The server's own mDNS responder advertises
+# simplescreen-<id>.local:8420 (plain http is fine for .local under Apple ATS).
+# HOSTNAME stays unset so it doesn't claim david.local, which avahi owns.
 { config, lib, ... }:
 
 with lib;
@@ -21,9 +22,10 @@ in
 {
   config = mkIf cfg.enable {
     services.simplescreen = {
-      bind = mkDefault "127.0.0.1";
-      openFirewall = mkDefault false;
-      bonjour = mkDefault false;
+      bind = mkDefault "0.0.0.0";
+      # TCP 8420 and UDP 5353 (5353 is already open for avahi).
+      openFirewall = mkDefault true;
+      bonjour = mkDefault true;
       # Break-glass admin; day-to-day sign-in is OIDC below.
       bootstrapTokenFile = config.age.secrets.simplescreen-bootstrap-token.path;
 
