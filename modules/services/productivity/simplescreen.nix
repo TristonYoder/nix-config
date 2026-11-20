@@ -11,6 +11,8 @@
 # the LAN for Bonjour. The server's own mDNS responder advertises
 # simplescreen-<id>.local:8420 (plain http is fine for .local under Apple ATS).
 # HOSTNAME stays unset so it doesn't claim david.local, which avahi owns.
+# The plain port only accepts Caddy's internal ranges, so it can't bypass the
+# vHost's source-IP check if david is ever reachable from outside.
 { config, lib, ... }:
 
 with lib;
@@ -18,13 +20,18 @@ with lib;
 let
   cfg = config.services.simplescreen;
   domain = "simplescreen.7co.dev";
+  lanRanges = config.modules.services.infrastructure.caddy.internalIpRanges;
+  isV6 = r: hasInfix ":" r;
+  rule = op: r:
+    "${if isV6 r then "ip6tables" else "iptables"} -w ${op} nixos-fw -p tcp --dport ${toString cfg.port} -s ${r} -j nixos-fw-accept";
 in
 {
   config = mkIf cfg.enable {
     services.simplescreen = {
       bind = mkDefault "0.0.0.0";
-      # TCP 8420 and UDP 5353 (5353 is already open for avahi).
-      openFirewall = mkDefault true;
+      # The module would open 8420 to everyone; the rules below scope it.
+      # UDP 5353 is already open for avahi.
+      openFirewall = mkDefault false;
       bonjour = mkDefault true;
       # Break-glass admin; day-to-day sign-in is OIDC below.
       bootstrapTokenFile = config.age.secrets.simplescreen-bootstrap-token.path;
@@ -41,6 +48,11 @@ in
         adminGroups = mkDefault [ "simplescreen_admin" ];
         tokenType = mkDefault "id_token";
       };
+    };
+
+    networking.firewall = mkIf (cfg.bind != "127.0.0.1" && !cfg.openFirewall) {
+      extraCommands = concatMapStringsSep "\n" (rule "-A") lanRanges;
+      extraStopCommands = concatMapStringsSep "\n" (r: "${rule "-D" r} 2>/dev/null || true") lanRanges;
     };
 
     # Caddy proxies WebSockets (/v1/ws) and streams request bodies without a
