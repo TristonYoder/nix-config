@@ -702,6 +702,19 @@
               { modules.mcp.appleMail.enable = true; }
             ];
           };
+
+          # ---------------------------------------------------------------------------
+          # Tristons-MacBook-Air - macOS MacBook Air (Apple Silicon, M3)
+          # Same profile as Tristons-MacBook-Pro, without the linux-builder VM
+          # ---------------------------------------------------------------------------
+          "Tristons-MacBook-Air" = mkDarwinHost {
+            system = "aarch64-darwin";
+            hostDir = ./hosts/tristons-mba/configuration.nix;
+            extraHomeModules = [
+              ./home/modules/apple-mail-mcp.nix
+              { modules.mcp.appleMail.enable = true; }
+            ];
+          };
         };
     };
 }

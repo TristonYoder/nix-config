@@ -17,6 +17,7 @@ Every NixOS MacBook enables `modules.hardware.appleLaptop` (Command↔Control ke
 - **tristons-nixbook-pro** (NixOS on T2 MacBook Pro 16,1) - Dual-boot, uses `nixos-hardware.apple-t2`. Custom bootable installer ISOs built from the flake (`tristons-nixbook-pro-installer`, `tristons-nixbook-pro-installer-plasma`).
 - **Julia-NixBook-Air** (NixOS on MacBook Air 2013) - Config in `hosts/julia-nixbook-air/`. Desktop profile (not workstation — 3.8 GB RAM). `juliayoder` is the only account: empty password, SDDM autologin, headscale user `juliayoder`. Remote admin is SSH as `juliayoder` with `-A`; sudo authenticates via the forwarded agent (local sudo can't, since pam_unix rejects the empty password). BCM4360 WiFi needs the proprietary `wl` driver (`broadcom-wl.nix`, flagged insecure). Too small to build its own closure — build on david, `nix copy` into `file:///data/nix-builds/cache`, then switch on the Air from `nix-cache.theyoder.family`.
 - **Tristons-MacBook-Pro** (macOS Apple Silicon, M5 Pro) - Personal + work MacBook Pro. Config in `hosts/tristons-mbp/`. Runs the `nix.linux-builder` VM for local aarch64-linux builds. Replaced the old `tyoder-mbp` work Mac — there is no `tyoder` user anymore; Macs use `tristonyoder` via `mkDarwinHost` in `flake.nix`. The Intel T2 MacBook Pro's macOS config was retired (nixpkgs 26.11 dropped x86_64-darwin).
+- **Tristons-MacBook-Air** (macOS Apple Silicon, M3, 16GB) - Config in `hosts/tristons-mba/`. Same `mkDarwinHost` setup as the MacBook Pro, without `nix.linux-builder`.
 
 ## Security — This Repo Is Public
 
