@@ -174,6 +174,10 @@ in
   "b1church-db-secrets.age".publicKeys = davidKeys;
   "b1church-api-secrets.age".publicKeys = davidKeys;
 
+  # Simple Screen break-glass admin token (raw, single line). Passed to the
+  # service via systemd LoadCredential. See modules/services/productivity/simplescreen.nix.
+  "simplescreen-bootstrap-token.age".publicKeys = davidKeys;
+
   # Plex token for JellyPlex-Watched
   "plex-token.age".publicKeys = davidKeys;
 
